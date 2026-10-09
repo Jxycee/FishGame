@@ -105,6 +105,8 @@ namespace FishGame.EditorTools
 
             RequireReference(AssetPaths.BootstrapScene, AssetPaths.NetworkPrefabsListAsset, "Bootstrap NetworkManager does not reference FishGameNetworkPrefabs.asset", errors);
             RequireReference(AssetPaths.BootstrapScene, AssetPaths.SessionStatePrefab, "Bootstrap AppBootstrap does not reference SessionState.prefab", errors);
+            RequireReference(AssetPaths.BootstrapScene, AssetPaths.PanelSettingsAsset, "Bootstrap UIDocument does not reference PanelSettings.asset", errors);
+            RequireReference(AssetPaths.BootstrapScene, AssetPaths.AppRootUxml, "Bootstrap UIDocument does not reference AppRoot.uxml", errors);
             RequireReference(AssetPaths.LakeDockScene, AssetPaths.PlayerPrefab, "Spot_LakeDock PlayerSpawner does not reference PlayerFP.prefab", errors);
             RequireReference(AssetPaths.LakeDockScene, AssetPaths.DockBellPrefab, "Spot_LakeDock has no NetSpawnAnchor referencing DockBell.prefab", errors);
             return errors;
@@ -193,7 +195,7 @@ namespace FishGame.EditorTools
         public static List<string> ProjectSettingsInvariants()
         {
             var errors = new List<string>();
-            ValidationText.ExpectLines(AssetPaths.EditorSettingsFile, errors, "m_SerializationMode: 2", "m_EnterPlayModeOptionsEnabled: 0");
+            ValidationText.ExpectLines(AssetPaths.EditorSettingsFile, errors, "m_SerializationMode: 2", "m_EnterPlayModeOptionsEnabled: 0", "m_EnterPlayModeOptions: 0");
             ValidationText.ExpectLines(AssetPaths.ProjectSettingsFile, errors, "activeInputHandler: 1", "runInBackground: 1");
             ValidationText.ExpectLines(AssetPaths.PcRenderPipelineAsset, errors,
                 "m_MSAA: 4", "m_RequireDepthTexture: 1", "m_SupportsHDR: 1", "m_RequireOpaqueTexture: 0",

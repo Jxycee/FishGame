@@ -41,6 +41,8 @@ namespace FishGame.EditorTools
             if (appRoot == null) throw new System.IO.FileNotFoundException("Missing " + AssetPaths.AppRootUxml + " (T14)");
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            // NewScene(Single) unloads unused assets, which leaves a destroyed reference in panelSettings. Load it again.
+            panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(AssetPaths.PanelSettingsAsset);
 
             // App: AppBootstrap, NetworkManager, UnityTransport, PlayerInputAdapter, AudioBus (contract 6.5 order).
             var app = new GameObject("App");
@@ -56,6 +58,11 @@ namespace FishGame.EditorTools
             ui.transform.SetParent(app.transform, false);
             UIDocument document = BuilderUtil.GetOrAdd<UIDocument>(ui);
             document.panelSettings = panelSettings;
+            var documentSerialized = new SerializedObject(document); // the property setter alone is not persisted into the scene file
+            SerializedProperty panelProperty = documentSerialized.FindProperty("m_PanelSettings");
+            if (panelProperty == null) throw new System.InvalidOperationException("m_PanelSettings not found on UIDocument");
+            panelProperty.objectReferenceValue = panelSettings;
+            documentSerialized.ApplyModifiedPropertiesWithoutUndo();
             document.visualTreeAsset = appRoot; // contract 6.5 calls this "sourceAsset"; the 6000.6 property is visualTreeAsset
             BuilderUtil.GetOrAdd<UiFlowController>(ui);
 
