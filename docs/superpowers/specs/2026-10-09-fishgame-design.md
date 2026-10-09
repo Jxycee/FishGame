@@ -37,7 +37,7 @@ This file merges the reviewed section specs (vision and loop, networking, player
   - **M5 Friend slop:** physics fish carry/sell; seagull and raccoon thieves; co-op monster fish needing 2+ reelers; daily events and hazards (storm, frenzy, fog, heatwave spoilage); shove and light ragdoll.
   - **M6 Expansion:** Vivox proximity voice; boat driving; boat damage with a repair minigame and bucket bailing (press a button to scoop, hold Q to throw water); more spots.
 - **Workflow:** Claude writes all code and files directly. Scenes are built by editor scripts where practical. The Unity batchmode CLI compiles and runs tests. The user playtests in the editor. Tests use the Unity Test Framework (EditMode + PlayMode). Multiplayer Play Mode (MPPM) handles local multi-client testing.
-- **Process:** "Go with your recommendation." Every recommended default in the section reviews is adopted (section 19) unless it is listed in section 20.
+- **Process:** The user said "go with your recommendation" about the milestone order and the networked-vertical-slice approach. The design defaults in section 19 are *proposed* defaults, to be confirmed at spec review; section 20 lists the open questions.
 
 ### 1.2 Assumptions (ours, changeable)
 
@@ -126,7 +126,7 @@ The section specs disagreed in these places. Each row is the single answer this 
 | R42 | Fight tick: 60 Hz vs 50 Hz | networking, fishing | **50 Hz (dt 0.02 s)**, accumulator in `Update`, max 5 steps per frame. | |
 | R43 | Host fight timeout: 240 s vs 300 s | fishing, networking | **240 s.** | |
 | R44 | RodState rate: 15 Hz vs 20 Hz | fishing, project-testing | **15 Hz.** | |
-| R45 | Cast cancel refunds bait | fishing, project-testing | **Refunds** (adopted default; Rust consumes it). | Friendlier co-op. |
+| R45 | Cast cancel refunds bait | fishing, project-testing | **Refunds** (proposed default; Rust consumes it). | Friendlier co-op. |
 | R46 | Mid-day drop creel contents: lost vs kept | vision, networking | **Kept in the host's slot ledger** and returned on rejoin; not counted unless sold. | Keyed by slot, costs nothing. |
 | R47 | Fall damage downs a player (slop) vs no fall damage (player) | slop, player | **No fall damage.** | Simpler; shoves and thrashes are enough. |
 | R48 | Shove range and cooldown: 2.2 m/50° cone, 1.0 s vs 1.8 m, 1.5 s vs 2.5 m, 1.5 s | player, slop, networking | **2.2 m, half-angle 50°, server slack +0.8 m/+15°, cooldown 1.5 s.** | |
@@ -2094,9 +2094,9 @@ any       --shoved while immune, Downed or Carried--------> ignored
 
 ---
 
-## 19. Adopted defaults ("go with your recommendation")
+## 19. Proposed defaults (confirm at spec review)
 
-Each is changeable later; none needs an answer now.
+Each is changeable later. They apply unless the user overrides them at review.
 
 1. Fight authority hybrid: owner simulates, host owns rolls, loot and validation (N6).
 2. Charge cast sets distance; aim pitch only shapes the arc; RMB-ready and blue-marker rule kept; **ping-pong charge meter on**.
