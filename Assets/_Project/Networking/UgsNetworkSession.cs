@@ -32,7 +32,7 @@ namespace FishGame.Networking
     //  - If the network start fails inside a join (e.g. approval rejected), the SDK leaves the lobby itself.
     //  - MPPM clones get their auth profile from "-editor-mode -name <x>" (F4), so UgsBootstrap sets a profile only for
     //    -dev-profile instances. Distinct clone PlayerIds: [pending]. If not distinct: SwitchProfile while signed out.
-    //  - Still to confirm at runtime: real code format/length/case (V3): [pending]; exact LobbyFull message: [pending];
+    //  - Still to confirm at runtime: real code format/length/case (V3): [pending]; exact LobbyFull message: [pending]; exact LobbyLocked message text: [pending];
     //    Solo after a Sessions run in one process: [pending]; perf baseline (10.7): [pending].
     public sealed partial class UgsNetworkSession : INetworkSession
     {
@@ -146,11 +146,16 @@ namespace FishGame.Networking
 
         private async Task<T> RunAttemptAsync<T>(bool host, CancellationToken ct, Func<CancellationToken, Task<T>> body)
         {
+            // Contract D8: a token already cancelled faults with UserLeft before any state change, event or UGS call.
+            if (ct.IsCancellationRequested)
+            {
+                throw new NetworkSessionException(EndReason.UserLeft, "The online attempt was cancelled.");
+            }
+
             StartAttempt(host);
             try
             {
-                // Contract D8: a token that is already cancelled faults with UserLeft, never a Canceled task.
-                ct.ThrowIfCancellationRequested();
+                ct.ThrowIfCancellationRequested(); // backstop: cancelled between the check above and here
                 return await body(ct);
             }
             catch (OperationCanceledException oce) when (ct.IsCancellationRequested)

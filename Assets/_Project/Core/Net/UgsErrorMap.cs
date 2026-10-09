@@ -16,6 +16,7 @@ namespace FishGame.Core
         // Rule order, first match wins (all text checks are ordinal, ignore case):
         // 1 message contains "full" not followed by a letter ("Lobby is full", "LobbyFull"; not "fully", "successfully") -> FullLobby
         // 2 code == SessionNotFound -> InvalidCode
+        // 2b message contains "locked" -> JoinsClosed (Lobby LobbyLocked arrives as SessionError.Unknown with text only)
         // 3 message contains "relay" -> ServicesUnavailable (the SDK's "Failed to fetch relay join code" is a Relay outage, not a bad code)
         // 4 message contains "not found", "join code" or "invalid code" -> InvalidCode
         // 5 code == InvalidParameter -> InvalidCode
@@ -32,6 +33,11 @@ namespace FishGame.Core
             if (sessionErrorCode == SessionErrorSessionNotFound)
             {
                 return EndReason.InvalidCode;
+            }
+
+            if (Contains(text, "locked"))
+            {
+                return EndReason.JoinsClosed;
             }
 
             if (Contains(text, "relay"))

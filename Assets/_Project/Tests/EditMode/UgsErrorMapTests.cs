@@ -66,5 +66,14 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(EndReason.ServicesUnavailable, UgsErrorMap.Map(UgsErrorMap.SessionErrorInvalidParameter, "Relay allocation not found"));
             Assert.AreEqual(EndReason.InvalidCode, UgsErrorMap.Map(UgsErrorMap.SessionErrorSessionNotFound, "Relay join code not found"));
         }
+
+        // A locked lobby (mid-run join) arrives as SessionError.Unknown with text only.
+        [Test]
+        public void UgsErrorMap_LockedMessage_IsJoinsClosed()
+        {
+            Assert.AreEqual(EndReason.JoinsClosed, UgsErrorMap.Map(UgsErrorMap.SessionErrorUnknown, "Lobby is locked"));
+            Assert.AreEqual(EndReason.JoinsClosed, UgsErrorMap.Map(UgsErrorMap.SessionErrorUnknown, "LOBBY LOCKED"));
+            Assert.AreEqual(EndReason.InvalidCode, UgsErrorMap.Map(UgsErrorMap.SessionErrorSessionNotFound, "Lobby locked"));
+        }
     }
 }
