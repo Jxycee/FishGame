@@ -156,7 +156,8 @@ namespace FishGame.Core
             for (int i = 0; i < roster.Count; i++)
             {
                 RosterEntry e = roster[i];
-                if (!e.Connected && e.Key == key)
+                // A pending takeover can leave a disconnected row and a connected row on one slot; never reissue that slot.
+                if (!e.Connected && e.Key == key && !SlotConnected(roster, e.Slot))
                 {
                     reclaimed = true;
                     return e.Slot;
@@ -173,7 +174,7 @@ namespace FishGame.Core
             for (int i = 0; i < roster.Count; i++)
             {
                 RosterEntry e = roster[i];
-                if (e.Connected) continue;
+                if (e.Connected || SlotConnected(roster, e.Slot)) continue;
                 if (!found || e.Slot < takeover)
                 {
                     takeover = e.Slot;
@@ -189,6 +190,15 @@ namespace FishGame.Core
             for (int i = 0; i < roster.Count; i++)
             {
                 if (roster[i].Connected && roster[i].Key == key) return true;
+            }
+            return false;
+        }
+
+        private static bool SlotConnected(IReadOnlyList<RosterEntry> roster, byte slot)
+        {
+            for (int i = 0; i < roster.Count; i++)
+            {
+                if (roster[i].Connected && roster[i].Slot == slot) return true;
             }
             return false;
         }

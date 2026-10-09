@@ -220,6 +220,35 @@ namespace FishGame.Tests.EditMode
             Assert.IsFalse(reclaimedNull);
         }
 
+        // Approval-to-absorb window: slot 2 has the provider's disconnected row (y) AND a pending connected row (a) that took it over.
+        private static RosterEntry[] PendingTakeoverRoster()
+        {
+            return new[]
+            {
+                Entry("p0", 0, true), Entry("p1", 1, true),
+                Entry("y", 2, false), Entry("z", 3, false),
+                Entry("a", 2, true),
+            };
+        }
+
+        [Test]
+        public void JoinRules_ChooseSlot_PendingTakeover_SlotNotReissued()
+        {
+            var b = new PlayerKey(IdentityKind.Ugs, "b");
+            byte slot = JoinRules.ChooseSlot(b, PendingTakeoverRoster(), NetworkConstants.MaxPlayers, out bool reclaimed);
+            Assert.AreEqual((byte)3, slot);
+            Assert.IsFalse(reclaimed);
+        }
+
+        [Test]
+        public void JoinRules_ChooseSlot_ReclaimWhileSlotHeldByConnected_FallsThrough()
+        {
+            var y = new PlayerKey(IdentityKind.Ugs, "y");
+            byte slot = JoinRules.ChooseSlot(y, PendingTakeoverRoster(), NetworkConstants.MaxPlayers, out bool reclaimed);
+            Assert.AreEqual((byte)3, slot);
+            Assert.IsFalse(reclaimed);
+        }
+
         [Test]
         public void JoinRules_ConnectedCount_CountsOnlyConnected()
         {

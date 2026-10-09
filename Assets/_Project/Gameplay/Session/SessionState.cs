@@ -199,7 +199,17 @@ namespace FishGame.Gameplay
         {
             if (!IsSpawned || !IsServer || bridge == null) return false;
             if (!bridge.TryTakeApproved(clientId, out var join)) return false;
-            Upsert(join);
+            if (!Upsert(join))
+            {
+                // Defensive: the approver should never hand out a slot held by another connected client.
+                var manager = NetworkManager;
+                if (manager != null && join.ClientId != NetworkManager.ServerClientId
+                    && manager.ConnectedClients.ContainsKey(join.ClientId))
+                {
+                    manager.DisconnectClient(join.ClientId, EndReason.FullLobby.ToString());
+                }
+                return false;
+            }
             return true;
         }
 
@@ -218,8 +228,19 @@ namespace FishGame.Gameplay
         }
 
         // Host only. The entry holding join.Slot is replaced in place (reclaim, or taking over a disconnected slot); otherwise append.
-        private void Upsert(ApprovedJoin join)
+        // Returns false (roster untouched) if the row holding join.Slot is connected under a different client.
+        private bool Upsert(ApprovedJoin join)
         {
+            for (int i = 0; i < Roster.Count; i++)
+            {
+                var held = Roster[i];
+                if (held.Slot == join.Slot && held.Connected && held.ClientId != join.ClientId)
+                {
+                    Debug.LogError($"SessionState: slot {join.Slot} is already held by connected client {held.ClientId}; refusing client {join.ClientId} ({join.Key.Id}).");
+                    return false;
+                }
+            }
+
             var entry = new PlayerSlot
             {
                 ClientId = join.ClientId,
@@ -235,11 +256,12 @@ namespace FishGame.Gameplay
                 if (Roster[i].Slot == join.Slot)
                 {
                     Roster[i] = entry;
-                    return;
+                    return true;
                 }
             }
 
             Roster.Add(entry);
+            return true;
         }
 
         // Host only. Keeps the slot for reclaim; clears Connected and Ready.
