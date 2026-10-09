@@ -83,9 +83,17 @@ namespace FishGame.UI
             UpdateButtons();
         }
 
-        public void FocusDefault() => _host.Focus();
-        public void FocusSolo() => _solo.Focus();
-        public void FocusJoinCode() => _codeField.Focus();
+        // Each returns false (and does nothing) when the target cannot take focus yet, e.g. a disabled button.
+        public bool FocusDefault() => TryFocus(_host);
+        public bool FocusSolo() => TryFocus(_solo);
+        public bool FocusJoinCode() => TryFocus(_codeField);
+
+        private static bool TryFocus(VisualElement element)
+        {
+            if (!element.enabledInHierarchy) return false;
+            element.Focus();
+            return true;
+        }
 
         // Commits the typed name (isDelayed fields only commit on Enter or focus loss) and saves it (spec 11.3).
         public void CommitName()

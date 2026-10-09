@@ -22,6 +22,8 @@ namespace FishGame.UI
         private readonly VisualElement _list;
         private InputActionRebindingExtensions.RebindingOperation _operation;
         private int _endedFrame = -10;
+        private string _focusKey;       // action + scheme of the button to refocus after the list is rebuilt
+        private string _activeKey;
 
         public event Action BindingsChanged;
 
@@ -50,6 +52,15 @@ namespace FishGame.UI
                 AddButton(action, ActionLabelKeys[i], InputActionNames.KeyboardMouseScheme, "settings.scheme_kbm", KeyboardMousePaths);
                 AddButton(action, ActionLabelKeys[i], InputActionNames.GamepadScheme, "settings.scheme_pad", GamepadPaths);
             }
+            if (_focusKey != null)
+            {
+                var key = _focusKey;
+                _focusKey = null;
+                foreach (var child in _list.Children())
+                {
+                    if (child is Button b && (string)b.userData == key && b.enabledInHierarchy) { b.Focus(); break; }
+                }
+            }
         }
 
         // Cancels a running rebind (screen closed). Safe to call when none is running.
@@ -73,6 +84,7 @@ namespace FishGame.UI
             var index = action.GetBindingIndex(group: scheme);
             if (index < 0) return;
             var button = new Button();
+            button.userData = labelKey + "|" + scheme;
             button.AddToClassList("menu-button");
             button.AddToClassList("rebind-button");
             button.text = UiStrings.Get(labelKey) + " (" + UiStrings.Get(schemeKey) + "): " + action.GetBindingDisplayString(index);
@@ -80,6 +92,7 @@ namespace FishGame.UI
             button.clicked += () =>
             {
                 _onClick?.Invoke();
+                _activeKey = (string)button.userData;
                 BeginRebind(action, index, devicePaths, button);
             };
             _list.Add(button);
@@ -116,6 +129,8 @@ namespace FishGame.UI
             _endedFrame = Time.frameCount;
             op?.Dispose();
             if (action != null && wasEnabled) action.Enable();
+            _focusKey = _activeKey;
+            _activeKey = null;
             if (completed)
             {
                 _bindings.SaveBindingOverrides();
