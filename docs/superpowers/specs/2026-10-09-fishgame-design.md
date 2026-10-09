@@ -2170,6 +2170,9 @@ any       --shoved while immune, Downed or Carried--------> ignored
 
 **M2 definition of done:** acceptance criteria and fun gate met; solo works offline; 2–4 players fish together over dev-direct (and over Sessions once linked); the owner feels no latency at 150 ms RTT.
 
+**User actions due in M2 [user]**
+- **Connect Blender's MCP server to Claude Code before the M2 plan is written.** First M2 step is a spike: build one low-poly fish through Blender MCP, export FBX into `Assets/_Project/Content/Models/` (LFS-tracked per `.gitattributes`), import it and swap it into the catch reveal. If the spike works, the five M2 species get Blender models; if not, fall back to Blender Python scripts the user runs, or keep the procedural catch-reveal mesh. Later Blender work: the M3 roster, floppy characters and cosmetics (M4/M5), seagull and raccoon (M5), boat (M6). M1 stays code-built primitives.
+
 ### 17.3 M3 Fish ecology — definition of done
 
 - 23 species, 2 specials, 7 junk (`old_boot` shared by both spots), 2 spots, weather table, 5 fight profiles and 2 baked shore grids exist with the 12.6 values; the `WeatherDirector` pre-rolls a 7-day (35-segment) track from one seed, deterministically, with the season held for the whole week (12.2); SceneBuilder builds `Spot_HarbourPier` and re-bakes both grids in place (stable GUIDs); the lake-dock map passes reachability.
