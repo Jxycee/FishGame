@@ -57,6 +57,7 @@ namespace FishGame.UI
         private bool _started;
         private bool _bound;
         private bool _menuActionsEnabled = true;
+        private bool _menuFocusPending;          // a menu focus attempt failed (target disabled) and must be retried
         private bool _leaving;
         private bool _inGame;
         private int _screenChangedFrame = -1;
@@ -92,6 +93,7 @@ namespace FishGame.UI
             }
 
             var previous = _screen;
+            _menuFocusPending = false;
             if (previous == UiScreen.Settings && screen != UiScreen.Settings) CloseSettings();
 
             _screen = screen;
@@ -405,7 +407,14 @@ namespace FishGame.UI
             var wasEnabled = _menuActionsEnabled;
             _menuActionsEnabled = enabled;
             _menu.SetActionsEnabled(enabled);
-            if (refocus && enabled && !wasEnabled && _screen == UiScreen.MainMenu) FocusScreen(UiScreen.MainMenu);
+            if (!refocus || !enabled || wasEnabled || _screen != UiScreen.MainMenu || !_menuFocusPending) return;
+            // Never steal focus from an enabled control the user is already in inside the menu.
+            if (FocusedElement() is VisualElement current && _mainMenu.Contains(current) && current.enabledInHierarchy)
+            {
+                _menuFocusPending = false;
+                return;
+            }
+            FocusScreen(UiScreen.MainMenu);
         }
 
         private void OnSettingsChanged(SettingsData data) => ApplyUiScale();
@@ -435,6 +444,7 @@ namespace FishGame.UI
                     if (_menuFocus == MenuFocus.Solo) focused = _menu.FocusSolo();
                     else if (_menuFocus == MenuFocus.JoinCode) focused = _menu.FocusJoinCode();
                     else focused = _menu.FocusDefault();
+                    _menuFocusPending = !focused;
                     if (focused) _menuFocus = MenuFocus.Default;
                     break;
                 case UiScreen.Busy: _busyPresenter.FocusDefault(); break;
