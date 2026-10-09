@@ -10,7 +10,7 @@ Co-op (1–4) friend-slop rogue-lite fishing game. Unity 6000.6.5f1 (URP), Netco
   `Unity.exe -batchmode -nographics -quit -projectPath C:/Dev/FishGame -logFile <scratchpad>/unity.log`
   then grep the log for `error CS` and `Exiting batchmode successfully`. Exit 0 alone is not proof — read the log.
 - Tests: add `-runTests -testPlatform EditMode|PlayMode -testResults <scratchpad>/results.xml` (drop `-quit`).
-- Editor scripts that build scenes/prefabs: `-executeMethod FishGame.Editor.<Class>.<Method>`.
+- Editor scripts that build scenes/prefabs: `-executeMethod FishGame.EditorTools.<Class>.<Method>`.
 - Logs and test results go in the session scratchpad, never in the repo.
 
 ## Code conventions
@@ -21,7 +21,7 @@ Co-op (1–4) friend-slop rogue-lite fishing game. Unity 6000.6.5f1 (URP), Netco
 - No external/paid assets. Low-poly look from primitives, procedural meshes, flat colours.
 
 ## Git
-- Commit only when the user asks, or when a plan step says to. Never force-push. Stay on `main` unless a plan says otherwise.
+- Commit only when the user asks, or when a plan step says to. Never force-push. Stay on `main` unless a plan says otherwise (M1 work happened on branch `m1-foundation`).
 - Never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`, `*.csproj`, `*.slnx`.
 
 ## Agent roles (user preference)
