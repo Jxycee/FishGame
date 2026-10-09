@@ -12,7 +12,7 @@ namespace FishGame.Networking
     // Authority: host. In Solo and in dev-direct host mode this process is the host: it owns join approval
     // (ConnectionApprover -> Core JoinRules) and the approval -> roster handoff (JoinApprovalBridge).
     // A dev-direct client only follows NGO. Plain UnityTransport on loopback; never touches UGS.
-    // Main thread only. Dev-direct (host or join) is refused unless UNITY_EDITOR || DEVELOPMENT_BUILD.
+    // Main thread only. Dev-direct (host or join) is refused unless Debug.isDebugBuild.
     public sealed class LocalNetworkSession : INetworkSession
     {
         private const string DevOnlyMessage = "Dev-direct is only available in the editor or in a development build.";
@@ -59,11 +59,7 @@ namespace FishGame.Networking
         {
             get
             {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                return true;
-#else
-                return false;
-#endif
+                return UnityEngine.Debug.isDebugBuild;
             }
         }
 
