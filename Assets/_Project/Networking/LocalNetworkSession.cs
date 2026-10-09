@@ -145,7 +145,10 @@ namespace FishGame.Networking
             {
                 throw new ObjectDisposedException(nameof(LocalNetworkSession));
             }
-            ct.ThrowIfCancellationRequested();
+            if (ct.IsCancellationRequested)
+            {
+                throw new NetworkSessionException(EndReason.UserLeft);
+            }
             if (_sm.State != ConnState.Offline)
             {
                 throw new InvalidOperationException("Cannot start a session while " + _sm.State + ".");
