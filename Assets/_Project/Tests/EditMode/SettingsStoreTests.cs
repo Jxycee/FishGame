@@ -135,6 +135,20 @@ namespace FishGame.Tests.EditMode
         }
 
         [Test]
+        public void SettingsData_Normalize_DoesNotSplitSurrogatePair()
+        {
+            var data = new SettingsData();
+            data.displayName = new string('a', 15) + "\uD83D\uDE00" + "tail"; // emoji occupies chars 15-16, straddling the 16 limit
+            data.Clamp();
+            Assert.AreEqual(new string('a', 15), data.displayName);
+            Assert.IsFalse(char.IsHighSurrogate(data.displayName[data.displayName.Length - 1]));
+
+            data.displayName = new string('a', 14) + "\uD83D\uDE00" + "tail"; // emoji fits exactly in 16 chars
+            data.Clamp();
+            Assert.AreEqual(new string('a', 14) + "\uD83D\uDE00", data.displayName);
+        }
+
+        [Test]
         public void SettingsStore_NotifyChanged_ClampsRaisesAndDoesNotWrite()
         {
             string path = Path.Combine(_dir, "settings.json");

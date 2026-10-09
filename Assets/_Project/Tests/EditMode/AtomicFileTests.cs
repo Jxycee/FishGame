@@ -52,11 +52,11 @@ namespace FishGame.Tests.EditMode
         public void AtomicFile_Write_HasNoBom()
         {
             string path = Path.Combine(_dir, "b.json");
-            AtomicFile.WriteAllText(path, "café");
+            AtomicFile.WriteAllText(path, "caf\u00e9");
             byte[] bytes = File.ReadAllBytes(path);
             Assert.AreEqual(5, bytes.Length); // "caf" = 3 bytes, U+00E9 = 2 bytes in UTF-8, no 3-byte BOM
             Assert.IsFalse(bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF);
-            Assert.AreEqual("café", AtomicFile.ReadAllTextOrNull(path));
+            Assert.AreEqual("caf\u00e9", AtomicFile.ReadAllTextOrNull(path));
         }
 
         [Test]

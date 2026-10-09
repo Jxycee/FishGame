@@ -58,7 +58,12 @@ namespace FishGame.Runtime
             }
             string trimmed = sb.ToString().Trim();
             int max = FishGame.Core.DisplayNameRules.MaxLength;
-            if (trimmed.Length > max) trimmed = trimmed.Substring(0, max).TrimEnd();
+            if (trimmed.Length > max)
+            {
+                int cut = max;
+                if (char.IsHighSurrogate(trimmed[cut - 1]) && char.IsLowSurrogate(trimmed[cut])) cut--; // never split a pair
+                trimmed = trimmed.Substring(0, cut).TrimEnd();
+            }
             return trimmed.Length == 0 ? DefaultName : trimmed;
         }
 
