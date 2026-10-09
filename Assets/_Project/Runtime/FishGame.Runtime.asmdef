@@ -1,0 +1,18 @@
+{
+    "name": "FishGame.Runtime",
+    "rootNamespace": "FishGame.Runtime",
+    "references": [
+        "FishGame.Core",
+        "FishGame.Data",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

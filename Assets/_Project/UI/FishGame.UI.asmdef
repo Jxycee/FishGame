@@ -1,0 +1,24 @@
+{
+    "name": "FishGame.UI",
+    "rootNamespace": "FishGame.UI",
+    "references": [
+        "FishGame.Core",
+        "FishGame.Data",
+        "FishGame.Runtime",
+        "FishGame.Gameplay",
+        "FishGame.Fishing",
+        "FishGame.Presentation",
+        "Unity.InputSystem",
+        "Unity.Netcode.Runtime",
+        "Unity.Collections"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

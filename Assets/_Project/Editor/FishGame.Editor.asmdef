@@ -1,0 +1,33 @@
+{
+    "name": "FishGame.Editor",
+    "rootNamespace": "FishGame.EditorTools",
+    "references": [
+        "FishGame.Core",
+        "FishGame.Data",
+        "FishGame.Runtime",
+        "FishGame.Networking",
+        "FishGame.Gameplay",
+        "FishGame.Fishing",
+        "FishGame.Presentation",
+        "FishGame.UI",
+        "FishGame.App",
+        "Unity.Netcode.Runtime",
+        "Unity.Netcode.Editor",
+        "Unity.Collections",
+        "Unity.InputSystem",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

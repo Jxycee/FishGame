@@ -1,0 +1,24 @@
+{
+    "name": "FishGame.Presentation",
+    "rootNamespace": "FishGame.Presentation",
+    "references": [
+        "FishGame.Core",
+        "FishGame.Data",
+        "FishGame.Runtime",
+        "FishGame.Gameplay",
+        "FishGame.Fishing",
+        "Unity.Netcode.Runtime",
+        "Unity.Collections",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,30 @@
+{
+    "name": "FishGame.Tests.PlayMode",
+    "rootNamespace": "FishGame.Tests.PlayMode",
+    "references": [
+        "UnityEngine.TestRunner",
+        "FishGame.Core",
+        "FishGame.Data",
+        "FishGame.Runtime",
+        "FishGame.Networking",
+        "FishGame.Gameplay",
+        "FishGame.Fishing",
+        "FishGame.App",
+        "Unity.Netcode.Runtime",
+        "Unity.Collections",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
