@@ -5,7 +5,7 @@ namespace FishGame.Core
 {
     public static class PitchQuant
     {
-        public const float LimitDeg = 85f;
+        public const float LimitDeg = MovementMath.PitchLimit;
         public const short SendThreshold = 50; // 0.5 degrees
 
         public static short Quantize(float pitchDeg)
