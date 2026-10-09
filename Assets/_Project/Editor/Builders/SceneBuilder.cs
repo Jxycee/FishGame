@@ -71,6 +71,9 @@ namespace FishGame.EditorTools
             BuilderUtil.GetOrAdd<UnityEngine.EventSystems.EventSystem>(eventSystem);
             BuilderUtil.GetOrAdd<UnityEngine.InputSystem.UI.InputSystemUIInputModule>(eventSystem); // default actions
 
+            // Not under App (DontDestroyOnLoad): it unloads with Bootstrap, so Menu/gameplay keep exactly one listener.
+            new GameObject("BootstrapListener").AddComponent<AudioListener>();
+
             BuilderUtil.SaveScene(scene, AssetPaths.BootstrapScene);
         }
 
