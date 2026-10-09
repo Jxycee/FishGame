@@ -49,6 +49,7 @@ namespace FishGame.Gameplay
         private AudioListener _listener;
         private bool _ownerRigActive;
         private bool _subscribed;
+        private bool _ownerNameReceived;
         private short _lastSentPitch;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -82,6 +83,7 @@ namespace FishGame.Gameplay
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            _ownerNameReceived = false;
             gameObject.layer = IsOwner ? Layers.Player : Layers.RemotePlayer;
             if (!s_active.Contains(this))
             {
@@ -160,7 +162,13 @@ namespace FishGame.Gameplay
             }
 
             NetSlot.Value = slot;
-            NetDisplayName.Value = NameWire.ToFixed(DisplayNameRules.Sanitize(displayName, slot));
+
+            // On the host, OnNetworkSpawn (inside InstantiateAndSpawn) already ran the owner's SubmitNameRpc with the
+            // current settings name. The roster copy passed here is older, so it must not overwrite that name.
+            if (!_ownerNameReceived)
+            {
+                NetDisplayName.Value = NameWire.ToFixed(DisplayNameRules.Sanitize(displayName, slot));
+            }
         }
 
         // Host only. Called by PlayerActions.SubmitNameRpc with an already sanitised name.
@@ -171,6 +179,7 @@ namespace FishGame.Gameplay
                 throw new InvalidOperationException("PlayerNetState.ServerSetDisplayName is host-only.");
             }
 
+            _ownerNameReceived = true;
             NetDisplayName.Value = NameWire.ToFixed(sanitizedName);
         }
 
