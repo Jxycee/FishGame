@@ -29,7 +29,7 @@
 - [ ] **Steps:** Disable the PC's network adapter. Press Play, then press **Solo** on the main menu and time it until you stand on the dock. Then walk, sprint, jump, look around, walk off the dock and swim, climb out at a ladder and at the shore ramp, press Esc to pause, then **Leave**. Clear the Console before you press Play. Afterwards, search the Console for `Unity.Services`, `Authentication`, `Relay`, `Lobby` and `Multiplayer Services`. Re-enable the adapter.
 - **Expected:** The dock is reached in under 5 s. Every action works. Leave returns to the main menu. No Console line from the run comes from Unity Gaming Services (UGS). No join-code toast or join-code UI appears, in the HUD or in the Pause menu.
 - **Result:** ______
-- [ ] **Extra check (cancel while loading):** Press **Solo**, and press Esc on the "Loading…" screen right away.
+- [ ] **Extra check (cancel while loading):** Press **Solo**, and press Esc on the busy screen right away ("Loading…").
 - **Expected:** You end on the Main Menu, not stuck on the dock or on the loading screen. Pressing **Solo** again works.
 - **Result:** ______
 
@@ -77,21 +77,21 @@
 ### Criterion 9: Host leaves
 - [ ] **Steps:** With the host and at least 2 clients connected, the host presses Esc and chooses **Leave**. Time it on the clients.
 - **Expected:** Within 10 s, every client is back on the main menu with the toast "Host ended the session." No instance logs an exception.
-- **Extra check (cancel while loading):** The Esc-on-"Loading…" check from criterion 2, run as a client right after pressing **Join 127.0.0.1**, also ends on the Main Menu, not stuck.
+- **Extra check (cancel while loading):** The Esc-on-busy-screen check from criterion 2 (the screen reads "Joining session…" before "Loading…"), run as a client right after pressing **Join 127.0.0.1**, also ends on the Main Menu, not stuck.
 - **Result:** ______
 
 ### Criterion 10: Mode switch
 - [ ] **Steps:**
   1. Automated part: the PlayMode test `Solo_LeaveThenRestart_Works` passed inside criterion 1's `check`.
-  2. Manual part, in one Play session of the Main Editor: start **Solo**, then **Leave**, then **Solo** again. Once, press Esc on the "Loading…" screen right after Solo starts.
+  2. Manual part, in one Play session of the Main Editor: start **Solo**, then **Leave**, then **Solo** again. Once, press Esc on the busy screen right after Solo starts.
   3. Online part (only after the user action "link the project to Unity Cloud"): **Host** online, **Leave**, then **Solo**, without leaving Play mode.
-- **Expected:** Every start works. The second Solo after an online session reaches the dock and uses no Relay. Pressing Esc on "Loading…" leaves you on the Main Menu. Record step 3 as `BLOCKED (no cloud link)` until the link exists.
+- **Expected:** Every start works. The second Solo after an online session reaches the dock and uses no Relay. Pressing Esc on the busy screen leaves you on the Main Menu. Record step 3 as `BLOCKED (no cloud link)` until the link exists.
 - **Result:** ______
 
 ### Criterion 11: Settings
 - [ ] **Steps:**
   1. Change several M1 settings (master volume, mouse sensitivity, field of view, invert Y, UI scale, display name, one key rebind). Close the settings panel, stop Play mode, close and reopen the editor, and press Play again.
-  2. In the dock scene (`Spot_LakeDock`), move **Master volume** from 80 to 0 and then to 100 while listening to the ambience (wind, water lap, bell).
+  2. In the dock scene (`Spot_LakeDock`), move **Master volume** from 80 to 0 and then to 100 while listening to the ambience (wind, water lap) and ringing the bell.
   3. Run the `Direct 4P` scenario. Change different settings in the Main Editor and in one additional instance, and close each panel. Open both files under `Application.persistentDataPath` (`%USERPROFILE%\AppData\LocalLow\<Company>\<Product>\`): `settings.json` (Main Editor) and `settings_<instance name>.json` (the clone).
   4. With no mouse, use the keyboard only to open every menu (main menu, Settings, Pause), change one value, and go back. Then do the same with a gamepad only.
   5. Set the Game view to a fixed 1280×720 resolution and UI scale to 150%. Open the main menu, Settings, Pause and the HUD.
@@ -101,7 +101,7 @@
   9. Trigger an error (for example a join with a bad code, or `err.version` from criterion 5) and listen to the UI error sound (`Ui_Error`).
 - **Expected:**
   1. Every changed value is still set after the restart.
-  2. The volume change is audible live (0 is silent). Wind, water lap and the bell ambience are audible at 80 and 100.
+  2. The volume change is audible live (0 is silent). Wind and water lap ambience and the bell sound effect are audible at 80 and 100.
   3. Each file holds only its own instance's values. Both files are valid JSON and neither is corrupted. (The EditMode test `SettingsStore_TwoInstances_DoNotCorruptEachOther` covers the file-level case.)
   4. Every control can be reached and used by keyboard only and by gamepad only.
   5. No text or control is clipped or off-screen.
@@ -124,16 +124,16 @@
   4. With 4 players connected, try to join with a 5th player: a standalone development player started with `-dev-profile p5`, or a 4th additional editor instance.
   5. The host closes joins (Pause menu, **Close joins**) and a new client tries to join mid-run. Reopen joins afterwards if you need to continue.
   6. While hosting, the host renames themselves in Settings.
-  7. With the project not linked (or the network adapter disabled), press **Host** or **Join** once.
+  7. With the network adapter disabled, press **Host** or **Join** once.
   8. The host chooses **Leave**.
 - **Expected:**
   1. The code appears within 5 s.
   2. All joins work (the code is normalized by trimming and upper-casing). If the lowercase copy fails, the codes are case-sensitive: record that as a finding.
   3. A readable "code not found" toast appears (`err.code_not_found`). Focus returns to the join-code box and the typed text is kept.
   4. The 5th player is refused with the full-session toast (`err.session_full`). Focus is on **Host**.
-  5. The refusal reads "Run in progress" (`err.joins_closed`), not "Online services unavailable".
+  5. The refusal reads "Run in progress" (`err.joins_closed`), not the `err.services` toast.
   6. The host's nameplate updates for everyone.
-  7. The `err.services` toast ("online services unavailable") appears, and focus is on **Play Solo**.
+  7. The `err.services` toast ("Online services are unavailable. You can play Solo instead.") appears, and focus is on **Solo**.
   8. Every client returns to the main menu with "Host ended the session."
 - **Record:** the real join-code format (length, character set, letter case), and whether any join was refused as a duplicate (that would mean two instances share one PlayerId, see criterion 13). Also record the exact message texts shown for LobbyLocked (step 5) and LobbyFull (step 4): LobbyLocked: ______; LobbyFull: ______; join-code format: ______
 - **Result:** ______
