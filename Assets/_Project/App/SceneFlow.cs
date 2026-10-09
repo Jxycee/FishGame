@@ -26,6 +26,7 @@ namespace FishGame.App
             this.bus = bus ?? throw new ArgumentNullException(nameof(bus));
             session.StateChanged += HandleStateChanged;
             session.Ended += HandleEnded;
+            SceneManager.activeSceneChanged += HandleActiveSceneChanged;
         }
 
         public void Dispose()
@@ -34,6 +35,19 @@ namespace FishGame.App
             disposed = true;
             session.StateChanged -= HandleStateChanged;
             session.Ended -= HandleEnded;
+            SceneManager.activeSceneChanged -= HandleActiveSceneChanged;
+        }
+
+        // NGO loads with plain LoadSceneAsync, so Unity can still activate a gameplay scene after the session went Offline
+        // (cancel on the loading screen, transport stop mid-load, host leaving during scene sync). Guard on Offline only:
+        // a client legitimately activates the dock while still Connecting.
+        private void HandleActiveSceneChanged(Scene previous, Scene next)
+        {
+            if (disposed) return;
+            if (SceneNames.IsGameplay(next.name) && session.State == ConnState.Offline)
+            {
+                SceneManager.LoadScene(SceneNames.Menu, LoadSceneMode.Single);
+            }
         }
 
         private void HandleStateChanged(ConnState previous, ConnState current)
