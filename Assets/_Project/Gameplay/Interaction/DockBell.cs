@@ -97,9 +97,8 @@ namespace FishGame.Gameplay
 
             m_swingRemaining = SwingSeconds;
             LocalRingCount++;
-#if UNITY_EDITOR || DEBUG
-            Debug.Log($"[DockBell] rang (local count {LocalRingCount})");
-#endif
+            if (Debug.isDebugBuild)
+                Debug.Log($"[DockBell] rang (local count {LocalRingCount})");
             Rang?.Invoke();
         }
 
