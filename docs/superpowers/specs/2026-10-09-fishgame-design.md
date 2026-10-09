@@ -164,7 +164,7 @@ The user decided these at spec review. They override every earlier row and secti
    - Never kill Unity processes.
 2. **Encoding.** Every text file (`.cs`, `.json`, `.asmdef`, `.inputactions`, `.uxml`, `.uss`, `.shader`, `.hlsl`, `.md`, `.meta`) is UTF-8 **without a BOM**. Windows PowerShell 5.1 `Set-Content`/`Out-File -Encoding utf8` writes a BOM and UPM then rejects `manifest.json`. Use the Write tool or `[IO.File]::WriteAllText(p, t, (New-Object System.Text.UTF8Encoding($false)))`.
 3. **Paths.** Pass absolute paths to Unity `-logFile` and `-testResults`; paths with `..` were rejected empirically.
-4. **Commits.** Only when the user asks or a plan step says so. On `main`. Never force-push. Commit messages end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+4. **Commits.** Only when the user asks or a plan step says so. On `main`. Never force-push. Commit messages end with a `Co-Authored-By:` trailer naming the model that wrote the change (implementation commits by Sonnet: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`).
 5. **Agent roles (user preference):** Haiku swarms for research and drafting, each watched by an Opus (high effort) reviewer; Sonnet implements; Fable is the escalation fixer for anything the others can't solve.
 
 ### 4.2 Project cleanup (M1, before the first commit)
