@@ -50,6 +50,9 @@ namespace FishGame.Gameplay
         private bool _ownerRigActive;
         private bool _subscribed;
         private bool _ownerNameReceived;
+        private ISettings _watchedSettings;
+        private FixedString32Bytes _lastSubmittedName;
+        private bool _hasSubmittedName;
         private short _lastSentPitch;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -105,6 +108,7 @@ namespace FishGame.Gameplay
                 s_local = this;
                 LocalPlayerChanged?.Invoke(this);
                 SubmitLocalName();
+                WatchSettings();
             }
             else
             {
@@ -117,6 +121,7 @@ namespace FishGame.Gameplay
         public override void OnNetworkDespawn()
         {
             Unsubscribe();
+            UnwatchSettings();
             if (_body != null)
             {
                 _body.Unbind();
@@ -143,6 +148,7 @@ namespace FishGame.Gameplay
         {
             // Safety net when an object is destroyed without a despawn callback (domain teardown in tests).
             Unsubscribe();
+            UnwatchSettings();
             s_active.Remove(this);
             if (s_local == this)
             {
@@ -241,6 +247,41 @@ namespace FishGame.Gameplay
 
         private void SubmitLocalName()
         {
+            _hasSubmittedName = false;
+            SubmitNameIfChanged();
+        }
+
+        // Owner only. A rename in Settings during a session re-sends the (sanitised) name; the host updates NetDisplayName.
+        private void WatchSettings()
+        {
+            UnwatchSettings();
+            ServiceRegistry app = ServiceRoots.App;
+            if (app != null && app.TryGet(out ISettings settings))
+            {
+                _watchedSettings = settings;
+                _watchedSettings.Changed += HandleSettingsChanged;
+            }
+        }
+
+        private void UnwatchSettings()
+        {
+            if (_watchedSettings != null)
+            {
+                _watchedSettings.Changed -= HandleSettingsChanged;
+                _watchedSettings = null;
+            }
+        }
+
+        private void HandleSettingsChanged(SettingsData data)
+        {
+            if (IsSpawned && IsOwner)
+            {
+                SubmitNameIfChanged();
+            }
+        }
+
+        private void SubmitNameIfChanged()
+        {
             string displayName = OfflineDefaultName;
             ServiceRegistry app = ServiceRoots.App;
             if (app != null && app.TryGet(out ISettings settings) && settings.Current != null)
@@ -248,9 +289,17 @@ namespace FishGame.Gameplay
                 displayName = settings.Current.displayName;
             }
 
+            FixedString32Bytes wire = NameWire.ToFixed(DisplayNameRules.Sanitize(displayName, Slot));
+            if (_hasSubmittedName && _lastSubmittedName.Equals(wire))
+            {
+                return;
+            }
+
             if (_actions != null)
             {
-                _actions.SubmitNameRpc(NameWire.ToFixed(DisplayNameRules.Sanitize(displayName, Slot)));
+                _hasSubmittedName = true;
+                _lastSubmittedName = wire;
+                _actions.SubmitNameRpc(wire);
             }
         }
 
