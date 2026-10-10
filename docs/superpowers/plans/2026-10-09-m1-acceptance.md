@@ -29,7 +29,7 @@
 - [ ] **Steps:** Disable the PC's network adapter. Press Play, then press **Solo** on the main menu and time it until you stand on the dock. Then walk, sprint, jump, look around, walk off the dock and swim, climb out at a ladder and at the shore ramp, press Esc to pause, then **Leave**. Clear the Console before you press Play. Afterwards, search the Console for `Unity.Services`, `Authentication`, `Relay`, `Lobby` and `Multiplayer Services`. Re-enable the adapter.
 - **Expected:** The dock is reached in under 5 s. Every action works. Leave returns to the main menu. No Console line from the run comes from Unity Gaming Services (UGS). No join-code toast or join-code UI appears, in the HUD or in the Pause menu.
 - **Result:** ______
-- [ ] **Extra check (cancel while loading):** Press **Solo**, and press Esc on the busy screen right away ("Loading…").
+- [ ] **Extra check (cancel while loading):** Press **Solo**, and press Esc on the busy screen right away ("Loading...").
 - **Expected:** You end on the Main Menu, not stuck on the dock or on the loading screen. Pressing **Solo** again works.
 - **Result:** ______
 
@@ -77,7 +77,7 @@
 ### Criterion 9: Host leaves
 - [ ] **Steps:** With the host and at least 2 clients connected, the host presses Esc and chooses **Leave**. Time it on the clients.
 - **Expected:** Within 10 s, every client is back on the main menu with the toast "Host ended the session." No instance logs an exception.
-- **Extra check (cancel while loading):** The Esc-on-busy-screen check from criterion 2 (the screen reads "Joining session…" before "Loading…"), run as a client right after pressing **Join 127.0.0.1**, also ends on the Main Menu, not stuck.
+- **Extra check (cancel while loading):** The Esc-on-busy-screen check from criterion 2 (the screen reads "Joining session..." before "Loading..."), run as a client right after pressing **Join 127.0.0.1**, also ends on the Main Menu, not stuck.
 - **Result:** ______
 
 ### Criterion 10: Mode switch

@@ -1186,7 +1186,7 @@ public sealed class LocalNetworkSession : INetworkSession
     public ushort Port { get; set; }        // default NetworkConstants.DefaultPort; PlayMode tests set NetworkConstants.TestPort
     public ushort ActivePort { get; }       // the port actually bound/joined
     // StartLocalAsync(false): Mode Solo, listen and connect 127.0.0.1, ports Port..Port+SoloPortRetryCount-1 (retry after a failed StartHost + shutdown).
-    // StartLocalAsync(true):  Mode DevDirect, 127.0.0.1:Port only; throws NetworkSessionException(Unknown) unless UNITY_EDITOR || DEVELOPMENT_BUILD.
+    // StartLocalAsync(true):  Mode DevDirect, 127.0.0.1:Port only; throws NetworkSessionException(Unknown) unless `Debug.isDebugBuild` (true in the editor).
     // JoinDirectAsync(ip, port): Mode DevDirect client.
     // Every start: Begin -> WaitForShutdownAsync -> ConfigureDirect + ApplyTimeouts -> NetworkConfig.ProtocolVersion = 0 ->
     //   NetworkConfig.ConnectionData = ConnectPayloadCodec.Encode(new ConnectPayload(cfg.ProtocolVersion, cfg.ContentHash,
@@ -1520,7 +1520,7 @@ public static class UiStrings
 ```
 Internal presenter classes (T14-private; names reserved): `MainMenuPresenter`, `BusyPresenter`, `SettingsPresenter`, `RebindPresenter`, `PausePresenter`, `HudPresenter`, `ToastPresenter`, `NameplateOverlay`. Element names inside `AppRoot.uxml` are T14-private.
 Behaviour the other tasks rely on:
-- MainMenu buttons: Host (`HostOnlineAsync`, publishes `ToastRequested("toast.join_code", code, 10f)`), Join (`JoinOnlineAsync`), Solo (`StartLocalAsync(false)`), Settings, Quit; display-name field. Dev only (`UNITY_EDITOR || DEVELOPMENT_BUILD`): Host Direct (`StartLocalAsync(true)`), Join 127.0.0.1 (`JoinDirectAsync("127.0.0.1", 7777)`).
+- MainMenu buttons: Host (`HostOnlineAsync`, publishes `ToastRequested("toast.join_code", code, 10f)`), Join (`JoinOnlineAsync`), Solo (`StartLocalAsync(false)`), Settings, Quit; display-name field. Dev only (runtime `Debug.isDebugBuild`; DEVELOPMENT_BUILD is deprecated in Unity 6000.6, UAC0009): Host Direct (`StartLocalAsync(true)`), Join 127.0.0.1 (`JoinDirectAsync("127.0.0.1", 7777)`).
 - Busy screen Cancel: cancels the attempt's `CancellationTokenSource`.
 - Pause: Resume, Settings, Leave (`LeaveAsync`), join code + Copy (`GUIUtility.systemCopyBuffer`) + streamer mask `••••••` with hold-to-reveal (online only). Dev-only host toggle "Close joins"/"Open joins": `SessionState.Current.ServerSetJoinsOpen(v)` + `INetworkSession.SetJoinableAsync(v)`.
 - Nameplates: `PlayerNetState.Active` remotes, projected with `Camera.main`, alpha fades 15→25 m.
@@ -1577,7 +1577,7 @@ public sealed class GameScope : MonoBehaviour
 // App/DevStartup.cs
 public static class DevStartup
 {
-    // Dev builds only (UNITY_EDITOR || DEVELOPMENT_BUILD). Args = Environment.GetCommandLineArgs() + (#if UNITY_EDITOR) each
+    // Dev builds only (runtime `Debug.isDebugBuild`). Args = Environment.GetCommandLineArgs() + (#if UNITY_EDITOR) each
     // CurrentPlayer.ReadOnlyTags() entry split on whitespace. Order: Solo -> StartLocalAsync(false); HostDirect -> StartLocalAsync(true);
     // HasJoinDirect -> JoinDirectAsync. Else #if UNITY_EDITOR: EditorPrefs.GetBool(DevPrefKeys.AutoSolo) && CurrentPlayer.IsMainEditor -> Solo.
     public static IReadOnlyList<string> CollectArgs();

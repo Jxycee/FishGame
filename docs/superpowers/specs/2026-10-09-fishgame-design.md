@@ -417,7 +417,7 @@ Save & quit at a Night Camp: Spot_<mapId> -> Hub (snapshot kept, no Result, no p
 | Type | Assembly | Role |
 |---|---|---|
 | `INetworkSession` | Runtime | Surface the menus use (6.3) |
-| `LocalNetworkSession` | Networking | Solo (`allowRemote = false`) and dev-direct (`allowRemote = true`, only under `UNITY_EDITOR \|\| DEVELOPMENT_BUILD`). Plain UnityTransport, no UGS. |
+| `LocalNetworkSession` | Networking | Solo (`allowRemote = false`) and dev-direct (`allowRemote = true`, only when runtime `Debug.isDebugBuild` is true). Plain UnityTransport, no UGS. |
 | `UgsNetworkSession` | Networking | Multiplayer Services Sessions with Relay; owns the join code |
 | `SteamNetworkSession` | — | Reserved name; not built before M6 |
 | `ConnectionStateMachine` | Core | 6.4 |
@@ -1605,7 +1605,7 @@ Server-write NetworkVariables: `NetSeason`, `NetWeather` (current segment mask),
 
 ### 12.11 Dev tools (M3)
 
-Dev panel (F3 cycles overlay/panel; `UNITY_EDITOR || DEVELOPMENT_BUILD`; `Keyboard.current`): editable on the host, read-only on clients. Sets season, minute, weather override, run seed, luck, local rod tier, "new day", "spawn hotspot here", dev clock on/off. Clients see a read-only view.
+Dev panel (F3 cycles overlay/panel; runtime `Debug.isDebugBuild`; `Keyboard.current`): editable on the host, read-only on clients. Sets season, minute, weather override, run seed, luck, local rod tier, "new day", "spawn hotspot here", dev clock on/off. Clients see a read-only view.
 
 ---
 
