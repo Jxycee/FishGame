@@ -59,6 +59,7 @@ namespace FishGame.Gameplay
             subscribedScenes = manager.SceneManager;
             subscribedScenes.OnLoadEventCompleted += OnLoadEventCompleted;
             subscribedScenes.OnSynchronizeComplete += OnSynchronizeComplete;
+            subscribedScenes.OnLoadComplete += OnClientLoadComplete;
         }
 
         private void OnDisable()
@@ -67,6 +68,7 @@ namespace FishGame.Gameplay
             {
                 subscribedScenes.OnLoadEventCompleted -= OnLoadEventCompleted;
                 subscribedScenes.OnSynchronizeComplete -= OnSynchronizeComplete;
+                subscribedScenes.OnLoadComplete -= OnClientLoadComplete;
             }
             subscribedScenes = null;
             subscribedManager = null;
@@ -120,6 +122,21 @@ namespace FishGame.Gameplay
             if (manager == null || !manager.IsServer) return;
             if (clientId == NetworkManager.ServerClientId) return;
             if (!gameObject.scene.isLoaded) return;
+
+            SpawnPlayerIfMissing(manager, clientId);
+        }
+
+        // A client approved while the host's own scene load was still running syncs to the previous scene, then receives
+        // this scene's load afterwards; it is never in OnLoadEventCompleted's clientsCompleted for that event. The server
+        // sees every client's own LoadComplete here, so spawn that client's player (idempotent).
+        private void OnClientLoadComplete(ulong clientId, string sceneName, LoadSceneMode loadSceneMode)
+        {
+            var manager = subscribedManager;
+            if (manager == null || !manager.IsServer) return;
+            if (clientId == NetworkManager.ServerClientId) return;
+            if (sceneName != gameObject.scene.name) return;
+            if (!gameObject.scene.isLoaded) return;
+            if (!manager.ConnectedClients.ContainsKey(clientId)) return;
 
             SpawnPlayerIfMissing(manager, clientId);
         }

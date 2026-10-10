@@ -79,7 +79,7 @@ Dev builds (the editor and development players) read these flags from the comman
 | `-dev-long-timeout` | Raises the disconnect timeout from 10 s to 120 s, so a breakpoint on the host does not drop clients. Do not use it when you test disconnect detection. |
 | `-dev-profile <name>` | Command line only (not read from tags). Uses its own settings file and player identity (`settings_<name>.json`). Give every standalone development player a different profile, or they share one identity and the second join is refused as a duplicate. MPPM instances don't need it: each already gets its own profile. |
 
-Start order on boot: Solo, then Host Direct, then Join Direct. In standalone development players, pass the same flags on the command line, for example `FishGame.exe -dev-profile p2 -dev-join-direct 127.0.0.1:7777`.
+Start order on boot: Solo, then Host Direct, then Join Direct. In standalone development players, pass the same flags on the command line, for example `FishGame.exe -dev-profile p2 -dev-join-direct 127.0.0.1:7777`. Starting the host first is no longer required for the player to appear: a client approved while the host is still loading the dock gets its player when its own load of that scene completes (unverified at runtime; the join itself still fails if the host is not listening yet).
 
 ### 4. Host-only dev toggle: Close joins / Open joins
 
