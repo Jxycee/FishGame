@@ -14,7 +14,7 @@ namespace FishGame.Networking
     // Authority: host owns the Sessions lobby (lock state, player removal). The SDK owns NGO start and stop on this path.
     //
     // Recorded findings (M1 criterion 13). Read from multiplayer 2.3.3 / authentication 3.8.0 source on 2026-10-09.
-    // T16/T17 replace each [pending] with the runtime result.
+    // Each [pending] is filled in after the manual acceptance run (docs/superpowers/plans/2026-10-09-m1-acceptance.md), not by T16/T17.
     //  - The Sessions NGO handler calls StartHost/StartClient/Shutdown itself and calls UnityTransport.SetRelayServerData
     //    itself (F1). This class never calls StartHost, StartClient or SetConnectionData.
     //  - NetworkManager.Singleton must exist before CreateSessionAsync/JoinSessionByCodeAsync, else
@@ -72,7 +72,20 @@ namespace FishGame.Networking
         public UgsNetworkSession(NetworkSessionConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _sm.Changed += (prev, next) => StateChanged?.Invoke(prev, next);
+            _sm.Changed += OnStateMachineChanged;
+        }
+
+        // Subscribers are isolated: a throwing StateChanged handler must not abort the state machine mid-transition.
+        private void OnStateMachineChanged(ConnState prev, ConnState next)
+        {
+            try
+            {
+                StateChanged?.Invoke(prev, next);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         public ConnState State => _sm.State;
