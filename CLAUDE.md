@@ -25,4 +25,4 @@ Co-op (1–4) friend-slop rogue-lite fishing game. Unity 6000.6.5f1 (URP), Netco
 - Never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`, `*.csproj`, `*.slnx`.
 
 ## Agent roles (user preference)
-Haiku for research/drafting swarms, each watched by an Opus (effort high) reviewer; Sonnet implements; Fable is the escalation fixer for anything the others can't solve.
+Tiered for cost (from M2): no research swarm by default; one Opus (effort high) author per plan section; Sonnet implements integration tasks, Haiku only when the brief contains complete code; Opus (high) reviews integration tasks, Sonnet reviews pure-Core/data/docs and small fixes; Opus (xhigh) final branch review; Fable is the escalation fixer for anything the others can't solve. Haiku for mechanical scans. Details: `docs/superpowers/handoff/2026-10-10-m2-handoff.md`.
