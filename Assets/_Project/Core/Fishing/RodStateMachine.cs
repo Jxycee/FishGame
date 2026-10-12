@@ -183,7 +183,7 @@ namespace FishGame.Core
         {
             if (_cancelledCastId != 0 && castId == _cancelledCastId) return;           // late reply to our own cancel
             if (castId != CastId || (State != RodState.Casting && State != RodState.Waiting)) { IgnoredEventCount++; return; }
-            if (!valid) { Recall(sendCancel: false); return; }                         // rows: Casting / Waiting invalid
+            if (!valid) { _cancelledCastId = castId; Recall(sendCancel: false); return; } // rows: Casting / Waiting invalid; the host's Cancelled commit is expected (T8-R2)
             if (State == RodState.Waiting || HasResult) { IgnoredEventCount++; return; } // duplicate
             HasResult = true; Roll = roll; _profile = profile; BiteWait = roll.BiteWait;
             if (_flightOver) EnterWaiting();                                           // timer starts at the result
@@ -198,7 +198,7 @@ namespace FishGame.Core
                 case RodState.Landed: case RodState.Snapped: case RodState.Escaped:
                     if (_commitReceived) IgnoredEventCount++; else _commitReceived = true;
                     return;
-                case RodState.Waiting: case RodState.Bite: case RodState.Hooked:     // rows: unsolicited commit
+                case RodState.Casting: case RodState.Waiting: case RodState.Bite: case RodState.Hooked: // rows: unsolicited commit (Casting: T8-R1)
                     if (finalOutcome == FightOutcome.Cancelled)
                     {
                         EnterTerminal(RodState.Escaped, FightOutcome.Cancelled, finalReason);

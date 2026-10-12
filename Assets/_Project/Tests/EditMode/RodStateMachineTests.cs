@@ -304,8 +304,13 @@ namespace FishGame.Tests.EditMode
             m.OnCastResult(1u, true, in r, in p);
             Assert.That(m.State, Is.EqualTo(RodState.Casting), "result held, flight not over");
             Assert.That(m.HasResult, Is.True);
-            m.Tick(0.6f, Fr());
-            Assert.That(m.State, Is.EqualTo(RodState.Waiting));
+            // flight time for the 10.25 m cast is 0.45 + 0.012 * 10.25 = 0.573 s (CastMath.FlightTime)
+            Assert.That(CastMath.FlightTime(m.CastDistance), Is.EqualTo(0.573f).Within(0.001f));
+            m.Tick(0.5f, Fr());
+            Assert.That(m.State, Is.EqualTo(RodState.Casting), "0.5 s: still in flight");
+            Assert.That(HasCue(Drain(m), RodCue.Landing), Is.False, "no Landing cue before the flight ends");
+            m.Tick(0.1f, Fr());
+            Assert.That(m.State, Is.EqualTo(RodState.Waiting), "0.6 s: flight over");
             Assert.That(m.BiteTimer, Is.EqualTo(0f));
             Assert.That(HasCue(Drain(m), RodCue.Landing), Is.True);
         }
@@ -459,6 +464,21 @@ namespace FishGame.Tests.EditMode
             ToBite(m, FishRoll(hookWindow: 1.0f));
             m.Tick(0.5f, Fr(pp: true));
             Assert.That(m.State, Is.EqualTo(RodState.Hooked));
+            Assert.That(m.Fight, Is.Not.Null);
+            List<RodEffect> e = Drain(m);
+            Assert.That(First(e, RodEffectKind.SendHooked).CastId, Is.EqualTo(1u));
+            Assert.That(Count(e, RodEffectKind.StartFight), Is.EqualTo(1));
+
+            // Pity: the window is 1.3 s, so a press at 1.25 s still hooks (it would be Missed on the plain 1.0 s window).
+            RodStateMachine pm = New();
+            ToBite(pm, FishRoll(hookWindow: 1.0f, pity: true));
+            pm.Tick(0.6f, Fr());
+            pm.Tick(0.6f, Fr());
+            Assert.That(pm.State, Is.EqualTo(RodState.Bite), "1.2 s");
+            pm.Tick(0.05f, Fr(pp: true));
+            Assert.That(pm.State, Is.EqualTo(RodState.Hooked), "press at 1.25 s hooks on a pity window");
+            Assert.That(pm.Fight, Is.Not.Null);
+            Assert.That(Count(Drain(pm), RodEffectKind.SendHooked), Is.EqualTo(1));
         }
 
         [Test]
@@ -479,7 +499,12 @@ namespace FishGame.Tests.EditMode
             Assert.That(res.Report.MaxTension, Is.EqualTo(0f));
             Assert.That(res.Report.FightSeconds, Is.EqualTo(0f));
             Assert.That(res.Report.NearSnapRecoveries, Is.EqualTo(0));
-            Assert.That(RodEv(e, RodEventType.Escaped).CastId, Is.EqualTo(1u));
+            RodEffect esc = RodEv(e, RodEventType.Escaped);
+            Assert.That(esc.CastId, Is.EqualTo(1u));
+            Assert.That(esc.SizeClass, Is.EqualTo((byte)0), "Escaped events carry no size class (roll SizeClass is 1)");
+            Assert.That(e.FindIndex(x => x.Kind == RodEffectKind.SendResult),
+                        Is.LessThan(e.FindIndex(x => x.Kind == RodEffectKind.SendRodEvent && x.EventType == RodEventType.Escaped)),
+                        "SendResult before SendRodEvent(Escaped)");
 
             // R65: a pity roll extends a real hook window by PityHookWindowBonus (0.3): 1.3 s in total.
             RodStateMachine pm = New();
@@ -487,8 +512,8 @@ namespace FishGame.Tests.EditMode
             pm.Tick(0.6f, Fr());
             pm.Tick(0.6f, Fr());
             Assert.That(pm.State, Is.EqualTo(RodState.Bite), "still Bite after 1.2 s");
-            pm.Tick(0.2f, Fr());
-            Assert.That(pm.State, Is.EqualTo(RodState.Escaped), "Missed after 1.4 s");
+            pm.Tick(0.1f, Fr());
+            Assert.That(pm.State, Is.EqualTo(RodState.Escaped), "Missed after exactly 1.3 s");
             Assert.That(pm.Reason, Is.EqualTo(EscapeReason.Missed));
 
             // ... and a pity roll with hookWindow 0 auto-hooks at HookBeat as usual.
@@ -517,6 +542,23 @@ namespace FishGame.Tests.EditMode
             Assert.That(res.Report.FightSeconds, Is.EqualTo(0.06f).Within(1e-5f));
             Assert.That(res.Report.NearSnapRecoveries, Is.EqualTo(0));
             Assert.That(HasCue(e, RodCue.LineLanded), Is.True);
+
+            // FightReport echo: the report carries the sim's MaxTension, NearSnapRecoveries and Elapsed (5 s + 3 ticks of 0.02 s).
+            RodStateMachine r = New();
+            ToHooked(r, null, 2.05f);
+            var s = new FightState
+            {
+                LineLength = 2.05f, FishStamina = 1f, Phase = FightPhase.Calm, PhaseTimer = 5f,
+                MaxTension = 0.7f, NearSnapRecoveries = 2, Elapsed = 5f
+            };
+            r.Fight.ForceState(in s);
+            int n = 0;
+            while (r.State == RodState.Hooked && n < 10) { r.TickFight(In(0f, true), Fr()); n++; }
+            Assert.That(r.State, Is.EqualTo(RodState.Landed));
+            RodEffect rr = First(Drain(r), RodEffectKind.SendResult);
+            Assert.That(rr.Report.MaxTension, Is.EqualTo(0.7f).Within(1e-5f));
+            Assert.That(rr.Report.NearSnapRecoveries, Is.EqualTo(2));
+            Assert.That(rr.Report.FightSeconds, Is.EqualTo(5f + 0.02f * n).Within(1e-4f));
         }
 
         [Test]
@@ -764,6 +806,187 @@ namespace FishGame.Tests.EditMode
             Assert.That(Count(Drain(m), RodEffectKind.CommitTimedOut), Is.EqualTo(1));
         }
 
+
+        // ---- T8 review follow-up (rulings R1, R2) and edge rules ----------------------------------------------
+
+        [Test]
+        public void RodStateMachine_UnsolicitedCommitInCasting_Recalls()
+        {
+            RodStateMachine m = New();
+            ToCasting(m);
+            m.OnCommit(1u, true, FightOutcome.Cancelled, EscapeReason.None);
+            Assert.That(m.State, Is.EqualTo(RodState.Escaped));
+            Assert.That(m.Outcome, Is.EqualTo(FightOutcome.Cancelled));
+            Assert.That(m.Recalling, Is.True);
+            Assert.That(m.IgnoredEventCount, Is.EqualTo(0));
+            List<RodEffect> e = Drain(m);
+            Assert.That(HasCue(e, RodCue.Recall), Is.True);
+            Assert.That(Count(e, RodEffectKind.SendResult), Is.EqualTo(0));
+            Assert.That(Count(e, RodEffectKind.SendCancel), Is.EqualTo(0));
+            m.Tick(1.4f, Fr());
+            Assert.That(m.State, Is.EqualTo(RodState.Escaped), "still the beat at 1.4 s");
+            m.Tick(0.2f, Fr());
+            Assert.That(m.State, Is.EqualTo(RodState.Idle), "Idle at 1.6 s, commit already received");
+            Assert.That(m.HasResult, Is.False);
+
+            // a late CastResult for the recalled cast is dropped (state is Idle by now), not applied
+            FishingRoll r = FishRoll();
+            FishFightProfile p = Carp();
+            m.OnCastResult(1u, true, in r, in p);
+            Assert.That(m.State, Is.EqualTo(RodState.Idle));
+            Assert.That(m.HasResult, Is.False);
+        }
+
+        [Test]
+        public void RodStateMachine_InvalidCastResult_HostCancelledCommitIsConsumedSilently()
+        {
+            RodStateMachine m = New();
+            ToCasting(m);
+            m.OnCastResult(1u, false, default(FishingRoll), default(FishFightProfile));
+            Drain(m);
+            m.OnCommit(1u, true, FightOutcome.Cancelled, EscapeReason.None);
+            Assert.That(m.IgnoredEventCount, Is.EqualTo(0), "the host's Cancelled commit for a rejected cast is expected");
+            Assert.That(m.State, Is.EqualTo(RodState.Idle));
+            Assert.That(Drain(m), Is.Empty);
+            // the memory is one-shot: a second commit for that id is a real illegal event
+            m.OnCommit(1u, true, FightOutcome.Cancelled, EscapeReason.None);
+            Assert.That(m.IgnoredEventCount, Is.EqualTo(1));
+
+            // same from Waiting (a result arrived and was later invalidated)
+            RodStateMachine w = New();
+            ToWaiting(w);
+            w.OnCastResult(1u, false, default(FishingRoll), default(FishFightProfile));
+            Assert.That(w.State, Is.EqualTo(RodState.Idle));
+            Drain(w);
+            w.OnCommit(1u, true, FightOutcome.Cancelled, EscapeReason.None);
+            Assert.That(w.IgnoredEventCount, Is.EqualTo(0));
+
+            // and a fresh cast after it is unaffected: CastId 2 is not swallowed
+            ToWaiting(w);
+            Assert.That(w.CastId, Is.EqualTo(2u));
+            w.OnCommit(2u, true, FightOutcome.Cancelled, EscapeReason.None);
+            Assert.That(w.State, Is.EqualTo(RodState.Escaped), "the new cast's unsolicited commit still recalls");
+        }
+
+        [Test]
+        public void RodStateMachine_UnsolicitedCancelledCommit_EmitsNoEscapedRodEvent()
+        {
+            RodState[] states = { RodState.Casting, RodState.Waiting, RodState.Bite, RodState.Hooked };
+            foreach (RodState s in states)
+            {
+                RodStateMachine m = New();
+                DriveTo(m, s);
+                m.OnCommit(1u, true, FightOutcome.Cancelled, EscapeReason.None);
+                List<RodEffect> e = Drain(m);
+                Assert.That(Count(e, RodEffectKind.SendRodEvent), Is.EqualTo(0), "no RodEvent broadcast in " + s);
+                Assert.That(HasCue(e, RodCue.Escaped), Is.False, "no Escaped cue in " + s);
+                Assert.That(HasCue(e, RodCue.Recall), Is.True, "Recall cue in " + s);
+                Assert.That(m.Outcome, Is.EqualTo(FightOutcome.Cancelled), "outcome in " + s);
+            }
+        }
+
+        [Test]
+        public void RodStateMachine_UnsolicitedEscapedCommit_ReasonNoneBecomesInvalid()
+        {
+            RodStateMachine m = New();
+            ToWaiting(m);
+            m.OnCommit(1u, true, FightOutcome.Escaped, EscapeReason.None);
+            Assert.That(m.Reason, Is.EqualTo(EscapeReason.Invalid));
+            Assert.That(RodEv(Drain(m), RodEventType.Escaped).SizeClass, Is.EqualTo((byte)0));
+
+            RodStateMachine c = New();
+            ToCasting(c);
+            c.OnCommit(1u, true, FightOutcome.Escaped, EscapeReason.None);
+            Assert.That(c.State, Is.EqualTo(RodState.Escaped), "Casting recalls too (R1)");
+            Assert.That(c.Reason, Is.EqualTo(EscapeReason.Invalid));
+        }
+
+        [Test]
+        public void RodStateMachine_DuplicateCommitInTerminal_IgnoredSafely()
+        {
+            RodStateMachine m = New();
+            ToLanded(m);
+            m.OnCommit(1u, true, FightOutcome.Landed, EscapeReason.None);
+            Assert.That(m.IgnoredEventCount, Is.EqualTo(0));
+            m.OnCommit(1u, true, FightOutcome.Escaped, EscapeReason.Timeout);   // duplicate with different content
+            Assert.That(m.IgnoredEventCount, Is.EqualTo(1));
+            Assert.That(m.State, Is.EqualTo(RodState.Landed));
+            Assert.That(m.Outcome, Is.EqualTo(FightOutcome.Landed), "first commit's content stands");
+            Assert.That(m.Reason, Is.EqualTo(EscapeReason.None));
+            Assert.That(Drain(m), Is.Empty);
+            m.Tick(1.6f, Fr());
+            Assert.That(m.State, Is.EqualTo(RodState.Idle));
+            Assert.That(Count(Drain(m), RodEffectKind.CommitTimedOut), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void RodStateMachine_Paused_TickFightAndCastResult()
+        {
+            // TickFight while paused: fight does not advance, nothing is counted as illegal.
+            RodStateMachine m = New();
+            ToHooked(m);
+            float before = m.Fight.State.Elapsed;
+            m.TickFight(In(0f, true), Fr(paused: true));
+            Assert.That(m.Fight.State.Elapsed, Is.EqualTo(before), "paused: the fight sim is not stepped");
+            Assert.That(m.IgnoredEventCount, Is.EqualTo(0));
+            m.TickFight(In(0f, true), Fr());
+            Assert.That(m.Fight.State.Elapsed, Is.GreaterThan(before), "control: unpaused steps it");
+
+            // paused TickFight in a state with no fight is not an illegal event either (the pause check comes first)
+            RodStateMachine idle = New();
+            idle.TickFight(In(0f, true), Fr(paused: true));
+            Assert.That(idle.IgnoredEventCount, Is.EqualTo(0));
+
+            // OnCastResult while paused: still accepted, but the flight and timeout clocks do not move until unpaused.
+            RodStateMachine c = New();
+            ToCasting(c);
+            c.Tick(5f, Fr(paused: true));
+            Assert.That(c.State, Is.EqualTo(RodState.Casting), "5 s of pause does not hit the 3 s result timeout");
+            Assert.That(Drain(c), Is.Empty);
+            FishingRoll r = FishRoll();
+            FishFightProfile p = Carp();
+            c.OnCastResult(1u, true, in r, in p);
+            Assert.That(c.HasResult, Is.True);
+            Assert.That(c.IgnoredEventCount, Is.EqualTo(0));
+            c.Tick(5f, Fr(paused: true));
+            Assert.That(c.State, Is.EqualTo(RodState.Casting), "flight does not progress while paused");
+            c.Tick(0.6f, Fr());
+            Assert.That(c.State, Is.EqualTo(RodState.Waiting));
+        }
+
+        [Test]
+        public void RodStateMachine_ForceEnd_NoOpInTerminalStates()
+        {
+            RodForceReason[] reasons = { RodForceReason.Disconnect, RodForceReason.Teleport, RodForceReason.Respawn };
+            RodState[] states = { RodState.Idle, RodState.Landed, RodState.Snapped, RodState.Escaped };
+            foreach (RodState s in states)
+            {
+                foreach (RodForceReason why in reasons)
+                {
+                    RodStateMachine m = New();
+                    DriveTo(m, s);
+                    FightOutcome outcome = m.Outcome;
+                    EscapeReason reason = m.Reason;
+                    m.ForceEnd(why);
+                    Assert.That(m.State, Is.EqualTo(s), s + "/" + why);
+                    Assert.That(m.Outcome, Is.EqualTo(outcome), s + "/" + why + " outcome");
+                    Assert.That(m.Reason, Is.EqualTo(reason), s + "/" + why + " reason");
+                    Assert.That(Drain(m), Is.Empty, s + "/" + why + " effects (no second result, no cancel)");
+                    Assert.That(m.IgnoredEventCount, Is.EqualTo(0));
+                }
+            }
+
+            // also the recall beat (Escaped with Cancelled outcome): a no-op
+            RodStateMachine rb = New();
+            ToWaiting(rb);
+            rb.OnCommit(1u, true, FightOutcome.Cancelled, EscapeReason.None);
+            Drain(rb);
+            rb.ForceEnd(RodForceReason.Respawn);
+            Assert.That(rb.State, Is.EqualTo(RodState.Escaped));
+            Assert.That(rb.Outcome, Is.EqualTo(FightOutcome.Cancelled));
+            Assert.That(Drain(rb), Is.Empty);
+        }
+
         // ---- rules ------------------------------------------------------------------------------------------
 
         static readonly RodState[] AllStates =
@@ -815,7 +1038,7 @@ namespace FishGame.Tests.EditMode
             }
             else if (s == RodState.Casting)
             {
-                m.OnCommit(id, true, FightOutcome.Escaped, EscapeReason.None); fired++;
+                // an unsolicited commit while Casting is not illegal (T8-R1: it recalls), so it is not fired here
                 m.TickFight(In(0f, true), Fr()); fired++;
             }
             else if (s == RodState.Waiting)
