@@ -46,6 +46,8 @@
             <ui:VisualElement class="panel tall">
                 <ui:Label name="SettingsTitle" class="title small" />
                 <ui:ScrollView name="SettingsScroll" class="grow">
+                    <ui:Label name="SectionDisplay" class="section" />
+                    <ui:SliderInt name="UiScale" class="setting" low-value="80" high-value="150" />
                     <ui:Label name="SectionAudio" class="section" />
                     <ui:SliderInt name="MasterVolume" class="setting" low-value="0" high-value="100" />
                     <ui:SliderInt name="EffectsVolume" class="setting" low-value="0" high-value="100" />
@@ -64,7 +66,6 @@
                     <ui:Toggle name="SprintToggle" class="setting" />
                     <ui:Toggle name="AimToggle" class="setting" />
                     <ui:Toggle name="StreamerMode" class="setting" />
-                    <ui:SliderInt name="UiScale" class="setting" low-value="80" high-value="150" />
                     <ui:Label name="SectionControls" class="section" />
                     <ui:Label name="RebindHint" class="hint" />
                     <ui:VisualElement name="RebindList" />

@@ -23,6 +23,7 @@ namespace FishGame.UI
         {
             _settings = settings;
             UiQuery.Req<Label>(root, "SettingsTitle").text = UiStrings.Get("settings.title");
+            UiQuery.Req<Label>(root, "SectionDisplay").text = UiStrings.Get("settings.section_display");
             UiQuery.Req<Label>(root, "SectionAudio").text = UiStrings.Get("settings.section_audio");
             UiQuery.Req<Label>(root, "SectionGameplay").text = UiStrings.Get("settings.section_gameplay");
             UiQuery.Req<Label>(root, "SectionControls").text = UiStrings.Get("settings.section_controls");
@@ -30,6 +31,13 @@ namespace FishGame.UI
 
             _scroll = UiQuery.Req<ScrollView>(root, "SettingsScroll");
             _scroll.RegisterCallback<FocusInEvent>(OnFocusIn, TrickleDown.TrickleDown);
+            _scroll.verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible;   // the viewport shrinks at 150% UI scale: the scroller must always be there
+
+            // First row of the list (a Display row above Audio and Gameplay): at 150% the panel viewport shrinks live, and a row at the
+            // end of the list fell below it with nothing to scroll to. After a change the slider is scrolled back into view once layout has run.
+            BindInt(root, "UiScale", "settings.ui_scale", 80, 150, d => d.uiScalePercent, (d, v) => d.uiScalePercent = v);
+            var uiScale = UiQuery.Req<SliderInt>(root, "UiScale");
+            uiScale.RegisterValueChangedCallback(_ => _scroll.schedule.Execute(() => _scroll.ScrollTo(uiScale)).ExecuteLater(50));
 
             BindInt(root, "MasterVolume", "settings.master", 0, 100, d => d.masterVolume, (d, v) => d.masterVolume = v);
             BindInt(root, "EffectsVolume", "settings.sfx", 0, 100, d => d.sfxVolume, (d, v) => d.sfxVolume = v);
@@ -55,7 +63,6 @@ namespace FishGame.UI
             BindBool(root, "SprintToggle", "settings.sprint_toggle", d => d.sprintToggle, (d, v) => d.sprintToggle = v);
             BindBool(root, "AimToggle", "settings.aim_toggle", d => d.aimToggle, (d, v) => d.aimToggle = v);
             BindBool(root, "StreamerMode", "settings.streamer", d => d.streamerMode, (d, v) => d.streamerMode = v);
-            BindInt(root, "UiScale", "settings.ui_scale", 80, 150, d => d.uiScalePercent, (d, v) => d.uiScalePercent = v);
 
             var back = UiQuery.Req<Button>(root, "SettingsBack");
             back.text = UiStrings.Get("settings.back");

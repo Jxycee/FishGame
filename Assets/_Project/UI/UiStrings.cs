@@ -36,6 +36,7 @@ namespace FishGame.UI
             ["pause.joins_open"] = "Open joins (dev)",
             ["settings.title"] = "Settings",
             ["settings.back"] = "Back",
+            ["settings.section_display"] = "Display",
             ["settings.section_audio"] = "Audio",
             ["settings.section_gameplay"] = "Gameplay",
             ["settings.section_controls"] = "Controls",
