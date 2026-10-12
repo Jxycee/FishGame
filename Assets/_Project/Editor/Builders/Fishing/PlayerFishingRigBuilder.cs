@@ -19,6 +19,10 @@ namespace FishGame.EditorTools
 
         const string RodSegmentMeshPrefix = "Assets/_Project/Content/Meshes/Rod_Seg";   // + i + ".asset"
         const string BobberMeshPath = "Assets/_Project/Content/Meshes/Bobber.asset";
+        const string MarkerValidMeshPath = "Assets/_Project/Content/Meshes/Marker_Valid.asset";      // T24
+        const string MarkerInvalidMeshPath = "Assets/_Project/Content/Meshes/Marker_Invalid.asset";  // T24
+        const int MarkerRingQuads = 24;
+        const float MarkerInnerRadius = 0.42f, MarkerOuterRadius = 0.5f;
         const string ToonBaseMaterial = "M_Toon_Base";
         const string LineMaterial = "M_Line";
 
@@ -91,7 +95,8 @@ namespace FishGame.EditorTools
             BuilderUtil.GetOrAdd<FishingRodController>(playerRoot).enabled = false;   // every build, not only the first
         }
 
-        // T23's block (ruling F-Q5: at most 12 lines, helper included); T24 owns the rest of this body (C 2.6).
+        // T23's block first (ruling F-Q5: at most 12 lines, helper included; kept verbatim), then T24's (C 6.3 order: RodPresenter, LineView,
+        // BobberView, SplashFx, CastMarkerView). Get-or-add only: rebuilds keep the component order and the root NetworkObject (hash unchanged).
         public static void AddPresentation(GameObject playerRoot)
         {
             FishingFeedback feedback = BuilderUtil.GetOrAdd<FishingFeedback>(playerRoot);
@@ -100,6 +105,70 @@ namespace FishGame.EditorTools
             SetObjectRef(reveal, "fallbackMaterial", RenderMaterialLibrary.Get("M_Toon_FishFallback"));
             SetObjectRef(reveal, "fishMaterial", RenderMaterialLibrary.Get("M_Toon_Fish"));
             SetObjectRef(reveal, "sparkleMaterial", RenderMaterialLibrary.Get("M_Particle"));
+
+            // T24. The rig materials (Seg*, Bobber, Line) are already final: Build() picked M_Toon_Base / M_Line (RigMaterial).
+            BuilderUtil.GetOrAdd<RodPresenter>(playerRoot);
+            BuilderUtil.GetOrAdd<LineView>(playerRoot);
+            BuilderUtil.GetOrAdd<BobberView>(playerRoot);
+            SplashFx splash = BuilderUtil.GetOrAdd<SplashFx>(playerRoot);
+            SetObjectRef(splash, "particleMaterial", RenderMaterialLibrary.Get("M_Particle"));
+            BuilderUtil.GetOrAdd<CastMarkerView>(playerRoot);
+            BuildCastMarker(playerRoot.transform, RenderMaterialLibrary.Get("M_Marker"));
+        }
+
+        // CastMarker at the root with a Valid and an Invalid shape child (C 6.3): flat meshes in the XZ plane at y 0, M_Marker, shadows off, and the
+        // renderers DISABLED (CastMarkerView enables them on the owner only, so a remote never flashes a marker).
+        static void BuildCastMarker(Transform root, Material markerMaterial)
+        {
+            Mesh valid = SaveMesh(MarkerValidMeshPath, BuildMarkerValid());
+            Mesh invalid = SaveMesh(MarkerInvalidMeshPath, BuildMarkerInvalid());
+            AssetDatabase.SaveAssets();
+
+            Empty(root, PlayerRigPaths.CastMarker, Vector3.zero, Quaternion.identity);
+            MarkerShape(root, PlayerRigPaths.CastMarker + "/Valid", valid, markerMaterial);
+            MarkerShape(root, PlayerRigPaths.CastMarker + "/Invalid", invalid, markerMaterial);
+        }
+
+        static void MarkerShape(Transform root, string path, Mesh mesh, Material material)
+        {
+            Transform shape = Empty(root, path, Vector3.zero, Quaternion.identity);
+            BuilderUtil.GetOrAdd<MeshFilter>(shape.gameObject).sharedMesh = mesh;
+            MeshRenderer renderer = BuilderUtil.GetOrAdd<MeshRenderer>(shape.gameObject);
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.enabled = false;
+        }
+
+        // Valid: a solid ring of 24 quads (inner radius 0.42, outer 0.5) plus a centre dot.
+        static Mesh BuildMarkerValid()
+        {
+            var builder = new MeshBuilder(0x4D4B0001u);
+            for (int i = 0; i < MarkerRingQuads; i++) RingQuad(builder, i);
+            builder.Prism(new Vector3(0f, 0.005f, 0f), 0.06f, 0.01f, 8, Quaternion.identity, SlotSnow);
+            return builder.ToMesh("Marker_Valid");
+        }
+
+        // Invalid: a dashed ring (every other one of the 24 quads) plus a cross (two flat boxes, +-45 degrees about Y).
+        static Mesh BuildMarkerInvalid()
+        {
+            var builder = new MeshBuilder(0x4D4B0002u);
+            for (int i = 0; i < MarkerRingQuads; i += 2) RingQuad(builder, i);
+            var size = new Vector3(0.5f, 0.01f, 0.06f);
+            builder.Box(new Vector3(0f, 0.005f, 0f), size, Quaternion.Euler(0f, 45f, 0f), SlotSnow);
+            builder.Box(new Vector3(0f, 0.005f, 0f), size, Quaternion.Euler(0f, -45f, 0f), SlotSnow);
+            return builder.ToMesh("Marker_Invalid");
+        }
+
+        // One ring segment facing up (+Y): inner0, inner1, outer1, outer0 with the angle running from +X toward +Z.
+        static void RingQuad(MeshBuilder builder, int index)
+        {
+            float a0 = 2f * Mathf.PI * index / MarkerRingQuads, a1 = 2f * Mathf.PI * (index + 1) / MarkerRingQuads;
+            Vector3 inner0 = new Vector3(Mathf.Cos(a0) * MarkerInnerRadius, 0f, Mathf.Sin(a0) * MarkerInnerRadius);
+            Vector3 inner1 = new Vector3(Mathf.Cos(a1) * MarkerInnerRadius, 0f, Mathf.Sin(a1) * MarkerInnerRadius);
+            Vector3 outer1 = new Vector3(Mathf.Cos(a1) * MarkerOuterRadius, 0f, Mathf.Sin(a1) * MarkerOuterRadius);
+            Vector3 outer0 = new Vector3(Mathf.Cos(a0) * MarkerOuterRadius, 0f, Mathf.Sin(a0) * MarkerOuterRadius);
+            builder.Quad(inner0, inner1, outer1, outer0, SlotSnow);
         }
 
         static void SetObjectRef(Component target, string field, Object value)
