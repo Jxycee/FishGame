@@ -155,7 +155,7 @@ namespace FishGame.Tests.PlayMode
             AssertColor(RenderSettings.fogColor, day.fogColor, "fog colour");
 
             Component globals = FindComponent("PaletteGlobals");
-            PropertyInfo applyCount = globals.GetType().GetProperty("ApplyCount", BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo applyCount = globals.GetType().GetProperty("ApplyCount", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.That(applyCount, Is.Not.Null, "PaletteGlobals.ApplyCount (diagnostic counter)");
             int before = (int)applyCount.GetValue(globals);
             Assert.That(before, Is.GreaterThanOrEqualTo(1), "Apply must have run at enable");
@@ -163,14 +163,17 @@ namespace FishGame.Tests.PlayMode
             Assert.That((int)applyCount.GetValue(globals), Is.EqualTo(before), "Apply (which allocates via PaletteVectors) must not run per frame");
         }
 
+        // Measured in this Linear project (T23 step 0): Shader.GetGlobalColor and RenderSettings.fogColor read back the AUTHORED (gamma) colour
+        // that was set; Unity converts it for the GPU at upload, so the read-back is never the linear form. Asserting only that form catches a
+        // double conversion (pushing .linear through SetGlobalColor reads back linear). Pushing the gamma colour through SetGlobalVector reads
+        // back identically, so that mutation is not observable from the CPU (the GPU value needs a graphics run).
         private static void AssertColor(Color actual, Color expected, string what)
         {
-            // Shader.SetGlobalColor / RenderSettings take the authored (gamma) colour and convert it for the GPU in a Linear project; the
-            // read-back is either the authored value or its linear form depending on the API, so both are accepted.
             Color lin = expected.linear;
-            bool authored = Mathf.Abs(actual.r - expected.r) < 1e-3f && Mathf.Abs(actual.g - expected.g) < 1e-3f && Mathf.Abs(actual.b - expected.b) < 1e-3f;
-            bool linear = Mathf.Abs(actual.r - lin.r) < 1e-3f && Mathf.Abs(actual.g - lin.g) < 1e-3f && Mathf.Abs(actual.b - lin.b) < 1e-3f;
-            Assert.That(authored || linear, Is.True, what + " is " + actual + ", expected " + expected + " (or linear " + lin + ")");
+            Assert.That(Mathf.Abs(expected.g - lin.g), Is.GreaterThan(1e-2f), what + ": the authored colour must differ from its linear form, or this check proves nothing");
+            Assert.That(actual.r, Is.EqualTo(expected.r).Within(1e-4f), what + ".r (read-back is the authored colour, got " + actual + ")");
+            Assert.That(actual.g, Is.EqualTo(expected.g).Within(1e-4f), what + ".g");
+            Assert.That(actual.b, Is.EqualTo(expected.b).Within(1e-4f), what + ".b");
         }
 
         // Catches: a short ripple array; a spawn that does not stamp (x, z, water-clock time, strength); a non-round-robin slot choice;
@@ -222,6 +225,40 @@ namespace FishGame.Tests.PlayMode
             yield return null;
             foreach (Vector4 v in Shader.GetGlobalVectorArray(ShaderGlobals.Ripples)) Assert.That(v, Is.EqualTo(Vector4.zero), "disable clears the slots");
             ((Behaviour)field).enabled = true;
+        }
+
+        // Catches (T22 review): an older scene's WaterTimeDriver / RippleField tearing down AFTER a newer one enabled and flattening the new
+        // water or wiping the new ripples (additive load or reload: the old objects are destroyed late). Both statics are owner-guarded.
+        [UnityTest]
+        public IEnumerator PresentationWorld_OlderTeardown_DoesNotWipeNewerDriverOrField()
+        {
+            yield return PlayModeHarness.LoadBootstrapAndWaitForMenu();
+            yield return PlayModeHarness.StartSoloAndWaitForPlayer();
+            yield return PlayModeHarness.WaitFrames(3, 0.05f);
+
+            Component oldDriver = FindComponent("WaterTimeDriver");
+            Component oldField = FindComponent("RippleField");
+            var newer = new GameObject("PresentationNewer");
+            Component newDriver = newer.AddComponent(oldDriver.GetType());
+            Component newField = newer.AddComponent(oldField.GetType());
+            yield return null;
+            Assert.That(newDriver, Is.Not.Null);
+
+            MethodInfo spawn = newField.GetType().GetMethod("Spawn", BindingFlags.Public | BindingFlags.Instance);
+            spawn.Invoke(newField, new object[] { 5f, 6f, RippleMath.Bite });
+
+            UnityEngine.Object.Destroy(oldDriver);
+            UnityEngine.Object.Destroy(oldField);
+            yield return null;
+            yield return null;
+
+            Assert.That(Mathf.Abs(WaterSurface.HeightAt(3f, 7f, 1.0)), Is.GreaterThan(1e-4f), "the older driver's teardown must not flatten the newer driver's water");
+            Assert.That(Shader.GetGlobalVectorArray(ShaderGlobals.Waves)[0].y, Is.GreaterThan(0f), "_Waves must stay pushed");
+            Vector4 slot = Shader.GetGlobalVectorArray(ShaderGlobals.Ripples)[0];
+            Assert.That(slot.x, Is.EqualTo(5f), "the older field's disable must not wipe the newer field's ripples");
+
+            UnityEngine.Object.Destroy(newer);
+            yield return null;
         }
 
         // Catches: WaterTimeDriver leaving the waves configured after the scene unloads (a later scene would rock on stale waves), or

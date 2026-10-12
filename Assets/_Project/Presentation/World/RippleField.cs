@@ -33,7 +33,8 @@ namespace FishGame.Presentation
 
         private void OnDisable()
         {
-            if (Current == this) Current = null;
+            if (Current != this) return;   // an older scene's field must not wipe the newer field's ripples
+            Current = null;
             ClearAndPush();
         }
 

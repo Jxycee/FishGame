@@ -1,4 +1,4 @@
-// Authority: local only (every peer); never writes gameplay state.
+// Authority: local only (every peer); writes the shared WaterSurface (C 7.22); no networked or host state.
 // The water clock and waves (spec 10.4, C 7.22, ruling C-Q4). C# (WaterSurface) and the GPU (_WaterTime, _Waves) share one formula,
 // one clock and one float value: the time source returns (double)(float)t, and that same float is pushed to _WaterTime.
 // Not ExecuteAlways: it never touches WaterSurface statics outside Play mode (EditMode tests open the lake scene).
@@ -17,6 +17,10 @@ namespace FishGame.Presentation
         private static readonly int WavesId = Shader.PropertyToID(ShaderGlobals.Waves);
         private static readonly int WaterTimeId = Shader.PropertyToID(ShaderGlobals.WaterTime);
 
+        // The driver that configured WaterSurface last. A teardown from an older scene's driver (destroyed after the new one enabled) must
+        // not flatten the newer driver's water. Reset on SubsystemRegistration like RippleField.Current.
+        private static WaterTimeDriver s_owner;
+
         [SerializeField] private WaterSettingsDef waterSettings;
 
         private readonly Vector4[] _waves = new Vector4[ShaderGlobals.WavesLength];
@@ -31,6 +35,7 @@ namespace FishGame.Presentation
         {
             if (!Application.isPlaying) return;
             if (_now == null) _now = ReadClock;
+            s_owner = this;
 
             WaterSettingsDef settings = ResolveSettings();
             if (settings == null)
@@ -58,10 +63,18 @@ namespace FishGame.Presentation
 
         private void OnDestroy()
         {
-            if (!Application.isPlaying) return;
+            if (!Application.isPlaying || s_owner != this) return;
+            s_owner = null;
             WaterSurface.ResetToFlat();
             PushZeroWaves();
             Shader.SetGlobalFloat(WaterTimeId, 0f);
+        }
+
+        // Enter Play Mode options are on in this project, so statics survive play sessions.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            s_owner = null;
         }
 
         private void PushZeroWaves()

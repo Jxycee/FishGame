@@ -25,9 +25,10 @@ namespace FishGame.Presentation
         [SerializeField] private ArtPaletteDef palette;
 
         private readonly Vector4[] _vectors = new Vector4[ShaderGlobals.PaletteLength];
+        private bool _warnedSeason;
 
         // Diagnostic: how many times Apply pushed. A per-frame Apply (allocating) would make this climb every frame.
-        public int ApplyCount { get; private set; }
+        internal int ApplyCount { get; private set; }
 
         private void OnEnable()
         {
@@ -46,7 +47,13 @@ namespace FishGame.Presentation
             if (def == null) return;
 
             int season = def.M2Season;
-            if (season >= 0 && season < ArtPaletteDef.SeasonCount && season < def.Seasons.Count)
+            bool seasonOk = season >= 0 && season < ArtPaletteDef.SeasonCount && season < def.Seasons.Count;
+            if (!seasonOk && !_warnedSeason)
+            {
+                _warnedSeason = true;   // once per component: Apply runs on enable and on validate only
+                Debug.LogWarning("PaletteGlobals: palette season " + season + " is out of range or has no entry (" + def.Seasons.Count + " entries); the palette array is not pushed.", this);
+            }
+            if (seasonOk)
             {
                 Vector4[] authored = def.PaletteVectors(season);
                 bool linear = QualitySettings.activeColorSpace == ColorSpace.Linear;
