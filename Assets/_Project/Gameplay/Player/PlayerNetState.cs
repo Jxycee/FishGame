@@ -363,8 +363,14 @@ namespace FishGame.Gameplay
             DisplayNameChanged?.Invoke(current.ToString());
         }
 
-        private void HandleToolChanged(byte previous, byte current)
+        // Internal for the PlayMode test (InternalsVisibleTo). A no-op change raises nothing.
+        internal void HandleToolChanged(byte previous, byte current)
         {
+            if (previous == current)
+            {
+                return;
+            }
+
             EventIsolation.Invoke(ToolChanged, (ToolKind)current);
         }
 

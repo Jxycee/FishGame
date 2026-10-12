@@ -88,9 +88,12 @@ namespace FishGame.Gameplay
         }
 
         // Host only. Reads the ledger (the truth); elsewhere it is built from the replicated list.
+        // Throws when not spawned on the server. Before the player's ServerInit (slot not written yet) the ledger is not touched:
+        // the replicated list is the answer.
         public CreelSnapshot Snapshot(int maxEntries, int maxWeightG)
         {
-            CreelLedger ledger = IsServer && _player != null ? Ledger() : null;
+            RequireServer(nameof(Snapshot));
+            CreelLedger ledger = _player != null && _player.IsServerInitialized ? Ledger() : null;
             if (ledger != null)
             {
                 return ledger.Snapshot(_player.Slot, maxEntries, maxWeightG);
@@ -102,9 +105,11 @@ namespace FishGame.Gameplay
         // Host only. CreelRules decides first; then the ledger stores (assigning the EntryId) and the replicated list mirrors the stored item.
         public bool ServerTryAdd(in CreelItem item, int maxEntries, int maxWeightG, out CreelItem stored)
         {
-            if (!IsServer)
+            RequireServer(nameof(ServerTryAdd));
+            stored = default;
+            if (_player == null || !_player.IsServerInitialized)
             {
-                throw new InvalidOperationException("PlayerCreel.ServerTryAdd is host-only.");
+                return false;   // slot not written yet: no ledger access
             }
 
             CreelLedger ledger = RequireLedger();
@@ -124,9 +129,10 @@ namespace FishGame.Gameplay
         // Host only. Sells the whole creel through the ledger and mirrors the empty creel and the new debug wallet.
         public int ServerSellAll()
         {
-            if (!IsServer)
+            RequireServer(nameof(ServerSellAll));
+            if (_player == null || !_player.IsServerInitialized)
             {
-                throw new InvalidOperationException("PlayerCreel.ServerSellAll is host-only.");
+                return 0;   // slot not written yet: no ledger access
             }
 
             CreelLedger ledger = RequireLedger();
@@ -181,6 +187,14 @@ namespace FishGame.Gameplay
         {
             SessionState session = SessionState.Current;
             return session != null ? session.ServerCreels : null;
+        }
+
+        private void RequireServer(string member)
+        {
+            if (!IsSpawned || !IsServer)
+            {
+                throw new InvalidOperationException("PlayerCreel." + member + " is host-only and needs a spawned creel.");
+            }
         }
 
         private CreelLedger RequireLedger()

@@ -104,6 +104,35 @@ namespace FishGame.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() => ledger.DebugCoins(4));
         }
 
+        // Catches: ClearSlot clearing the wrong slot (all slots, or an off-by-one neighbour), leaving the debug wallet behind (a new owner
+        // would inherit the old owner's coins), leaving items behind, resetting the EntryId counter, and a missing bounds check.
+        [Test]
+        public void CreelLedger_ClearSlot_ClearsOnlyThatSlotItemsAndCoins()
+        {
+            var ledger = new CreelLedger(4);
+            ledger.Add(1, Item(1000, 5));
+            ledger.Add(1, Item(2000, 8));
+            ledger.SellAll(1);
+            ledger.Add(1, Item(300, 7));
+            ledger.Add(0, Item(400, 3));
+            ledger.Add(2, Item(500, 4));
+            ledger.SellAll(2);
+            ledger.Add(2, Item(600, 9));
+            Assert.That(ledger.DebugCoins(1), Is.EqualTo(13));
+
+            ledger.ClearSlot(1);
+
+            Assert.That(ledger.Items(1), Is.Empty, "slot 1 items cleared");
+            Assert.That(ledger.DebugCoins(1), Is.EqualTo(0), "slot 1 debug wallet cleared");
+            Assert.That(ledger.Snapshot(1, 12, 15000).Entries, Is.EqualTo(0));
+            Assert.That(ledger.Items(0).Count, Is.EqualTo(1), "slot 0 untouched");
+            Assert.That(ledger.Items(2).Count, Is.EqualTo(1), "slot 2 untouched");
+            Assert.That(ledger.DebugCoins(2), Is.EqualTo(4), "slot 2 wallet untouched");
+            Assert.That(ledger.Add(1, Item(1, 1)).EntryId, Is.EqualTo((ushort)4), "the per-slot EntryId counter keeps counting");
+            Assert.DoesNotThrow(() => ledger.ClearSlot(1), "clearing twice is fine");
+            Assert.Throws<ArgumentOutOfRangeException>(() => ledger.ClearSlot(4));
+        }
+
         [Test]
         public void CreelLedger_EntryIds_MonotonicPerSlot()
         {

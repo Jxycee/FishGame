@@ -53,6 +53,7 @@ namespace FishGame.Gameplay
 
         private void OnEnable()
         {
+            _contextSources = GetComponents<IPlayerContextSource>();   // refresh: sources added after Awake are picked up on the next enable
             _input = ResolveInput();
             if (_input == null || _cc == null)
             {
@@ -193,6 +194,12 @@ namespace FishGame.Gameplay
                 if (grounded && _vy < 0f)
                 {
                     _vy = MovementMath.GroundedStickVelocity;
+                }
+
+                // A jump buffered just before the lock must not fire on landing while locked (RodFighting); same reset as swimming.
+                if (locked)
+                {
+                    _jump = JumpAssist.Create();
                 }
 
                 if (_jump.Tick(dt, grounded, intent.JumpPressed && !locked))

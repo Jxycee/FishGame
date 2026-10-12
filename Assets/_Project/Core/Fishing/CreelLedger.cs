@@ -57,6 +57,15 @@ namespace FishGame.Core
             return sum;
         }
 
+        // Slot takeover (T16-R1): a different persistent identity now holds the slot, so it starts with an empty creel and an empty debug
+        // wallet. The per-slot EntryId counter keeps counting (ids only need to be unique within the slot's current creel).
+        public void ClearSlot(byte slot)
+        {
+            int s = Check(slot);
+            _items[s].Clear();
+            _coins[s] = 0;
+        }
+
         // M2 debug wallet (sum of sales).
         public int DebugCoins(byte slot)
         {

@@ -112,6 +112,13 @@ namespace FishGame.Gameplay
                 return;
             }
 
+            // No SessionState ledger (not spawned yet or already despawned): nothing to sell.
+            SessionState session = SessionState.Current;
+            if (session == null || session.ServerCreels == null)
+            {
+                return;
+            }
+
             int coins = creel.ServerSellAll();
             Debug.Log($"[DockBell] debug sell: {coins} coins (client {clientId})");
         }

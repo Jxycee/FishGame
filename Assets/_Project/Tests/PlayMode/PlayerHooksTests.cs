@@ -159,6 +159,47 @@ namespace FishGame.Tests.PlayMode
             Assert.That(Flat(start, locomotion.transform.position), Is.GreaterThan(1f), "unlocked again: walks");
         }
 
+        // Catches (I-1): a jump buffered while airborne and unlocked surviving a lock, so the player pops up on landing while locked
+        // (RodFighting). The wrong implementation passes jumpPressed=false while locked but keeps the 0.1 s buffer alive.
+        [UnityTest]
+        public IEnumerator Locomotion_JumpBufferedBeforeLock_DoesNotFireOnLandingWhileLocked()
+        {
+            yield return PlayModeHarness.LoadBootstrapAndWaitForMenu();
+            FakeInputService fake = InstallFakeInput();
+            PlayerLocomotion locomotion = MakeLocomotionRig(1, out TestSource[] sources);
+            yield return Settle(locomotion, fake);
+            float groundY = locomotion.transform.position.y;
+
+            // Drop the rig from 0.8 m: the fall to the pre-landing window (about 0.2 s) outlasts the 0.1 s coyote time, so the press below can
+            // only be BUFFERED (a coyote jump would fire at once and make the test meaningless). Press when the rig is within 0.15 m of the
+            // floor, so it lands inside the 0.1 s jump buffer.
+            var cc = locomotion.GetComponent<CharacterController>();
+            cc.enabled = false;
+            locomotion.transform.position += Vector3.up * 0.8f;
+            cc.enabled = true;
+            fake.Frame = default;
+            yield return PlayModeHarness.WaitUntil(
+                () => !locomotion.IsGrounded && locomotion.transform.position.y - groundY < 0.15f,
+                PlayModeHarness.DefaultTimeoutSeconds, "rig never fell to the pre-landing window");
+
+            fake.Frame = new PlayerInputFrame { JumpPressed = true };
+            yield return null;   // the press frame: unlocked, airborne -> the jump is only buffered
+            Assert.That(locomotion.IsGrounded, Is.False, "precondition: the rig was still airborne on the press frame (the jump only buffers)");
+            float pressY = locomotion.transform.position.y;
+            fake.Frame = default;
+            sources[0].Locks = true;   // lock from the very next frame
+
+            float maxY = pressY;
+            double end = Time.timeAsDouble + 0.8;
+            while (Time.timeAsDouble < end)
+            {
+                yield return null;
+                maxY = Mathf.Max(maxY, locomotion.transform.position.y);            }
+
+            Assert.That(locomotion.IsGrounded, Is.True, "the rig landed");
+            Assert.That(maxY - pressY, Is.LessThan(0.05f), "landing while locked must not fire the buffered jump (rose " + (maxY - pressY).ToString("F2") + " m)");
+        }
+
         // Catches: RodFighting not being written as the GameplayContext through the arbiter, and the context row not locking movement.
         [UnityTest]
         public IEnumerator Locomotion_RodFightingRequest_IsWrittenAndLocksMovement()
@@ -399,6 +440,87 @@ namespace FishGame.Tests.PlayMode
             Assert.That(slotAtRaise, Is.EqualTo(player.Slot), "NetSlot is written before the event");
             Assert.That(nameAtRaise, Is.Not.Null.And.Not.Empty, "the display name is set before the event");
             Assert.That(player.IsServerInitialized, Is.True);
+        }
+
+        // Catches (M-7): ServerInitialized raised before NetSlot is written (a subscriber reading Slot inside the event, as PlayerCreel's mirror
+        // does, would mirror the wrong slot). Re-runs ServerInit with a different slot so a stale slot 0 cannot pass by accident.
+        [UnityTest]
+        public IEnumerator PlayerNetState_ServerInit_SlotIsAlreadyWrittenInsideTheEvent()
+        {
+            yield return PlayModeHarness.LoadBootstrapAndWaitForMenu();
+            InstallFakeInput();
+            yield return PlayModeHarness.StartSoloAndWaitForPlayer();
+
+            PlayerNetState player = PlayerNetState.Local;
+            Assert.That(player.Slot, Is.Not.EqualTo((byte)2), "precondition: the solo host is not already in slot 2");
+            int raised = 0;
+            int slotInEvent = -1;
+            player.ServerInitialized += p =>
+            {
+                raised++;
+                slotInEvent = p.Slot;
+            };
+
+            player.ServerInit(2, "x");
+
+            Assert.That(raised, Is.EqualTo(1));
+            Assert.That(slotInEvent, Is.EqualTo(2), "Slot is already 2 inside ServerInitialized");
+            Assert.That(player.Slot, Is.EqualTo((byte)2));
+        }
+
+        // Catches (M-2): ToolChanged raised for a no-op change (previous == current), which would replay the Equip/Stow cue on remotes.
+        [UnityTest]
+        public IEnumerator PlayerNetState_ToolChangedHandler_IgnoresEqualValues()
+        {
+            yield return PlayModeHarness.LoadBootstrapAndWaitForMenu();
+            InstallFakeInput();
+            yield return PlayModeHarness.StartSoloAndWaitForPlayer();
+
+            PlayerNetState player = PlayerNetState.Local;
+            var seen = new List<ToolKind>();
+            player.ToolChanged += seen.Add;
+
+            player.HandleToolChanged((byte)ToolKind.Rod, (byte)ToolKind.Rod);
+            Assert.That(seen, Is.Empty, "equal previous/current raises nothing");
+
+            player.HandleToolChanged((byte)ToolKind.None, (byte)ToolKind.Rod);
+            Assert.That(seen, Is.EqualTo(new[] { ToolKind.Rod }), "a real change still raises");
+        }
+
+        // Catches (T16-R1): a player who takes over another identity's slot inheriting that slot's creel and debug coins; ALSO the opposite
+        // bug, a same-identity rejoin (R46) losing its creel; ALSO clearing every slot instead of only the taken-over one.
+        [UnityTest]
+        public IEnumerator SessionState_SlotTakeover_ClearsCreelForNewIdentity_KeepsItForSameIdentity()
+        {
+            yield return PlayModeHarness.LoadBootstrapAndWaitForMenu();
+            InstallFakeInput();
+            yield return PlayModeHarness.StartSoloAndWaitForPlayer();
+
+            SessionState session = SessionState.Current;
+            Assert.That(session, Is.Not.Null);
+            CreelLedger ledger = session.ServerCreels;
+            Assert.That(ledger, Is.Not.Null, "the solo host owns the ledger");
+            byte slot = PlayerNetState.Local.Slot;
+            byte other = (byte)((slot + 1) % NetworkConstants.MaxPlayers);
+            Assert.That(session.TryGetKey(Unity.Netcode.NetworkManager.ServerClientId, out PlayerKey hostKey), Is.True);
+
+            var item = new CreelItem { ItemIndex = 1, WeightG = 100, ValueCoins = 5, Quality = CatchQuality.Normal };
+            ledger.Add(slot, item);
+            ledger.SellAll(slot);          // wallet = 5
+            ledger.Add(slot, item);        // one item in the creel
+            ledger.Add(other, item);       // a neighbour that must never be touched
+
+            // Same identity rejoins its own slot: R46 keeps the creel and the wallet.
+            Assert.That(session.Upsert(new ApprovedJoin(Unity.Netcode.NetworkManager.ServerClientId, hostKey, "Fisher", slot, true)), Is.True);
+            Assert.That(ledger.Items(slot).Count, Is.EqualTo(1), "same identity keeps its creel");
+            Assert.That(ledger.DebugCoins(slot), Is.EqualTo(5), "same identity keeps its debug coins");
+
+            // A different identity takes the slot over: fresh creel and wallet.
+            var newcomer = new PlayerKey(IdentityKind.Local, "someone-else");
+            Assert.That(session.Upsert(new ApprovedJoin(Unity.Netcode.NetworkManager.ServerClientId, newcomer, "Other", slot, false)), Is.True);
+            Assert.That(ledger.Items(slot), Is.Empty, "a different identity starts with an empty creel");
+            Assert.That(ledger.DebugCoins(slot), Is.EqualTo(0), "a different identity starts with no debug coins");
+            Assert.That(ledger.Items(other).Count, Is.EqualTo(1), "the neighbour slot is untouched");
         }
 
         // Catches: NetTool not replicated to Tool, ToolChanged missing on the writer, raised for the initial value, raised for an unchanged set.
