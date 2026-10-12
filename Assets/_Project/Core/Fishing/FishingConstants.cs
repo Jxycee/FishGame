@@ -29,6 +29,8 @@ namespace FishGame.Core
         public const float WaterProbeHeight = 20f, BedProbeDistance = 50f;
         public const float HostOriginSlack = 3.0f;           // cast origin vs host view, horizontal metres
         public const float HostWaitSlackSeconds = 30f;       // stuck-Waiting refund after tFlight + biteWait + 30
+        // Landed floor (CatchValidator.LandedFloorSeconds). Do not shave 0.8 / 0.5: lag when walking toward the bobber is absorbed by the floor's
+        // 0.8 factor plus the 0.5 s slack (delta <= 0.625 * reel).
         public const float LandedFloorFactor = 0.8f, LandedFloorSlackSeconds = 0.5f;
         public const float HookedLineSlack = 3.1f;           // lineLength0 = hostDistance - slack, floor landDistance; derived from the rig's max tip reach (2.52 m) + 0.5 m margin, T19-R1
         public const float JunkWeightLowRating = 0.6f;       // effRating 1-2

@@ -200,7 +200,8 @@ namespace FishGame.EditorTools
             return errors;
         }
 
-        // 4.7 #6 plus the spec 4.2 steps 2, 4, 5 outputs of ProjectSettingsBuilder.
+        // 4.7 #6 plus the spec 4.2 steps 2, 4, 5 outputs of ProjectSettingsBuilder. Exception: the PC pipeline asset's m_RequireDepthTexture flag
+        // is owned by RenderingSetupBuilder (not ProjectSettingsBuilder); it is pinned here only as a guard.
         public static List<string> ProjectSettingsInvariants()
         {
             var errors = new List<string>();

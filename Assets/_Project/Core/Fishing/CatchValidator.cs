@@ -37,6 +37,8 @@ namespace FishGame.Core
         }
 
         // max(0, 0.8 * (lineLength0 - landDistance) / speed - 0.5). A non-positive speed (a data bug) gives no floor.
+        // Lag when the player walks toward the bobber is already absorbed by the 0.8 factor plus the 0.5 s slack (delta <= 0.625 * reel distance);
+        // do not shave either constant.
         public static float LandedFloorSeconds(float lineLength0, float landDistance, float speed)
         {
             if (!(speed > 0f)) return 0f;

@@ -42,7 +42,8 @@ namespace FishGame.Presentation
 
         // HookSet is four clicks. Each next click is scheduled from the frame the previous one FIRED (not from the first click), 0.055 s later:
         // AudioBus rate-limits Reel_Click to 0.05 s against the last click that played, so clicks anchored to the first one drop at frame rates
-        // where two of them land less than 0.05 s apart.
+        // where two of them land less than 0.05 s apart. Coupling: the timers run on Time.time but AudioBus.AllowPlay's limiter uses
+        // Time.unscaledTime; the gap is only equivalent while Time.timeScale is 1 (it is never scaled in this game).
         private const float ReelClickGap = 0.055f;
         private const byte HookSetClicksAfterFirst = 3;
 
