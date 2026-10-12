@@ -133,20 +133,19 @@ namespace FishGame.EditorTools
             go.AddComponent<SceneCameraSwitch>();
         }
 
-        // Rotation as M1. Colour and intensity come from the palette's Day phase (phases[1], the fixed M2 phase) when it has one, otherwise the Unity defaults. A missing palette throws, as ApplySceneLighting does.
+        // Rotation as M1. Colour and intensity come from the palette's Day phase (phases[1], the fixed M2 phase). A missing palette or Day phase throws
+        // before anything is created, with the same exception type as RenderingSetupBuilder.ApplySceneLighting.
         static void AddSun(ArtPaletteDef palette)
         {
+            if (palette == null) throw new System.InvalidOperationException("ArtPalette asset missing: " + AssetPaths.ArtPaletteAsset);
+            if (palette.Phases.Count < 2) throw new System.InvalidOperationException("ArtPalette has no Day phase (phases[1]): " + AssetPaths.ArtPaletteAsset);
             GameObject go = Root("Sun", Layers.Default);
             Light light = go.AddComponent<Light>();
             light.type = LightType.Directional;
             light.shadows = LightShadows.Soft;
             go.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
-            if (palette == null) throw new System.IO.FileNotFoundException("Missing art palette " + AssetPaths.ArtPaletteAsset);
-            if (palette.Phases.Count > 1)
-            {
-                light.color = palette.Phases[1].lightColor;
-                light.intensity = palette.Phases[1].lightIntensity;
-            }
+            light.color = palette.Phases[1].lightColor;
+            light.intensity = palette.Phases[1].lightIntensity;
         }
 
         // Spec 10.4: a 96 x 96 cell grid over 120 m at y 0 (FishGame/Water) plus the M1 trigger box whose top face is y 0.
