@@ -19,10 +19,15 @@ namespace FishGame.Presentation
         private const uint SpeciesSeedBase = 0x46000000u, JunkSeedBase = 0x4A000000u, SilhouetteSeed = 0x46534C48u;
         private static readonly Color SilhouetteTint = new Color(0.35f, 0.37f, 0.40f, 1f);
 
+        private const int UncachedCapacity = 16;
+
         private static readonly Dictionary<(bool, ushort), Mesh> Cache = new Dictionary<(bool, ushort), Mesh>();
+        private static readonly List<Mesh> Uncached = new List<Mesh>(UncachedCapacity);
         private static Mesh s_silhouette;
 
-        // Cached per (isJunk, itemIndex). A bad index or a missing registry yields a plain Round fish (never null, never an error).
+        // Cached per (isJunk, itemIndex) when the registry resolved the item. A bad index, a null def or a missing registry yields a plain
+        // Round fish (never null, never an error) that is NOT cached under the item's key: a later call with a real registry must build
+        // the real mesh, not get the grey one back. Those plain meshes are kept in a small ring only so they can be destroyed (no leak).
         public static Mesh Get(ContentRegistry registry, bool isJunk, ushort itemIndex)
         {
             var key = (isJunk, itemIndex);
@@ -30,6 +35,7 @@ namespace FishGame.Presentation
 
             BodyShape shape = BodyShape.Round;
             Color colorA = new Color(0.5f, 0.5f, 0.5f, 1f), colorB = colorA;
+            bool resolved = false;
             if (registry != null)
             {
                 if (isJunk && itemIndex < registry.Junk.Count)
@@ -40,6 +46,7 @@ namespace FishGame.Presentation
                         shape = junk.BodyShape;
                         colorA = junk.Color;
                         colorB = junk.Color;
+                        resolved = true;
                     }
                 }
                 else if (!isJunk && itemIndex < registry.Species.Count)
@@ -50,6 +57,7 @@ namespace FishGame.Presentation
                         shape = species.BodyShape;
                         colorA = species.ColorA;
                         colorB = species.ColorB;
+                        resolved = true;
                     }
                 }
             }
@@ -57,7 +65,19 @@ namespace FishGame.Presentation
             uint seed = (isJunk ? JunkSeedBase : SpeciesSeedBase) + itemIndex;
             Mesh mesh = isJunk ? BuildJunk(shape, seed, colorA) : BuildFish(shape, seed, colorA, colorB, false);
             mesh.name = (isJunk ? "FishFallback_Junk" : "FishFallback_Fish") + itemIndex;
-            Cache[key] = mesh;
+            if (resolved)
+            {
+                Cache[key] = mesh;
+            }
+            else
+            {
+                if (Uncached.Count >= UncachedCapacity)
+                {
+                    DestroyMesh(Uncached[0]);
+                    Uncached.RemoveAt(0);
+                }
+                Uncached.Add(mesh);
+            }
             return mesh;
         }
 
@@ -191,6 +211,8 @@ namespace FishGame.Presentation
         {
             foreach (Mesh m in Cache.Values) DestroyMesh(m);
             Cache.Clear();
+            foreach (Mesh m in Uncached) DestroyMesh(m);
+            Uncached.Clear();
             DestroyMesh(s_silhouette);
             s_silhouette = null;
         }

@@ -523,12 +523,7 @@ namespace FishGame.Fishing
                 lateral = fs.Lateral;
                 tension = fs.Tension;
                 if (s == RodState.Hooked)
-                {
-                    if (fs.Phase == FightPhase.Burst)
-                        flags |= fs.BurstDir == 0 ? (byte)(RodWireQuant.FlagBurst | RodWireQuant.FlagDive) : RodWireQuant.FlagBurst;
-                    if (_lastFightInput.Reel) flags |= RodWireQuant.FlagReel;
-                    if (fight.Exhausted) flags |= RodWireQuant.FlagExhausted;
-                }
+                    flags |= RodControllerRules.HookedFlags(fs.Phase, fs.BurstDir, _lastFightInput.Reel, fight.Exhausted, fs.SnapTimer);   // FlagGrace: snap timer running
             }
 
             if (Machine.Recalling) flags |= RodWireQuant.FlagRecall;

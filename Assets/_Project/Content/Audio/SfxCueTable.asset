@@ -139,3 +139,10 @@ MonoBehaviour:
     maxDistance: 20
     minInterval: 0.1
     spatial: 1
+  - id: Line_Crack
+    category: 0
+    baseVolume: 0.8
+    minDistance: 2
+    maxDistance: 35
+    minInterval: 0.15
+    spatial: 1

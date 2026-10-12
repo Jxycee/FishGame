@@ -154,7 +154,7 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void SfxRecipes_EveryM2Recipe_HasCorrectSampleCount()
         {
-            Assert.AreEqual(12, SfxRecipes.M2.Count);
+            Assert.AreEqual(13, SfxRecipes.M2.Count);
             foreach (SfxRecipe recipe in SfxRecipes.M2)
             {
                 float[] samples = SfxRecipes.Generate(recipe.Id, SfxRecipes.SampleRate, Seed);
@@ -214,11 +214,11 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void SfxRecipes_AllIds_Unique()
         {
-            Assert.AreEqual(18, SfxRecipes.All.Count);
+            Assert.AreEqual(19, SfxRecipes.All.Count);
             Assert.AreEqual(6, SfxRecipes.M1.Count);
-            Assert.AreEqual(12, SfxRecipes.M2.Count);
+            Assert.AreEqual(13, SfxRecipes.M2.Count);
             for (int i = 0; i < 6; i++) Assert.AreEqual(SfxRecipes.M1[i].Id, SfxRecipes.All[i].Id, "M1 first, index " + i);
-            for (int i = 0; i < 12; i++) Assert.AreEqual(SfxRecipes.M2[i].Id, SfxRecipes.All[6 + i].Id, "then M2, index " + i);
+            for (int i = 0; i < 13; i++) Assert.AreEqual(SfxRecipes.M2[i].Id, SfxRecipes.All[6 + i].Id, "then M2, index " + i);
             var seen = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
             foreach (SfxRecipe recipe in SfxRecipes.All)
             {
@@ -233,7 +233,7 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void SfxRecipes_M2Table_MatchesPlan()
         {
-            // id, length, loop, base, maxDist, minInterval, minDist (category Sfx and spatial for all twelve)
+            // id, length, loop, base, maxDist, minInterval, minDist (category Sfx and spatial for all thirteen)
             object[][] rows =
             {
                 new object[] { SfxIds.CastWhoosh, 0.35f, false, 0.70f, 30f, 0.10f, 1f },
@@ -248,6 +248,7 @@ namespace FishGame.Tests.EditMode
                 new object[] { SfxIds.CatchFlop, 0.50f, false, 0.80f, 30f, 0.20f, 1f },
                 new object[] { SfxIds.CatchCheer, 0.80f, false, 0.80f, 60f, 0.30f, 6f },
                 new object[] { SfxIds.RodThunk, 0.15f, false, 0.60f, 20f, 0.10f, 1f },
+                new object[] { SfxIds.LineCrack, 0.18f, false, 0.80f, 35f, 0.15f, 2f },   // T23 review: spec 9.11 grace row, appended last
             };
             Assert.AreEqual(rows.Length, SfxRecipes.M2.Count);
             for (int i = 0; i < rows.Length; i++)

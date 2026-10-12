@@ -1,11 +1,15 @@
 // Authority: local only. On PlayerFP; reads its FishingRodNetwork (Cue, ViewState, Announced). Never writes gameplay state (C 2.8 #17).
 // Spec 9.11 feel. One-shots (sounds, ripples, splashes, kicks, captions, pulses) come only from Cue and Announced; loops, reel ticks and the
 // tension-driven trauma and rumble come from polling ViewState every frame, so a late joiner is right with no replayed bursts (F6).
-// Every peer: sounds, ripples, ducking, loops, the snap silhouette. Owner only: camera trauma and FOV kicks (passed raw: PlayerCamera scales
-// them by cameraMotion itself), rumble (scaled here by cameraMotion), captions (settings.captions).
+// Every peer: sounds, ripples, ducking, loops, the snap silhouette, the Line_Crack. Owner only: camera trauma and FOV kicks (passed raw:
+// PlayerCamera scales them by cameraMotion itself), rumble (scaled here by cameraMotion), captions (settings.captions).
+// cameraMotion limits camera motion only (shake, FOV kicks, bob, rumble): the snap silhouette jump, splash and ripple are world feedback seen
+// by everyone and carry the fish size, so they are never scaled or hidden by it (spec 9.11).
+// Grace (spec 9.11, tension >= 1.0): the owner's PublishView sets RodWireQuant.FlagGrace while the snap timer runs; every peer polls the flag
+// (remote Tension is smoothed and may never reach 1.0) and plays Line_Crack on its rising edge.
 // Sound placement: rod-side one-shots are 2D on the owner (Play2D) and positional on remotes; cues that need a pitch (ChargeStart,
 // CastRelease) use the positional overload everywhere, because Play2D has no pitch overload (ruling C-Q8) and the owner's rod tip is at the ear.
-// No coroutines: every delayed effect is a timer ticked in Update, so disabling the component cancels them all. Once OnDisable has run
+// No coroutines: every delayed effect is a timer ticked in Update (the snap jump is posed in LateUpdate), so disabling the component cancels them all. Once OnDisable has run
 // (or !isActiveAndEnabled) Cue and Announced are ignored, all loops are stopped, and the owner's rumble is zeroed.
 using System.Collections.Generic;
 using FishGame.Core;
@@ -36,12 +40,19 @@ namespace FishGame.Presentation
         private const float SnapJumpSeconds = 0.7f;
         private const string AnchorName = "FeedbackAnchor", SilhouetteName = "SnapSilhouette";
 
+        // HookSet is four clicks. Each next click is scheduled from the frame the previous one FIRED (not from the first click), 0.055 s later:
+        // AudioBus rate-limits Reel_Click to 0.05 s against the last click that played, so clicks anchored to the first one drop at frame rates
+        // where two of them land less than 0.05 s apart.
+        private const float ReelClickGap = 0.055f;
+        private const byte HookSetClicksAfterFirst = 3;
+
         private enum TimerKind : byte { BiteFollowRipple, ReelClick }
 
         private struct Timer
         {
             public float At;
             public TimerKind Kind;
+            public byte ClicksAfter;   // ReelClick: clicks still to schedule after this one
         }
 
         private struct Pulse
@@ -65,6 +76,7 @@ namespace FishGame.Presentation
         private float _reelAcc;
         private float _lastStrainCaption = float.NegativeInfinity;
         private bool _wasHooked;
+        private bool _polled, _wasGrace;
 
         private readonly List<Timer> _timers = new List<Timer>(8);
         private readonly List<Pulse> _pulses = new List<Pulse>(8);
@@ -118,6 +130,8 @@ namespace FishGame.Presentation
             _pulses.Clear();
             _reelAcc = 0f;
             _wasHooked = false;
+            _polled = false;   // re-seed the grace edge on the first poll after the next enable (no replayed crack, F6)
+            _wasGrace = false;
             _snapActive = false;
             if (_silhouette != null) _silhouette.gameObject.SetActive(false);
 
@@ -203,9 +217,7 @@ namespace FishGame.Presentation
 
                 case RodCue.HookSet:
                     PlayRod(bus, sfx, rodPos, owner);   // click 1 of 4
-                    AddTimer(now + 0.05f, TimerKind.ReelClick);
-                    AddTimer(now + 0.10f, TimerKind.ReelClick);
-                    AddTimer(now + 0.15f, TimerKind.ReelClick);
+                    AddTimer(now + ReelClickGap, TimerKind.ReelClick, HookSetClicksAfterFirst - 1);
                     if (owner)
                     {
                         AddTrauma(0.10f);
@@ -296,8 +308,10 @@ namespace FishGame.Presentation
             if (hooked)
             {
                 float reelSpeed = ReelSpeed();
-                cue = TensionCues.Evaluate(vs.Tension, vs.Tension >= 0.999f, reelSpeed, 1f);   // motion 1: PlayerCamera scales trauma itself
+                cue = TensionCues.Evaluate(vs.Tension, (vs.Flags & RodWireQuant.FlagGrace) != 0, reelSpeed, 1f);   // motion 1: PlayerCamera scales trauma itself
             }
+
+            UpdateGrace(vs, hooked, owner);
 
             RunTimers(now, vs, owner);
             UpdateLoops(vs, hooked, owner, in cue);
@@ -319,14 +333,26 @@ namespace FishGame.Presentation
 
             if (_wasHooked && !hooked) _lastStrainCaption = float.NegativeInfinity;   // next fight starts fresh
             _wasHooked = hooked;
-
-            UpdateSnapJump(now);
         }
 
+        // The silhouette is a child of the moving player root, so its world pose is written after every Update (PlayerLocomotion's order
+        // against this component's Update is undefined).
         private void LateUpdate()
         {
             if (!_live || _rod == null || _anchor == null) return;
             _anchor.position = _rod.ViewState.BobberPos;
+            UpdateSnapJump(Time.time);
+        }
+
+        // Rising edge of FlagGrace, polled from the view on every peer. The first poll after enabling only seeds the edge, so a late joiner
+        // (or a re-enable) mid-grace hears nothing replayed. The Line_Crack rate limit (AudioBus minInterval) bounds repeated touches of 1.0.
+        private void UpdateGrace(in RodViewState vs, bool hooked, bool owner)
+        {
+            bool grace = hooked && (vs.Flags & RodWireQuant.FlagGrace) != 0;
+            bool rising = _polled && grace && !_wasGrace;
+            _polled = true;
+            _wasGrace = grace;
+            if (rising) PlayRod(FeedbackServices.Get<AudioBus>(), SfxIds.LineCrack, RodPosition(), owner);
         }
 
         private void UpdateLoops(in RodViewState vs, bool hooked, bool owner, in TensionCueState cue)
@@ -413,9 +439,9 @@ namespace FishGame.Presentation
 
         // ------------------------------------------------------------------ timers and pulses
 
-        private void AddTimer(float at, TimerKind kind)
+        private void AddTimer(float at, TimerKind kind, byte clicksAfter = 0)
         {
-            _timers.Add(new Timer { At = at, Kind = kind });
+            _timers.Add(new Timer { At = at, Kind = kind, ClicksAfter = clicksAfter });
         }
 
         private void RunTimers(float now, in RodViewState vs, bool owner)
@@ -432,6 +458,7 @@ namespace FishGame.Presentation
                         break;
                     case TimerKind.ReelClick:
                         PlayRod(FeedbackServices.Get<AudioBus>(), SfxIds.ReelClick, RodPosition(), owner);
+                        if (t.ClicksAfter > 0) AddTimer(now + ReelClickGap, TimerKind.ReelClick, (byte)(t.ClicksAfter - 1));   // chained from this frame
                         break;
                 }
             }
@@ -496,10 +523,9 @@ namespace FishGame.Presentation
 
         private void StartSnapJump(Vector3 bobberPos, byte sizeClass)
         {
-            float motion = CameraMotion();
             int size = Mathf.Clamp(sizeClass, 0, 2);
             _snapLength = size == 0 ? 0.25f : (size == 1 ? 0.4f : 0.6f);
-            _snapHeight = (0.6f + 0.4f * size) * motion;   // all motion scales with settings.cameraMotion
+            _snapHeight = 0.6f + 0.4f * size;   // world feedback seen by everyone: not scaled by settings.cameraMotion (spec 9.11)
             float waterY = WaterSurface.HeightAt(bobberPos.x, bobberPos.z);
             _snapOrigin = new Vector3(bobberPos.x, waterY, bobberPos.z);
             _snapStart = Time.time;
@@ -508,7 +534,7 @@ namespace FishGame.Presentation
             away.y = 0f;
             _snapFacing = away.sqrMagnitude > 1e-4f ? Quaternion.LookRotation(away.normalized, Vector3.up) : Quaternion.identity;
             _snapActive = true;
-            if (_silhouette != null && _silhouetteRenderer != null && _silhouetteRenderer.sharedMaterial != null && _snapHeight > 0.01f)
+            if (_silhouette != null && _silhouetteRenderer != null && _silhouetteRenderer.sharedMaterial != null)
             {
                 _silhouette.gameObject.SetActive(true);   // a second Snapped during a jump restarts it
                 UpdateSnapJump(_snapStart);

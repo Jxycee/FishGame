@@ -48,7 +48,7 @@ namespace FishGame.Core
         private static SfxRecipe[] _allTable;
         private static IReadOnlyList<SfxRecipe> _allReadOnly;
 
-        // M1 rows then M2 rows (18), one cached read-only list. TryGet and Generate cover every row.
+        // M1 rows then M2 rows (19), one cached read-only list. TryGet and Generate cover every row.
         public static IReadOnlyList<SfxRecipe> All
         {
             get

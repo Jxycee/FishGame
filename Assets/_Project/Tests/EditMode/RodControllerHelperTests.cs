@@ -205,5 +205,21 @@ namespace FishGame.Tests.EditMode
             Assert.That(RodControllerRules.FiniteOr(new Vector3(0f, 0f, float.NegativeInfinity), fallback), Is.EqualTo(fallback));
             Assert.That(RodControllerRules.FiniteOr(new Vector3(float.NaN, 0f, 0f), new Vector3(float.NaN, 0f, 0f)), Is.EqualTo(Vector3.zero));
         }
+
+        // Catches (T23 review): FlagGrace not set while the snap timer runs (remotes would never hear the crack: their Tension is smoothed),
+        // set while it does not, or a flag bit moved/merged (dive without burst, reel/exhausted dropped).
+        [Test]
+        public void RodControllerRules_HookedFlags_GraceFollowsSnapTimer_AndTheOtherBitsStay()
+        {
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Calm, 0, false, false, 0f), Is.EqualTo((byte)0));
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Calm, 0, false, false, 0.01f), Is.EqualTo(RodWireQuant.FlagGrace), "timer running = grace");
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Burst, 1, false, false, 0f), Is.EqualTo(RodWireQuant.FlagBurst), "side run");
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Burst, -1, true, false, 0f), Is.EqualTo((byte)(RodWireQuant.FlagBurst | RodWireQuant.FlagReel)));
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Burst, 0, false, false, 0f), Is.EqualTo((byte)(RodWireQuant.FlagBurst | RodWireQuant.FlagDive)), "dive");
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Calm, 0, true, true, 0f), Is.EqualTo((byte)(RodWireQuant.FlagReel | RodWireQuant.FlagExhausted)));
+            byte all = RodControllerRules.HookedFlags(FightPhase.Burst, 0, true, true, 0.2f);
+            Assert.That(all, Is.EqualTo((byte)(RodWireQuant.FlagBurst | RodWireQuant.FlagReel | RodWireQuant.FlagDive | RodWireQuant.FlagExhausted | RodWireQuant.FlagGrace)));
+            Assert.That(all & RodWireQuant.FlagRecall, Is.EqualTo(0), "recall is set by the caller, never here");
+        }
     }
 }

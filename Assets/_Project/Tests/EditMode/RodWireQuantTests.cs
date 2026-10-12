@@ -45,5 +45,32 @@ namespace FishGame.Tests.EditMode
             Assert.That(RodWireQuant.QuantizeTension(1f), Is.EqualTo((byte)255));
             Assert.That(RodWireQuant.DequantizeLateral(sbyte.MinValue), Is.EqualTo(-1f));
         }
+
+        // Catches (T23 review): a flag bit reused or moved (FlagGrace must be a free bit of the existing Flags byte, so the payload size is
+        // unchanged), and a flags byte that does not survive the RodStateData wire struct with grace set.
+        [Test]
+        public void RodWireQuant_FlagBits_AreDistinctAndGraceIs32()
+        {
+            byte[] flags =
+            {
+                RodWireQuant.FlagBurst, RodWireQuant.FlagReel, RodWireQuant.FlagDive, RodWireQuant.FlagExhausted, RodWireQuant.FlagRecall, RodWireQuant.FlagGrace,
+            };
+            Assert.That(RodWireQuant.FlagGrace, Is.EqualTo((byte)32));
+            int seen = 0;
+            foreach (byte f in flags)
+            {
+                Assert.That(f & (f - 1), Is.EqualTo(0), "one bit: " + f);
+                Assert.That(seen & f, Is.EqualTo(0), "bit already used: " + f);
+                seen |= f;
+            }
+            Assert.That(seen, Is.EqualTo(63), "bits 0..5");
+
+            var a = new FishGame.Fishing.RodStateData { State = 4, Flags = (byte)(RodWireQuant.FlagReel | RodWireQuant.FlagGrace), TensionQ = 255 };
+            var b = a;
+            b.Flags = RodWireQuant.FlagReel;
+            Assert.That(a.Equals(b), Is.False, "FlagGrace is part of the change detection");
+            b.Flags = a.Flags;
+            Assert.That(a.Equals(b), Is.True);
+        }
     }
 }

@@ -16,7 +16,7 @@ namespace FishGame.Tests.EditMode
     public class AudioBusTests
     {
         private const ulong Seed = 1234UL;
-        private SfxGenerator _clips;               // all 18 recipes generated once for the fixture
+        private SfxGenerator _clips;               // all 19 recipes generated once for the fixture
         private readonly List<GameObject> _spawned = new List<GameObject>();
 
         [OneTimeSetUp]

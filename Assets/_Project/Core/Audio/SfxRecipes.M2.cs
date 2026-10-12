@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 namespace FishGame.Core
 {
-    // M2 half of SfxRecipes (partial, ruling C-Q11): the 12 spec 11.7 M2 rows plus Rod_Thunk (C M2-D10) and their generators.
+    // M2 half of SfxRecipes (partial, ruling C-Q11): the 12 spec 11.7 M2 rows plus Rod_Thunk (C M2-D10) and Line_Crack (spec 9.11 grace row,
+    // T23 review; appended last so the pinned rows keep their index), and their generators.
     // Same rules as the M1 half: pure, deterministic for (id, sampleRate, seed), noise only from the passed Pcg32 stream, exact sample count,
     // peak-normalized to 0.9 by Generate. One-shots start from silence (attack) and end on an exact 0 (release); loops are whole numbers
     // of base periods, so they have no seam jump. Phase is computed per sample in double (2*pi*f*i/sampleRate) or integrated in a double
@@ -27,6 +28,7 @@ namespace FishGame.Core
             new SfxRecipe(SfxIds.CatchFlop, 0.50f, false, AudioCategory.Sfx, 0.80f, true, 30f, 0.20f, 1f),
             new SfxRecipe(SfxIds.CatchCheer, 0.80f, false, AudioCategory.Sfx, 0.80f, true, 60f, 0.30f, 6f),
             new SfxRecipe(SfxIds.RodThunk, 0.15f, false, AudioCategory.Sfx, 0.60f, true, 20f, 0.10f, 1f),
+            new SfxRecipe(SfxIds.LineCrack, 0.18f, false, AudioCategory.Sfx, 0.80f, true, 35f, 0.15f, 2f),
         };
 
         private static readonly IReadOnlyList<SfxRecipe> M2ReadOnly = Array.AsReadOnly(M2Table);
@@ -49,6 +51,7 @@ namespace FishGame.Core
                 case SfxIds.CatchFlop: return CatchFlopGen(n, sampleRate, ref rng);
                 case SfxIds.CatchCheer: return CatchCheerGen(n, sampleRate);
                 case SfxIds.RodThunk: return RodThunkGen(n, sampleRate, ref rng);
+                case SfxIds.LineCrack: return LineCrackGen(n, sampleRate, ref rng);
                 default: throw new ArgumentException("No generator for SFX id: " + id, nameof(id));
             }
         }
@@ -278,6 +281,30 @@ namespace FishGame.Core
                 float body = (float)Math.Sin(phase) * MathF.Exp(-t / 0.03f);
                 float thud = 0.5f * 3f * lp * MathF.Exp(-t / 0.02f);
                 o[i] = (body + thud) * AttackRelease(i, n, sampleRate, 0.001f, 0.010f);
+            }
+            return o;
+        }
+
+        // Line_Crack (spec 9.11 grace row): a taut line about to go. Not the Snap (no ping, no long tail): a 4 ms noise "tick" through a high-pass
+        // (the fibres letting go), then a stiff creak, a 3-harmonic tone gliding 900 -> 520 Hz with a rough 85 Hz stick-slip flutter, which dies
+        // in about 45 ms. 0.18 s, 0.5 ms attack, 15 ms release to exactly 0.
+        private static float[] LineCrackGen(int n, int sampleRate, ref Pcg32 rng)
+        {
+            var o = new float[n];
+            float lp = 0f;
+            double phase = 0.0;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)sampleRate;
+                float u = i / (float)(n - 1);
+                float w = White(ref rng);
+                lp += 0.35f * (w - lp);
+                float tick = (w - lp) * MathF.Exp(-t / 0.004f);
+                phase += TwoPiD * (900.0 + (520.0 - 900.0) * u) / sampleRate;
+                float tone = (float)(Math.Sin(phase) + 0.5 * Math.Sin(2.0 * phase) + 0.25 * Math.Sin(3.0 * phase));
+                float flutter = 0.55f + 0.45f * (float)Math.Sin(TwoPiD * 85.0 * i / sampleRate);
+                float creak = 0.45f * tone * flutter * MathF.Exp(-t / 0.045f);
+                o[i] = (1.2f * tick + creak) * AttackRelease(i, n, sampleRate, 0.0005f, 0.015f);
             }
             return o;
         }

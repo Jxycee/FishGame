@@ -1,10 +1,13 @@
 // Authority: test-only. T23: the presentation feedback (FishingFeedback, CatchRevealView) is observed from outside, because this assembly does not
 // reference Presentation (C 2.8 #8): shader globals (_Ripples), the EventBus (CaptionRequested), the fake input's last rumble, and the
-// "CatchReveal" child's active state, mesh, materials and pose. The scripted cast reuses T19's FishingPlayModeDriver (ruling F-Q7).
+// "CatchReveal" child's active state, mesh, materials and pose, and the AudioBus rate-limit table (which records every accepted play). The scripted
+// cast reuses T19's FishingPlayModeDriver (ruling F-Q7). The T23-review tests drive the owner's view directly (FishingRodNetwork.OwnerSetView) with
+// the rod controller disabled, so the result does not depend on a fight's RNG.
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using FishGame.Core;
 using FishGame.Data;
 using FishGame.Fishing;
@@ -108,7 +111,9 @@ namespace FishGame.Tests.PlayMode
             Assert.That(rig.Fake.LastRumbleLow, Is.EqualTo(0f), "rumble low at Idle");
             Assert.That(rig.Fake.LastRumbleHigh, Is.EqualTo(0f), "rumble high at Idle");
 
-            // No loop outlives the fight (AudioBus loops are children named Loop_<id>).
+            // No loop outlives the fight (AudioBus loops are children named Loop_<id>; a stopped loop's object is gone by the end of the frame).
+            Assert.That(ServiceRoots.App.TryGet(out AudioBus audio), Is.True, "AudioBus");
+            Assert.That(HasLoop(audio), Is.False, "no Loop_ source may remain once the rod is back at Idle");
 
             rig.Log.AssertEmpty("feedback cast-bite-land loop");
         }
@@ -175,54 +180,205 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("feedback captions and disable");
         }
 
-        // Catches (T23 carry-forward): a loop started without a follow transform (it would play forever at the bus); loops not stopped when the
-        // component is disabled or the fish is gone. The catfish (runner profile: strong pull, dives) fought by reeling only during its bursts and never
-        // steering builds tension past 0.6 (Line_Creak) or dives (Dive_Thrum) within a few bursts.
+        // Catches (T23 carry-forward and review): a loop started without a follow transform, or following the wrong one (Line_Creak must follow the rod
+        // tip, Dive_Thrum the feedback anchor at the bobber, which is 5 m apart here); loops not stopped when the component is disabled or when the rod
+        // leaves Hooked (the view keeps tension 0.7 and the dive/reel flags, so only the Hooked gate can silence them); loops not restarting from
+        // polling when the component is enabled again mid-fight (F6). Deterministic: the controller is disabled, so nothing overwrites the view.
         [UnityTest]
-        public IEnumerator FeedbackSolo_Loops_FollowATransformAndStopOnDisable()
+        public IEnumerator FeedbackSolo_Loops_FollowStopWhenNotHookedAndRestartOnEnable()
         {
-            FishingDebugSettings.ForcedBiteWait = 0.1f;
-            FishingDebugSettings.ForcedSpeciesId = "catfish";
             _rig = new FishingRig();
-            yield return FishingPlayModeDriver.Arrange(_rig);
+            yield return FishingPlayModeDriver.Arrange(_rig, teleport: false);
             FishingRig rig = _rig;
 
             Assert.That(ServiceRoots.App.TryGet(out AudioBus audio), Is.True, "AudioBus");
             Behaviour feedback = FindBehaviour(rig.Player.gameObject, "FishingFeedback");
             Transform tip = rig.Player.transform.Find(PlayerRigPaths.RodTipAnchor);
             Transform anchor = rig.Player.transform.Find("FeedbackAnchor");
+            Assert.That(tip, Is.Not.Null, "RodTipAnchor");
             Assert.That(anchor, Is.Not.Null, "FishingFeedback creates a FeedbackAnchor child");
 
-            yield return FishingPlayModeDriver.EquipAndReady(rig);
-            yield return FishingPlayModeDriver.ChargeAndRelease(rig);
-            yield return FishingPlayModeDriver.WaitForState(rig, RodState.Hooked, 8f);
-
-            Transform loop = null;
-            float maxTension = 0f;
-            double deadline = Time.realtimeSinceStartupAsDouble + 40.0;
-            while (loop == null)
+            try
             {
-                if (rig.Machine.State != RodState.Hooked) Assert.Fail("the fight ended (" + rig.Machine.State + ") before any loop started; max tension " + maxTension);
-                if (Time.realtimeSinceStartupAsDouble > deadline) Assert.Fail("no Line_Creak or Dive_Thrum loop started within 40 s of fighting; max tension " + maxTension);
-                bool burst = rig.Machine.Fight.State.Phase == FightPhase.Burst;
-                maxTension = Mathf.Max(maxTension, rig.Machine.Fight.State.Tension);
-                yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { Reel = burst });
-                loop = FindLoop(audio);
+                rig.Controller.enabled = false;   // PublishView would overwrite the view every frame
+                yield return PlayModeHarness.WaitFrames(2, 0.05f);
+                rig.Log.AssertEmpty("disabling the rod controller at Idle");
+                Assert.That(HasLoop(audio), Is.False, "no loop before the fight");
+
+                Vector3 bobber = tip.position + new Vector3(0f, -1f, 5f);
+                const byte diveAndReel = RodWireQuant.FlagDive | RodWireQuant.FlagReel;
+                SetView(rig, RodState.Hooked, diveAndReel, 0.7f, bobber);
+
+                Transform creak = null, thrum = null;
+                yield return PlayModeHarness.WaitUntil(
+                    () => (creak = FindLoop(audio, "Loop_Line_Creak")) != null && (thrum = FindLoop(audio, "Loop_Dive_Thrum")) != null,
+                    2f, "Hooked at tension 0.7 with a dive must start both Line_Creak and Dive_Thrum");
+                yield return PlayModeHarness.WaitFrames(3, 0.05f);   // AudioBus.LateUpdate moves a loop to its follow target; the order against ours is undefined
+
+                Assert.That(Vector3.Distance(anchor.position, bobber), Is.LessThan(0.05f), "the feedback anchor sits at the bobber");
+                Assert.That(Vector3.Distance(tip.position, anchor.position), Is.GreaterThan(3f), "the tip and the anchor must be far apart for this check to mean anything");
+                Assert.That(Vector3.Distance(creak.position, tip.position), Is.LessThan(0.25f), "Line_Creak follows the rod tip");
+                Assert.That(Vector3.Distance(thrum.position, anchor.position), Is.LessThan(0.25f), "Dive_Thrum follows the feedback anchor");
+
+                feedback.enabled = false;
+                yield return PlayModeHarness.WaitFrames(2, 0.05f);
+                Assert.That(HasLoop(audio), Is.False, "OnDisable must stop every loop");
+                Assert.That(rig.Fake.LastRumbleLow, Is.EqualTo(0f), "rumble low after disable");
+                Assert.That(rig.Fake.LastRumbleHigh, Is.EqualTo(0f), "rumble high after disable");
+
+                feedback.enabled = true;
+                yield return PlayModeHarness.WaitUntil(
+                    () => FindLoop(audio, "Loop_Line_Creak") != null && FindLoop(audio, "Loop_Dive_Thrum") != null,
+                    2f, "enabling the component mid-fight must restart both loops from the polled view (F6)");
+
+                SetView(rig, RodState.Escaped, diveAndReel, 0.7f, bobber);   // not Hooked any more: same tension and flags
+                yield return PlayModeHarness.WaitFrames(2, 0f);
+                Assert.That(HasLoop(audio), Is.False, "no Loop_ child may remain within 2 frames of leaving Hooked");
             }
-            rig.Fake.Frame = default;
-
-            yield return null;   // AudioBus.LateUpdate moves the loop to its follow target
-            float toTip = Vector3.Distance(loop.position, tip.position);
-            float toAnchor = Vector3.Distance(loop.position, anchor.position);
-            Assert.That(Mathf.Min(toTip, toAnchor), Is.LessThan(0.05f), "a loop must follow the rod tip or the feedback anchor (" + loop.name + ")");
-
-            feedback.enabled = false;
-            yield return PlayModeHarness.WaitFrames(2, 0.05f);
-            Assert.That(HasLoop(audio), Is.False, "OnDisable must stop every loop");
-            Assert.That(rig.Fake.LastRumbleLow, Is.EqualTo(0f), "rumble low after disable");
-            Assert.That(rig.Fake.LastRumbleHigh, Is.EqualTo(0f), "rumble high after disable");
+            finally
+            {
+                if (rig.Controller != null) rig.Controller.enabled = true;
+            }
 
             rig.Log.AssertEmpty("feedback loops");
+        }
+
+        // Catches (T23 review): HookSet's four clicks dropped by the Reel_Click rate limit (0.05 s against the last click that PLAYED) because the
+        // later clicks were anchored to the first one: at a frame time of 40 ms the anchored clicks give three plays. Frames are slowed with a sleep so
+        // the frame time is known; 8 ms is a fast-frame control that must also give four. A play is counted when the bus's last-played time for the
+        // owner's Reel_Click changes.
+        [UnityTest]
+        public IEnumerator FeedbackSolo_HookSet_PlaysFourClicks_AtSlowAndFastFrames()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig, teleport: false);
+            FishingRig rig = _rig;
+            Assert.That(ServiceRoots.App.TryGet(out AudioBus audio), Is.True, "AudioBus");
+            Dictionary<(string, bool, int, int), float> lastPlayed = LastPlayed(audio);
+
+            foreach (int sleepMs in new[] { 40, 8 })
+            {
+                yield return PlayModeHarness.WaitFrames(2, 0.2f);   // the previous clicks are long past the rate limit
+                var counter = new PlayCounter(lastPlayed, (SfxIds.ReelClick, false, 0, 0));
+
+                rig.Net.RaiseLocalCue(RodCue.HookSet, 0);
+                counter.Poll();   // click 1 plays inside the cue
+                int frames = 0;
+                double start = Time.realtimeSinceStartupAsDouble;
+                while (Time.realtimeSinceStartupAsDouble - start < 0.8)
+                {
+                    Thread.Sleep(sleepMs);
+                    yield return null;
+                    frames++;
+                    counter.Poll();
+                }
+
+                double frameTime = (Time.realtimeSinceStartupAsDouble - start) / frames;
+                Assert.That(frameTime, Is.GreaterThanOrEqualTo(sleepMs / 1000.0 * 0.95), "the frame time must be at least the sleep (" + sleepMs + " ms)");
+                Assert.That(counter.Count, Is.EqualTo(4), "HookSet must play four Reel_Click at a " + (frameTime * 1000.0).ToString("F1") + " ms frame time");
+            }
+
+            rig.Log.AssertEmpty("hookset clicks");
+        }
+
+        // Catches (T23 review): the Line_Crack missing, level-triggered (a hold of 0.8 s is over five times its 0.15 s rate limit, so a level trigger
+        // plays several), played twice for one rising edge, not played again on the next edge, replayed for a view that is already in grace when the
+        // component is enabled (a late joiner, F6), or played spatially on the owner (the owner's is 2D: the Play2D key).
+        [UnityTest]
+        public IEnumerator FeedbackSolo_Grace_PlaysOneLineCrackPerRisingEdge()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig, teleport: false);
+            FishingRig rig = _rig;
+            Assert.That(ServiceRoots.App.TryGet(out AudioBus audio), Is.True, "AudioBus");
+            Behaviour feedback = FindBehaviour(rig.Player.gameObject, "FishingFeedback");
+            Transform tip = rig.Player.transform.Find(PlayerRigPaths.RodTipAnchor);
+            Vector3 bobber = tip.position + new Vector3(0f, -1f, 5f);
+            Dictionary<(string, bool, int, int), float> lastPlayed = LastPlayed(audio);
+            var counter = new PlayCounter(lastPlayed, (SfxIds.LineCrack, false, 0, 0));
+
+            try
+            {
+                rig.Controller.enabled = false;
+                yield return PlayModeHarness.WaitFrames(2, 0.05f);
+                rig.Log.AssertEmpty("disabling the rod controller at Idle");
+
+                SetView(rig, RodState.Hooked, 0, 0.9f, bobber);
+                yield return PlayModeHarness.WaitFrames(3, 0.05f);   // the first poll only seeds the edge
+                counter.Poll();
+                Assert.That(counter.Count, Is.EqualTo(0), "no crack below grace");
+
+                SetView(rig, RodState.Hooked, RodWireQuant.FlagGrace, 1f, bobber);
+                yield return Hold(counter, 0.8);
+                Assert.That(counter.Count, Is.EqualTo(1), "one Line_Crack for one rising edge, however long grace is held");
+
+                SetView(rig, RodState.Hooked, 0, 0.9f, bobber);
+                yield return Hold(counter, 0.3);
+                Assert.That(counter.Count, Is.EqualTo(1), "leaving grace plays nothing");
+
+                SetView(rig, RodState.Hooked, RodWireQuant.FlagGrace, 1f, bobber);
+                yield return Hold(counter, 0.5);
+                Assert.That(counter.Count, Is.EqualTo(2), "the next rising edge plays the second crack");
+
+                foreach (var key in lastPlayed.Keys)
+                    Assert.That(key.Item1 == SfxIds.LineCrack && key.Item2, Is.False, "the owner's Line_Crack is 2D, never positional");
+
+                // A late joiner / re-enable mid-grace: the first poll seeds the edge, nothing replays.
+                feedback.enabled = false;
+                yield return PlayModeHarness.WaitFrames(2, 0.05f);
+                feedback.enabled = true;
+                yield return Hold(counter, 0.5);
+                Assert.That(counter.Count, Is.EqualTo(2), "enabling the component while already in grace must not replay the crack");
+            }
+            finally
+            {
+                if (rig.Controller != null) rig.Controller.enabled = true;
+            }
+
+            rig.Log.AssertEmpty("grace crack");
+        }
+
+        // Catches (T23 review): the snap silhouette scaled or hidden by settings.cameraMotion. Camera motion is shake, FOV kicks, bob and rumble;
+        // the jump is world feedback everyone sees and its height tells the fish size. With cameraMotion 0 the silhouette still shows and rises.
+        [UnityTest]
+        public IEnumerator FeedbackSolo_SnapSilhouette_IgnoresCameraMotion()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig, teleport: false);
+            FishingRig rig = _rig;
+            Assert.That(ServiceRoots.App.TryGet(out ISettings settings), Is.True, "ISettings");
+            Transform silhouette = rig.Player.transform.Find("SnapSilhouette");
+            Assert.That(silhouette, Is.Not.Null, "SnapSilhouette child");
+
+            float original = settings.Current.cameraMotion;
+            try
+            {
+                settings.Current.cameraMotion = 0f;
+                settings.NotifyChanged();
+
+                rig.Net.RaiseLocalCue(RodCue.Snapped, 2);
+                yield return null;
+                Assert.That(silhouette.gameObject.activeSelf, Is.True, "the silhouette shows with cameraMotion 0");
+
+                float minY = float.MaxValue, maxY = float.MinValue;
+                double deadline = Time.realtimeSinceStartupAsDouble + 2.0;
+                while (silhouette.gameObject.activeSelf && Time.realtimeSinceStartupAsDouble < deadline)
+                {
+                    minY = Mathf.Min(minY, silhouette.position.y);
+                    maxY = Mathf.Max(maxY, silhouette.position.y);
+                    yield return null;
+                }
+
+                Assert.That(silhouette.gameObject.activeSelf, Is.False, "the jump ends");
+                Assert.That(maxY - minY, Is.GreaterThan(0.8f), "a size-2 jump rises about 1.4 m whatever cameraMotion is");
+            }
+            finally
+            {
+                settings.Current.cameraMotion = original;
+                settings.NotifyChanged();
+            }
+
+            rig.Log.AssertEmpty("snap silhouette and camera motion");
         }
 
         // Catches: the reveal missing a material on a submesh (a multi-submesh species model draws invisible parts); the wrong material for a
@@ -326,17 +482,67 @@ namespace FishGame.Tests.PlayMode
             foreach (Material m in renderer.sharedMaterials) Assert.That(m, Is.Not.Null, "a null reveal material");
         }
 
+        // The owner's view is whatever the test sets once the rod controller is disabled (OwnerSetView is internal to Fishing, visible to this assembly).
+        private static void SetView(FishingRig rig, RodState state, byte flags, float tension, Vector3 bobber)
+        {
+            rig.Net.OwnerSetView(new RodViewState { State = state, Flags = flags, Tension = tension, BobberPos = bobber, CastId = 1, IsOwner = true, RodOut = true });
+        }
+
+        private static IEnumerator Hold(PlayCounter counter, double seconds)
+        {
+            double start = Time.realtimeSinceStartupAsDouble;
+            while (Time.realtimeSinceStartupAsDouble - start < seconds)
+            {
+                yield return null;
+                counter.Poll();
+            }
+        }
+
+        // AudioBus's per-id rate-limit table: every accepted play stores its Time.unscaledTime under (id, spatial, cellX, cellZ).
+        private static Dictionary<(string, bool, int, int), float> LastPlayed(AudioBus bus)
+        {
+            FieldInfo field = typeof(AudioBus).GetField("_lastPlayed", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, "AudioBus._lastPlayed");
+            var table = field.GetValue(bus) as Dictionary<(string, bool, int, int), float>;
+            Assert.That(table, Is.Not.Null, "AudioBus._lastPlayed is a Dictionary<(string, bool, int, int), float>");
+            return table;
+        }
+
+        // Counts accepted plays for one rate-limit key: each accepted play sets the stored time, and two plays never share a frame here.
+        private sealed class PlayCounter
+        {
+            private readonly Dictionary<(string, bool, int, int), float> _table;
+            private readonly (string, bool, int, int) _key;
+            private float _last = float.NaN;
+
+            public int Count { get; private set; }
+
+            public PlayCounter(Dictionary<(string, bool, int, int), float> table, (string, bool, int, int) key)
+            {
+                _table = table;
+                _key = key;
+                if (table.TryGetValue(key, out float existing)) _last = existing;
+            }
+
+            public void Poll()
+            {
+                if (!_table.TryGetValue(_key, out float now) || now == _last) return;
+                _last = now;
+                Count++;
+            }
+        }
+
         // AudioBus loops are children named Loop_<id>; a stopped loop's object is destroyed at the end of the frame.
         private static bool HasLoop(AudioBus bus)
         {
             return FindLoop(bus) != null;
         }
 
-        private static Transform FindLoop(AudioBus bus)
+        private static Transform FindLoop(AudioBus bus, string name = null)
         {
             foreach (Transform child in bus.transform)
             {
-                if (child.name.StartsWith("Loop_", StringComparison.Ordinal)) return child;
+                if (name == null ? child.name.StartsWith("Loop_", StringComparison.Ordinal) : child.name == name) return child;
             }
             return null;
         }

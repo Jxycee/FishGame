@@ -55,6 +55,19 @@ namespace FishGame.Fishing
             return IsFinite(candidate) ? candidate : (IsFinite(fallback) ? fallback : Vector3.zero);
         }
 
+        // The Hooked-state wire flags (RodWireQuant.Flag*). A dive is a burst with direction 0. Grace = the snap timer is running, i.e. tension
+        // has been at 1.0 on the last fight tick (spec 9.5); remotes cannot see that in their smoothed Tension, so they read the flag.
+        public static byte HookedFlags(FightPhase phase, sbyte burstDir, bool reeling, bool exhausted, float snapTimer)
+        {
+            byte flags = 0;
+            if (phase == FightPhase.Burst)
+                flags |= burstDir == 0 ? (byte)(RodWireQuant.FlagBurst | RodWireQuant.FlagDive) : RodWireQuant.FlagBurst;
+            if (reeling) flags |= RodWireQuant.FlagReel;
+            if (exhausted) flags |= RodWireQuant.FlagExhausted;
+            if (snapTimer > 0f) flags |= RodWireQuant.FlagGrace;
+            return flags;
+        }
+
         private static bool IsFinite(float f)
         {
             return !float.IsNaN(f) && !float.IsInfinity(f);
