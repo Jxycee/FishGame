@@ -21,7 +21,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File C:\Dev\FishGame\Tools\unity.
 powershell -NoProfile -ExecutionPolicy Bypass -File C:\Dev\FishGame\Tools\unity.ps1 test-edit -Filter "<regex>"
 powershell -NoProfile -ExecutionPolicy Bypass -File C:\Dev\FishGame\Tools\unity.ps1 test-edit -TimeoutMinutes 15
 ```
-Expected last lines (M1 contract 11): `FG RESULT compile PASS log=...`, `FG RESULT build PASS ...` (log contains `FG BUILDALL PASS`), `FG RESULT test-edit PASS total=N passed=N failed=0 skipped=K log=...`. `LOCKED` means the user has the editor open: ask them to close it, never kill Unity (C 2.8 #11).
+Expected last lines (M1 contract 11): `FG RESULT compile PASS log=...`, `FG RESULT build PASS ...` (log contains `FG BUILDALL PASS`), `FG RESULT test-edit PASS total=N passed=N failed=0 skipped=K log=...`. `LOCKED` (exit 2, reported by `unity.ps1`) means the user has the editor open: ask them to close it, never kill Unity (C 2.8 #11). Stop only if the script reports LOCKED: a leftover `Temp/UnityLockfile` that is not held is not a lock.
 
 ### 0.2 Ordinal index spaces (C 7.5 `FishingDatabase`, C 5.3 category names)
 
@@ -48,7 +48,7 @@ Indices follow `StringComparer.Ordinal` over ids. Tests in this section may hard
 
 ## 1. Seed and range tables (single source for T14 seeds, T14 validators and T14/T15 tests)
 
-Seed values are the spec 9.6/9.7/9.12 tables, the C 7.7 motion seeds, creel caps 12 entries / 15 kg (9.10) and clean threshold 0.8 (C M2-D16). **Seeds must equal these tables exactly.** Ranges are the validator ranges (`FishingValidators.FishingContent`, test `FishingData_Ranges_Valid`). Where 9.12 gives a range, it is used verbatim; other ranges are this plan's (marked "plan").
+Seed values are the spec 9.6/9.7/9.12 tables, the C 7.7 motion seeds, creel caps 12 entries / 15 kg (9.10) and clean threshold 0.8 (C M2-D16) and the bad-luck nudge seeds (R65 / C M2-D23). **Seeds must equal these tables exactly.** Ranges are the validator ranges (`FishingValidators.FishingContent`, test `FishingData_Ranges_Valid`). Where 9.12 gives a range, it is used verbatim; other ranges are this plan's (marked "plan").
 
 ### 1.1 `FishingTuning` (field order = C 7.5 struct order = `FishingTuningDef` field order)
 
@@ -89,6 +89,10 @@ Seed values are the spec 9.6/9.7/9.12 tables, the C 7.7 motion seeds, creel caps
 | CreelMaxEntries | 12 | 1-99 (plan) |
 | CreelMaxWeightG (`creelMaxKg` in the Def) | 15000 g (15 kg) | 1-100 kg (plan) |
 | CleanCatchMaxTension | 0.8 | 0.5-0.95 (C 7.14) |
+| PityAfterFailures (int; R65) | 3 | 0-10 (0 = off) |
+| PityStrainMult (R65) | 0.85 | 0.5-1 |
+| PityGraceMult (R65) | 1.5 | 1-3 |
+| PityHookWindowBonus (R65, seconds) | 0.3 | 0-1 |
 
 ### 1.2 Rods (spec 9.7). Ranges (plan): tier 0-3; castMaxDist 8-40 and > CastMinDist; reelSpeed 0.5-2; lineStrength 0.5-2.5; angleWindow 0.3-0.9 (must stay below `FishingConstants.PinnedLateral` 0.95); steerRate 0.3-1.2; relaxMult 0.5-1.5; shopCost >= 0; firstCamp 0-6.
 
@@ -196,7 +200,7 @@ Sum of amplitudes 0.115 <= 0.12; every wavelength >= 6 (4 x the 1.25 m grid cell
 
 ### 1.9 Cue table rows (C M2-D11)
 
-One `SfxCueRow` per recipe in `SfxRecipes.All`, in that order: `id`, `category`, `baseVolume`, `minDistance`, `maxDistance`, `minInterval`, `spatial` copied from the Core recipe (`MinDistance` from T11's field). Rules (validator): ids unique and known to `SfxRecipes.TryGet`; baseVolume 0-1; minDistance > 0; maxDistance > minDistance; minInterval >= 0.
+One `SfxCueRow` per recipe in `SfxRecipes.All`, in that order: `id`, `category`, `baseVolume`, `minDistance`, `maxDistance`, `minInterval`, `spatial` copied from the Core recipe (`MinDistance` from T11's field; `maxDistance` is seeded with the Core value, which is 0 for the five M1 2D/ambience rows `Ui_Click`, `Ui_Confirm`, `Ui_Error`, `Wind_Ambient`, `Water_Lap`). Rules (validator; ruling C-Q1): ids unique and known to `SfxRecipes.TryGet`; baseVolume 0-1; minDistance > 0; the EFFECTIVE max distance (`maxDistance`, with 0 meaning the `AudioBus` default 30) > minDistance; minInterval >= 0. A raw `maxDistance > minDistance` comparison would fail those five rows and must not be used.
 
 ---
 
@@ -226,8 +230,8 @@ One `SfxCueRow` per recipe in `SfxRecipes.All`, in that order: `id`, `category`,
 | `FightProfileDef` | `ToCore()` -> `FishFightProfile`, all 15 numeric fields including the 5 motion fields. |
 | `FishSpeciesDef` | `ToCore(ushort fightProfileIndex)` -> `FishSpeciesData` with `FightProfileIndex = fightProfileIndex`; presentation fields (`displayName`, `bodyShape`, colours, `model`) stay Data-only. Field types: `rarity` `FishRarity`, `bodyShape` `BodyShape`, `colorA/colorB` `Color`, `model` `Mesh` (may be null). |
 | `JunkDef` | `ToCore()` -> `JunkData { ValueCoins }`. |
-| `FishingTuningDef` | One field per `FishingTuning` member in struct order and camelCase, **except** `CreelMaxWeightG`, which is stored as `creelMaxKg` (float) at its position. `ToCore()`: `CreelMaxWeightG = (int)Math.Round(creelMaxKg * 1000.0, MidpointRounding.AwayFromZero)`. `Configure(in FishingTuning t)`: `creelMaxKg = t.CreelMaxWeightG / 1000f`; all other members copied. |
-| `SfxCueTableDef` | `[Serializable] public struct SfxCueRow { public string id; public AudioCategory category; public float baseVolume, minDistance, maxDistance, minInterval; public bool spatial; }` (declared in `SfxCueTableDef.cs`). Field `rows` (`List<SfxCueRow>`), getter `Rows`, `Configure(IEnumerable<SfxCueRow> rows)`. `ToRecipes()`: for each row whose `id` is found by `SfxRecipes.TryGet`, a new `SfxRecipe` with `Id`, `LengthSeconds`, `Loop` from the Core recipe and the six mixing fields from the row (use T11's 9-arg ctor; check its parameter order in `Core/Audio/SfxRecipe.cs`). Unknown ids are skipped (no logging in Data). Returns a new list each call, in row order. |
+| `FishingTuningDef` | One field per `FishingTuning` member in struct order and camelCase (including the four R65 pity members at the end), **except** `CreelMaxWeightG`, which is stored as `creelMaxKg` (float) at its position. `ToCore()`: `CreelMaxWeightG = (int)Math.Round(creelMaxKg * 1000.0, MidpointRounding.AwayFromZero)`. `Configure(in FishingTuning t)`: `creelMaxKg = t.CreelMaxWeightG / 1000f`; all other members copied. |
+| `SfxCueTableDef` | `[Serializable] public struct SfxCueRow { public string id; public AudioCategory category; public float baseVolume, minDistance, maxDistance, minInterval; public bool spatial; }` (declared in `SfxCueTableDef.cs`). Field `rows` (`List<SfxCueRow>`), getter `Rows`, `Configure(IEnumerable<SfxCueRow> rows)`. `ToRecipes()`: for each row whose `id` is found by `SfxRecipes.TryGet`, a new `SfxRecipe` with `Id`, `LengthSeconds`, `Loop` from the Core recipe and the six mixing fields from the row (use T11's 9-arg ctor; ruling C-Q1 pins the order: `(id, lengthSeconds, loop, category, baseVolume, spatial, maxDistance, minInterval, minDistance)`, minDistance last). Unknown ids are skipped (no logging in Data). Returns a new list each call, in row order. |
 | `PaletteSeason` | `[Serializable] public sealed class PaletteSeason { public string name; public Color[] colors; }` (public fields, like `SfxCueRow`). |
 | `DayPhaseAmbient` | `[Serializable] public struct DayPhaseAmbient` with public fields in C 7.13 order: `startFraction` float, `lightColor` Color, `lightIntensity` float, `skyTop`, `skyHorizon`, `skyGround`, `toonShade`, `toonAmbient`, `fogColor` Color, `fogDensity`, `warmWeight`, `coolWeight` float. |
 | `ArtPaletteDef` | Fields per C 7.13 (`slotNames` string[], `seasons` PaletteSeason[], `faceJitter`, `skinTone`, `phases` DayPhaseAmbient[], six UI Colors, `m2Season` int = 1). **No `slotTints` field** (M2-D3). `PaletteVectors(int season)`: `ArgumentOutOfRangeException` when `season` is outside 0..3 or `seasons` is shorter than season + 1; returns a new `Vector4[16]` with `(r, g, b, a)` of `colors[i]`, and `(1, 0, 1, 1)` (magenta) for any missing entry (so the global array is always full length, C 2.8 #18). `GetSlotTint(int slot)`: `SlotPalette.GetRgb(slot, ...)` -> `new Color(r, g, b, 1f)` (exceptions pass through). `GetSkinTone()` returns `skinTone`. |
@@ -246,7 +250,7 @@ One `SfxCueRow` per recipe in `SfxRecipes.All`, in that order: `id`, `category`,
 - **`Build()`:** throws `InvalidOperationException` on validation errors exactly like M1. Builds one `RegistryIndex` plus an id dictionary per category (spots unchanged). When any fishing list is non-empty, builds `Fishing = new FishingDatabase(rods, baits, profiles, species, junk, tuning)` with arrays in index order: `rods[i] = RodAt(i).ToCore()` and so on, `species[i] = SpeciesAt(i).ToCore(FightProfileIndex(SpeciesAt(i).Fight.Id))`, `tuning = fishingTuning.ToCore()`. Otherwise `Fishing = null`. Sets `built = true`.
 - Index/at methods: `RodIndex(string)`, `RodAt(ushort)`, `BaitIndex`/`BaitAt`, `FightProfileIndex`/`FightProfileAt`, `SpeciesIndex`/`SpeciesAt`, `JunkIndex`/`JunkAt`, `TryGetSpecies` - same shapes and exceptions as the spot methods (`KeyNotFoundException`, `ArgumentOutOfRangeException` from `RegistryIndex`), each calling `EnsureBuilt()` first. `Fishing` getter calls `EnsureBuilt()`.
 - `DisplayNameOf(bool isJunk, ushort itemIndex)`: `JunkAt(i).DisplayName` or `SpeciesAt(i).DisplayName`.
-- **`ComputeContentHash()`:** spots always; each fishing category (`CategoryRods`, ...) **only when its list is non-empty**. A spots-only registry therefore hashes exactly as in M1, so the M1 test `ContentRegistry_Hash_StableAcrossInstances` keeps passing (`ContentHash.Compute` appends the category name even for an empty id list). `dataVersion` stays 1 (C 5.3). See Contract question Q1.
+- **`ComputeContentHash()`:** spots always; each fishing category (`CategoryRods`, ...) **only when its list is non-empty**. A spots-only registry therefore hashes exactly as in M1, so the M1 test `ContentRegistry_Hash_StableAcrossInstances` keeps passing (`ContentHash.Compute` appends the category name even for an empty id list). `dataVersion` stays 1 (C 5.3). Ruling D-Q1 (C 7.13 amended).
 - Header comment: replace "M1 holds one category (spots)" with "Categories: spots (M1), rods, baits, fight_profiles, species, junk (M2). Fishing database built in Build() when fishing content is present." Keep "Owned by" text as is.
 
 ### 2.4 Steps (TDD, C 2.4)
@@ -281,7 +285,7 @@ One `SfxCueRow` per recipe in `SfxRecipes.All`, in that order: `id`, `category`,
 ### 2.6 Acceptance (reviewer checks)
 
 - Field names and order match C 7.13 exactly (diff against the table); getters PascalCase; no tuning initialisers; no `slotTints`.
-- `FishingTuningDef` covers every `FishingTuning` member (count them: 39 struct members, 39 serialized fields with `creelMaxKg` replacing `CreelMaxWeightG`).
+- `FishingTuningDef` covers every `FishingTuning` member (count them: 43 struct members, 43 serialized fields with `creelMaxKg` replacing `CreelMaxWeightG`; 39 + the four R65 pity fields `pityAfterFailures`, `pityStrainMult`, `pityGraceMult`, `pityHookWindowBonus`).
 - M1 `ContentRegistryTests` unchanged and green; spots-only hash unchanged.
 - No Unity logging in Data; `PaletteVectors` always returns length 16.
 - Full `test-edit` PASS line pasted in the report.
@@ -340,7 +344,7 @@ Order (each step uses `AssetDatabase.LoadAssetAtPath`; assets are created with `
 2. Fight profiles, then rods, baits, junk (each from the seeds).
 3. Species: `fight` = the profile asset at `FightProfilesFolder/<ProfileId>.asset` (throw `InvalidOperationException` naming the id if missing); `model` null.
 4. Singletons: `FishingTuning.asset` (`Configure(in FishingSeedData.Tuning)`), `SfxCueTable.asset` (rows 1.9), `ArtPalette.asset` (1.7), `WaterSettings.asset` (1.8, `dirAmpLenSpeed` from `Waves`).
-5. Species models (C 6.2 allowed edit): for every species asset whose `model` is null and whose seed `ModelFile` exists under `ModelsFolder`, take the first `Mesh` from `AssetDatabase.LoadAllAssetsAtPath(path)`. If that mesh has a colour channel (`mesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.Color)`), set `model` through `SerializedObject` (`FindProperty("model")`, `ApplyModifiedPropertiesWithoutUndo`, `EditorUtility.SetDirty`). If it has none, leave `model` null and `Debug.Log("FG CONTENT species <id>: <file> has no vertex colours; model left empty (fallback mesh)")` (log, not warning). This keeps `Validation_SpeciesModels_Pass` green while the perch colours are unverified (C G6, skeleton risk 1; Q4).
+5. Species models (C 6.2 allowed edit): for every species asset whose `model` is null and whose seed `ModelFile` exists under `ModelsFolder`, take the first `Mesh` from `AssetDatabase.LoadAllAssetsAtPath(path)`. If that mesh has a colour channel (`mesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.Color)`) AND exactly one submesh (`mesh.subMeshCount == 1`, ruling G-Q6: fish models draw with the single `M_Toon_Fish`), set `model` through `SerializedObject` (`FindProperty("model")`, `ApplyModifiedPropertiesWithoutUndo`, `EditorUtility.SetDirty`). If it has no colour channel or a different submesh count, leave `model` null and `Debug.Log("FG CONTENT species <id>: <file> has no vertex colours or has <n> submeshes; model left empty (fallback mesh)")` (log, not warning). This keeps `Validation_SpeciesModels_Pass` green while the spike perch (5 submeshes, no vertex colours) is still in place (rulings D-Q4, G-Q6; T29 re-exports the perch).
 6. Registry (`AssetPaths.ContentRegistryAsset`; it exists because `ContentBuilder.EnsureRegistry` ran first): through `SerializedObject`, for each list property (`rods`, `baits`, `fightProfiles`, `species`, `junk`) append each seed asset not already referenced; fill each singleton property (`fishingTuning`, `sfxCueTable`, `artPalette`, `waterSettings`) only when null; `ApplyModifiedPropertiesWithoutUndo`; `EditorUtility.SetDirty(registry)`. Throw `InvalidOperationException` if a property is not found (like M1 `EnsureRegistry`).
 7. No `SaveAssets` here (`ContentBuilder.Build` saves after the hook).
 
@@ -351,10 +355,10 @@ Re-running `build` with all assets present changes nothing on disk (check in 3.6
 - `All()`: `FishingContent()` items prefixed `"FishingContent: "`, then `SpeciesModels()` items prefixed `"SpeciesModels: "`.
 - `FishingContent()`: loads the registry asset (missing -> one error and return). Null list entries and id problems are **not** repeated (M1 `Validators.ContentIds` already reports `registry.Validate()`); null entries are skipped. Checks:
   - every seed id of each category has an asset at its C 6.2 path and that asset is in the registry list; the four singletons are present;
-  - every Def value inside the section 1 ranges and cross-field rules (tuning 1.1, rods 1.2, baits 1.3 including exactly one unlimited, profiles 1.4 including `thrasher` calmMin >= 1.0, species 1.5, junk 1.6, palette 1.7 rules, water 1.8 rules, cue rows 1.9 rules);
+  - every Def value inside the section 1 ranges and cross-field rules (tuning 1.1 including the R65 pity ranges, rods 1.2, baits 1.3 including exactly one unlimited, profiles 1.4 including `thrasher` calmMin >= 1.0, species 1.5, junk 1.6, palette 1.7 rules, water 1.8 rules, cue rows 1.9 rules with the effective max distance, 0 -> 30);
   - every species reachable (1.5 rule, using `BaitDef.ToCore().EffRating(1)`).
   - Message format (InvariantCulture, `G` floats): `"<category> <id>: <field> = <value> outside [<min>, <max>]"`, `"<category> <id>: <rule text>"` for cross-field rules, `"species <id>: not reachable with any bait at depth <= 6 m"`, `"missing asset <path>"`, `"<path> is not listed in ContentRegistry.<list>"`.
-- `SpeciesModels()`: for each non-null species `model`: `AssetDatabase.GetAssetPath(model)` must start with `ModelsFolder + "/"` and end with `.fbx` (ordinal ignore case), and the mesh must have a colour channel. Messages `"species <id>: model is not from <ModelsFolder>/*.fbx (<path>)"`, `"species <id>: model <path> has no vertex colours"`. Null models are allowed.
+- `SpeciesModels()`: for each non-null species `model`: `AssetDatabase.GetAssetPath(model)` must start with `ModelsFolder + "/"` and end with `.fbx` (ordinal ignore case), the mesh must have a colour channel, and `mesh.subMeshCount` must be 1 (ruling G-Q6). Messages `"species <id>: model is not from <ModelsFolder>/*.fbx (<path>)"`, `"species <id>: model <path> has no vertex colours"`, `"species <id>: model <path> has <n> submeshes, expected 1"`. Null models are allowed.
 
 ### 3.5 Hooks (one line each; hot-file rule C 2.3)
 
@@ -381,9 +385,9 @@ Re-running `build` with all assets present changes nothing on disk (check in 3.6
 | Test | Cases |
 |---|---|
 | `FishingData_Ids_UniquePerCategory` | seeds: per category every id passes `ContentIds.IsValidId` and is unique (ordinal); assets: `registry.Validate()` is empty and each fishing list count equals its seed count. |
-| `FishingData_Ranges_Valid` | assets: every value of every fishing Def inside the section 1 ranges and cross-field rules, via a test-local copy of the 1.1-1.8 range table (the plan's tables are the single source; the reviewer checks both copies match). One assertion message per violation, collected, then `Assert.IsEmpty`. Also `FishingSeedData.BuildDatabase()` does not throw. |
+| `FishingData_Ranges_Valid` | assets: every value of every fishing Def inside the section 1 ranges and cross-field rules, via a test-local copy of the 1.1-1.9 range table (the plan's tables are the single source; the reviewer checks both copies match; the cue-row copy compares the effective max distance, 0 -> 30, with `minDistance`, so the five M1 rows with `maxDistance` 0 pass). One assertion message per violation, collected, then `Assert.IsEmpty`. Also `FishingSeedData.BuildDatabase()` does not throw. |
 | `FishingData_EverySpecies_ReachableWithSomeBaitAndDepth` | assets via `registry.Fishing`: for each species some bait index `b` gives `PlaceholderRoller.IsEligible(species, baits[b].EffRating(1), 6f)` true; also each species has some bait in the M2 debug loadout (every bait is, C M2-D14). |
-| `FishingData_SeedsMatchSpecTables` | seeds vs test-local literal copies of: spec 9.12 (all 1.1 seeds incl. assist values, creel 12 / 15000 g, clean 0.8), spec 9.7 rods and baits (every column incl. shopCost/firstCamp), spec 9.6 profile columns **except** the motion fields and Darter's calmMin/calmMax/burstMin/burstMax/flipRate, spec 9.6 species columns (kg -> g, weightSkew 2.2, lengthShapeK 1.0, hookWindow 0), junk value 2; and the C 7.7 motion seeds (all five profiles, all five motion fields, plus Darter calm 0.3-0.8, burst 0.4-0.9, flipRate 1.0). Exact float equality. Values T15 retunes are taken from a `TunedDeviations` map at the top of the file (`static readonly Dictionary<string, float> TunedDeviations`, key `"<category>.<id>.<field>"`, e.g. `"profile.thrasher.staminaDrain"`); T14 creates it **empty** (Q2). |
+| `FishingData_SeedsMatchSpecTables` | seeds vs test-local literal copies of: spec 9.12 (all 1.1 seeds incl. assist values, creel 12 / 15000 g, clean 0.8; plus the R65 pity seeds 3 / 0.85 / 1.5 / 0.3, which are not spec values), spec 9.7 rods and baits (every column incl. shopCost/firstCamp), spec 9.6 profile columns **except** the motion fields and Darter's calmMin/calmMax/burstMin/burstMax/flipRate, spec 9.6 species columns (kg -> g, weightSkew 2.2, lengthShapeK 1.0, hookWindow 0), junk value 2; and the C 7.7 motion seeds (all five profiles, all five motion fields, plus Darter calm 0.3-0.8, burst 0.4-0.9, flipRate 1.0). Exact float equality. Values T15 retunes are taken from a `TunedDeviations` map at the top of the file (`static readonly Dictionary<string, float> TunedDeviations`, key `"<category>.<id>.<field>"`, e.g. `"profile.thrasher.staminaDrain"`); T14 creates it **empty** (ruling D-Q2; C 2.6 and C 12 amended so T15 may edit only this map). |
 | `FishingData_ThrasherCalm_AtLeastOneSecond` | seed and asset `thrasher` calmMin >= 1.0 and calmMax >= calmMin. |
 | `FishingData_AssetsExistForEverySeed` | each seed id has an asset at `<Folder>/<id>.asset` whose `Id` equals the seed id, listed in the registry; the four singletons exist at their paths and are the registry's references; every species asset's `Fight.Id` equals its seed `ProfileId`. |
 
@@ -404,14 +408,14 @@ Re-running `build` with all assets present changes nothing on disk (check in 3.6
 git add Assets/_Project/Editor/Builders/Fishing Assets/_Project/Editor/Builders/Fishing.meta Assets/_Project/Editor/Validation/FishingValidators.cs Assets/_Project/Editor/Validation/FishingValidators.cs.meta Assets/_Project/Editor/Builders/ContentBuilder.cs Assets/_Project/Editor/Validation/ValidationRunner.cs Assets/_Project/App/AppBootstrap.cs Assets/_Project/Editor/Builders/AssetPaths.cs Assets/_Project/Tests/EditMode/FishingContentTests.cs Assets/_Project/Tests/EditMode/FishingContentTests.cs.meta Assets/_Project/Tests/EditMode/ValidationTests.cs Assets/_Project/Content/Fishing Assets/_Project/Content/Fishing.meta Assets/_Project/Content/Art Assets/_Project/Content/Art.meta Assets/_Project/Content/Audio Assets/_Project/Content/Audio.meta Assets/_Project/Content/ContentRegistry.asset
 git commit -m "m2(data): fishing seed data, create-if-missing content builder, fishing validators, generated data assets" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 ```
-If `Content/Models/Fish_Perch.fbx` got no model reference (no vertex colours), say so in the report (T29 follow-up).
+If `Content/Models/Fish_Perch.fbx` got no model reference (no vertex colours or five submeshes), say so in the report (T29 re-exports the perch: the new `Art/Export/Fish_Perch.fbx` replaces it).
 
 ---
 
 ## 4. T15 - Tuning bots and retune
 
 - **Goal:** three scripted bots (Greedy, CounterReel, Rhythm) that fight the **real assets** through `FightSim`, print distributions and signature-motion stats, assert the spec 9.12 targets, and retune data (assets + seeds) until the targets pass or are recorded as tuning items.
-- **Owned files (C 12):** `Assets/_Project/Tests/EditMode/Tuning/FishingBots.cs` (new, with the `Tuning` folder meta); retuned `.asset` values under `Content/Fishing/**` with matching seeds in `Editor/Builders/Fishing/FishingSeedData.cs` (C 2.6 data-asset row); the `TunedDeviations` map in `Tests/EditMode/FishingContentTests.cs` (pending Q2).
+- **Owned files (C 12):** `Assets/_Project/Tests/EditMode/Tuning/FishingBots.cs` (new, with the `Tuning` folder meta); retuned `.asset` values under `Content/Fishing/**` with matching seeds in `Editor/Builders/Fishing/FishingSeedData.cs` (C 2.6 data-asset row); the `TunedDeviations` map in `Tests/EditMode/FishingContentTests.cs` (ruling D-Q2: T15 may edit only that map; the controller amends the spec 9.6/9.7/9.12 tables after T15).
 - **Shared edits (C 2.6):** data assets and `FishingSeedData` seeds only. Never `FightSim` or any Core file (a target that needs code stops the task: report to the controller; the review then goes to Opus high).
 - **Depends on:** T7 (`FightSim`), T14 (assets). **Implementer:** Sonnet. **Reviewer:** Sonnet (Opus high if a target needs more than data).
 - **C 2.8 that bite:** #16 (bots draw nothing random: seeds are the fixed formula below); #21 results in `$env:FG_OUT`; #20 explicit paths; #2 ASCII in the printed lines.
@@ -435,7 +439,7 @@ If `Content/Models/Fish_Perch.fbx` got no model reference (no vertex colours), s
 ```
 inputs : bot kind, FishFightProfile p, RodStats rod, FishingTuning t, weightT, seed
 start  : startLine = rod.CastMaxDist          // 18 m Handmade, 14 m Twig (C 7.15, spec 9.6 "full 18 m cast")
-         sim = new FightSim(p, rod, t, weightT, seed, startLine, assist: false)
+         sim = new FightSim(p, rod, t, weightT, seed, startLine, assist: false, pity: false)   // R65: bots never use pity
          easing = false                       // Rhythm only
          maxTicks = (int)Math.Ceiling(t.MaxFightTime / FightSim.Step)
 loop k = 0 .. maxTicks-1:
@@ -449,7 +453,7 @@ result : Outcome/Reason/Elapsed/NearSnapRecoveries/MaxTension from sim.State;
 
 ### 4.4 Bot decisions (identical rules for every implementer)
 
-Constants in the file: `const float CounterHold = 0.1f;` (equal to `FishingConstants.CenterDeadzone`; Q3), `const float EaseOnTension = 0.8f;`, `const float EaseOffTension = 0.5f;`.
+Constants in the file: `const float CounterHold = 0.1f;` (equal to `FishingConstants.CenterDeadzone`; ruling D-Q3: this defines the CounterReel and Rhythm steering), `const float EaseOnTension = 0.8f;`, `const float EaseOffTension = 0.5f;`.
 
 ```
 sideRun   = s.Phase == FightPhase.Burst && s.BurstDir != 0
@@ -507,7 +511,7 @@ Select-Xml -Path "$env:FG_OUT\editmode.xml" -XPath "//test-case[contains(@fullna
 
 ### 4.8 Tests (exact names, C 10.3) and what each asserts
 
-Each asserting test prints its `FG BOT` lines and one `FG TARGET` line per target, then asserts. The weightT each one asserts at is fixed here (C 7.15 names the batches but not the asserting weight; Q5): **0.5** for every median and snap target (a mid-size fish; the 9.8 roll's median weightT is about 0.22, so 0.5 is the harder side of typical); the Twig test uses both weights as its name says.
+Each asserting test prints its `FG BOT` lines and one `FG TARGET` line per target, then asserts. The weightT each one asserts at is fixed here (ruling D-Q5; C 7.15 names the batches but not the asserting weight): **0.5** for every median and snap target (a mid-size fish; the 9.8 roll's median weightT is about 0.22, so 0.5 is the harder side of typical); the Twig test uses both weights as its name says.
 
 | Test | Batches | Assertion |
 |---|---|---|
@@ -520,7 +524,7 @@ Each asserting test prints its `FG BOT` lines and one `FG TARGET` line per targe
 | `FishingBots_AllProfiles_PrintSignatureMotionAndDistributions` | all 60 batches + the 5 signature runs | prints `FG DATA`, all 60 `FG BOT` lines (order: profile, rod handmade then twig, w 0.5 then 0.9, Greedy, CounterReel, Rhythm) and 5 `FG SIG` lines; also prints the fun-gate proxies per profile (Rhythm handmade w 0.5: `rec>=1` for bulldog/thrasher/runner against the 40% fun-gate line, informational). Fails only if any recorded number is NaN or infinite. |
 | `FishingBots_FightSimStep_UnderFiftyMicroseconds` | runner, handmade, w 0.9, Rhythm decisions, seeds as 4.5 cycled | 2,000 warm-up ticks, then a `Stopwatch` over at least 200,000 `Tick` calls (new sims created as fights end; construction included, so the figure is an upper bound). Prints `FG PERF`. Fails only above 200 us per step (C 10.3: "prints; fails only above 0.2 ms"). Acceptance 11 (< 0.05 ms) is judged from this print plus the Profiler in T30. |
 
-**Tuning items (acceptance 8 escape hatch).** `static readonly Dictionary<string, string> TuningItems` at the top of the file, key = test name, value = one line with the measured numbers and the reason. When a target fails and its test name is in the map, the test prints `FG TARGET ... TUNING-ITEM` and calls `Assert.Ignore("FG TUNING ITEM " + value)` instead of failing, so `test-edit` stays green and the item shows as skipped (`skipped=K` in the result line). T15 starts with the map empty; an entry needs the controller's OK (Q6) and is copied into the T30 acceptance checklist. A target that passes while listed prints `PASS` and asserts normally (the stale entry is reported for removal).
+**Tuning items (acceptance 8 escape hatch).** `static readonly Dictionary<string, string> TuningItems` at the top of the file, key = test name, value = one line with the measured numbers and the reason. When a target fails and its test name is in the map, the test prints `FG TARGET ... TUNING-ITEM` and calls `Assert.Ignore("FG TUNING ITEM " + value)` instead of failing, so `test-edit` stays green and the item shows as skipped (`skipped=K` in the result line). T15 starts with the map empty; an entry needs the controller's approval (ruling D-Q6) and is copied into the T30 acceptance checklist (T30 carries the list). A target that passes while listed prints `PASS` and asserts normally (the stale entry is reported for removal).
 
 ### 4.9 Expected first run (author's rough estimate, not FightSim)
 
@@ -555,7 +559,7 @@ So the likely first-run misses are **Bulldog CounterReel (snaps too often)**, **
 | Steady/Darter median out of 15-30 s | that profile's `runSpeed` or `staminaDrain` | |
 
 4. Guard rails: never change `FightSim` or other code; stay inside the section 1 ranges (the validator enforces them); keep every passing target passing; keep the profiles distinct in `FG SIG` (flips/s: darter > thrasher > runner > 0 = steady = bulldog; bulldog creep > 0.03 m/s and the others ~0; steady and runner fullForce > 0.3 s; thrasher jitter sd > 0.1, others < 0.02). Motion seeds may be retuned too (skeleton risk 4) under the same rules.
-5. Each kept change edits, in the same commit: the `.asset` YAML value (field names are the serialized names, e.g. `staminaDrain: 0.09` in `Content/Fishing/FightProfiles/thrasher.asset`; keep LF), the matching seed in `FishingSeedData`, and (Q2) the `TunedDeviations` entry in `FishingContentTests.cs`. Exploratory sweeps may use a local, uncommitted scratch test; only asset + seed (+ deviation) edits are committed.
+5. Each kept change edits, in the same commit: the `.asset` YAML value (field names are the serialized names, e.g. `staminaDrain: 0.09` in `Content/Fishing/FightProfiles/thrasher.asset`; keep LF), the matching seed in `FishingSeedData`, and (ruling D-Q2) the `TunedDeviations` entry in `FishingContentTests.cs`. Exploratory sweeps may use a local, uncommitted scratch test; only asset + seed (+ deviation) edits are committed.
 6. Time box: at most 8 bot-run iterations after the first run. A target still failing then becomes a tuning item (4.8) with the controller's OK. A target that cannot move inside the ranges, or needs a code change, stops the task: report to the controller (Opus high review, escalation per handoff).
 7. Final run: `build` (create-if-missing must leave the retuned assets untouched: check `git diff` on the edited `.asset` files is exactly your edits), then full `test-edit -TimeoutMinutes 15`; paste the final `FG` block and the `FG RESULT` line.
 
@@ -575,7 +579,7 @@ So the likely first-run misses are **Bulldog CounterReel (snaps too often)**, **
 - Printed formats match 4.7; the report contains the first-run and final `FG` blocks and the iteration table.
 - Every retuned value is identical in the `.asset`, `FishingSeedData` and `TunedDeviations`; values inside section 1 ranges; `Validation_FishingContent_Pass` green.
 - Any `TuningItems` entry has controller approval noted in the report and its numbers.
-- Runtime budget: in the final full `test-edit`, `FG TIME` plus the perf test stay at or under about 90 s, so later tasks' `test-edit` runs (default 5-minute timeout) keep passing. Over budget: report it (Q10), do not cut seeds on your own.
+- Runtime budget: in the final full `test-edit`, `FG TIME` plus the perf test stay at or under about 90 s, so later tasks' `test-edit` runs (default 5-minute timeout) keep passing. Over budget: report it with the measured `FG TIME`; the controller decides between a longer timeout and fewer seeds (ruling D-Q10). Do not cut seeds on your own.
 - If a target needed code: task stopped and escalated (no code change in this commit).
 
 ### 4.13 Commit
@@ -588,15 +592,16 @@ With no retune, drop the asset, seed and deviation paths and say "no retune need
 
 ---
 
-## 5. Contract questions
+## 5. Contract questions (all closed by controller rulings of 2026-10-11; C 15)
 
-- **Q1 (T13, C 7.13 "ComputeContentHash() includes all six categories").** `ContentHash.Compute` appends the category name even for an empty id list, so always including the five fishing categories changes the spots-only hash and breaks the M1 test `ContentRegistry_Hash_StableAcrossInstances` (C 10: M1 tests keep passing). This plan includes a fishing category in the hash only when its list is non-empty. Confirm.
-- **Q2 (T14/T15 ownership).** `FishingData_SeedsMatchSpecTables` (T14) compares seeds to the spec tables, so the first value T15 retunes breaks it, and C 12 does not give T15 `FishingContentTests.cs`. Proposal: T14 creates an empty `TunedDeviations` map in that file, T15 edits only that map, and the controller amends the spec 9.6/9.12 tables after T15. Needs a C 12 row change for T15.
-- **Q3 (T15 bot rule).** "Steers against side runs" taken literally (steer -burstDir for the whole run) drags weak fish to the far side: in the author's rough model CounterReel then snapped 100% on Steady and Darter, worse than Greedy. This plan adds `CounterHold = 0.1` (counter while `BurstDir * Lateral > -0.1`, equal to `CenterDeadzone`). With 0 or 0.2 the model's results were close (Steady CounterReel 100% landed either way). Confirm the rule, since it is the bot's definition.
-- **Q4 (T14, C 6.2 model fill vs C 7.14 `SpeciesModels`).** If `Fish_Perch.fbx` has no vertex colours (C G6 unverified), filling `perch.model` would fail `Validation_SpeciesModels_Pass` and the build. This plan fills a null model only when the mesh has a colour channel and logs otherwise. Confirm (T29 re-export then fills it on the next build).
-- **Q5 (T15, C 7.15).** The contract runs batches at weightT 0.5 and 0.9 but does not say which weight the median and Bulldog targets assert at. This plan asserts at 0.5 (the Twig test uses both). Alternatives: assert both, or pool.
-- **Q6 (T15, acceptance 8).** A target T15 cannot meet would leave `test-edit` red for every later task. This plan adds a `TuningItems` map that turns a listed failing target into `Assert.Ignore` (counted as skipped) with its numbers, entries only with the controller's OK, copied into T30. Confirm the mechanism.
-- **Q7 (C 7.13 `FishingTuningDef`).** Read as: every `FishingTuning` member has a camelCase field except `CreelMaxWeightG`, which is stored as `creelMaxKg` (no grams field). Confirm there is no separate `creelMaxWeightG` field.
-- **Q8 (AssetPaths).** T14 declares `AssetPaths.ModelsFolder`; T20 (`FishModelPostprocessor`) and T29 must reuse it rather than declare it again (a duplicate const breaks compile).
-- **Q9 (SfxCueTable growth).** The builder is create-if-missing, so a recipe added after T14 gets no `SfxCueRow` and plays with Core mixing defaults (C M2-D11: `ApplyCueTable` overrides by id only). C 6.2's allowed in-place edits do not include appending rows. Fine for M2 (T11 lands first); flag for M3+.
-- **Q10 (bot runtime in every later `test-edit`).** C 11 puts the bots in the full `test-edit` that T16-T30 run with the default 5-minute timeout. 12,000 fights are fine at typical lengths, but a retune toward long or timeout-heavy fights (up to 12,000 ticks each) could push the suite past it. T15 prints `FG TIME` and checks about 90 s; if that cannot hold, the controller chooses between a longer `-TimeoutMinutes` for later tasks and fewer seeds.
+- **Q1 (closed, D-Q1).** `ComputeContentHash()` includes a fishing category only when its list is non-empty (keeps the M1 hash test). C 7.13 amended.
+- **Q2 (closed, D-Q2).** T14 creates the empty `TunedDeviations` map in `FishingContentTests.cs`; T15 may edit only that map. C 2.6 and C 12 amended. The controller amends the spec 9.6/9.7/9.12 tables after T15.
+- **Q3 (closed, D-Q3).** Bot `CounterHold = 0.1` (= `CenterDeadzone`) defines CounterReel and Rhythm steering.
+- **Q4 (closed, D-Q4, G-Q6).** A species model is filled only when the FBX mesh has a colour channel and exactly one submesh.
+- **Q5 (closed, D-Q5).** Targets assert at weightT 0.5; the Twig check at 0.5 and 0.9.
+- **Q6 (closed, D-Q6).** The `TuningItems` map: a listed miss becomes `Assert.Ignore` with its numbers; each entry needs controller approval; carried to T30.
+- **Q7 (closed, D-Q7).** `creelMaxKg` only (no grams field).
+- **Q8 (closed, D-Q8).** `AssetPaths.ModelsFolder` is declared by T14 and reused by T20 and T29.
+- **Q9 (closed, D-Q9).** OK for M2; a note for M3 (a recipe added later gets no cue row until the table is extended).
+- **Q10 (closed, D-Q10).** T15 reports `FG TIME`; the controller decides timeout versus seeds if it exceeds 90 s.
+- **Cue-table validator (closed, C-Q1).** The effective max distance (0 -> 30) is compared with `minDistance` in 1.9, the validator and the range copy.

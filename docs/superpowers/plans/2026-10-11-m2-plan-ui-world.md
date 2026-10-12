@@ -5,7 +5,7 @@
 - **Spec:** `docs/superpowers/specs/2026-10-09-fishgame-design.md` sections 9.11, 9.13, 10.1-10.7, 11.1-11.4, 11.6, 17.2 and 3.2 (R62-R64).
 - **Scope:** T25 Fishing HUD, T26 Dev overlay, T28 Lake dock rebuild, T29 Blender species models (controller checklist), T30 Acceptance and final hand-off.
 - **Shape:** behaviour, signatures, checks and acceptance. None of these tasks is on the skeleton 1.3 list of code-carrying bodies, so no task below contains complete code. No task below is Haiku-eligible.
-- **Contract doubts** are listed under "Contract questions" at the end. Each task body picks a default, so implementation can start before the controller answers.
+- **Contract doubts** were listed as questions; every one is now closed by a controller ruling ("Contract questions" at the end, C 15).
 
 ---
 
@@ -23,7 +23,7 @@
 - **#6** Scene churn: `git restore Assets/_Project/Scenes/*.unity` unless the scene really changed (T28 changes it on purpose).
 - **#8** EditMode tests never reach UI or Presentation. **C 10 lists no tests for T25, T26, T28, T29 or T30.** Do not invent "required" test names. The gate for these tasks is `compile`, `build`, the full `test-edit` and `test-play`, the validators, and the manual checks written in each task. An extra committed test file needs the controller's OK first, because it is not in C 12. Temporary verification files that are deleted before the commit (T28's fingerprint test, T29's lineup script) are allowed, and the reviewer checks they are gone.
 - **#9** PlayMode must stay warning-free. A HUD exception caught by `EventBus` is logged as an error and fails PlayMode.
-- **#11** Check `Temp/UnityLockfile` before any batchmode run. Never kill Unity. If a run prints `LOCKED`, stop and ask the user to close the editor.
+- **#11** Never kill Unity. The wrapper tests whether the editor lock is HELD: if a run prints `LOCKED` (exit 2), stop and ask the user to close the editor. A leftover `Temp/UnityLockfile` that is not held (Unity leaves it after a batch run) is not a lock.
 - **#13** Any batchmode render (T29) sets `ShaderUtil.allowAsyncCompilation = false` first and restores it after.
 - **#14** Scene builders load assets **after** `EditorSceneManager.NewScene` (T28).
 - **#15** No in-scene-placed NetworkObjects (T28 adds plain GameObjects only).
@@ -45,7 +45,7 @@ The last line of every run is `FG RESULT <command> PASS|FAIL|LOCKED|TIMEOUT`. Ex
 ### G0.4 Pre-flight (every task)
 1. `git -C C:\Dev\FishGame status --porcelain --untracked-files=all` and save it as the task baseline in the scratchpad.
 2. `git -C C:\Dev\FishGame log --oneline -5`: the dependency commits from your header are present.
-3. `Test-Path C:\Dev\FishGame\Temp\UnityLockfile`: if true, stop and ask the user to close the editor.
+3. Lock: no separate check. The first `unity.ps1` run reports `LOCKED` (exit 2) if the user has the editor open: then stop and ask them to close it. A leftover `Temp/UnityLockfile` file alone is not a lock.
 
 ### G0.5 Commit shape (C 2.1)
 `git -C C:\Dev\FishGame add <explicit paths>; git -C C:\Dev\FishGame commit -m "m2(<area>): <summary>" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"`. Areas used here: `hud`, `dev`, `lakedock`, `models`, `docs`. Integration fixes (T28, T30 only, C 2.6 rule) get their own commit: `fix(<file>): <what>`.
@@ -74,8 +74,8 @@ internal sealed class FishingHudPresenter : IHudExtension   // UI/Fishing/Fishin
 }
 ```
 - `UiStrings` (edit): add `public static string Format(string key, params string[] args)`. **Keep** the existing `Format(string key, string arg)`: M1 callers bind to it. Never pass a literal `null` as the only argument after the key, because that call would be ambiguous between the two overloads (C# CS0121).
-- New `UiStrings` keys, exactly as C 7.25 gives them: `cap.bite` "Bite!", `cap.straining` "Line straining", `cap.snapped` "Snapped", `cap.escaped` "Got away", `hud.click` "Click!", `hud.creel` "{0}/{1}  {2} kg", `hud.creel_full` "Full - sell!", `toast.catch` "{0} caught {1} kg {2} (${3})", `toast.lost` "Snapped! It was a {0}", `toast.creel_full` "Creel full! {0} released", `toast.clean` "Clean catch!", `set.line_gauge` "Line gauge", `set.captions` "Captions", `set.assist` "Fishing assist".
-- Additive keys this plan needs (contract questions Q1, Q2): `toast.raw` "{0}" (passthrough for pre-formatted toasts), `toast.junk` "{0} fished up {1} (${2})", `set.gauge_off` "Off", `set.gauge_arc` "Arc", `set.gauge_bar` "Bar".
+- New `UiStrings` keys, exactly as C 7.25 gives them: `cap.bite` "Bite!", `cap.straining` "Line straining", `cap.snapped` "Snapped", `cap.escaped` "Got away", `hud.click` "Click!", `hud.creel` "{0}/{1}  {2} kg", `hud.creel_full` "Full - sell!", `toast.catch` "{0} caught {1} kg {2} (${3})", `toast.lost` "It got away!" (generic: covers snap and escape; ruling G-Q3), `toast.creel_full` "Creel full! {0} released", `toast.clean` "Clean catch!", `settings.line_gauge` "Line gauge", `settings.captions` "Captions", `settings.assist` "Fishing assist" (the M1 `settings.*` prefix, ruling G-Q2; C 7.25 amended).
+- Additive keys (rulings G-Q1, G-Q2, R65): `toast.raw` "{0}" (passthrough for pre-formatted toasts), `toast.junk` "{0} fished up {1} (${2})", `toast.pity` "{0} has a lucky line!" (published through `toast.raw`), `settings.gauge_off` "Off", `settings.gauge_arc` "Arc", `settings.gauge_bar` "Bar".
 
 ### T25.2 The hook (UiFlowController, one line)
 In `BindScreens` after the M1 HUD presenter is created (post-T2 layout): `AttachHudExtension(new FishingHudPresenter());`. Nothing else in `UiFlowController.cs` changes. T2 defines when `Bind`, `Tick` and `Unbind` run. Read T2's `AttachHudExtension` before coding, and confirm that `Tick` runs only while the HUD layer is visible (Hud, Pause, Settings-over-Pause) and that `Unbind` runs in `OnDestroy`.
@@ -105,7 +105,7 @@ USS (`App.uss`):
 - Query the elements with `UiQuery.Req`.
 - Subscribe to the bus messages `CaptionRequested` and `CatchAnnounced` (App bus), to `ISettings.Changed`, and to the static `FishingRodController.LocalChanged`.
 - Cache the creel caps and threshold colours:
-  - Read `registry.FishingTuning?.ToCore()` for `CreelMaxEntries` and `CreelMaxWeightG`. If the registry has no fishing tuning, hide the creel and gauge and keep everything else working.
+  - Read `registry.FishingTuning` (explicit `!= null` check: it is a Unity object, never `?.`), then `.ToCore()` for `CreelMaxEntries` and `CreelMaxWeightG`. If the registry has no fishing tuning, hide the creel and gauge and keep everything else working.
   - Read the colours from `registry.ArtPalette` getters (`UiAccent`, `UiWarn`, `UiBad`, `UiText`, `UiPanel`, PascalCase per C 7.13). When the palette is missing, fall back to fixed USS-like colours.
 - Hide every fishing element until `Tick` decides.
 
@@ -147,7 +147,7 @@ USS (`App.uss`):
 5. **Creel.**
    - Visible iff `_creel != null` and the caps are known.
    - Snapshot = `_creel.Snapshot(maxEntries, maxWeightG)`.
-   - Text: if `CreelRules.IsFull(snapshot)`, then `hud.creel_full` with class `full`. Otherwise `UiStrings.Format("hud.creel", count, maxEntries, kg)`, where kg = `TotalWeightG / 1000f` formatted `"0.0"` with `CultureInfo.InvariantCulture`, plus class `warn` when `CreelRules.IsWarn(snapshot)`.
+   - Text: if `CreelRules.IsFull(snapshot)`, then `hud.creel_full` with class `full`. Otherwise `UiStrings.Format("hud.creel", ...)` with invariant-culture STRING arguments (`count.ToString(Invariant)`, `maxEntries.ToString(Invariant)`, kg; `Format` takes `params string[]`), where kg = `TotalWeightG / 1000f` formatted `"0.0"` with `CultureInfo.InvariantCulture`, plus class `warn` when `CreelRules.IsWarn(snapshot)`.
    - Recompute only on `PlayerCreel.Changed` or when the creel reference changes, not every frame.
    - `warn` = bold, `UiWarn`, and a 3 px left border. `full` = bold, `UiBad`, and the different text. The shape and text change carry the meaning, not hue alone.
 6. **Catch toasts** (`CatchAnnounced`; App bus; every peer).
@@ -157,15 +157,16 @@ USS (`App.uss`):
    - By `a.Kind`:
      - `Landed`, fish: `toast.catch` with (name, kg `"0.0"`, item, `ValueCoins`). Landed junk: `toast.junk` with (name, item, `ValueCoins`). Show them for everyone (rate-limited for crew).
      - `Landed` with `a.CleanBonus && local`: also `toast.clean`. The clean toast is local only (crew see the reveal sparkle from T23).
-     - `Lost`: `toast.lost` with (item), for everyone (rate-limited for crew). The text says "Snapped!" for every Lost, including a hooked escape; see Q3.
+     - `Lost`: `toast.lost` (the generic "It got away!", no argument; it covers snap and escape; ruling G-Q3, no wire change), for everyone (rate-limited for crew).
+     - `PityCast` (R65 / M2-D23; announced when a bad-luck-nudge cast is accepted): `toast.pity` with (name), for everyone including the local player (not rate-limited: at most one per three failed casts). The announcement's `Catch` is `default`: do not index the registry with it.
      - `ReleasedCreelFull`: `toast.creel_full` with (item), **local only** (it is about your own creel).
      - `None`: nothing.
-   - **Delivery (Q1).** `ToastRequested` carries one `Arg`, and `ToastPresenter` (M1, not owned here) formats with one argument. So format the full text first with `UiStrings.Format(key, params args)`, then publish `new ToastRequested("toast.raw", text, 4f)`. Never publish `toast.catch` and its siblings directly: a single-argument format of a four-placeholder template throws `FormatException`, which is logged as an error and fails PlayMode.
+   - **Delivery (ruling G-Q1).** `ToastRequested` carries one `Arg`, and `ToastPresenter` (M1, not owned here) formats with one argument. So format the full text first with `UiStrings.Format(key, params args)`, then publish `new ToastRequested("toast.raw", text, 4f)`. Never publish `toast.catch` and its siblings directly: a single-argument format of a four-placeholder template throws `FormatException`, which is logged as an error and fails PlayMode.
    - All numbers are formatted with `CultureInfo.InvariantCulture`.
 7. **Settings rows (SettingsPresenter).** Keep the M1 bind pattern (refreshers, `NotifyChanged`, no save per tick).
-   - `LineGauge`: a `SliderInt` 0..2 bound to `lineGauge`. Its label is `set.line_gauge` + two spaces + the value name (`set.gauge_off` / `set.gauge_arc` / `set.gauge_bar`). Add a private `BindChoice` helper next to `BindInt`.
-   - `Captions`: `BindBool` on `captions`, label `set.captions`.
-   - `FishingAssist`: a `BindBool`-like bind on `fishingAssist`, label `set.assist`, with the C 7.10 rule: on the toggle's **false-to-true change**, if `lineGauge == 0`, set `lineGauge = 1` (Arc), call `NotifyChanged`, and refresh the gauge slider. Turning assist off never changes the gauge, and the player can then turn the gauge off separately. There is no persisted "already done once" flag, because `SettingsData` belongs to T10 (Q4).
+   - `LineGauge`: a `SliderInt` 0..2 bound to `lineGauge`. Its label is `settings.line_gauge` + two spaces + the value name (`settings.gauge_off` / `settings.gauge_arc` / `settings.gauge_bar`). Add a private `BindChoice` helper next to `BindInt`.
+   - `Captions`: `BindBool` on `captions`, label `settings.captions`.
+   - `FishingAssist`: a `BindBool`-like bind on `fishingAssist`, label `settings.assist`, with the C 7.10 rule (ruling G-Q4): on every **false-to-true change** of the toggle, if `lineGauge == 0`, set `lineGauge = 1` (Arc), call `NotifyChanged`, and refresh the gauge slider. Every time, not once: there is no persisted flag, because `SettingsData` belongs to T10. Turning assist off never changes the gauge, and the player can then turn the gauge off separately.
    - The slider and toggles are focusable `.setting` controls inside the existing `SettingsScroll`, so M1 keyboard and gamepad navigation and `OnFocusIn` scrolling cover them. Do not use `DropdownField`: its popup is not reliable with gamepad-only navigation (M1 criterion 11).
 
 **Unbind().** Dispose the bus subscriptions, unsubscribe `ISettings.Changed`, `LocalChanged` and `PlayerCreel.Changed`, hide the elements, and drop the references. Calling it twice is safe.
@@ -179,7 +180,10 @@ USS (`App.uss`):
 4. Edit `SettingsPresenter.cs` (three rows, assist rule). Run `compile`.
 5. Run `build`, the full `test-edit` and the full `test-play`. All must pass, with no new warnings in the PlayMode output.
 6. Run the added-lines ASCII scan (G0.2 #2) on the six files.
-7. Commit (G0.5): `m2(hud): fishing HUD - charge ring, Click prompt, captions, line gauge, creel, catch toasts, settings rows`. Paths: the new `.cs`, its `.meta`, the `UI/Fishing` folder `.meta` if new, and the five edited files.
+7. Commit (G0.5), literally (add `Assets/_Project/UI/Fishing.meta` only if `git status` shows it as new):
+```powershell
+git -C C:\Dev\FishGame add Assets/_Project/UI/Fishing/FishingHudPresenter.cs Assets/_Project/UI/Fishing/FishingHudPresenter.cs.meta Assets/_Project/UI/UiFlowController.cs Assets/_Project/UI/UiStrings.cs Assets/_Project/UI/SettingsPresenter.cs Assets/_Project/UI/Uxml/AppRoot.uxml Assets/_Project/UI/Uss/App.uss; git -C C:\Dev\FishGame commit -m "m2(hud): fishing HUD - charge ring, Click prompt, captions, line gauge, creel, catch toasts, settings rows" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
+```
 
 ### T25.6 Acceptance
 **Reviewer (Opus high) checks:**
@@ -187,15 +191,15 @@ USS (`App.uss`):
 - The only `UiFlowController` change is one hook line. No file outside the T25 list is touched.
 - Nothing writes gameplay state. Reads go through `Machine` getters, `PlayerCreel`, `ViewState` and events (C 2.8 #17).
 - The lifecycle: re-resolution on `LocalChanged`, `PlayerCreel.Changed` unsubscribed on change and in `Unbind`, null-safe across leave and rejoin and a scene reload.
-- The toast route is pre-formatted through `toast.raw`. The crew rate limit is keyed per slot, and local toasts are never limited. Clean and creel-full toasts are local only.
+- The toast route is pre-formatted through `toast.raw` (also `toast.pity`). The crew rate limit is keyed per slot, and local toasts are never limited. Clean and creel-full toasts are local only.
 - The gauge shows the local line only, only while Hooked on a fish. It has the 0.8 tick, the warn thickening and the grace blink. The prompt and captions are off-centre.
-- Assist-on sets the gauge to Arc only on the false-to-true edge, and only from Off.
+- Assist-on sets the gauge to Arc on every false-to-true edge, and only from Off (ruling G-Q4).
 - Invariant culture everywhere. No per-frame allocations in `Tick` beyond string changes on a value change.
 
 **Controller manual checks** (editor, after the commit; record PASS/FAIL in the task report):
 1. Solo with F6 forced bite (after T26) or a normal wait. Ready, then charge: the ring fills and ping-pongs. Hook a fish with the gauge on Arc: the tick sits at 0.8, the fill thickens past it, and it blinks in grace. Switch to Bar: same reads.
 2. Captions on: "Bite!" appears bottom-centre. Captions off: none appears, and an active caption disappears.
-3. With assist off, gauge Off and assist then switched on, the gauge becomes Arc. Turn the gauge Off again with assist still on: it stays Off. Toggle assist off and on again: it becomes Arc again (edge rule).
+3. With assist off, gauge Off and assist then switched on, the gauge becomes Arc. Turn the gauge Off again with assist still on: it stays Off. Toggle assist off and on again: it becomes Arc again (every false-to-true edge, ruling G-Q4).
 4. With F7 (twitchy, host), the bite shows "Click!" and a click hooks it. Without F7, no "Click!" appears.
 5. Creel: land 10 fish (or until 80% of the cap): warn style appears. At the cap: "Full - sell!", and the next landed fish shows "Creel full! X released". Ring the bell (debug sell): the count resets.
 6. Game view at 1280x720, UI scale 150%: the ring, gauge, prompt, caption, creel and toasts don't clip or overlap the crosshair.
@@ -241,7 +245,7 @@ internal sealed class DevOverlayPresenter : IHudExtension   // UI/Fishing/DevOve
 - **F7 `ToggleTwitchy`:** host only. Toggle `FishingDebugSettings.TwitchyHook`. On a client: `dev.host_only`.
 - **F9 `RippleAtCrosshair`:** local only.
   - Cast a ray from `Camera.main` through the viewport centre (`ViewportPointToRay(0.5, 0.5)`) and call `Physics.Raycast(ray, out hit, 100f, CastProbe.CastMask, QueryTriggerInteraction.Collide)`. It returns the closest hit, so the dock above the water blocks it, the same rule as casting.
-  - If `hit.collider.gameObject.layer == Layers.Water`: `RippleField.Current?.Spawn(hit.point.x, hit.point.z, RippleMath.Bite)`. Otherwise `dev.no_water`.
+  - If `hit.collider.gameObject.layer == Layers.Water` and `RippleField.Current != null` (explicit check: Unity object): `RippleField.Current.Spawn(hit.point.x, hit.point.z, RippleMath.Bite)`. Otherwise `dev.no_water`.
   - This is the spec 17.2 item 7 "ripple debug key".
 
 **Overlay text.**
@@ -250,12 +254,12 @@ internal sealed class DevOverlayPresenter : IHudExtension   // UI/Fishing/DevOve
   1. `ROD state=<RodState> t=<StateTime> castId=<CastId> assist=<on|off> recall=<Recalling>`, from `FishingRodController.Local.Machine`.
   2. `FIGHT phase=<Calm|Burst> dir=<BurstDir> tension=<..> stamina=<..> line=<LineLength>m lat=<Lateral> el=<Elapsed>s snap=<SnapTimer> pin=<PinnedTimer> slack=<SlackTimer> recov=<NearSnapRecoveries> max=<MaxTension>`, from `Machine.Fight.State`. For junk: `FIGHT junk line=<..> el=<..> slack=<..>`.
   3. `BITE timer=<BiteTimer>/<BiteWait>s nibbles=<Roll.NibbleCount> hookWindow=<Roll.HookWindow>` (when `HasResult`).
-  4. `ROLL <item name> <WeightG> g <Quality> $<ValueCoins> t=<WeightT> size=<SizeClass> seed=0x<FightSeed:X8>` (when `HasResult`; this is the owner's own last roll, spec 9.11 "last roll").
+  4. `ROLL <item name> <WeightG> g <Quality> $<ValueCoins> t=<WeightT> size=<SizeClass> pity=<0|1> seed=0x<FightSeed:X8>` (when `HasResult`; this is the owner's own last roll, spec 9.11 "last roll").
   5. `LOADOUT rod=<RodAt(NetRodIndex).DisplayName> bait=<BaitAt(NetSelectedBait).DisplayName> x<count>`, where count 0xFFFF prints `inf`. Read from the local `FishingRodNetwork` NetVars, the host mirrors of the ledger (C 8.3).
   6. Host only: `HOST casts=<HostCastCounter> now=<Now>s catches=<CatchLog.Count> runSeed=0x<RunSeed:X16> forcedBite=<ForcedBiteWait> twitchy=<on|off>`, then one line per `FishingRodNetwork.Active` entry: `  slot <Player.Slot> client <OwnerClientId>: <Waiting|Hooked castId N | idle>` via `Ledger.TryGetActive(OwnerClientId, out cast)`. On a client the line reads `HOST n/a (client)`.
   7. `LAST <last action text>` (for 4 s after a key).
 - `FishingRodNetwork.Spawned`/`Despawned` (C 8.1) may be used to keep the active list without polling. Polling `Active` at 10 Hz is also fine.
-- **RunSeed** is displayed only. No key changes it (C 5.3 lists no key for it; see Q5).
+- **RunSeed** is displayed only. No key changes it (ruling G-Q5; the misleading `DefaultDevRunSeed` comment in C 5.2 is corrected).
 
 **Unbind.** Unsubscribe everything and hide the label.
 
@@ -264,7 +268,10 @@ internal sealed class DevOverlayPresenter : IHudExtension   // UI/Fishing/DevOve
 2. Edit the UXML, USS and UiStrings, write the presenter, and add the hook. Run `compile`.
 3. Run `build`, the full `test-edit` and the full `test-play` (PlayMode's `FakeInputService` returns false for every `DevKey` unless a test sets one, so nothing fires).
 4. Run the added-lines ASCII scan.
-5. Commit: `m2(dev): F3 dev overlay and F4-F9 debug keys`.
+5. Commit, literally (add `Assets/_Project/UI/Fishing.meta` only if it is still new):
+```powershell
+git -C C:\Dev\FishGame add Assets/_Project/UI/Fishing/DevOverlayPresenter.cs Assets/_Project/UI/Fishing/DevOverlayPresenter.cs.meta Assets/_Project/UI/UiFlowController.cs Assets/_Project/UI/UiStrings.cs Assets/_Project/UI/Uxml/AppRoot.uxml Assets/_Project/UI/Uss/App.uss; git -C C:\Dev\FishGame commit -m "m2(dev): F3 dev overlay and F4-F9 debug keys" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
+```
 
 ### T26.4 Acceptance
 **Reviewer (Opus high):**
@@ -396,7 +403,10 @@ internal sealed class DevOverlayPresenter : IHudExtension   // UI/Fishing/DevOve
 7. **Clean up.** Delete `TempLakeDockFingerprint.cs` and its `.meta`. `git status` must not list them.
 8. **Commit.**
    - Paths: the three builder files, `Assets/_Project/Scenes/Spot_LakeDock.unity` (a real change this time), each `Assets/_Project/Content/Meshes/LakeDock_*.asset` and its `.meta` (new ones included), and any integration fixes in their own commits first.
-   - Message: `m2(lakedock): rebuild lake dock with MeshBuilder props, water grid, sky, fog and volumes`.
+   - Literal command (new `LakeDock_*` assets and their `.meta` are picked up by the wildcard):
+```powershell
+git -C C:\Dev\FishGame add Assets/_Project/Editor/Builders/LakeDockBuilder.cs Assets/_Project/Editor/Builders/LakeDockLayout.cs Assets/_Project/Editor/Builders/LakeDockMeshes.cs Assets/_Project/Scenes/Spot_LakeDock.unity "Assets/_Project/Content/Meshes/LakeDock_*"; git -C C:\Dev\FishGame commit -m "m2(lakedock): rebuild lake dock with MeshBuilder props, water grid, sky, fog and volumes" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
+```
 9. **Report:**
    - the `FG LAKEDOCK` stats line;
    - the fingerprint result;
@@ -427,106 +437,40 @@ internal sealed class DevOverlayPresenter : IHudExtension   // UI/Fishing/DevOve
 **Perf (spec 10.7):**
 - Frame time, SRP batch count and the water pass GPU time need a development build and the Profiler. They are **user measurements** recorded in the T30 acceptance doc.
 - T28 supplies the scene stats only.
-- The M1 baseline in `2026-10-09-m1-acceptance.md` may still be unrecorded (Q8). In that case T30 records the M2 numbers as the first baseline and notes it.
+- The M1 baseline in `2026-10-09-m1-acceptance.md` may still be unrecorded. In that case the M2 numbers become the first perf baseline (ruling G-Q8) and T30 notes it.
 
 ---
 
-## T29 - Blender species models (controller checklist; not a subagent brief)
+## T29 - Species models: import and verify the staged Blender fish (controller checklist; not a subagent brief)
 
 **Header**
-- **Who:** the controller, in the user's single live Blender 5.2 instance through Blender MCP (`execute_blender_code` runs Python, `look` renders a view). There is no subagent and no worktree.
-- **Goal (C 7.29, R62):** Make `Fish_Bluegill.fbx`, `Fish_Carp.fbx`, `Fish_Trout.fbx` and `Fish_Catfish.fbx`, and re-export `Fish_Perch.fbx` only if needed (step C). Each model: under 400 triangles (target 150-300), flat normals, nose +Z in Unity, origin at the body centre, identity transform, scale 1, per-face vertex colours from the species `colorA`/`colorB`, no materials or textures, **one submesh**.
-- **Owned (C 12):** `Assets/_Project/Content/Models/Fish_{Bluegill,Carp,Trout,Catfish}.fbx` and their `.meta` (plus `Fish_Perch.fbx` only if re-exported), and the regenerated species assets (`model` refs only).
-- **Depends on:** T20 (`FishModelPostprocessor`, `M_Toon_Fish`, `RenderValidators`), T23 (`FishFallbackMesh`, used for the colour comparison), T28 (committed or in review; skeleton section 5).
+- **Who:** the controller. No subagent and no worktree. Blender MCP is needed only if a staged model fails verification and must be re-exported.
+- **State at plan time:** the five species models already exist in the repo, committed in `8f327e5`: `Art/Export/Fish_{Bluegill,Perch,Carp,Trout,Catfish}.fbx`, source `Art/Blender/fishgame_m2_species.blend`. Each has ONE submesh and one material slot, per-face LINEAR vertex colours (ruling F-Q3: the controller re-exports the staged fish linear), 222-262 triangles, exported -Z forward / Y up / apply transform (nose +Z in Unity). The new perch REPLACES the spike perch `Content/Models/Fish_Perch.fbx` (5 submeshes, no vertex colours).
+- **Goal (C 7.29, R62):** copy the five FBX into `Assets/_Project/Content/Models/` (perch overwrites the spike file and keeps its `.meta`), let `FishModelPostprocessor` import them, verify the properties above on the imported meshes, wire the species `model` refs through `build`, and get the user's look approval. T29 imports and verifies; it does not model from scratch.
+- **Owned (C 12):** `Assets/_Project/Content/Models/Fish_{Bluegill,Perch,Carp,Trout,Catfish}.fbx` and their `.meta`, and the regenerated species assets (`model` refs only).
+- **Depends on:** T20 (`FishModelPostprocessor`, `M_Toon_Fish`, `RenderValidators`), T14 (`Validation_SpeciesModels_Pass` incl. the one-submesh check), T23 (`FishFallbackMesh`, used for the colour comparison), T28 (committed or in review; skeleton section 5).
 - **Review:** Sonnet (import settings, LFS, validators, asset diffs), then the **user look check**. The commit trailer names the controller's model.
 
-### A. Inputs (read; do not copy values into this plan)
-1. Species colours and shapes: read `colorA`, `colorB` and `bodyShape` from `Assets/_Project/Content/Fishing/Species/<id>.asset` (generated by T14 from `FishingSeedData`). The assets are the runtime truth.
-2. Nominal model length = `CatchMath.LengthMm` at the mid weight, `400 x cbrt(midKg) x lengthShapeK (1.0)`. The reveal rescales to the rolled `LengthMm` anyway (C 7.23), so this only keeps the source files comparable:
+### A. Inputs
+1. The five staged FBX files and the source `.blend` (committed; LFS, `.gitattributes` tracks `*.fbx`).
+2. Species colours: `colorA`, `colorB`, `bodyShape` from `Assets/_Project/Content/Fishing/Species/<id>.asset` (the runtime truth), to compare with the staged vertex colours in step D.
+3. Nominal model length = `CatchMath.LengthMm` at the mid weight (bluegill 317 mm, perch 363, carp 543, trout 463, catfish 660). The reveal rescales to the rolled `LengthMm` anyway (C 7.23), so this only sanity-checks proportions.
 
-| Species | Profile | Weight range kg | Mid kg | Nominal length |
-|---|---|---|---|---|
-| bluegill | Steady | 0.2-0.8 | 0.50 | 317 mm |
-| perch | Darter | 0.3-1.2 | 0.75 | 363 mm |
-| carp | Bulldog | 1.0-4.0 | 2.50 | 543 mm |
-| trout | Thrasher | 0.6-2.5 | 1.55 | 463 mm |
-| catfish | Runner | 2.0-7.0 | 4.50 | 660 mm |
+### B. Pre-import checks on the staged files (no Unity needed)
+1. Each file in `Art/Export/` is the real FBX, not an LFS pointer (size above 1 KB; first bytes not `version https://git-lfs`). If a pointer: `git lfs pull --include "Art/Export/*.fbx"`.
+2. `git -C C:\Dev\FishGame check-attr filter -- Art/Export/Fish_Carp.fbx` prints `filter: lfs` (repeat per file).
+3. Optional, in Blender (only if something looks wrong): import one file and confirm one material slot, one colour attribute, triangle count below 400 and the nose along the axis that gives +Z after the Unity import.
 
-3. Read `Presentation/Feedback/FishFallbackMesh.cs` (T23). Note how it writes `colorA`/`colorB` into vertex colours: the `Color` as stored (sRGB values), or `.linear`. The models use the same convention (step D4).
+### C. Copy and import
+1. The editor must not be open: run the first `unity.ps1` command and stop only if it reports LOCKED.
+2. Copy `Art/Export/Fish_Bluegill.fbx`, `Fish_Carp.fbx`, `Fish_Trout.fbx`, `Fish_Catfish.fbx` to `Assets/_Project/Content/Models/`, and copy `Fish_Perch.fbx` over the existing spike file. Never delete `Fish_Perch.fbx.meta` (the GUID and fileIDs keep any reference valid).
+3. Run `build`. `FishModelPostprocessor` applies the import settings and logs `FG MODELS <file> tris=<n> submeshes=<k> colours=<yes|no>` for each model. Expected: tris 222-262, `submeshes=1`, `colours=yes` for all five.
+4. `FishingContentBuilder` fills each null species `model` from `Content/Models/Fish_<Pascal>.fbx` (C 6.2 rule: only when the mesh has a colour channel and one submesh). The perch's `model` is filled now too (T14 left it null).
+5. Check each `.meta`: `materialImportMode: 0`, `importCameras: 0`, `importLights: 0`, `globalScale: 1`, `useFileUnits: 1`, `isReadable: 0`, `meshCompression: 0`, `importAnimation: 0` (C 7.20).
+6. `git diff Assets/_Project/Content/Fishing/Species` shows only `model:` lines changing (null to a fileID and guid).
+7. Run the full `test-edit` (`Validation_SpeciesModels_Pass`, including the one-submesh check, and `Validation_ToonMeshesHaveVertexColours_Pass` must pass) and the full `test-play`.
 
-### B. Blender preflight
-1. `get_addon_status` and `get_scene_info`. Record the Blender version.
-2. Work in a fresh scene, or delete the default cube, light and camera. Exports are selection-only, mesh-only, either way.
-3. Scene units: Metric, unit scale 1.0, length in metres.
-4. Read the FBX exporter's RNA before relying on names (MCP rule: never hardcode enum identifiers):
-   - list the `bpy.ops.export_scene.fbx` properties and the enum items of `axis_forward`, `axis_up`, `apply_scale_options`, `mesh_smooth_type` and `colors_type`;
-   - confirm every name in step E exists;
-   - if one is missing or renamed in 5.2, stop and record the new name in the T29 report.
-
-### C. Perch audit (decide the re-export)
-1. Make sure the working copy holds the real FBX, not an LFS pointer: the file is larger than 1 KB, and its first bytes are not `version https://git-lfs`. If it is a pointer, run `git lfs pull --include "Assets/_Project/Content/Models/Fish_Perch.fbx"`.
-2. Import `Fish_Perch.fbx` into a scratch Blender collection and record:
-   - the triangle count;
-   - the number of material slots (the spike commit says "5 submeshes");
-   - any colour attributes;
-   - **the Blender axis the nose points along after import.** That axis is the modelling convention for every new fish, because the spike export (`axis_forward='-Z'`, `axis_up='Y'`, `bake_space_transform=True`) produced nose +Z in Unity (G6).
-3. Unity-side facts after T20's reimport: the controller's lineup script (step G) prints `subMeshCount` and `HasVertexAttribute(VertexAttribute.Color)` for `Fish_Perch`. These read mesh metadata, so they work with `isReadable` off.
-4. **Decision:** re-export the perch if it has no per-face colours **or** more than one submesh. With 5 submeshes, the reveal's single `M_Toon_Fish` material draws only submesh 0 (Q6). Re-export means rebuild per step D, reusing the spike geometry when it is good, and export over the same file path (the `.meta` and GUID are kept).
-5. Delete the scratch import afterwards.
-
-### D. Per-species modelling checklist (repeat for each fish)
-1. **Names.** Object and mesh datablock both `Fish_<Pascal>`. The meta uses `fileIdsGeneration: 2` (fileIDs from names), so a stable name keeps the species asset's `model` reference valid across re-exports.
-2. **Build by script** from bmesh primitives: lofted body rings, tail, dorsal and pectoral fins, and species extras. Triangulate in the script so the count is exact. Target 150-300 triangles, hard cap 399.
-3. **Silhouette notes:**
-
-| Species | Body | Fins and extras | Colour layout | Tri target |
-|---|---|---|---|---|
-| bluegill | deep, flat-sided disc, height about 55% of length, small mouth | one long dorsal, rounded tail, small pectorals | colorA back and flanks, colorB belly; a dark "ear" patch behind the gill | ~180 |
-| perch (if re-exported) | torpedo, height about 28% | two dorsals (front one spiky), forked tail | colorA back with 5-6 vertical bars alternating colorA/colorB, colorB belly and fins | ~200 |
-| carp | heavy, high-backed, height about 35%, blunt head | long dorsal, deep forked tail, two short barbels | colorA (bronze) back, colorB lighter belly | ~220 |
-| trout | streamlined, height about 25% | small adipose fin, near-square tail | colorA back, a colorB lateral band, darker speckle faces | ~200 |
-| catfish | broad flat head (wider than tall), tapering body | 4-6 long barbels (thin prisms), small dorsal, long anal fin, rounded tail | colorA dark back, colorB pale belly | ~260 |
-
-4. **Per-face colours.**
-   - One colour attribute only, domain `CORNER`. All three corners of a face get the same colour.
-   - Use colorA, colorB, or a darker accent (colorA x 0.7, alpha 1) for fins, eyes and bars.
-   - Colour space: match the `FishFallbackMesh` convention from A3. If it writes sRGB values, use a byte colour attribute with the sRGB values and export `colors_type` SRGB. If it writes `.linear`, use a float attribute with linear values and export LINEAR.
-   - Step G's side-by-side render settles it; record the choice (Q7).
-5. **Flat normals.** Every face has `use_smooth = False`. No custom split normals and no Auto Smooth modifier.
-6. **Transform.**
-   - Origin set to the bounds centre, object location at the world origin.
-   - Rotation and scale applied, so the object transform is identity.
-   - Nose along the axis recorded in C2.
-7. **Size.** The length along the nose axis is the nominal length from A2, within 5%.
-8. **No material slots** (remove all), so the FBX has one mesh and Unity imports one submesh. UV maps are not needed; remove them.
-9. **Look.** Use `look` from the side, top and front. Fix bad faces (non-manifold fins are fine; inverted faces are not: recalculate normals outside before export).
-10. **Record** the triangle count (from the evaluated mesh) for the report.
-
-### E. Export (per fish; parameters that reproduced the spike)
-Select only `Fish_<Pascal>` and export with:
-- `filepath = C:/Dev/FishGame/Assets/_Project/Content/Models/Fish_<Pascal>.fbx`
-- `use_selection = True`, `object_types = {'MESH'}`
-- `axis_forward = '-Z'`, `axis_up = 'Y'`, `bake_space_transform = True`
-- `apply_scale_options = 'FBX_SCALE_UNITS'`, `apply_unit_scale = True`, `global_scale = 1.0`
-- `mesh_smooth_type = 'FACE'`
-- `colors_type` per D4
-- `use_mesh_modifiers = True`, `use_tspace = False`, `use_custom_props = False`
-- `add_leaf_bones = False`, `bake_anim = False`
-- `path_mode = 'STRIP'`, `embed_textures = False`
-
-For the perch re-export, overwrite the same path. Never delete the `.meta`.
-
-### F. Unity import and wiring
-1. Check `Temp/UnityLockfile`: if the editor is open, ask the user to close it.
-2. Run `build`. `FishModelPostprocessor` applies the import settings. `FishingContentBuilder` fills each null species `model` from `Content/Models/Fish_<Pascal>.fbx` (C 6.2 rule). A re-exported perch keeps its existing reference.
-3. Check each new `.meta` (and the perch's):
-   - `materialImportMode: 0`, `importCameras: 0`, `importLights: 0`
-   - `globalScale: 1`, `useFileUnits: 1`, `isReadable: 0`, `meshCompression: 0`
-   - `importAnimation: 0` (C 7.20)
-4. `git diff Assets/_Project/Content/Fishing/Species` shows only `model:` lines changing (null to a fileID and guid).
-5. Run the full `test-edit` (`Validation_SpeciesModels_Pass` and `Validation_ToonMeshesHaveVertexColours_Pass` must pass) and the full `test-play`.
-
-### G. Visual verification (batchmode render, then the user)
+### D. Visual verification (batchmode render, then the user)
 1. **Use an existing tool first.** If T20 or T21 left a committed capture helper, use it. Search `Assets/_Project/Editor` for `allowAsyncCompilation`.
 2. **Otherwise write a temporary editor script**, never committed: `Assets/_Project/Editor/Dev/TempFishLineup.cs`, namespace `FishGame.EditorTools`, `public static void Render()`. It must:
    - set `ShaderUtil.allowAsyncCompilation = false` (restore it in `finally`, C 2.8 #13);
@@ -535,7 +479,7 @@ For the perch re-export, overwrite the same path. Never delete the `.meta`.
    - add a directional light at (50, -30, 0);
    - add an orthographic camera with a side view, and a second pass with a top view;
    - for each species, place the model with `M_Toon_Fish` in a row, with the same species' `FishFallbackMesh.Get` mesh (rendered with `M_Toon_Fish`) under it for colour comparison, and a small marker cube at +Z of each fish (it shows the nose direction);
-   - log `subMeshCount`, `HasVertexAttribute(VertexAttribute.Color)`, the triangle count and the bounds size per model (feeds steps C3 and D7);
+   - log `subMeshCount`, `HasVertexAttribute(VertexAttribute.Color)`, the triangle count and the bounds size per model;
    - render to a `RenderTexture`: `camera.Render()`, or `RenderPipeline.SubmitRenderRequest` with a `RenderPipeline.StandardRequest` if URP ignores `Render()` in batchmode;
    - read the pixels and write `$env:FG_OUT\t29\lineup_side.png` and `lineup_top.png`;
    - end with `EditorApplication.Exit(0)` (1 on an exception).
@@ -545,23 +489,25 @@ For the perch re-export, overwrite the same path. Never delete the `.meta`.
 4. **Read both PNGs** with the Read tool. Check:
    - the nose is on the marker side for every fish;
    - the facets are visible (flat);
-   - the colours match the fallback row;
+   - the colours match the fallback row (both use LINEAR vertex colours; this render only confirms the one rule, F-Q3, it does not decide it);
    - nothing is pink or black;
    - the relative sizes are plausible.
-   Fix in Blender and re-export as needed.
+   A defect means re-export from `Art/Blender/fishgame_m2_species.blend` with Blender MCP (`axis_forward='-Z'`, `axis_up='Y'`, `bake_space_transform=True`, `mesh_smooth_type='FACE'`, `colors_type='LINEAR'`, no materials, selection only), copy over the file, and repeat from C3.
 5. **Delete** `TempFishLineup.cs` and its `.meta`. `git status` must not list them.
-6. **User look check.** Show the user the two PNGs. Then ask them to play Solo, rotate baits with F5 (raw meat reaches every species; cast long for catfish, depth 2.5 m or more), and land each species with F6 forced bite. The reveal must show the model at the right size and colours. The user decides; iterate in Blender until they approve.
+6. **User look check.** Show the user the two PNGs. Then ask them to play Solo, rotate baits with F5 (raw meat reaches every species; cast long for catfish, depth 2.5 m or more), and land each species with F6 forced bite. The reveal must show the model at the right size and colours. The user decides; iterate until they approve.
 
-### H. LFS check and commit
+### E. LFS check and commit
 1. `git -C C:\Dev\FishGame check-attr filter -- Assets/_Project/Content/Models/Fish_Carp.fbx` prints `filter: lfs`. Repeat for each FBX.
-2. Stage explicit paths: each new FBX and `.meta`, the perch FBX only if re-exported, and the changed species `.asset` files.
-3. `git -C C:\Dev\FishGame lfs ls-files` lists all five `Fish_*.fbx`.
+2. Stage explicit paths, literally:
+```powershell
+git -C C:\Dev\FishGame add Assets/_Project/Content/Models/Fish_Bluegill.fbx Assets/_Project/Content/Models/Fish_Bluegill.fbx.meta Assets/_Project/Content/Models/Fish_Perch.fbx Assets/_Project/Content/Models/Fish_Perch.fbx.meta Assets/_Project/Content/Models/Fish_Carp.fbx Assets/_Project/Content/Models/Fish_Carp.fbx.meta Assets/_Project/Content/Models/Fish_Trout.fbx Assets/_Project/Content/Models/Fish_Trout.fbx.meta Assets/_Project/Content/Models/Fish_Catfish.fbx Assets/_Project/Content/Models/Fish_Catfish.fbx.meta Assets/_Project/Content/Fishing/Species/bluegill.asset Assets/_Project/Content/Fishing/Species/perch.asset Assets/_Project/Content/Fishing/Species/carp.asset Assets/_Project/Content/Fishing/Species/trout.asset Assets/_Project/Content/Fishing/Species/catfish.asset
+git -C C:\Dev\FishGame commit -m "m2(models): import staged Blender species models (bluegill, perch, carp, trout, catfish)" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+   (the trailer names the controller's model, C 2.1).
+3. `git -C C:\Dev\FishGame lfs ls-files` lists all five `Fish_*.fbx` under `Content/Models/` (and the five under `Art/Export/`).
 4. `git -C C:\Dev\FishGame show :Assets/_Project/Content/Models/Fish_Carp.fbx` starts with `version https://git-lfs.github.com/spec/v1` (the index holds a pointer, not the binary). Repeat for each FBX.
-5. Commit: `m2(models): Blender species models - bluegill, carp, trout, catfish (perch re-exported: <yes|no>)`, with trailer `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` (the controller's model, C 2.1).
-6. **Report** for the Sonnet reviewer:
-   - triangle counts;
-   - the perch audit result and decision;
-   - the colour convention;
+5. **Report** for the Sonnet reviewer:
+   - triangle counts and submesh counts (from the `FG MODELS` lines);
    - the meta checks;
    - the validator results;
    - the PNG paths;
@@ -613,7 +559,7 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
 | 7 | Host rejects forged or out-of-order casts and hooks and impossibly fast catches; species and weight come from the host roll | Claude (tests) + Opus xhigh review | EditMode ledger tests (C 10.1 T9 rows: stale/duplicate id, charge range, origin > 3 m, no bait, early hook, landed below floor, implausible or self-contradictory clean claims). The branch review confirms that no owner-side path decides species, weight or quality (the owner only displays `CastResultRpc`'s roll; the creel and announce use `CommitDecision.Roll`). |
 | 8 | Bots meet the 9.12 targets (a failure passes only with numbers recorded as a tuning item) | Claude (T30) | `test-edit -Filter "FishGame.Tests.EditMode.FishingBots"`. Paste the printed tables into section F. Each failing target is listed under "Open tuning items" with its numbers. |
 | 9 | All tuning lives in assets; Core holds none except test defaults | Claude + User | Claude: the branch review's grep for 9.12 default literals in `Core/` outside `FishingConstants` (formula constants) and tests. User: in Play mode, change `Content/Fishing/FishingTuning.asset` `castChargeTime` 1.0 -> 0.6 in the Inspector; the ring fills faster on the next charge. Revert, or keep only if wanted (create-if-missing keeps Inspector edits). |
-| 10 | Assist, line gauge, captions and Camera motion behave as 9.11 defines | User | Assist on: grace feels longer (snap later), and the gauge goes to Arc once (T25 rule). Gauge Arc/Bar/Off. Captions on/off ("Bite!", "Line straining", "Snapped", "Got away"). Camera motion 0: no shake, no FOV kicks, no rumble. |
+| 10 | Assist, line gauge, captions and Camera motion behave as 9.11 defines | User | Assist on: grace feels longer (snap later), and the gauge goes to Arc each time assist is turned on while the gauge is Off (T25 rule, ruling G-Q4). Gauge Arc/Bar/Off. Captions on/off ("Bite!", "Line straining", "Snapped", "Got away"). Camera motion 0: no shake, no FOV kicks, no rumble. |
 | 11 | `FightSim` costs < 0.05 ms per step | Claude + User | Record the **printed** per-step time from `FishingBots_FightSimStep_UnderFiftyMicroseconds`. That test fails only above 0.2 ms, so its pass is not the criterion. The number must be < 0.05 ms. User option: Profiler deep profile of a fight in a dev build. |
 
 **B. Manual MPPM list (17.2).** Host plus 1-3 clients, dev-direct, Network Simulator 150 ms RTT and 2% loss on the clients (README section 5). Items:
@@ -651,7 +597,7 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
   - MPPM clones and `-dev-profile` players write `fight-log_<name>.csv`.
   - The friend sends their CSV. Collect every `fight-log*.csv` into one scratch folder.
 - **Coverage.** Worm and grub reach only bluegill, perch and carp (rating vs `minBaitRating`). Trout needs shrimp or raw meat. Catfish needs raw meat and a landing at least 2.5 m deep. Testers rotate baits with F5, cast long, and aim for **at least 5 hooked fights per profile**. Leave F6/F7 **off** during gate sessions (forced bites distort cast-to-bite).
-- **Columns** (C 5.3): `profile,species,weightG,castDist,castToBite,fightSec,outcome,reason,nearSnapRecoveries,maxTension,rod,assist,clean`.
+- **Columns** (C 5.3): `profile,species,weightG,castDist,castToBite,fightSec,outcome,reason,nearSnapRecoveries,maxTension,rod,assist,clean,pity`.
 - **Stats recipe** (the doc spells out a PowerShell 5.1 snippet; the T30 implementer writes it and tests it on a hand-made 6-row CSV in the scratchpad):
   1. Import every `fight-log*.csv` (`Import-Csv`). Parse numbers with `CultureInfo.InvariantCulture`.
   2. Read `outcome` and `reason` as enum names. If they are digits, map them through the C 7.5 enum order. Read `assist` and `clean` as `true`/`1` (case-insensitive).
@@ -670,7 +616,8 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
      - the snap rate, Snapped / hooked (target 10-30%);
      - per Bulldog, Thrasher and Runner, the share of hooked fights with `nearSnapRecoveries >= 1` (target at least 40%);
      - the clean-catch rate, clean / landed fish, for information (R64);
-     - the assist row count.
+     - the assist row count;
+     - the pity row count and, for information, the landed share of pity casts versus the rest (R65).
   5. Mark each target PASS/FAIL. A failed gate means **tuning data, not new mechanics** (17.2): retune the assets plus the matching `FishingSeedData` seeds (C 2.6 data row).
 - **Blind tell-apart sheet.**
   - Before each reveal or loss toast, the tester writes their guess: Steady, Darter, Bulldog, Thrasher or Runner.
@@ -683,13 +630,13 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
 - Use the M1 doc's perf steps (dev build, 4 bodies, 1080p).
 - Record the frame time (average and worst), the SRP batch count, Batches and SetPass, and the **water pass GPU time** (Profiler GPU module, "Render Transparents" or the Water draw in the Frame Debugger).
 - Paste T28's `FG LAKEDOCK` stats line.
-- Compare with the M1 baseline. If it was never recorded, write "No M1 baseline; these are the first numbers" (Q8).
+- Compare with the M1 baseline. If it was never recorded, write "No M1 baseline; these are the first numbers" (ruling G-Q8).
 - A regression above 10% gets a note.
 - Also verify the V13 items here: fog variants survive in a player build (fog is visible in the dev build), the water facet lighting sign, and C#/HLSL wave parity (the bobber sits on the visible wave).
 
 **F. Open tuning items.**
 - T15's failing or marginal targets with numbers.
-- The skeleton section 8 risks and their status: perch colours (T29), V11 `DeferLocal` (T19 test result), the clean-claim 2.0 s slack at 150 ms RTT (MPPM MP-run note), motion seeds, NetVar padding, behaviour indices, `-nographics` shader validation (T20 result), and gamepad.
+- The skeleton section 8 risks and their status: the T29 import of the staged species models (the new single-submesh perch), V11 `DeferLocal` (T19 test result), the clean-claim 2.0 s slack at 150 ms RTT (MPPM MP-run note), motion seeds, NetVar padding, behaviour indices, `-nographics` shader validation (T20 result), and gamepad.
 
 **G. Definition of done (17.2).**
 - Acceptance criteria 1-11 and the fun gate are met.
@@ -697,9 +644,15 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
 - 2-4 players fish together over dev-direct (and over Sessions once linked).
 - The owner feels no latency at 150 ms RTT.
 
-**H. User actions due.**
+**H. Bad-luck nudge (R65 / M2-D23) - USER.**
+- Steps: in the Inspector set `Content/Fishing/FishingTuning.asset` `pityAfterFailures` to 3 (the seed). Fail three casts in a row (miss with F7 twitchy and no click, or let a fish snap the line). The next cast shows "<name> has a lucky line!" on every peer; that fight has a longer snap grace and lower strain; the fight log row has `pity` 1. A Landed catch or a cancel never shows the toast.
+- Expected: the nudge is noticeable but not a free win (same species, weight and quality odds).
+- Record: **USER playtests the bad-luck nudge and decides keep / tune / remove.** `Result: ______`
+
+**I. User actions due.**
 - Run this checklist.
 - Run the fun gate with a friend (dev build).
+- Decide the bad-luck nudge: keep / tune / remove (section H).
 - Approve the T29 look.
 - Approve merging `m2-fishing-core` to `main` after the final review.
 
@@ -732,11 +685,14 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
 4. Edit `README.md` (T30.2).
 5. **Docs self-check** (a scratch PowerShell script in `$env:FG_OUT\t30\`, not committed):
    - no byte above 0x7F in either file;
-   - the acceptance doc contains `Criterion 1` through `Criterion 11`, all nine MPPM items (MP1-MP9) and every 9.13 case name from the spec table;
+   - the acceptance doc contains `Criterion 1` through `Criterion 11`, all nine MPPM items (MP1-MP9), every 9.13 case name from the spec table and the "Bad-luck nudge" block;
    - the README contains the headings `Fishing dev keys` and `Fight log`.
 6. **Final `check`.** On FAIL, apply the integration-fix rule (C 2.6): fix the defect in the earlier task's file, keeping the public surface frozen, commit `fix(<file>): <what>`, and rerun until `FG RESULT check PASS`. A fix that needs a contract signature change: stop and report.
 7. **Review the working tree** against the baseline. Only the two docs, any fix files and regenerated outputs may appear. Restore scene fileID churn.
-8. **Commit:** `m2(docs): M2 acceptance checklist, fun-gate template, README fishing sections`.
+8. **Commit**, literally:
+```powershell
+git -C C:\Dev\FishGame add docs/superpowers/plans/2026-10-11-m2-acceptance.md README.md; git -C C:\Dev\FishGame commit -m "m2(docs): M2 acceptance checklist, fun-gate template, README fishing sections" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
+```
 9. **Report:**
    - the `check` line;
    - the criterion 2 count;
@@ -778,18 +734,16 @@ After T30's docs review passes, the controller dispatches **one Opus (effort xhi
 
 ---
 
-## Contract questions
+## Contract questions (all closed by controller rulings of 2026-10-11; C 15)
 
-The default each task uses is in brackets. None blocks writing or starting the tasks.
-
-1. **Q1 - Catch toast route.** C 7.25 gives multi-argument toast templates, but M1 `ToastRequested` carries one `Arg`, and `ToastPresenter.cs` (not in T25's C 12 files) formats with one argument. Publishing `toast.catch` directly would throw `FormatException` and fail PlayMode. [Default: T25 pre-formats the text and publishes `ToastRequested("toast.raw", text)`, adding the passthrough key `toast.raw` = "{0}". The alternative is to let T25 edit `ToastPresenter` or append labels to `ToastStack` directly.]
-2. **Q2 - Extra UiStrings keys.** These additive keys aren't in C 7.25: `toast.raw`, `toast.junk` (a landed junk item reads badly as "caught 0.0 kg Old boot"), and `set.gauge_off`, `set.gauge_arc`, `set.gauge_bar` (value names for the line gauge row). Also, the C 7.25 settings keys use the prefix `set.*`, while every M1 settings key uses `settings.*`. [Default: add the extra keys; keep `set.*` exactly as in the contract.]
-3. **Q3 - `toast.lost` text.** "Snapped! It was a {0}" is shown for every `AnnounceKind.Lost`, and Lost also covers hooked escapes (Pinned, ThrewHook, Dropped, Timeout; C 7.9 `AnnounceFor`). `CatchAnnouncement` has no outcome field to choose a different text. [Default: use the contract text for all Lost toasts. Better text would need the outcome in the announcement (a contract change), or a neutral text such as "Lost it! It was a {0}".]
-4. **Q4 - "Assist sets the gauge once".** C 7.10 says "once when assist is first turned on". There is no persisted flag, and `SettingsData` belongs to T10. [Default: on every false-to-true change of the assist toggle, if the gauge is Off, set it to Arc; the player can turn it off again.]
-5. **Q5 - RunSeed change key.** C 5.2's `DefaultDevRunSeed` comment says the dev overlay can change the seed, but C 5.3 and `DevKey` have no key for it (F8 is unused). [Default: T26 displays RunSeed only and invents no key.]
-6. **Q6 - Fish submesh count.** The reveal uses one material (`M_Toon_Fish`). The spike perch has 5 submeshes (commit 52ce735), so only submesh 0 would draw. `FishingValidators.SpeciesModels` (C 7.14) checks only the origin and vertex colours. [Default: T29 exports one submesh per model and re-exports the perch if needed. Suggest adding `subMeshCount == 1` to `SpeciesModels` (T14 owner).]
-7. **Q7 - Vertex colour space.** C 7.29 says "per-face vertex colours from colorA/colorB" but doesn't say whether they are stored as sRGB values or linear. The same goes for `FishFallbackMesh` (T23). [Default: T29 matches `FishFallbackMesh`'s convention and settles it with a side-by-side render. If they disagree visually, the controller picks one convention for both.]
-8. **Q8 - M1 perf baseline.** The 10.7 baseline in the M1 checklist looks unrecorded (the multiplayer and perf parts were open on 2026-10-11), so "within 10% of M1" has no reference. [Default: T30 records the M2 numbers as the first baseline and notes it; the user may still record M1 from `main`.]
-9. **Q9 - T29 capture tool ownership.** No task owns a committed batchmode render helper, so T29's lineup render uses a temporary, uncommitted editor script, and T28 uses a temporary, uncommitted EditMode fingerprint test. [Default: temporary files, deleted before commit and checked absent by the reviewers. If T20 or T21 committed a capture helper, T29 uses that instead.]
-10. **Q10 - T28 and `AssetPaths`.** C 2.6 lets T14, T20 and T21 append constants to `AssetPaths.cs`, but not T28, which needs seven new mesh paths. [Default: T28 keeps its paths in `LakeDockLayout.cs`.]
-11. **Q11 - T25/T26 automated coverage.** UI is unreachable from EditMode (C 2.8 #8), and C 10 has no PlayMode test for the HUD or overlay. A small PlayMode test (for example: forced catch, then exactly one `ToastRequested` with key `toast.raw`; crew rate limit) would need a new file in C 12. [Default: manual checks only, as written in T25.6 and T26.4.]
+1. **Catch toast route (closed, G-Q1).** T25 formats the toast text itself and publishes `ToastRequested("toast.raw", text, 4f)` with the new passthrough key `toast.raw` = "{0}" (also used for `toast.pity`).
+2. **Extra UiStrings keys (closed, G-Q2).** Added: `toast.raw`, `toast.junk`, `toast.pity`, `settings.gauge_off`, `settings.gauge_arc`, `settings.gauge_bar`. The settings keys use M1's `settings.*` prefix (not `set.*`); C 7.25 amended.
+3. **`toast.lost` text (closed, G-Q3).** Generic "It got away!" (covers snap and escape); no wire change in M2.
+4. **Assist and the gauge (closed, G-Q4).** Every false-to-true change of the assist toggle while the gauge is Off sets the gauge to Arc.
+5. **RunSeed (closed, G-Q5).** Display only; the misleading constant comment in C 5.2 is fixed.
+6. **Fish submesh count (closed, G-Q6).** Fish models are ONE submesh (single `M_Toon_Fish`, vertex colours); T14's `Validation_SpeciesModels_Pass` also checks `subMeshCount == 1`; T29 imports the staged models, including the new perch.
+7. **Vertex colour space (closed, F-Q3; supersedes G-Q7).** Fish vertex colours are LINEAR (`colors_type='LINEAR'`); the Toon shader treats vertex colours as linear; `FishFallbackMesh` follows the same rule.
+8. **M1 perf baseline (closed, G-Q8).** The M2 numbers become the first perf baseline.
+9. **Temporary helpers (closed, G-Q9).** T28's fingerprint test and T29's lineup script stay uncommitted; the reviewer confirms deletion.
+10. **T28 and `AssetPaths` (closed, G-Q10).** T28 mesh paths live in `LakeDockLayout.cs`.
+11. **T25/T26 automated coverage (closed, G-Q11).** Manual checks only.

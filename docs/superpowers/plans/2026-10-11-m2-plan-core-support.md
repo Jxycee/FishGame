@@ -1,7 +1,7 @@
 # FishGame M2 - Plan Section C: Core support (T10, T11, T12)
 
 - **Date:** 2026-10-11. Branch `m2-fishing-core`.
-- **Binding contract:** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` ("C" below). If this file and C disagree, C wins; open doubts are listed under "Contract questions" at the end.
+- **Binding contract:** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` ("C" below). If this file and C disagree, C wins; every doubt raised here is closed by a controller ruling, listed under "Contract questions" at the end.
 - **Skeleton:** `docs/superpowers/plans/2026-10-11-m2-plan-skeleton.md` (rows T10, T11, T12; section 6 row C).
 - **Spec:** `docs/superpowers/specs/2026-10-09-fishgame-design.md` sections 8 (input), 9.11 (feedback), 10.2-10.4 (palette, meshes, water), 11.6 (settings), 11.7 (audio).
 - **Shape:** behaviour, signatures, test names and cases, commands and acceptance. No complete code (skeleton rule 3): none of T10-T12 is on the "code in the brief" list, so every task is `Implementer: Sonnet`.
@@ -22,7 +22,7 @@ $env:FG_OUT = '<absolute scratchpad path>\fg'; powershell -NoProfile -ExecutionP
 
 - `compile`, `test-edit`, `test-play` as in M1 contract section 11 (C 11). Expected last lines: `FG RESULT test-edit PASS total=N passed=N failed=0 skipped=K log=<path>`, and so on.
 - **Red** means one of two things. Either a compile error naming the missing type (`FG RESULT test-edit FAIL total=0 (no tests matched or compile errors)`, with `error CS0246`/`CS0103` in the `FG LOG` lines), or failing assertions.
-- **LOCKED (exit 2):** stop the task and report it. The user has the editor open. Never kill Unity (C 2.8 #11).
+- **LOCKED (exit 2):** stop the task and report it only when `unity.ps1` reports LOCKED. The user has the editor open. Never kill Unity (C 2.8 #11). A leftover `Temp/UnityLockfile` that is merely present (Unity leaves it after a batch run) is not a lock: locked means the file is HELD, which the script tests.
 - `-Filter` is a regex over full test names, for example `"FishGame.Tests.EditMode.(GameplayContextArbiterTests|InputContextRouterTests)"`.
 
 ### 0.3 Commits (C 2.1)
@@ -78,7 +78,7 @@ public static bool InteractLive(InputContext context);   // Free, RodReady, RodW
 - **Implementation pattern.** Use the M1 pattern: `CopyAll` and then zero the listed fields, one private method per row (`RouteRodReady`, `RouteRodAiming`, `RouteRodWaiting`, `RouteRodFighting`), plus four new `case` lines in `Route`. `default:` still goes to `RouteFree`.
 - **Rows the router does not touch.** It does not apply the x0.6 aiming speed or the sprint ban, and it does not lock movement. That is `PlayerLocomotion` (T16) reading `GameplayContextArbiter`. The router only zeroes fields.
 - **Unchanged.** `RouteFight` and `EnabledMaps` keep their M1 bodies.
-- **`InteractLive`.** It is a switch that returns `true` for exactly `Free`, `RodReady`, `RodWaiting` and `Swimming`, and `false` for every other context, including `Carrying` (see Contract questions 2).
+- **`InteractLive`.** It is a switch that returns `true` for exactly `Free`, `RodReady`, `RodWaiting` and `Swimming`, and `false` for every other context, including `Carrying` (ruling C-Q2: `InteractLive(Carrying)` is false in M2, the context is unused; M5 revisits spec 8.2).
 - **Header comment.** Update it to: "M1 rows Free, Swimming, Climbing, Menu; M2 rod rows RodReady, RodAiming, RodWaiting, RodFighting; Carrying, Staggered, Downed, Carried, Seated route like Free until M5/M6 (contract D18)".
 
 #### `GameplayContextArbiter`
@@ -132,7 +132,7 @@ These are Runtime files, with signatures exactly as in C 7.10:
 - `Clamp()` adds `lineGauge = ClampInt(lineGauge, 0, 2);`.
 - `version` stays `1`. `JsonUtility` keeps the field defaults for a file written before M2, so no migration is needed.
 - Update the class comment "M1 settings" to "M1 + M2 settings (spec 11.6)".
-- **Do not** implement "assist on sets the gauge to Arc once" here. That is a UI rule owned by T25 (C 7.10). `Clamp` never couples the two fields.
+- **Do not** implement "assist on sets the gauge to Arc" here. That is a UI rule owned by T25 (C 7.10, ruling G-Q4: every time assist is turned on while the gauge is Off). `Clamp` never couples the two fields.
 - `LineGaugeMode` is the T5 Core enum. `SettingsData` stores an `int`, so it needs no `using`.
 
 ### T10.3 Tests (exact names from C 10.1)
@@ -152,7 +152,7 @@ Helpers in `InputContextRouterTests`:
 | `InputContextRouter_RodAiming_PassesChargeBlocksSprintAndInteract` | `RodAiming`: move, look, jump, primary, secondary, equip, pause pass; sprint, interact, shove, drop zeroed. |
 | `InputContextRouter_RodWaiting_PassesCancelAndMovementBlocksPrimary` | `RodWaiting`: move, look, jump, sprint, secondary, interact, shove, pause pass; primary, drop, equip zeroed. |
 | `InputContextRouter_RodFighting_BlocksMovementPassesLookAndPrimary` | `RodFighting`: look, primary, pause pass; move (both axes exactly 0), jump, sprint, secondary, interact, shove, drop, equip zeroed. Also `RouteFight(RodFighting, AllActive())` = (0.3, true). |
-| `InputContextRouter_RodContexts_SameKeyNeverMovesAndReels` | Frame "S held + D held + stick": `MoveX 1, MoveY -1, Reel true, Steer 1, PrimaryHeld false`. For each of `RodReady, RodAiming, RodWaiting, RodFighting`, let `moving = intent.MoveX != 0 \|\| intent.MoveY != 0` and `fighting = fight.Reel \|\| fight.Steer != 0`. Assert `!(moving && fighting)`. Non-vacuous checks: `RodFighting` has fighting true and moving false; the other three have moving true and fighting false. Free is checked too (moving true, fighting false). The sweep is limited to these five contexts; see Contract questions 7. |
+| `InputContextRouter_RodContexts_SameKeyNeverMovesAndReels` | Frame "S held + D held + stick": `MoveX 1, MoveY -1, Reel true, Steer 1, PrimaryHeld false`. For each of `RodReady, RodAiming, RodWaiting, RodFighting`, let `moving = intent.MoveX != 0 \|\| intent.MoveY != 0` and `fighting = fight.Reel \|\| fight.Steer != 0`. Assert `!(moving && fighting)`. Non-vacuous checks: `RodFighting` has fighting true and moving false; the other three have moving true and fighting false. Free is checked too (moving true, fighting false). The sweep is limited to these five contexts (Staggered is an M5 concern). |
 | `InputContextRouter_InteractLive_MatchesSpecRows` | Over every `InputContext` value (`Enum.GetValues`), `InteractLive` is true exactly for `{Free, RodReady, RodWaiting, Swimming}` (4 true, 9 false). Consistency check: for each context where it is true, `Route(ctx, AllActive()).InteractPressed` is true. |
 
 - Existing `InputContextRouter_NonM1Contexts_RouteLikeFree` keeps its name. Its array becomes `Carrying, Staggered, Downed, Carried, Seated`; the four rod contexts are removed.
@@ -224,13 +224,13 @@ git add Assets/_Project/Core/Input/InputContextRouter.cs Assets/_Project/Core/In
 | Field | Value |
 |---|---|
 | Goal | The 11 spec 11.7 M2 recipes plus `Rod_Thunk`; `SfxRecipes.All`; `SfxRecipe.MinDistance`; `AudioBus` loops, ducking, pitch multiplier, minDistance and cue-table overrides; `RodCueAudio`; `CaptionRequested`; the audition menu. |
-| Owned files (C 12) | `Core/Audio/SfxIds.cs`, `Core/Audio/SfxRecipe.cs`, `Core/Audio/SfxRecipes.cs` (edits); `Core/Fishing/RodCueAudio.cs` (new); `Runtime/Audio/AudioBus.cs` (edit), `Runtime/Audio/AudioLoop.cs` (new), `Runtime/Audio/SfxGenerator.cs` (edit); `Runtime/Services/CaptionRequested.cs` (new); `Editor/Dev/AuditionCuesMenu.cs` (new). Tests: `Tests/EditMode/SfxRecipesTests.cs` (edit), `Tests/EditMode/RodCueAudioTests.cs` (new). |
-| Shared edits (C 2.6) | `AudioBus.cs` (after T1's `LogOnce` edit), `SfxIds.cs`, `SfxRecipes.cs`, `SfxGenerator.cs`, `Runtime/Services/` (new file `CaptionRequested.cs` only). |
+| Owned files (C 12) | `Core/Audio/SfxIds.cs`, `Core/Audio/SfxRecipe.cs`, `Core/Audio/SfxRecipes.cs` (edits), `Core/Audio/SfxRecipes.M2.cs` (new partial, ruling C-Q11); `Core/Fishing/RodCueAudio.cs` (new); `Runtime/Audio/AudioBus.cs` (edit), `Runtime/Audio/AudioLoop.cs` (new), `Runtime/Audio/SfxGenerator.cs` (edit); `Runtime/Services/CaptionRequested.cs` (new); `Editor/Dev/AuditionCuesMenu.cs` (new). Tests: `Tests/EditMode/SfxRecipesTests.cs` (edit), `Tests/EditMode/RodCueAudioTests.cs` (new), `Tests/EditMode/AudioBusTests.cs` (edit; T1 created it, T1-review carry-over). |
+| Shared edits (C 2.6) | `AudioBus.cs` (after T1's `LogOnce` edit), `AudioBusTests.cs` (T1's file), `SfxIds.cs`, `SfxRecipes.cs`, `SfxGenerator.cs`, `Runtime/Services/` (new file `CaptionRequested.cs` only). |
 | Depends on | T5 (`RodCue`), T1 (`LogOnce`, post-T1 `AudioBus`). |
 | Implementer | Sonnet |
 | Reviewer | Opus high |
 | Commit area | `audio` |
-| Test count | 9 new tests (7 required + 2 extra). M1 audio tests unchanged and green. |
+| Test count | 11 new tests (7 required + 4 extra, two of them the AudioBus warn-once carry-over). M1 audio tests unchanged and green. |
 
 ### T11.1 Constraints that bite
 - **#16 and Core rules:** Core has no `UnityEngine`, `UnityEngine.Random` or `System.Random`. Recipe noise comes only from the existing `Rng.Stream(seed, "sfx." + id, 0UL)`.
@@ -248,14 +248,14 @@ Add exactly the C 7.11 constants: `CastWhoosh`, `SplashSmall`, `SplashBig`, `Bit
 #### `SfxRecipe` (edit)
 - Add the field `public readonly float MinDistance;`.
 - Add a 9-arg constructor: `(string id, float lengthSeconds, bool loop, AudioCategory category, float baseVolume, bool spatial, float maxDistance, float minInterval, float minDistance)`.
-  - `minDistance` is appended **last**, so the first eight parameters mean the same in both constructors. See Contract questions 1: T13's `SfxCueTableDef.ToRecipes` uses this order.
+  - `minDistance` is appended **last** (ruling C-Q1), so the first eight parameters mean the same in both constructors. T13's `SfxCueTableDef.ToRecipes` and T14's validator use this order. `MaxDistance == 0` keeps meaning "default 30" (`AudioBus` reads it that way); the T14 cue-table validator compares the EFFECTIVE max (0 -> 30) with `MinDistance`. No M1 value changes.
 - The 8-arg M1 constructor stays and chains with `minDistance: 1f`.
 
 #### `SfxRecipes` (edit)
-- Add a private `M2Table` (12 rows, order below) and `public static IReadOnlyList<SfxRecipe> M2 { get; }`.
+- Add a private `M2Table` (12 rows, order below; in `SfxRecipes.M2.cs`) and `public static IReadOnlyList<SfxRecipe> M2 { get; }`.
 - Add `public static IReadOnlyList<SfxRecipe> All { get; }`: the M1 rows and then the M2 rows, 18 in total, as one cached read-only array.
 - `TryGet` searches `All`. `Generate` dispatches every `All` id. `M1` is unchanged (the M1 test `SfxRecipes_M1Table_MatchesContract` checks 6 rows).
-- **File size.** With 12 more generators the file grows to roughly 450 lines, over the ~300-line rule. C 12 lists one file, so keep it as one file and say so in the task report. The exception is if the controller approves a partial `Core/Audio/SfxRecipes.M2.cs` first (Contract questions 11). The private M2 generators would move there.
+- **File size (ruling C-Q11).** `SfxRecipes` becomes `public static partial class SfxRecipes`. The new partial file `Core/Audio/SfxRecipes.M2.cs` holds `M2Table`, the `M2` property and the 12 private M2 generators; `SfxRecipes.cs` keeps `M1`, `All`, `TryGet`, `Generate` dispatch and the M1 generators. Each file stays near 300 lines or less.
 
 **M2 table.** These are the seeds for T14's `SfxCueTable.asset`. Length and loop come from spec 11.7, except `Rod_Thunk`, which is ours (C 13 M2-D10). The values are the M2 mixing defaults; the cue table may retune everything except length and loop.
 
@@ -350,7 +350,7 @@ Members are listed by contract name. Everything not listed keeps its M1 and T1 b
 - **Play path.**
   - `PlayAt(string sfxId, Vector3 position, float pitchMult)` is new. The existing `PlayAt(string, Vector3)` stays and forwards with `1f`.
   - Every pooled play sets all of these: `minDistance = recipe.MinDistance` (1 if `<= 0`), `maxDistance` as in M1, `rolloffMode = Logarithmic`, `spatialBlend`, and `pitch = (1 + jitter) * clamp(pitchMult, 0.1, 3)`. The pool is reused, so a value left from `Splash_Big` (8 m) must never stick to the next play.
-- **Rate limit per source (spec 11.7).** `Play2D` keeps the M1 key (`id`). `PlayAt` keys by `id` plus a coarse position cell (`floor(x / 2), floor(z / 2)`), so two friends' nibbles at different bobbers are not merged into one. Loops are never rate-limited. See Contract questions 6.
+- **Rate limit per source (spec 11.7).** `Play2D` keeps the M1 key (`id`). `PlayAt` keys by `id` plus a coarse position cell (`floor(x / 2), floor(z / 2)`), so two friends' nibbles at different bobbers are not merged into one (ruling C-Q6). Loops are never rate-limited.
 - **Duck gain.**
   - Private state: `_duckGain` (1 = none), `_duckHoldUntil` (unscaled time).
   - `Duck(float seconds)` sets `_duckHoldUntil = max(_duckHoldUntil, now + 0.3 + max(0, seconds))`. NaN `seconds` is treated as 0. A repeat call extends the hold; ducks never stack below 50%.
@@ -417,6 +417,13 @@ Members are listed by contract name. Everything not listed keeps its M1 and T1 b
 | `SfxRecipes_M2Table_MatchesPlan` (extra) | The 12 M2 rows in the T11.2 table order. Each row's length, loop, category, base, spatial, maxDistance, minInterval and minDistance equal the table (tolerance 1e-6). Also the M1 rows report `MinDistance == 1` (8-arg constructor default). |
 | `SfxRecipes_M2OneShots_StartAndEndNearZero` (extra) | For each non-loop M2 row, `abs(s[0]) < 0.05` and `abs(s[n-1]) < 0.05`, so there is no click. |
 
+`AudioBusTests.cs` (edit; T1 review carry-over, extras): the T1 test builds an uninitialised bus. These two need an initialised bus; use the smallest route that works in EditMode (call `Initialize` with the M1 test doubles used elsewhere in the EditMode suite, or the existing seam that marks the bus ready). Count `LogType.Warning` messages through `Application.logMessageReceived`, as the T1 test does.
+
+| Test | Cases |
+|---|---|
+| `AudioBus_UnknownId_WarnsOncePerId` (extra) | Initialised bus; `PlayUi("no_such_id")` twice and `PlayAt("no_such_id", Vector3.zero)` once: exactly one warning whose text names the unknown id (key `unknown\|<id>`); a second unknown id warns once more. |
+| `AudioBus_MissingClip_WarnsOncePerId` (extra) | Initialised bus with a known recipe id whose clip was not registered: the same play twice -> exactly one warning (key `missing\|<id>`). |
+
 `RodCueAudioTests.cs` (new):
 
 | Test | Cases |
@@ -425,8 +432,8 @@ Members are listed by contract name. Everything not listed keeps its M1 and T1 b
 | `RodCueAudio_BiteAndSnap_AreStingers` | Over every `RodCue` value, `IsStinger` is true exactly for `Bite` and `Snapped`. |
 
 ### T11.5 Steps (TDD)
-1. **Core tests first.** Write the seven `SfxRecipesTests` additions and `RodCueAudioTests.cs`.
-2. **Red.** Run `test-edit -Filter "FishGame.Tests.EditMode.(SfxRecipesTests|RodCueAudioTests)"`. Expected: a compile failure on `SfxRecipes.M2`/`All`, `MinDistance`, `RodCueAudio` and the new `SfxIds`.
+1. **Core tests first.** Write the seven `SfxRecipesTests` additions, `RodCueAudioTests.cs` and the two `AudioBusTests` additions.
+2. **Red.** Run `test-edit -Filter "FishGame.Tests.EditMode.(SfxRecipesTests|RodCueAudioTests|AudioBusTests)"`. Expected: a compile failure on `SfxRecipes.M2`/`All`, `MinDistance`, `RodCueAudio` and the new `SfxIds`.
 3. **Implement Core.** Write `SfxIds`, `SfxRecipe`, `SfxRecipes` (table + 12 generators), and `RodCueAudio`.
 4. **Green.** Rerun the same filter. If a seam or click test fails, fix the generator (phase start, whole periods, release), never the threshold.
 5. **Runtime.** Write `AudioLoop`, the `AudioBus` edits, `SfxGenerator`, `CaptionRequested`, and `AuditionCuesMenu`. Gate with `compile`.
@@ -445,6 +452,7 @@ Manual (the controller, at the T19/T23 manual checks, not a blocker for T11): in
   - `SfxIds` has exactly the 12 C 7.11 constants.
   - `SfxRecipe` has `MinDistance`, and the 9-arg constructor has `minDistance` last.
   - The 8-arg constructor gives 1.
+- **Partial file (ruling C-Q11).** `SfxRecipes` is a `partial` class; `M2Table`, `M2` and the 12 private generators are in `Core/Audio/SfxRecipes.M2.cs` and that file is in the commit.
 - **Recipe lists.** `All` is M1 then M2. `TryGet`, `Generate` and `SfxGenerator.GenerateAll` cover `All`.
 - **Generators.** All 12 use only the seeded `Pcg32` (no `System.Random`). Loops are whole periods with no seam jump. One-shots end at 0.
 - **`RodCueAudio`.** The map matches C 7.11 entry for entry. Stingers are exactly Bite and Snapped.
@@ -455,13 +463,14 @@ Manual (the controller, at the T19/T23 manual checks, not a blocker for T11): in
   - Ducking runs on unscaled time, extends rather than stacks, and covers both `Register` and `ApplyVolumes`.
   - `ApplyCueTable(null)` resets the overrides, and merged overrides keep Core length and loop.
   - Warnings go through `LogOnce`.
+- **Warn-once carry-over (T1 review).** `AudioBusTests.cs` has the two cases below; both pass.
 - **Unchanged public members.** The existing members keep their signatures: `Register`, `Unregister`, `PlayUi`, `Play2D`, `PlayAt(id, pos)` and `ApplyVolumes`.
 - **Other surfaces.** `CaptionRequested` and `AudioLoop` match the C 7.11 signatures. The menu path and method match C 6.5.
-- **Results.** Audition PASS, EditMode and PlayMode green, and 9 new tests by exact name.
+- **Results.** Audition PASS, EditMode and PlayMode green, and 11 new tests by exact name.
 
 ### T11.7 Commit
 ```powershell
-git add Assets/_Project/Core/Audio/SfxIds.cs Assets/_Project/Core/Audio/SfxRecipe.cs Assets/_Project/Core/Audio/SfxRecipes.cs Assets/_Project/Core/Fishing/RodCueAudio.cs Assets/_Project/Core/Fishing/RodCueAudio.cs.meta Assets/_Project/Runtime/Audio/AudioBus.cs Assets/_Project/Runtime/Audio/AudioLoop.cs Assets/_Project/Runtime/Audio/AudioLoop.cs.meta Assets/_Project/Runtime/Audio/SfxGenerator.cs Assets/_Project/Runtime/Services/CaptionRequested.cs Assets/_Project/Runtime/Services/CaptionRequested.cs.meta Assets/_Project/Editor/Dev/AuditionCuesMenu.cs Assets/_Project/Editor/Dev/AuditionCuesMenu.cs.meta Assets/_Project/Tests/EditMode/SfxRecipesTests.cs Assets/_Project/Tests/EditMode/RodCueAudioTests.cs Assets/_Project/Tests/EditMode/RodCueAudioTests.cs.meta; git commit -m "m2(audio): M2 recipes and Rod_Thunk, All, MinDistance, AudioBus loops/duck/cue table, RodCueAudio, captions message, audition menu" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
+git add Assets/_Project/Core/Audio/SfxIds.cs Assets/_Project/Core/Audio/SfxRecipe.cs Assets/_Project/Core/Audio/SfxRecipes.cs Assets/_Project/Core/Audio/SfxRecipes.M2.cs Assets/_Project/Core/Audio/SfxRecipes.M2.cs.meta Assets/_Project/Core/Fishing/RodCueAudio.cs Assets/_Project/Core/Fishing/RodCueAudio.cs.meta Assets/_Project/Runtime/Audio/AudioBus.cs Assets/_Project/Runtime/Audio/AudioLoop.cs Assets/_Project/Runtime/Audio/AudioLoop.cs.meta Assets/_Project/Runtime/Audio/SfxGenerator.cs Assets/_Project/Runtime/Services/CaptionRequested.cs Assets/_Project/Runtime/Services/CaptionRequested.cs.meta Assets/_Project/Editor/Dev/AuditionCuesMenu.cs Assets/_Project/Editor/Dev/AuditionCuesMenu.cs.meta Assets/_Project/Tests/EditMode/SfxRecipesTests.cs Assets/_Project/Tests/EditMode/AudioBusTests.cs Assets/_Project/Tests/EditMode/RodCueAudioTests.cs Assets/_Project/Tests/EditMode/RodCueAudioTests.cs.meta; git commit -m "m2(audio): M2 recipes and Rod_Thunk, All, MinDistance, AudioBus loops/duck/cue table, RodCueAudio, captions message, audition menu" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -512,7 +521,7 @@ git add Assets/_Project/Core/Audio/SfxIds.cs Assets/_Project/Core/Audio/SfxRecip
 #### `Core/World/RippleMath.cs`
 - Constants exactly as in C 7.12: `Slots = 8`, `RingSpeed 2.2`, `RingWidth 0.25`, `Lifetime 2.5`, and the seven strengths `CastLanding 0.6`, `Nibble 0.2`, `Bite 1.0`, `BiteFollow 0.3`, `Snap 0.8`, `Landed 0.7`, `Shove 1.0`.
 - **`Ring(float dist, float age, float strength)`** = `(1 - sat(abs(dist - age * RingSpeed) / RingWidth)) * sat(1 - age / Lifetime) * strength`, where `sat` clamps to 0..1.
-  - Refinement: `age < 0` returns 0. A ripple stamped ahead of the water clock is invisible. See Contract questions 5.
+  - Refinement (ruling C-Q5): `age < 0` returns 0. A ripple stamped ahead of the water clock is invisible; T21's shader matches (`step(0, age)`).
   - NaN inputs return 0.
 - **`NextSlot(int lastSlot)`** = `(lastSlot + 1) % Slots` for `lastSlot` in `0..Slots-1`. Any other value returns 0, which also covers -1 for "none yet". With round-robin, the next slot is always the oldest.
 
@@ -535,7 +544,7 @@ git add Assets/_Project/Core/Audio/SfxIds.cs Assets/_Project/Core/Audio/SfxRecip
   - `SkyTop = "_SkyTop"`
   - `SkyHorizon = "_SkyHorizon"`
   - `SkyGround = "_SkyGround"`
-- These C# identifiers are chosen here; see Contract questions 3.
+- These C# identifiers are fixed by ruling C-Q3 and listed in C 7.12; T21 and T22 use them.
 - Class comment: "Global shader property names (C 5.3). Arrays are always pushed full length: _FGPalette 16, _Ripples 8 (RippleMath.Slots), _Waves 4 (C 2.8 #18)."
 
 ### T12.3 Behaviour - Runtime
@@ -568,7 +577,7 @@ The public surface is exactly as in C 7.12. The class comment states the rules b
   - Positions are `center + rotation * local`.
 - **Winding.** Each triangle `(a, b, c)` is clockwise seen from outside (the Unity front face). Its normal is `normalize(Cross(b - a, c - a))` and points outward. A primitive whose source table is counter-clockwise is flipped when emitted. The face test proves the result.
 - **Faces.** A face is one `Triangle` call, one `Quad` call (two triangles `(a, b, c)`, `(a, c, d)`), or one polygon cap. All triangles of a face share the face's grey, `FaceJitter.Grey(meshSeed, faceIndex, faceJitter)`, and the slot. `faceIndex` counts faces from 0 in emission order. Each triangle gets its own computed normal, so planar quads and caps get identical normals.
-- **Slot.** `slot` must be 0..15 (`ArgumentOutOfRangeException` otherwise). It is stored in **UV channel 1** as `(slot, 0)` via `mesh.SetUVs(1, List<Vector2>)`, which is shader `TEXCOORD1`, the spec's `uv1.x`. UV0 is not written. See Contract questions 4.
+- **Slot.** `slot` must be 0..15 (`ArgumentOutOfRangeException` otherwise). It is stored in **UV channel 1** as `(slot, 0)` via `mesh.SetUVs(1, List<Vector2>)`, which is shader `TEXCOORD1`, the spec's `uv1.x`. UV0 is not written (rulings C-Q4, F-Q1/Q2).
 - **Colour.** Each vertex gets `new Color(g, g, g, 1)` as float `Color` via `SetColors(List<Color>)`. Never use `Color32`: `g` reaches `1 + jitter` (> 1), and `Color32` would clamp it.
 - **Primitives.** All are centred on `center` and use a local Y axis. Angles are computed as `2*pi*k / sides` per index; never accumulated. `sides >= 3`, `rings >= 1`, `subdivisions` 0..4, and every radius, height and size component must be > 0, else `ArgumentOutOfRangeException` (exceptions noted per primitive). In the counts below, n = `sides` and r = `rings`.
   - **`Box(center, size, rotation, slot)`:** 6 quad faces in the order +X, -X, +Y, -Y, +Z, -Z = 12 triangles.
@@ -694,7 +703,7 @@ git add Assets/_Project/Core/World.meta Assets/_Project/Core/World/WaveSet.cs As
 - **T20:** the Toon shader reads the palette slot from `TEXCOORD1.x` (`mesh.SetUVs(1, ...)`) and the grey from the vertex colour (float, may exceed 1). Body meshes built with `MeshBuilder` already carry both.
 - **T21 / T22:**
   - The HLSL wave term must equal `WaveMath`'s: direction `(sin deg, cos deg)` on (x, z), `k = 2*pi/L`, `A * sin(k * (dot - S * t))`, and `L <= 0` or `A == 0` -> 0.
-  - `_Waves` packing is not fixed by C (Contract questions 4).
+  - `_Waves[i] = (DirectionDeg, Amplitude, Wavelength, Speed)` for i = 0..2 and slot 3 all zero (rulings C-Q4, F-Q1/Q2, now in C 5.3 and 7.12). Parity rule: the C# wave height must be evaluated with the same float-cast time value that is pushed to `_WaterTime`, so C# and HLSL agree regardless of session length. `WaterTimeDriver`'s time source therefore returns `(double)(float)time` and pushes that same float (T22).
   - The ripple ring uses `RippleMath.Ring`, including `age < 0 -> 0`.
   - Property names come from `ShaderGlobals`.
   - `WaterTimeDriver` calls `WaterSurface.Configure` and `SetTimeSource`, and calls `ResetToFlat` on destroy.
@@ -702,46 +711,23 @@ git add Assets/_Project/Core/World.meta Assets/_Project/Core/World/WaveSet.cs As
   - Sounds come from `RodCueAudio.SfxFor`. A stinger calls `Duck(seconds)`.
   - `Dive_Thrum` and `Line_Creak` use `StartLoop`/`SetLoop`/`StopLoop`: `spatial: false` for the owner and `true` (following the bobber or player) for remotes.
   - `Reel_Click` ticks: `Play2D` for the owner, `PlayAt` for remotes.
-  - The `ChargeStart` whoosh pitch follows the charge through `PlayAt(..., pitchMult)` at the owner's rod position. `Play2D` has no pitch overload (Contract questions 8).
+  - The `ChargeStart` whoosh pitch follows the charge through `PlayAt(..., pitchMult)` at the owner's rod position. `Play2D` has no pitch overload (ruling C-Q8: `PlayAt` with `pitchMult` is the charge-whoosh route).
   - Captions are sent as `CaptionRequested`.
-- **T25:** the "assist on sets the gauge to Arc once" rule lives in the settings UI, not in `SettingsData.Clamp`.
+- **T25:** the "assist turned on while the gauge is Off sets the gauge to Arc, every time" rule (G-Q4) lives in the settings UI, not in `SettingsData.Clamp`.
 - **T26:** resolves `ServiceRoots.App.Get<IInputService>() as IDevInput`, null-safe. The PlayMode fake exposes `DevPressed`.
 
 ---
 
-## Contract questions
+## Contract questions (all closed by controller rulings of 2026-10-11; C 15)
 
-1. **`SfxRecipe` 9-arg constructor order (T11, T13).**
-   - C 7.11 says "a 9-arg ctor" without the parameter order.
-   - This plan appends `minDistance` last: `(id, length, loop, category, baseVolume, spatial, maxDistance, minInterval, minDistance)`. The first eight positions then keep their M1 meaning, and no float can silently shift.
-   - T13's `ToRecipes` must use this order. Section D (`2026-10-11-m2-plan-data-tuning.md`) agrees: it tells T13 to read the order from `SfxRecipe.cs`, so this is a confirmation request, not a conflict. Please confirm, or pin another order in C.
-   - **Related conflict with Section D's cue-table validator.** D validates `maxDistance > minDistance` and seeds every row from the Core recipe. The M1 2D rows (`Ui_*`, `Wind_Ambient`, `Water_Lap`) have `MaxDistance 0`, which `AudioBus` reads as "default 30", and `MinDistance 1`, so the rule would reject them. The controller should pick one fix: (a) T14 seeds `maxDistance 30` when the Core value is 0; (b) D's validator treats 0 as "default"; or (c) T11 changes the M1 rows to `30`. Option (c) would break the M1 test `SfxRecipes_M1Table_MatchesContract` only if it asserted those values. It does not for UI, but it is an M1 value change, so this plan does not do it.
-2. **`InteractLive(Carrying)` (T10).**
-   - C 7.10 lists Free, RodReady, RodWaiting and Swimming.
-   - Spec 8.2 gives Carrying "Interact", and the router still passes Interact for Carrying (D18).
-   - This plan follows C (Carrying -> false). Carrying is unreachable in M2, so M5 should revisit it.
-3. **`ShaderGlobals` identifiers (T12).**
-   - C 5.3 fixes the property strings but not the C# constant names.
-   - This plan uses `Palette, Ripples, Waves, WaterTime, ToonShade, ToonAmbient, SkyTop, SkyHorizon, SkyGround`.
-   - T21 and T22 should use these. Please add them to C, or name others.
-4. **Water and mesh conventions that C leaves open (T12 -> T20, T21, T22).**
-   - (a) Wave direction: `0 deg = +Z`, `dir = (sin, cos)` on (x, z), the same as the `CastMath` yaw.
-   - (b) The `_Waves` Vector4 packing is not in C. Suggested: `_Waves[i] = (DirectionDeg, Amplitude, Wavelength, Speed)` for i = 0..2, with `_Waves[3] = 0`, mirroring `WaterSettingsDef.dirAmpLenSpeed`. T22 is the owner.
-   - (c) The palette slot is in mesh UV channel 1 (`SetUVs(1, ...)`, TEXCOORD1), which is the spec's `uv1.x`, not `mesh.uv`.
-   - (d) `_WaterTime` is a float in HLSL. After hours of `ServerTime`, the C# (double) and GPU phases can drift by a few hundredths of a radian, a centimetre-scale visual offset at 0.1 m amplitude. If that matters, T22 may push a wrapped time. That needs a shared wrap period, which C does not define.
-5. **`RippleMath.Ring` with negative age (T12 -> T21).** C gives the formula for age >= 0 only. This plan returns 0 for `age < 0` (a clock jump when `WaterTimeDriver` switches to `ServerTime`). T21's shader should match with `step(0, age)`.
-6. **Rate limit per source (T11).**
-   - Spec 11.7 says "rate-limited per source by minInterval". The M1 `AudioBus` limits per id.
-   - Without a change, two friends' nibbles or splashes within the minInterval would merge in co-op.
-   - This plan keys `PlayAt` by id plus a 2 m position cell, with no public API change. `Play2D` stays per id. Please confirm.
-7. **Staggered moves and reels at once (M5, informational).**
-   - Under D18 Staggered routes like Free (Move passes), yet `RouteFight` is live in Staggered, so S would both move and reel.
-   - It is unreachable in M2. `InputContextRouter_RodContexts_SameKeyNeverMovesAndReels` is therefore scoped to Free plus the four rod contexts.
-   - M5's Staggered row (Move zeroed, spec 8.2) fixes it.
-8. **Pitched owner-only 2D sound (T11 -> T23).**
-   - C 7.11 adds `PlayAt(id, pos, pitchMult)` but no pitched 2D play.
-   - Spec 9.11 wants the charge whoosh pitch to follow the charge, and the owner hears its own rod. T23 can use `PlayAt` at the camera/rod position, which is effectively 2D for the owner.
-   - If a true 2D pitched play is wanted, C needs `Play2D(id, category, pitchMult)`. This plan does not add it.
-9. **`AmbienceBed` and the cue table (informational).** `AmbienceBed` (an M1 file not owned by any M2 task) reads `SfxRecipes.TryGet` directly for the wind base volume, so a cue-table override of `Wind_Ambient` will not reach the wind loop. M2 tunes only fishing cues, so this is harmless. It can be fixed when M3 touches ambience.
-10. **`SettingsData.version` (T10).** It stays 1. `JsonUtility` keeps the defaults for the missing M2 fields, so no migration is needed. Confirm that no version bump is wanted.
-11. **`SfxRecipes.cs` size (T11).** The 12 new generators take the file to about 450 lines, over the ~300-line rule. C 12 lists one file. Should a partial `Core/Audio/SfxRecipes.M2.cs` (holding the private M2 generators) be added to T11's manifest, or is one long file accepted? Without an answer, T11 keeps one file.
+1. **`SfxRecipe` 9-arg constructor order (closed, C-Q1).** `minDistance` is the last argument: `(id, length, loop, category, baseVolume, spatial, maxDistance, minInterval, minDistance)`. `MaxDistance == 0` keeps meaning "default 30"; the T14 cue-table validator compares the EFFECTIVE max (0 -> 30) with `MinDistance`. No M1 value changes. Section D is told (T13/T14 text amended).
+2. **`InteractLive(Carrying)` (closed, C-Q2).** False in M2 (the context is unused); M5 revisits spec 8.2.
+3. **`ShaderGlobals` identifiers (closed, C-Q3).** `Palette, Ripples, Waves, WaterTime, ToonShade, ToonAmbient, SkyTop, SkyHorizon, SkyGround`.
+4. **Water and mesh conventions (closed, C-Q4, F-Q1/Q2).** 0 deg = +Z, `dir = (sin, cos)`; `_Waves[i] = (deg, amplitude, wavelength, speed)`, slot 3 zero; palette slot in UV1 (TEXCOORD1); parity rule: the C# wave height uses the same float-cast time that is pushed to `_WaterTime` (the wrapped-time option is dropped).
+5. **`RippleMath.Ring` with negative age (closed, C-Q5).** Returns 0; T21's shader matches.
+6. **Rate limit per source (closed, C-Q6).** `PlayAt` keys by id plus a 2 m cell; `Play2D` per id.
+7. **Staggered moves and reels at once (closed, C-Q7).** M5 fixes the Staggered row.
+8. **Pitched owner-only 2D sound (closed, C-Q8).** `PlayAt` with `pitchMult` for the charge whoosh.
+9. **`AmbienceBed` and the cue table (closed, C-Q9).** Harmless in M2.
+10. **`SettingsData.version` (closed, C-Q10).** Stays 1; the new fields are additive with defaults.
+11. **`SfxRecipes.cs` size (closed, C-Q11).** Partial file `Core/Audio/SfxRecipes.M2.cs` added to T11's owned files.

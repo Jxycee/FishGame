@@ -1,7 +1,7 @@
 # FishGame M2 - Plan Section F: Presentation (T20, T21, T22, T23, T24)
 
 - **Date:** 2026-10-11. **Branch:** `m2-fishing-core`.
-- **Contract (binding, "C" below):** `docs/superpowers/plans/2026-10-11-m2-interfaces.md`. If this file disagrees with C, C wins; doubts are listed under "Contract questions" at the end.
+- **Contract (binding, "C" below):** `docs/superpowers/plans/2026-10-11-m2-interfaces.md`. If this file disagrees with C, C wins; every doubt raised here is closed by a controller ruling, listed under "Contract questions" at the end.
 - **Skeleton:** `docs/superpowers/plans/2026-10-11-m2-plan-skeleton.md` (rows T20-T24, section 6 row F, section 8 risk 7).
 - **Spec (behaviour source):** `docs/superpowers/specs/2026-10-09-fishgame-design.md` 9.11 (feedback mapping), 10.1-10.5, 10.7, 3.2 (R62).
 - **Sibling plans used:** `2026-10-11-m2-plan-core-support.md` (T12: wave direction, `MeshBuilder` UV channel, `ShaderGlobals` identifiers), `2026-10-11-m2-plan-data-tuning.md` (T14: `AssetPaths` constants, palette and water seeds).
@@ -20,7 +20,7 @@ Every brief carries C 2.8 by reference. These bite in this section:
 - **#6 scene churn:** after `build`, run `git restore Assets/_Project/Scenes/*.unity` unless the task really changes a scene. Only T22 changes `Spot_LakeDock`.
 - **#8 EditMode reach:** EditMode tests reach Editor, Data, Core and Runtime, never Presentation. PlayMode tests reference Fishing and Gameplay, not Presentation. See 0.4.
 - **#9 PlayMode output:** PlayMode fails on any unexpected `Debug.LogError` and must be warning-free. Presentation code never logs a warning in normal play. A missing optional reference is a silent no-op (or one `Debug.Log`).
-- **#11 editor lock:** `Tools/unity.ps1` checks `Temp/UnityLockfile`. On `LOCKED` (exit 2), stop and report. Never kill Unity.
+- **#11 editor lock:** `Tools/unity.ps1` tests whether the lock is held. On `LOCKED` (exit 2), stop and report; a leftover `Temp/UnityLockfile` that is not held is not a lock. Never kill Unity.
 - **#13 batchmode rendering:** any code that compiles shaders for validation or capture sets `ShaderUtil.allowAsyncCompilation = false` first and restores it after.
 - **#14:** builders load assets after `EditorSceneManager.NewScene`. `PresentationSceneObjects.AddTo` loads its assets itself, inside the call.
 - **#15:** scene objects added here are plain MonoBehaviours (no NetworkObject).
@@ -51,7 +51,7 @@ Expected result lines are those in M1 contract 11 (`FG RESULT <cmd> PASS ...`). 
   - `Shader.SetGlobalVectorArray` and vertex colours are **not** converted.
   - Therefore `PaletteGlobals` pushes `((Color)v).linear` for every `_FGPalette` entry when `QualitySettings.activeColorSpace == ColorSpace.Linear` (T14's `PaletteVectors` returns the authored sRGB values).
   - `FishFallbackMesh` writes `colorA.linear` / `colorB.linear` into vertex colours.
-  - The Toon shader treats vertex colour as linear and never converts it. So the Blender fish (T29) must be exported with linear vertex colours (Contract question 3).
+  - The Toon shader treats vertex colour as linear and never converts it (ruling F-Q3, which supersedes G-Q7). The Blender fish are exported with linear vertex colours (`colors_type='LINEAR'`); the controller re-exports the staged `Art/Export/Fish_*.fbx` linear, and T29 imports and verifies them. `FishFallbackMesh` follows the same rule (linear).
 - **F4 Shader validation mode.** T20 settles it (task T20, step 3) before T21 depends on it. `ShaderValidator` fails closed: an in-memory canary must be reported as broken, or `Run()` returns an error.
 - **F5 Material ownership.** `RenderMaterialLibrary.cs` (new, T20) holds the T20 Toon materials. T21 adds an `internal static void BuildWorldMaterials(WaterSettingsDef water)` called from `RenderingSetupBuilder.Build()` (after T14's hook has created `WaterSettings.asset`). No new public members.
 - **F6 Remote view rules (C 9 "Remote view and late join", C 7.17 `ViewState`, C 7.24).**
@@ -68,7 +68,7 @@ C 10 lists only two tests for T20-T24 (both T20). EditMode cannot reference Pres
 
 1. `compile` and `build` (builders and validators run).
 2. The full `test-edit` and `test-play`. T19's `FishingSoloTests` run the whole owner path with the presentation components on `PlayerFP`, so any exception, error or warning fails them.
-3. A few **added** tests (named in each task header; Contract question 6) that observe effects without referencing Presentation types:
+3. A few **added** test files (whitelisted by ruling F-Q6: `ToonMaterialTests.cs`, `RenderingSetupTests.cs`, `PresentationWorldTests.cs`, `FeedbackSoloTests.cs`, `PlayerPresentationRigTests.cs`, `RodViewSoloTests.cs`; C 12 amended) that observe effects without referencing Presentation types. `test-play` from T22 on uses `-TimeoutMinutes 15`:
    - shader globals (`Shader.GetGlobalVectorArray`, `Shader.GetGlobalFloat`);
    - `WaterSurface`;
    - child transforms, `LineRenderer`s and `MeshRenderer`s found by `PlayerRigPaths`;
@@ -83,7 +83,7 @@ C 10 lists only two tests for T20-T24 (both T20). EditMode cannot reference Pres
 | | |
 |---|---|
 | Goal | The `FishGame/Toon` shader (spec 10.3) and shared HLSL; a fail-closed `ShaderValidator` that works under `-batchmode -nographics` (settled here); `RenderValidators`; Toon materials; MeshBuilder body meshes (vertex colours); the FBX import postprocessor and the perch reimport. |
-| Owned files (C 12) | `Shaders/FishGameCommon.hlsl`, `Shaders/Toon.shader`, `Editor/Validation/ShaderValidator.cs`, `Editor/Validation/RenderValidators.cs`, `Editor/Builders/RenderMaterialLibrary.cs`, `Editor/Builders/Render/FishModelPostprocessor.cs`; generated `Content/Materials/M_Toon_Base.mat`, `M_Toon_Fish.mat`, re-pointed `M_Body_Slot0..3.mat` and `M_Skin.mat` (GUIDs kept), `Content/Meshes/Body_UnitSphere.asset`, `Body_UnitBox.asset`, `Body_UnitCapsule.asset`, `Prefabs/PlayerFP.prefab`, `Content/Models/Fish_Perch.fbx.meta`. Tests: `Tests/EditMode/ValidationTests.cs` (add 2). **Addition (not in C 12; Contract question 6):** `Tests/EditMode/ToonMaterialTests.cs`. |
+| Owned files (C 12) | `Shaders/FishGameCommon.hlsl`, `Shaders/Toon.shader`, `Editor/Validation/ShaderValidator.cs`, `Editor/Validation/RenderValidators.cs`, `Editor/Builders/RenderMaterialLibrary.cs`, `Editor/Builders/Render/FishModelPostprocessor.cs`; generated `Content/Materials/M_Toon_Base.mat`, `M_Toon_Fish.mat`, re-pointed `M_Body_Slot0..3.mat` and `M_Skin.mat` (GUIDs kept), `Content/Meshes/Body_UnitSphere.asset`, `Body_UnitBox.asset`, `Body_UnitCapsule.asset`, `Prefabs/PlayerFP.prefab`, `Content/Models/Fish_Perch.fbx.meta`. Tests: `Tests/EditMode/ValidationTests.cs` (add 2). `Tests/EditMode/ToonMaterialTests.cs` (whitelisted, ruling F-Q6). If the `-nographics` check in step 3 fails: a minimal `Tools/unity.ps1` change (ruling F-Q4). |
 | Shared edits (C 2.6) | `Editor/Builders/MaterialLibrary.cs` (body/skin move out; hook `RenderMaterialLibrary.BuildAll()`), `Editor/Builders/PrefabBuilder.cs` (body meshes), `Editor/Validation/ValidationRunner.cs` (hook), `Editor/Builders/AssetPaths.cs` (T20 constants block). |
 | Depends on | T12, T13, T19 committed (T14's `AssetPaths` block exists). |
 | Implementer | Sonnet |
@@ -209,7 +209,7 @@ Rules the code follows:
 - **Never include `SimpleLitInput.hlsl`**: its CBUFFER differs.
 - URP's `ShadowCasterPass.hlsl` and `DepthOnlyPass.hlsl` are included directly. Verified in URP 17.6: they declare no CBUFFER, and they touch `_BaseMap` only under `_ALPHATEST_ON`, which Toon never declares.
 - The UniversalForward keyword list is the SimpleLit 17.6 "Universal Pipeline keywords" block verbatim (META_QUEST lines dropped), plus Fog and RenderingLayers `#include_with_pragmas` and instancing.
-- The lightmap, `DEBUG_DISPLAY` and `LOD_FADE_CROSSFADE` blocks and DOTS instancing are left out. The project has no baked GI and no BRG (Contract question 9).
+- The lightmap, `DEBUG_DISPLAY` and `LOD_FADE_CROSSFADE` blocks and DOTS instancing are left out. The project has no baked GI and no BRG (ruling F-Q9).
 
 ```hlsl
 // Shaders/Toon.shader - FishGame/Toon (spec 10.3, C 7.20). Owned by T20. ASCII only.
@@ -463,7 +463,7 @@ If `ShaderValidator` reports a real error in this block (for example an API that
 - `internal static bool Apply(ModelImporter mi)` sets the C 7.20 list (`materialImportMode = None`, `importNormals = Import`, `importAnimation = false`, `importCameras = false`, `importLights = false`, `globalScale = 1`, `useFileScale = true`, `isReadable = false`, `meshCompression = Off`) plus `animationType = None` (no Animator on a static fish), and returns true if anything changed. It never assigns materials.
 - `internal static int EnsureImportSettings()`: for each `.fbx` under `ModelsFolder`, `Apply` the importer and `SaveAndReimport()` only if it changed. This writes the `.meta`, so `build` turns `Fish_Perch.fbx.meta` `materialImportMode: 2` into `0` once. Then log `FG MODELS <file> tris=<n> submeshes=<k> colours=<yes|no>` (`Debug.Log`) per model (C G6 evidence for the controller and T29). Returns the count reimported.
 - `[MenuItem("FishGame/Dev/Reimport Fish Models")] public static void ReimportAll()`: `Apply` + `SaveAndReimport()` for every model (forced), then the same log lines.
-- Note for T23: with material import None the perch keeps 5 submeshes (5 Blender materials). The reveal assigns `M_Toon_Fish` to every submesh.
+- Note for T23: with material import None the spike perch keeps 5 submeshes (5 Blender materials) until T29 replaces it; the new staged species models (`Art/Export/Fish_*.fbx`) have ONE submesh, one material slot and per-face LINEAR vertex colours (ruling G-Q6). The reveal assigns `M_Toon_Fish` to every submesh either way.
 
 ### T20.8 `AssetPaths` (T20 block, constants only)
 
@@ -498,7 +498,7 @@ public const string BodyUnitCapsuleMesh = MeshesFolder + "/Body_UnitCapsule.asse
    - (b) Create the temporary file `Assets/_Project/Shaders/ZzCanaryTemp.shader` (`Shader "FishGame/ZzCanaryTemp"`, one HLSL pass returning an undeclared identifier). Run the same filter. Expected: FAIL with an error naming `FishGame/ZzCanaryTemp` and the HLSL message.
    - Delete `ZzCanaryTemp.shader` and its `.meta` (`Remove-Item` on the two untracked files) and rerun. Expected: back to `no shaders`.
    - (c) Record the outcome, the overload used and the `ms` in the report and in the `ShaderValidator` class comment.
-   - **Stop rule:** if neither (a) nor (b) detects the error under `unity.ps1` (`-nographics`), stop and report to the controller. The fix is a graphics-capable batchmode run for this test, which is a contract change to `Tools/unity.ps1` (not owned here). T21 must not start until this is resolved.
+   - **Fallback (ruling F-Q4):** if neither (a) nor (b) detects the error under `unity.ps1` (`-nographics`), T20 owns a minimal change to `Tools/unity.ps1`: run the validation (`Validation_Shaders_Pass`) in a graphics-capable batchmode (no `-nographics` for that run only), keep every other command unchanged, document it in the script header and add the script to the commit. Report what changed. T21 must not start until `Validation_Shaders_Pass` is fail-closed and green.
 4. Write `FishGameCommon.hlsl` and `Toon.shader` (T20.3, T20.4). Run `test-edit -Filter "Validation_Shaders_Pass"`. Expected: PASS, with `FG SHADERS checked=1`.
 5. Write `ToonMaterialTests` (all four). Run `test-edit -Filter "ToonMaterialTests"`. Expected: FAIL (materials missing or Lit, body meshes primitive, perch materialImportMode 2).
 6. Write `RenderMaterialLibrary`, the `MaterialLibrary` edit, the body meshes in `PrefabBuilder`, `FishModelPostprocessor` and the `AssetPaths` block. `compile`, then `build`. Expected: `FG BUILDALL PASS` and `FG MODELS Fish_Perch.fbx ... colours=<yes|no>` in the log. Then `test-edit -Filter "ToonMaterialTests|Validation_"`. Expected: PASS.
@@ -519,7 +519,7 @@ Drop from the list any `.meta` that already existed (for example `Shaders.meta` 
 - One `UnityPerMaterial` (HLSLINCLUDE); no `SimpleLitInput.hlsl`. The forward keyword list matches SimpleLit 17.6's pipeline block.
 - `Validation_Shaders_Pass` and `Validation_ToonMeshesHaveVertexColours_Pass` are green in `test-edit` (`-nographics`).
 - Existing material GUIDs are kept. `PlayerFP` `GlobalObjectIdHash` is unchanged and non-zero. A second `build` is clean.
-- `Fish_Perch.fbx.meta` has `materialImportMode: 0`. The report says whether the perch has vertex colours (C G6; T14 leaves `perch.model` null if not).
+- `Fish_Perch.fbx.meta` has `materialImportMode: 0`. The report says whether the spike perch has vertex colours and how many submeshes (C G6; T14 leaves `perch.model` null if not exactly one submesh with colours; T29 then replaces it with the new perch).
 - No `LogWarning` in `ShaderValidator` (warnings go to `Debug.Log`). ASCII scan clean.
 
 ### T20 manual check (controller, after the commit)
@@ -533,7 +533,7 @@ Ask the user to open `PlayerFP` in prefab mode. Expected: flat faces with a visi
 | | |
 |---|---|
 | Goal | `FishGame/Water` (spec 10.4), `FishGame/Line` (spec 10.5, 9.11), `FishGame/GradientSky` (spec 10.3), the world materials, the two volume profiles, `ApplySceneLighting`, and camera post-processing on `PlayerFP`. |
-| Owned files (C 12) | `Shaders/Water.shader`, `Shaders/Line.shader`, `Shaders/GradientSky.shader`, `Editor/Builders/Render/RenderingSetupBuilder.cs`; generated `Content/Materials/M_Water_Surface.mat`, `M_Line.mat`, `M_Sky.mat`, `M_Particle.mat`, `M_Marker.mat`, `Content/Rendering/VP_WarmSunset.asset`, `VP_CoolNight.asset`, `Prefabs/PlayerFP.prefab`. **Addition (Contract question 6):** `Tests/EditMode/RenderingSetupTests.cs`. |
+| Owned files (C 12) | `Shaders/Water.shader`, `Shaders/Line.shader`, `Shaders/GradientSky.shader`, `Editor/Builders/Render/RenderingSetupBuilder.cs`; generated `Content/Materials/M_Water_Surface.mat`, `M_Line.mat`, `M_Sky.mat`, `M_Particle.mat`, `M_Marker.mat`, `Content/Rendering/VP_WarmSunset.asset`, `VP_CoolNight.asset`, `Prefabs/PlayerFP.prefab`. `Tests/EditMode/RenderingSetupTests.cs` (whitelisted, ruling F-Q6). |
 | Shared edits (C 2.6) | `RenderMaterialLibrary.cs` (adds `internal static void BuildWorldMaterials(WaterSettingsDef water)`), `ContentBuilder.cs` (hook after T14's: `RenderingSetupBuilder.Build();`), `PrefabBuilder.cs` (camera post-processing), `AssetPaths.cs` (T21 block). |
 | Depends on | T20 committed, **and T20's spike resolved** (F4). |
 | Implementer | Sonnet |
@@ -750,7 +750,7 @@ Ask the user to look at the inspector previews of `M_Water_Surface`, `M_Line` an
 | | |
 |---|---|
 | Goal | The scene-level presentation drivers: palette and day-phase globals, the water clock and waves (C# and GPU on one clock), and the ripple slots. |
-| Owned files (C 12) | `Presentation/World/PaletteGlobals.cs`, `Presentation/World/WaterTimeDriver.cs`, `Presentation/World/RippleField.cs`, `Editor/Builders/Render/PresentationSceneObjects.cs`; generated `Scenes/Spot_LakeDock.unity`. **Addition (Contract question 6):** `Tests/PlayMode/PresentationWorldTests.cs`. |
+| Owned files (C 12) | `Presentation/World/PaletteGlobals.cs`, `Presentation/World/WaterTimeDriver.cs`, `Presentation/World/RippleField.cs`, `Editor/Builders/Render/PresentationSceneObjects.cs`; generated `Scenes/Spot_LakeDock.unity`. `Tests/PlayMode/PresentationWorldTests.cs` (whitelisted, ruling F-Q6). |
 | Shared edits (C 2.6) | `LakeDockBuilder.cs`: one hook line `PresentationSceneObjects.AddTo(scene);` right after T19's `FishingSceneObjects.AddTo(scene);`. |
 | Depends on | T12, T13, T21 committed. |
 | Implementer | Sonnet |
@@ -776,9 +776,9 @@ C 2.8 that bite: #6 (this task really changes the lake scene: commit it), #8, #9
 - Private `[SerializeField] WaterSettingsDef waterSettings` (builder, F8); a null field falls back to the registry's `WaterSettings`.
 - `OnEnable` (play):
   - `WaterSurface.Configure(waterSettings.ToWaveSet())`.
-  - `WaterSurface.SetTimeSource(_now)`. `_now` is a delegate cached once in `Awake` (no per-call allocation) returning `nm != null && nm.IsListening ? nm.ServerTime.Time : Time.timeSinceLevelLoad`, with `nm = NetworkManager.Singleton`.
+  - `WaterSurface.SetTimeSource(_now)`. `_now` is a delegate cached once in `Awake` (no per-call allocation) returning `(double)(float)(nm != null && nm.IsListening ? nm.ServerTime.Time : Time.timeSinceLevelLoad)`, with `nm = NetworkManager.Singleton`. The float cast is the C-Q4 parity rule: the C# wave height is evaluated with the very float value that is pushed to `_WaterTime`, so C# and HLSL agree regardless of session length.
   - Push `_Waves` once: entries 0..2 = `dirAmpLenSpeed[i]` (F1), entry 3 zero, through a cached `Vector4[4]`.
-- `Update`: `Shader.SetGlobalFloat(ShaderGlobals.WaterTime, (float)WaterSurface.Now)`. C# readers (`BobberView`) use `WaterSurface.HeightAt`, which reads the same `Now` in the same frame. That gives F1 parity: one formula and one clock.
+- `Update`: `Shader.SetGlobalFloat(ShaderGlobals.WaterTime, (float)WaterSurface.Now)`. C# readers (`BobberView`) use `WaterSurface.HeightAt`, which reads the same (float-cast) `Now` in the same frame. That gives F1 parity: one formula, one clock, one float value.
 - `OnDestroy` (play): `WaterSurface.ResetToFlat()` (C 7.22). Push `_Waves` all zero and `_WaterTime` 0, so a later scene with no driver renders flat water.
 - With no `WaterSettingsDef`: `ResetToFlat()` and push zero waves. No warning.
 
@@ -821,7 +821,7 @@ Getter names (`DirAmpLenSpeed`, `ArtPalette`, `WaterSettings`, `Phases`, `M2Seas
 2. Write the three components, `PresentationSceneObjects` and the hook. `build`. Expected: `FG BUILDALL PASS`. Rerun the filter. Expected: PASS.
 3. `git diff --stat Assets/_Project/Scenes`: `Spot_LakeDock.unity` changed (the new root). Keep it; restore other scenes if only churn.
 4. Full `test-edit`, then `test-play -TimeoutMinutes 15`.
-   - **Risk:** M1/T3 swim tests now see waves of up to 0.115 m. If one fails because it expects an exact water height of 0, do not edit it (not owned). Report it to the controller with the failing assertion (integration-fix rule, C 2.6: T28/T30).
+   - **Risk:** M1/T3 swim tests now see waves of up to 0.115 m. If one fails because it expects an exact water height of 0, do not edit it (not owned). Report it to the controller with the failing assertion; T28 fixes it under the integration-fix rule (ruling F-Q12).
 5. Commit:
 ```
 git add Assets/_Project/Presentation/World.meta Assets/_Project/Presentation/World/PaletteGlobals.cs Assets/_Project/Presentation/World/PaletteGlobals.cs.meta Assets/_Project/Presentation/World/WaterTimeDriver.cs Assets/_Project/Presentation/World/WaterTimeDriver.cs.meta Assets/_Project/Presentation/World/RippleField.cs Assets/_Project/Presentation/World/RippleField.cs.meta Assets/_Project/Editor/Builders/Render/PresentationSceneObjects.cs Assets/_Project/Editor/Builders/Render/PresentationSceneObjects.cs.meta Assets/_Project/Editor/Builders/LakeDockBuilder.cs Assets/_Project/Scenes/Spot_LakeDock.unity Assets/_Project/Tests/PlayMode/PresentationWorldTests.cs Assets/_Project/Tests/PlayMode/PresentationWorldTests.cs.meta
@@ -847,9 +847,9 @@ Ask the user to enter Play mode solo on the lake dock. Toon bodies now have the 
 | | |
 |---|---|
 | Goal | Spec 9.11 feel on every peer: sounds, loops, ducking and ripples. On the owner: camera trauma, FOV kicks, rumble and captions. The snap silhouette jump. The catch reveal (species model or fallback mesh). |
-| Owned files (C 12) | `Presentation/Feedback/FishingFeedback.cs`, `Presentation/Feedback/CatchRevealView.cs`, `Presentation/Feedback/FishFallbackMesh.cs`; a block in `PlayerFishingRigBuilder.AddPresentation` (**blocking Contract question 5**); generated `Prefabs/PlayerFP.prefab`. **Addition (Contract question 6):** `Tests/PlayMode/FeedbackSoloTests.cs`. |
-| Shared edits (C 2.6) | `Editor/Builders/Fishing/PlayerFishingRigBuilder.cs`: the T23 lines in `AddPresentation` (C says "one line"; see below). |
-| Depends on | T11, T19, T22 committed; Contract question 5 answered. |
+| Owned files (C 12) | `Presentation/Feedback/FishingFeedback.cs`, `Presentation/Feedback/CatchRevealView.cs`, `Presentation/Feedback/FishFallbackMesh.cs`; a block of up to 12 lines in `PlayerFishingRigBuilder.AddPresentation` (ruling F-Q5; C 2.6 amended); generated `Prefabs/PlayerFP.prefab`. `Tests/PlayMode/FeedbackSoloTests.cs` (whitelisted, ruling F-Q6). |
+| Shared edits (C 2.6) | `Editor/Builders/Fishing/PlayerFishingRigBuilder.cs`: the T23 block in `AddPresentation` (up to 12 lines, ruling F-Q5). |
+| Depends on | T11, T19, T22 committed. |
 | Implementer | Sonnet |
 | Reviewer | Opus high |
 
@@ -893,6 +893,7 @@ Owner gating: ChargeStart and the owner pitch need `FishingRodController` (same 
 - `ReleasedCreelFull`: `Catch_Flop` only.
 - Owner on `Landed`: `AddFovKick(-3, 0.3)` and a double rumble pulse (0.5, 0.5, 0.1), a 0.1 s gap, then again.
 - `Lost`: nothing (the HUD toast covers it).
+- `PityCast` (R65 / M2-D23, toast-only kind announced when a bad-luck-nudge cast is accepted): nothing here (the HUD shows `toast.pity`).
 
 **Polled each frame (state-driven, so late joiners are right; F6).**
 - `vs = rod.ViewState`; `hooked = vs.State == Hooked`.
@@ -905,7 +906,7 @@ Owner gating: ChargeStart and the owner pitch need `FishingRodController` (same 
 - `Dive_Thrum` loop while `hooked && (vs.Flags & FlagDive) != 0`, following `FeedbackAnchor`, `spatial: !owner`.
 - `Reel_Click` ticks while `hooked && (vs.Flags & FlagReel) != 0`, at `cue.ReelClickRate` per second (accumulator; at most 1 per frame, at most 30/s):
   - owner `Play2D`, remote `PlayAt(rodTip)`;
-  - pitch rises with tension in 0.3-0.6: `PlayAt` pitch `1 + 0.25 * saturate((t - 0.3) / 0.3)`. The owner's 2D tick has no pitch overload; that is accepted (T12 plan Q8).
+  - pitch rises with tension in 0.3-0.6: `PlayAt` pitch `1 + 0.25 * saturate((t - 0.3) / 0.3)`. The owner's 2D tick has no pitch overload; that is accepted (ruling C-Q8).
 - Owner while `hooked`: `cam.AddTrauma(cue.TraumaPerSecond * dt)`.
 - Owner `cap.straining`: on the first entry into `Warn` or `Grace` per fight, then at most once per 3 s while it stays there.
 - **Rumble (owner).**
@@ -932,13 +933,13 @@ Owner gating: ChargeStart and the owner pitch need `FishingRodController` (same 
   - If `sparkleMaterial` is null, there are no particles (silent).
 - `Announced` (every peer), kind `Landed` or `ReleasedCreelFull`:
   - Mesh: `registry.SpeciesAt(itemIndex).Model` when `!IsJunk` and the model is non-null; else `FishFallbackMesh.Get(registry, isJunk, itemIndex)`.
-  - `sharedMaterials` = an array of `mesh.subMeshCount` copies of `fishMaterial` (the perch has 5 submeshes: T20.7).
+  - `sharedMaterials` = an array of `mesh.subMeshCount` copies of `fishMaterial` (the spike perch has 5 submeshes until T29 replaces it; the new species models have one; harmless either way).
   - Scale: uniform, so that `mesh.bounds.size.z` = `LengthMm / 1000` m. `LengthMm == 0` (junk) -> 0.3 m.
   - Pose: world position `CatchHold.position + Vector3.up * 0.25`, rotation `Quaternion.LookRotation(rootRight, Vector3.up)` (nose to the player's right, belly down), updated every `LateUpdate` while shown. It is held at `CatchHold` on every peer (the owner's right arm is posed in camera space by `PlayerBody`, so it is in view).
   - 0.15 s scale-in, hold `FishingConstants.CatchHoldSeconds` (1.5 s), then hide.
   - Bursts: Normal/Good 12 sparkles, Trophy 30 (spec 9.11 "bigger burst"), and +20 gold-tinted sparkles when `CleanBonus`.
   - `ReleasedCreelFull`: after the hold, the fish falls 1.5 m over 0.5 s (or to water height), then `Splash_Small` + `RippleField.Current?.Spawn(..., RippleMath.Landed)`, then hide.
-  - `Lost`: no reveal.
+  - `Lost` and `PityCast`: no reveal.
   - A new announcement during a reveal replaces it. `OnDisable` hides it.
 
 ### T23.3 `FishFallbackMesh` (C 7.23)
@@ -958,17 +959,16 @@ Owner gating: ChargeStart and the owner pitch need `FishingRodController` (same 
   - Pick the junk shape by `JunkDef.BodyShape`: Long -> boot, Round -> can.
 - `internal static Mesh Silhouette()`: a cached grey Round fish (white vertex colours, so the material tint shows), for `FishingFeedback`.
 
-### T23.4 `AddPresentation` lines (depends on Contract question 5)
+### T23.4 `AddPresentation` block (ruling F-Q5: up to 12 lines)
 
 Proposed T23 block, in C 6.3 order:
 - `GetOrAdd<FishingFeedback>` and `GetOrAdd<CatchRevealView>`;
-- set `FishingFeedback.silhouetteMaterial`, `CatchRevealView.fishMaterial` and `CatchRevealView.sparkleMaterial` from `RenderMaterialLibrary.Get("M_Toon_Fish")` / `Get("M_Particle")` via `SerializedObject` (F8). Use a private `SetObjectRef(Component, string, Object)` helper in `PlayerFishingRigBuilder` if T19 has none. At most about 12 lines in total.
-- If the controller keeps "one line": T23 adds only `BuilderUtil.GetOrAdd<FishingFeedback>(playerRoot); BuilderUtil.GetOrAdd<CatchRevealView>(playerRoot);`, T24's body assigns the three references, and the reveal assertion of `FeedbackSolo_CastBiteLand_RippleCaptionAndReveal` moves to T24.
+- set `FishingFeedback.silhouetteMaterial`, `CatchRevealView.fishMaterial` and `CatchRevealView.sparkleMaterial` from `RenderMaterialLibrary.Get("M_Toon_Fish")` / `Get("M_Particle")` via `SerializedObject` (F8). Use a private `SetObjectRef(Component, string, Object)` helper in `PlayerFishingRigBuilder` if T19 has none. At most 12 lines in total; T24 owns the rest of the body.
 
 ### T23 tests
 
 `Tests/PlayMode/FeedbackSoloTests.cs` (addition; class `FeedbackSoloTests`; the G9 fixture of C 7.19):
-- Reuse T19's `internal static FishingPlayModeDriver` (in `FishingSoloTests.cs`, same PlayMode assembly; section E plan): `InstallFakeInput`, `Step`, `Arrange` and its cast-to-land script. Do not copy it (Contract question 7).
+- Reuse T19's `internal static FishingPlayModeDriver` (in `FishingSoloTests.cs`, same PlayMode assembly; section E plan): `InstallFakeInput`, `Step`, `Arrange` and its cast-to-land script. Do not copy it (its member names are frozen after T19, ruling F-Q7).
 - `FeedbackSolo_CastBiteLand_RippleCaptionAndReveal` (one scripted cast to land, forced 0.1 s bite, forced bluegill):
   - (a) Within 1.5 s after the bobber lands, `Shader.GetGlobalVectorArray("_Ripples")` has a slot with `w == RippleMath.CastLanding` and `(x, z)` within 0.5 m of `NetRodState.Value.BobberPos`.
   - (b) An `EventBus` subscription to `CaptionRequested` (`ISettings.Current.captions == true`) receives `cap.bite` at the bite.
@@ -992,7 +992,7 @@ git commit -m "m2(feedback): FishingFeedback cues, loops, rumble, captions, snap
 - One-shots come only from `Cue`/`Announced`; loops come from polling (F6).
 - Captions only on the owner and only when `settings.captions` is on. No T24 type is referenced.
 - The reveal covers every submesh, the scale rule and the `ReleasedCreelFull` drop.
-- Fallback colours are linearised; statics are reset.
+- Fallback colours are linearised (the one vertex-colour rule shared with the Blender fish, ruling F-Q3); statics are reset.
 - Tests are green and warning-free.
 
 ### T23 manual check (controller, MPPM 2 players)
@@ -1008,7 +1008,7 @@ git commit -m "m2(feedback): FishingFeedback cues, loops, rumble, captions, snap
 | | |
 |---|---|
 | Goal | The visible rod, line, bobber, splashes and owner cast marker on every peer from `ViewState`, with the arc-once and snap-on-spawn rules; the `AddPresentation` body. |
-| Owned files (C 12) | `Presentation/Rod/RodPresenter.cs`, `LineView.cs`, `BobberView.cs`, `SplashFx.cs`, `CastMarkerView.cs`; the body of `PlayerFishingRigBuilder.AddPresentation` (T23's lines kept); generated `Content/Meshes/Marker_Valid.asset`, `Marker_Invalid.asset`, `Prefabs/PlayerFP.prefab`. **Additions (Contract question 6):** `Tests/EditMode/PlayerPresentationRigTests.cs`, `Tests/PlayMode/RodViewSoloTests.cs`. |
+| Owned files (C 12) | `Presentation/Rod/RodPresenter.cs`, `LineView.cs`, `BobberView.cs`, `SplashFx.cs`, `CastMarkerView.cs`; the body of `PlayerFishingRigBuilder.AddPresentation` (T23's lines kept); generated `Content/Meshes/Marker_Valid.asset`, `Marker_Invalid.asset`, `Prefabs/PlayerFP.prefab`. `Tests/EditMode/PlayerPresentationRigTests.cs`, `Tests/PlayMode/RodViewSoloTests.cs` (whitelisted, ruling F-Q6). |
 | Shared edits (C 2.6) | `PlayerFishingRigBuilder.cs` (`AddPresentation` body). |
 | Depends on | T22, T23 committed. |
 | Implementer | Sonnet |
@@ -1119,7 +1119,7 @@ C 2.8 that bite: #4 (no NetworkBehaviour added; C 6.3 order), #9, #10 (remote vi
 ### T24.6 `AddPresentation` body and marker meshes
 
 - Keep T23's lines first (C 6.3 order). Then `GetOrAdd` in order: `RodPresenter`, `LineView`, `BobberView`, `SplashFx`, `CastMarkerView`.
-- Rig materials: no reassignment here. T19's `RigMaterial(preferred, fallback)` (section E plan) already picks `M_Toon_Base` for `Seg0..Seg5` and `Bobber`, and `M_Line` for `Line`, once T20/T21 have built them. `PlayerPrefab_RodBobberAndLine_UseFinalMaterials` verifies it (Contract question 8). `LineView` sets `textureMode`, width and visibility at runtime.
+- Rig materials: no reassignment here. T19's `RigMaterial(preferred, fallback)` (section E plan) already picks `M_Toon_Base` for `Seg0..Seg5` and `Bobber`, and `M_Line` for `Line`, once T20/T21 have built them. `PlayerPrefab_RodBobberAndLine_UseFinalMaterials` verifies it (ruling F-Q8). `LineView` sets `textureMode`, width and visibility at runtime.
 - `SplashFx.particleMaterial` = `M_Particle` (F8).
 - `CastMarker` child at root (`PlayerRigPaths.CastMarker`) with children `Valid` and `Invalid`: MeshFilter + MeshRenderer, `M_Marker`, shadows off, **renderer disabled**. Meshes built with `MeshBuilder` in the XZ plane at y 0 and saved in place (the T20.6 pattern) as `Marker_Valid.asset` and `Marker_Invalid.asset`:
   - Valid: a solid ring of 24 quads, inner radius 0.42, outer 0.5, plus a centre dot (Prism r 0.06, h 0.01, 8 sides). Seed `0x4D4B0001`.
@@ -1171,40 +1171,17 @@ git commit -m "m2(rodview): rod bend, line, bobber arc and bob, splashes, owner 
 
 ---
 
-## Contract questions
+## Contract questions (all closed by controller rulings of 2026-10-11; C 15)
 
-1. **Wave direction and `_Waves` packing (T12 -> T20/T21/T22).** C 7.12 does not pin the `WaveSet.DirectionDeg` convention, and C 5.3 does not pin `_Waves` packing. This plan uses:
-   - T12's convention: 0 deg = +Z, `dir = (sin, cos)` on (x, z);
-   - F1 packing: `_Waves[i] = (DirectionDeg, Amplitude, Wavelength, Speed)`, `[3] = 0`.
-   This agrees with the T12 plan's Contract question 4. Please record both in C 5.3.
-2. **Palette slot channel (T12 -> T20, T23).** UV channel 1 (`SetUVs(1, ...)`, `TEXCOORD1`) is used as the spec's `uv1.x`. It agrees with the T12 plan; please record it in C 7.12. `FishFallbackMesh` relies on reading it back.
-3. **Colour space (T13, T22, T29).**
-   - T14's `PaletteVectors` returns authored sRGB values. `PaletteGlobals` linearises them (F3) because `SetGlobalVectorArray` does not convert.
-   - Vertex colours are never converted, so the Toon shader treats them as linear. **T29 must export the Blender fish with linear vertex colours** (Blender FBX exporter option `colors_type='LINEAR'`, Blender 3.4+). Otherwise every fish renders washed out.
-   - Please add this to C 7.29 and C 2.8 #19.
-4. **ShaderValidator fallback (T20).** If the T20 spike shows that `CompileVariant` cannot see errors under `-nographics`, `Validation_Shaders_Pass` needs a graphics-capable batchmode run. That is a change to `Tools/unity.ps1`, owned by no M2 task. T20 stops and reports in that case. Please pre-decide who owns the change.
-5. **Blocking for T23: "one line" in `AddPresentation` (C 2.6 row 18, C 7.23).**
-   - T23 must set three serialized material references (`M_Toon_Fish` x2, `M_Particle`) on its components. The contract forbids a public setter, and runtime-created materials would contradict C 7.20's "the reveal renderer uses M_Toon_Fish".
-   - Requested amendment wording: "T23 may add a block of up to 12 lines in `PlayerFishingRigBuilder.AddPresentation` (GetOrAdd of `FishingFeedback` and `CatchRevealView`, plus `SerializedObject` material references, plus a private `SetObjectRef` helper if T19 has none)".
-   - Alternative: keep one line, and have T24's body set T23's references. T23's reveal test then moves to T24 (T23.4).
-6. **Added test files (not in C 10 / C 12).** None of these changes a listed name. Please whitelist them for the owned-files check:
-   - T20 `Tests/EditMode/ToonMaterialTests.cs`;
-   - T21 `Tests/EditMode/RenderingSetupTests.cs`;
-   - T22 `Tests/PlayMode/PresentationWorldTests.cs`;
-   - T23 `Tests/PlayMode/FeedbackSoloTests.cs`;
-   - T24 `Tests/EditMode/PlayerPresentationRigTests.cs` and `Tests/PlayMode/RodViewSoloTests.cs`.
-
-   They exist because C 10 has no runtime coverage for T21-T24, and EditMode/PlayMode cannot reference Presentation (0.4). The PlayMode files add about 4 solo sessions, so `test-play` runs need `-TimeoutMinutes 15`.
-7. **Scripted cast helper (T19 -> T23/T24; confirmation).** Section E's plan puts an `internal static FishingPlayModeDriver` in `FishingSoloTests.cs`. `FeedbackSoloTests` and `RodViewSoloTests` reuse it, so its member names (`InstallFakeInput`, `Step`, `Arrange`, the cast-to-land script) must stay stable through T24. Please confirm.
-8. **Rig materials (T19 -> T20/T21/T24; confirmation).** Section E's plan (its Contract question 4) has T19's `RigMaterial(preferred, fallback)` pick `M_Toon_Base` / `M_Line` once they exist, so T20/T21's next `build` re-points the rod, bobber and line. This plan relies on that: T24 does not reassign them, and only verifies with `PlayerPrefab_RodBobberAndLine_UseFinalMaterials`. Please confirm Section E's question 4.
-9. **Toon keyword set (spec 10.3 "SimpleLit 17.6 keyword set").** This plan takes SimpleLit's "Universal Pipeline keywords" block verbatim and omits its lightmap / `DEBUG_DISPLAY` / `LOD_FADE_CROSSFADE` / DOTS lines: the project has no baked GI or BRG, and the Toon lighting ignores them. Confirm this subset. Adding them later is a pragma-only change.
-10. **Unspecified looks defined here.** The spec does not give these; they are set in this plan, and the user judges them at T28:
-    - Toon rim (`albedo * tint * pow(1 - n.v, _RimPow) * _RimStrength`, strength 0 by default);
-    - the additional-light band;
-    - the Line warm and shimmer curves;
-    - the GradientSky horizon curve and sun disc (from `_MainLightPosition`);
-    - the volume-profile values;
-    - `M_Marker` queue 3100;
-    - the rumble pulse table.
-11. **`_WaterTime` precision.** `ServerTime.Time` is pushed as a float. Drift from the double C# value is centimetre-scale only after hours (T12 plan Q4d). No wrap period is defined. Accepted for M2 unless the controller wants a shared wrap.
-12. **M1 swim tests and waves (T22).** Once `WaterTimeDriver` configures waves of up to 0.115 m, any M1/T3 PlayMode test that assumes `WaterSurface.HeightAt == 0` in the lake may fail. T22 reports it rather than editing unowned tests. Please name the fixer (T28 or T30 under the integration-fix rule) in advance.
+1. **Wave direction and `_Waves` packing (closed, F-Q1/Q2, C-Q4).** 0 deg = +Z, `dir = (sin, cos)`; `_Waves[i] = (DirectionDeg, Amplitude, Wavelength, Speed)`, `[3] = 0`. Recorded in C 5.3 and 7.12.
+2. **Palette slot channel (closed, F-Q1/Q2).** UV channel 1 (`TEXCOORD1`); recorded in C 7.12.
+3. **Colour space (closed, F-Q3; supersedes G-Q7).** `PaletteGlobals` linearises `_FGPalette`; vertex colours are never converted, so the Toon shader treats them as linear. The Blender fish export `colors_type='LINEAR'` (the controller re-exports the staged `Art/Export/Fish_*.fbx` linear); `FishFallbackMesh` writes linear colours. Recorded in C 7.29 and 2.8 #19.
+4. **ShaderValidator fallback (closed, F-Q4).** If the `-nographics` check fails, T20 owns a minimal `Tools/unity.ps1` change (graphics-capable mode for the validation run); C 2.6 amended.
+5. **`AddPresentation` block (closed, F-Q5).** T23 may add up to 12 lines; C 2.6 amended.
+6. **Added test files (closed, F-Q6).** Whitelisted: `ToonMaterialTests.cs` (T20), `RenderingSetupTests.cs` (T21), `PresentationWorldTests.cs` (T22), `FeedbackSoloTests.cs` (T23), `PlayerPresentationRigTests.cs` and `RodViewSoloTests.cs` (T24); C 12 amended. `test-play` from T22 on uses `-TimeoutMinutes 15`.
+7. **Scripted cast helper (closed, F-Q7).** `FishingPlayModeDriver` member names are frozen after T19.
+8. **Rig materials (closed, F-Q8).** `RigMaterial` fallback: T19 prefers the new material, else the M1 one; T24 only verifies.
+9. **Toon keyword set (closed, F-Q9).** The keyword subset described in T20 is accepted.
+10. **Unspecified looks (closed, F-Q10).** Accepted; the user judges them at T28.
+11. **`_WaterTime` precision (closed, F-Q11, C-Q4).** Float drift accepted; the C# time source returns the float-cast value (parity rule).
+12. **M1 swim tests and waves (closed, F-Q12).** T22 reports any broken M1 swim or water-height test; T28 fixes it under the integration-fix rule.

@@ -1,7 +1,7 @@
 # FishGame M2 - Section B: Core fishing (T5, T6, T7, T8, T9)
 
 - **Date:** 2026-10-11. Branch `m2-fishing-core`. Author: section B (Opus, effort high).
-- **Binding contract:** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` ("C" below). Public names, paths and test names come from C 7.5-7.9, C 10.1-10.2 and C 12 and are not changed here. Doubts are listed under "Contract questions" at the end.
+- **Binding contract:** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` ("C" below). Public names, paths and test names come from C 7.5-7.9, C 10.1-10.2 and C 12 and are not changed here. Every doubt raised is closed by a controller ruling, listed under "Contract questions" at the end.
 - **Behaviour source:** spec `docs/superpowers/specs/2026-10-09-fishgame-design.md` sections 9.1-9.9, 9.12, 9.13 and 3.2 (R63 fight motions, R64 clean-catch bonus).
 - **Length note:** this file is about 1,260 lines, slightly over the 1,200 guide. The extra lines are the three code blocks the skeleton assigns to this section (`FightSim`, `RodStateMachine`, `FishingHostLedger.Result` + `CatchValidator.CleanClaimAccepted`).
 
@@ -38,7 +38,7 @@ Expected last lines: red = `FG RESULT test-edit FAIL ...` (compile errors naming
 
 - **Read section 0 of this file first** (constraints, commands, index map, shared test data).
 - **Goal:** every enum, stat struct and pure helper of C 7.5, plus `FishingConstants` (C 5.2) and the shared test data file.
-- **Owned files (C 12):** `Core/Fishing/{RodState,FightPhase,FightOutcome,EscapeReason,CatchQuality,FishRarity,BodyShape,CastRejectReason,RodEventType,AnnounceKind,LineGaugeMode,RodForceReason,RodCue,RodStats,BaitStats,FishFightProfile,FishSpeciesData,JunkData,FishingTuning,FishingDatabase,WaterProbe,CastMath,FishPointMath,RodWireQuant,FishingConstants}.cs`, `Core/Player/ToolKind.cs`. Tests: `CastMathTests.cs`, `FishPointMathTests.cs`, `RodWireQuantTests.cs`, `FishingDatabaseTests.cs`. Also `Tests/EditMode/FishingTestData.cs`, a test helper not listed in C 12 (see Contract questions).
+- **Owned files (C 12):** `Core/Fishing/{RodState,FightPhase,FightOutcome,EscapeReason,CatchQuality,FishRarity,BodyShape,CastRejectReason,RodEventType,AnnounceKind,LineGaugeMode,RodForceReason,RodCue,RodStats,BaitStats,FishFightProfile,FishSpeciesData,JunkData,FishingTuning,FishingDatabase,WaterProbe,CastMath,FishPointMath,RodWireQuant,FishingConstants}.cs`, `Core/Player/ToolKind.cs`. Tests: `CastMathTests.cs`, `FishPointMathTests.cs`, `RodWireQuantTests.cs`, `FishingDatabaseTests.cs`. Also `Tests/EditMode/FishingTestData.cs`, a test helper listed in the C 12 T5 manifest (ruling B-Q1).
 - **Shared edits (C 2.6):** none.
 - **Depends on:** T1 committed (`Pcg32.MapUnitToRange`, the EditMode asmdef refs).
 - **Implementer:** Sonnet. **Reviewer:** Sonnet.
@@ -46,6 +46,7 @@ Expected last lines: red = `FG RESULT test-edit FAIL ...` (compile errors naming
 ### Behaviour
 - **Enums and structs:** copy C 7.5 verbatim: names, underlying types, explicit values and field order. `ToolKind` lives in `Core/Player/ToolKind.cs`. Structs have public fields and no default tuning values (C 5.1). `RodStats.MaxLineOut(spoolExtra)` = `CastMaxDist + spoolExtra`. `BaitStats.EffRating(n)` = `min(MaxRating, Rating * max(1, n))`.
 - **`FishingConstants`:** copy C 5.2 exactly, comments included.
+- **`FishingTuning` (R65 / M2-D23):** C 7.5 adds `int PityAfterFailures` (0 = off) and `float PityStrainMult, PityGraceMult, PityHookWindowBonus`. Copy them from C 7.5; no Core default (C 5.1). `RodWireQuant` gains nothing.
 - **`FishingDatabase`:**
   - The constructor copies every array, so later caller mutation has no effect. It throws `ArgumentNullException` for a null array, and `ArgumentException` for empty rods, baits or profiles, for any species with `FightProfileIndex >= profiles.Length`, or when no bait has `Unlimited`.
   - Junk may be empty.
@@ -92,6 +93,7 @@ namespace FishGame.Tests.EditMode
             JunkDragSpeed = 3f, ResultTimeout = 3f, CommitTimeout = 3f, HookTolerance = 0.75f,
             MaxFightTime = 240f, RodStateHz = 15, CancelRefundsBait = true,
             CreelMaxEntries = 12, CreelMaxWeightG = 15000, CleanCatchMaxTension = 0.8f,
+            PityAfterFailures = 3, PityStrainMult = 0.85f, PityGraceMult = 1.5f, PityHookWindowBonus = 0.3f,   // R65 / M2-D23 seeds
         };
 
         static RodStats Rod(byte tier, float cast, float reel, float strength, float window, float steer, float relax) =>
@@ -245,6 +247,7 @@ git add Assets/_Project/Core/Fishing Assets/_Project/Core/Fishing.meta Assets/_P
   3. `BitePlanner.Plan` with `WaitMultiplier(bait.BiteSpeedMod, junk ? 1f : species.BiteWaitMod, req.Depth)` and `bait.MaxNibbles`. It is always drawn. If `ForcedBiteWait > 0` the plan is then overwritten: `BiteWait = ForcedBiteWait`, `NibbleCount = 0`, nibbles 0.
   4. `FightSeed = rng.NextUInt()`, with 0 replaced by 1.
   5. `WeightT` = t (junk 0). `SizeClass = CatchMath.SizeClass(t)` (junk 0). `HookWindow = species.HookWindow`, overridden to 1.0 when `Twitchy` and not junk (junk 0).
+- **`FishingRoll.Pity` (R65 / M2-D23):** C 7.6 adds `public bool Pity;` to `FishingRoll`. `PlaceholderRoller.Roll` never sets it (it stays false, no extra draw, draw order unchanged); the host ledger sets it at accept (T9). `FishingRollValidation.IsSane` ignores it. `PlaceholderRoller_SameSeed_SameRoll` also asserts `Pity == false` on both rolls.
 - **`FishingRollValidation.IsSane`:** exactly the C 7.6 comment.
   - Junk: `ItemIndex < db.Junk.Count` and `WeightG == 0`.
   - Fish: `ItemIndex < db.Species.Count` and weight within `[WeightMinG, WeightMaxG]`.
@@ -296,7 +299,7 @@ Filter: `FishGame.Tests.EditMode.(BitePlannerTests|CatchMathTests|PlaceholderRol
 ## Task T7 - Fight sim, motion parameters, tension cues
 
 - **Read section 0 of this file first** (constraints, commands, index map, shared test data).
-- **Goal:** `FightSim` exactly per spec 9.5, plus junk mode and the C 7.7 motion parameters (R63), forced-phase seams, and `TensionCues` (spec 9.11 table).
+- **Goal:** `FightSim` exactly per spec 9.5, plus junk mode and the C 7.7 motion parameters (R63), the R65 pity multipliers (`pity` ctor argument: strain scale x `PityStrainMult`, snap grace x `PityGraceMult`; no RNG), forced-phase seams, and `TensionCues` (spec 9.11 table).
 - **Owned files (C 12):** `Core/Fishing/{FightState,FightSim,TensionBand,TensionCueState,TensionCues}.cs` and `Core/AssemblyInfo.cs`. In `AssemblyInfo.cs`, add `using System.Runtime.CompilerServices;` and `[assembly: InternalsVisibleTo("FishGame.Tests.EditMode")]`, and keep the existing marker class. Tests: `FightSimTests.cs`, `FightMotionTests.cs`, `TensionCuesTests.cs`.
 - **Shared edits:** none. **Depends on:** T5 (and T1's `Pcg32.MapUnitToRange`). **Implementer:** Sonnet. **Reviewer:** Sonnet.
 - **Input type:** `FightInput` already exists, as M1's `Core/Input/FightInput.cs` (`readonly struct`, `Steer`, `Reel`, ctor `(float steer, bool reel)`). Use it; do not create another.
@@ -304,11 +307,11 @@ Filter: `FishGame.Tests.EditMode.(BitePlannerTests|CatchMathTests|PlaceholderRol
 ### Decisions fixed here (also listed in Contract questions)
 1. **Tick order:** elapsed, then flips, then P / ramp, then lateral, then stamina, then line, then tension, then timers and near-snap, then endings, then exhaustion, then the phase schedule. Phase changes happen at the **end** of a tick, so a new phase's physics starts on the next tick. After 40 ticks from spawn the phase is Burst.
 2. **Ending priority on the same tick:** Landed, then Snapped, then Pinned, then ThrewHook. A fish reeled in on the same tick as a snap lands, which matches the spirit of "tension may touch 1.0 inside the grace window and the fish can still land".
-3. **Side choice:** one draw `s`. Centre (`|lateral| < 0.1`): `s < 0.5` gives -1, else +1. Otherwise `away = -sign(lateral)`, and `s < 0.75` gives `away`, else `-away`. This reads the spec's "else random" as "else toward". A literal 50/50 on the remaining 25% would make it 87.5% away.
+3. **Side choice (literal spec 9.5, ruling B-Q4):** one draw `s`. Centre (`|lateral| < 0.1`): `s < 0.5` gives -1, else +1. Otherwise `away = -sign(lateral)`: with probability 0.75 (`SideRunAgainstChance`) the run is `away`; with the remaining 0.25 the side is random (50/50), so overall 87.5% away and 12.5% toward. One draw only (no extra draw, the draw table is unchanged): `s < 0.75 + 0.25 * 0.5` (that is `s < 0.875`) gives `away`, else `-away`.
 4. **Flip gap:** the gap counter is set to `FlipMinGap` at burst start, so a flip may happen on the first burst tick. Flips are at least `FlipMinGap` apart within a burst.
 5. **Epsilon:** `FightSim.TimeEps = 1e-4f` (internal) for every duration comparison: phase timer `<= TimeEps`, and snap / pin / slack timers `>= limit - TimeEps`. Tests count ticks.
 6. **Calm drift** uses the stamina after this tick's stamina update. `EffectivePull` is the unramped P of the last tick.
-7. **Test-only internals:** `internal int DrawCount` (every RNG draw), `internal float BurstLateralMult`, `internal const float TimeEps`. Allowed by C 7 ("private or internal helpers").
+7. **Test-only internals:** `internal int DrawCount` (every RNG draw), `internal float BurstLateralMult`, `internal const float TimeEps` (named in C 7.7, ruling B-Q2).
 
 ### RNG draw order (fixed; seeds depend on it)
 All draws come from one `Pcg32(seed)` owned by the sim. `Next01()` = `NextFloat()` (one `NextUInt`). `Uniform(min, max)` = one `NextFloat` mapped by `Pcg32.MapUnitToRange(u, min, max)` when `max > min`, else `min` (the draw is still made). With max > min this gives the same numbers as `Pcg32.Range(float)` after T1.
@@ -340,6 +343,7 @@ namespace FishGame.Core
         private readonly RodStats _rod;
         private readonly FishingTuning _t;
         private readonly bool _assist;
+        private readonly bool _pity;          // R65 / M2-D23 bad-luck nudge: owner-side, deterministic, no RNG
         private Pcg32 _rng;
         private FightState _s;
         private float _phaseElapsed;          // seconds since the current phase began (burst ramp / calm drift ramp)
@@ -348,9 +352,9 @@ namespace FishGame.Core
         private bool _nearSnapArmed;
 
         public FightSim(in FishFightProfile fish, in RodStats rod, in FishingTuning tuning, float weightT, uint seed,
-                        float startLineLength, bool assist)
+                        float startLineLength, bool assist, bool pity = false)
         {
-            _fish = fish; _rod = rod; _t = tuning; _assist = assist;
+            _fish = fish; _rod = rod; _t = tuning; _assist = assist; _pity = pity;
             _rng = new Pcg32(seed);
             WeightFactor = Lerp(FishingConstants.WeightFactorMin, FishingConstants.WeightFactorMax, Clamp01(weightT));
             _s.LineLength = Clamp(startLineLength, 0f, _rod.MaxLineOut(_t.SpoolExtra));
@@ -451,7 +455,7 @@ namespace FishGame.Core
             float relax = !reel ? _t.RelaxRate * _rod.RelaxMult
                         : !burst ? _t.RelaxWhileReeling * _rod.RelaxMult
                         : 0f;
-            float scale = _assist ? _t.StrainScaleAssist : _t.StrainScale;
+            float scale = (_assist ? _t.StrainScaleAssist : _t.StrainScale) * (_pity ? _t.PityStrainMult : 1f);   // R65
             _s.Tension = Clamp01(_s.Tension + (strain * scale / _rod.LineStrength - relax) * dt);
             if (_s.Tension > _s.MaxTension) _s.MaxTension = _s.Tension;
 
@@ -463,7 +467,7 @@ namespace FishGame.Core
             else if (_nearSnapArmed && _s.Tension < FishingConstants.NearSnapLow) { _nearSnapArmed = false; _s.NearSnapRecoveries++; }
 
             // 8. endings (priority: Landed, Snapped, Pinned, ThrewHook)
-            float grace = _assist ? _t.SnapGraceAssist : _t.SnapGrace;
+            float grace = (_assist ? _t.SnapGraceAssist : _t.SnapGrace) * (_pity ? _t.PityGraceMult : 1f);          // R65
             if (reel && _s.LineLength <= _t.LandDistance) return End(FightOutcome.Landed, EscapeReason.None);
             if (_s.SnapTimer >= grace - TimeEps) return End(FightOutcome.Snapped, EscapeReason.None);
             if (_s.PinnedTimer >= _t.PinEscapeTime - TimeEps) return End(FightOutcome.Escaped, EscapeReason.Pinned);
@@ -507,7 +511,8 @@ namespace FishGame.Core
             else
             {
                 sbyte away = _s.Lateral > 0f ? (sbyte)-1 : (sbyte)1;
-                dir = s < FishingConstants.SideRunAgainstChance ? away : (sbyte)-away;
+                // spec 9.5: 75% away, else a random side (50/50): 87.5% away overall, one draw (ruling B-Q4)
+                dir = s < FishingConstants.SideRunAgainstChance + (1f - FishingConstants.SideRunAgainstChance) * 0.5f ? away : (sbyte)-away;
             }
             _s.Phase = FightPhase.Burst; _s.BurstDir = dir; _s.PhaseTimer = duration;
             _phaseElapsed = 0f; _sinceFlip = _fish.FlipMinGap; _burstLateralMult = mult;
@@ -613,6 +618,7 @@ Common setup: `FishingTestData` with Handmade rod and tuning; seed 4242 unless s
 | `FightMotion_BulldogCalmDrift_StopsWhenExhausted` | bulldog motion, `ForceState{Stamina 0.06, Burst, Dir 0, PhaseTimer 10, Line 10}`, `In(0, false)` until `Exhausted`, then x 100 more | Calm and `Exhausted`; line constant over the 100 ticks |
 | `FightMotion_DarterMicroBursts_FlipRateInRangeAndGapRespected` | darter motion, seeds 1..20. Each: `ForceState{Burst, Dir +1, PhaseTimer 1000, Stamina 1, Line 10}`, 750 ticks of `In(-clamp(Lateral x 5, -1, 1), i % 100 == 0)` | over all seeds: hazard = flips / (flip draws x 0.02) in [0.8, 1.2] (flip draws = `DrawCount` delta, the only draws in a forced long burst); every gap between consecutive flips >= 0.3 - 1e-4 s (tick count x 0.02); no fight ends. Natural darter fight (seed 3, 60 s, same input with phases unforced): every burst duration in [0.4, 0.9], every calm after the lead-in in [0.3, 0.8] (each +/- 0.021) |
 | `FightMotion_ThrasherJitter_LateralSpeedVariesPerBurstWithinBounds` | thrasher motion, one sim; 60 times: `ForceState{Calm, PhaseTimer 0.02, Lateral 0, Stamina 1, Line 10}`, one tick `In(0, true)` (burst starts), read `BurstLateralMult`, one more tick `In(0, true)` | every mult in [0.7, 1.3]; max - min > 0.2; on side runs, dLateral of the second tick = `BurstDir x EffectivePull x 1.0 x mult x 0.02` (1e-6); `DrawCount` grows by 4 per burst start (plus flip draws) |
+| `FightMotion_Pity_SnapsLaterThanNormalSameSeed` (R65) | runner base with FlipRate 0, weightT 0.375, line 18, `ForcePhase(Burst, +1, 10)`, `In(0, true)` until ended; two sims with the same seed, one built with `pity: true`; the tuning has `PityStrainMult 0.85`, `PityGraceMult 1.5` | both Snapped; normal at about 2.84 s; pity at about 3.36 s (tension rates x0.85: 1.0 at about 2.98 s, grace 0.25 x 1.5 = 0.375); assert pity `Elapsed` > normal `Elapsed` + 0.4 and in [3.2, 3.5]; `DrawCount` equal at every tick (Pity draws nothing); a sim built without the argument equals `pity: false` |
 | `FightMotion_AllProfiles_SameSeedSameState` | each motion profile, two sims with seed 555, the input script from `SameSeedAndInputs`, x 3000 | identical `FightState` every tick; a seed-556 sim differs from seed 555 somewhere |
 | `TensionCues_BandBoundaries_MatchSpecTable` | 0.29 Rest, 0.3 Bend, 0.59 Bend, 0.6 Creak, 0.79 Creak, 0.8 Warn, 1.0 (not in grace) Warn, 1.0 in grace Grace | as listed; `CrackNow` only in Grace; `LineWarn` from Warn |
 | `TensionCues_CreakPitch_RisesToTwoPointOne` | tension 0.5, 0.6, 0.8, 1.0 | pitch 1.0, 1.0, 1.55, 2.1 (1e-5), non-decreasing |
@@ -632,7 +638,7 @@ Filter: `FishGame.Tests.EditMode.(FightSimTests|FightMotionTests|TensionCuesTest
 - `FightSim` matches the code block line for line in logic and order.
 - The draw table is implemented exactly, and `DrawCount` proves it in the tests.
 - Hand-check tests use the stated weightT and FlipRate overrides and assert only what their names promise.
-- 30 tests (29 required + 1 extra), all green.
+- 31 tests (30 required + 1 extra), all green. The ctor's `pity` parameter defaults to false so every other call site is unchanged.
 
 ---
 
@@ -654,7 +660,7 @@ Filter: `FishGame.Tests.EditMode.(FightSimTests|FightMotionTests|TensionCuesTest
    - Neither sends `SendResult`. `accepted` is not used by the machine.
 6. **Invalid cast results** never emit `SendCancel` (the host rejected; nothing to refund). A roll that fails `TryToCore` is handled by T18: it calls `OnCastResult(id, false, default, default)` and sends `CancelRpc` itself (C 8.2 note).
 7. **`SendRodEvent` payloads:** `SizeClass = Roll.SizeClass` for Snapped only, 0 for the others (C 7.8 wording). Nibble events carry 0.
-8. **`IgnoredEventCount`** (`internal`) counts every ignored call: a mismatched `castId`, a wrong state for `OnCastResult`, `OnCommit` or `TickFight`, a duplicate commit, and `SetRod` outside Idle. The machine never logs. T18 must detect the same conditions itself to log once per state (see Contract questions).
+8. **`IgnoredEventCount`** (`public int IgnoredEventCount { get; private set; }`, ruling E-Q5 supersedes B-Q12) counts every ignored call: a mismatched `castId`, a wrong state for `OnCastResult`, `OnCommit` or `TickFight`, a duplicate commit, and `SetRod` outside Idle. The machine never logs. T18 reads the counter after each `Tick` / `TickFight` / `OnCastResult` / `OnCommit` and, in debug builds, logs (not warns) once per state when it grew; replies to the owner's own cancel never count (decision 10).
 9. **Effect order** within one transition follows the code (cue first where shown, then sends). T18 relies on `SendHooked` before `SendRodEvent(HookSet)`, and `SendResult` before `SendRodEvent(Snapped/Escaped)`.
 10. **Replies to our own cancel are not illegal.**
     - After `SendCancel` (Waiting cancel, maxLineOut, result timeout, `ForceEnd` from Casting/Waiting/Bite), the machine is already Idle. The host's `CommitRpc` for that `castId` would otherwise count as ignored, and T18 would warn on every ordinary cancel (C 2.8 #9).
@@ -701,7 +707,7 @@ namespace FishGame.Core
         public EscapeReason Reason { get; private set; }
         public bool Recalling { get; private set; }
         public bool Assist { get; set; }
-        internal int IgnoredEventCount { get; private set; }
+        public int IgnoredEventCount { get; private set; }
 
         public void SetRod(in RodStats rod)
         {
@@ -780,7 +786,7 @@ namespace FishGame.Core
 
         private void TickBite(in RodFrame f)
         {
-            float window = Roll.HookWindow;
+            float window = Roll.HookWindow > 0f && Roll.Pity ? Roll.HookWindow + _t.PityHookWindowBonus : Roll.HookWindow;   // R65: pity extends a real hook window; auto-hook (0) is unchanged
             if (window > 0f)
             {
                 if (f.PrimaryPressed) Hook(f);                                         // row: Primary in window
@@ -794,7 +800,7 @@ namespace FishGame.Core
             Enter(RodState.Hooked);
             Fight = Roll.Catch.IsJunk
                 ? FightSim.ForJunk(_rod, _t, Roll.FightSeed, f.TipToBobber)
-                : new FightSim(_profile, _rod, _t, Roll.WeightT, Roll.FightSeed, f.TipToBobber, _castAssist);
+                : new FightSim(_profile, _rod, _t, Roll.WeightT, Roll.FightSeed, f.TipToBobber, _castAssist, Roll.Pity);
             Cue(RodCue.HookSet);
             Add(new RodEffect { Kind = RodEffectKind.SendHooked, CastId = CastId });
             RodEvent(RodEventType.HookSet, 0);
@@ -992,7 +998,7 @@ namespace FishGame.Core
 | `RodStateMachine_Waiting_BiteTimerElapsed_EntersBiteAndSendsBiteEvent` | `ToWaiting`, Tick(1.9) then Tick(0.2) | Waiting, then Bite with cue Bite and `SendRodEvent{Bite}` |
 | `RodStateMachine_Bite_AutoHookAfterHookBeat_EntersHookedAndStartsFight` | `ToBite`, Tick(0.2) then Tick(0.1) | Bite at 0.2; Hooked at 0.3; effects in order: HookSet cue, SendHooked{1}, SendRodEvent{HookSet}, StartFight; `Fight` non-null, `Fight.State.LineLength == 10` |
 | `RodStateMachine_Bite_PrimaryInsideHookWindow_EntersHooked` | roll hookWindow 1.0; `ToBite`; Tick(0.5, PrimaryPressed) | Hooked |
-| `RodStateMachine_Bite_HookWindowElapsed_EscapesMissed` | hookWindow 1.0; `ToBite`; Tick(0.6) x 2 | Escaped, `Reason` Missed; `SendResult{Escaped, Missed, Report all 0}`, `SendRodEvent{Escaped}` |
+| `RodStateMachine_Bite_HookWindowElapsed_EscapesMissed` | hookWindow 1.0; `ToBite`; Tick(0.6) x 2 | Escaped, `Reason` Missed; `SendResult{Escaped, Missed, Report all 0}`, `SendRodEvent{Escaped}`. R65 extra case inside this test (no new test name): same with `Roll.Pity = true` and `PityHookWindowBonus 0.3`: still Bite after 1.2 s, Missed after 1.3 s; a pity roll with hookWindow 0 auto-hooks at `HookBeat` as usual |
 | `RodStateMachine_Hooked_LineAtLandDistanceWhileReeling_LandsWithFightReport` | `ToHooked` with TipToBobber 2.05; `TickFight(In(0, true))` x 3 | Landed; `SendResult{Landed, None, Report{MaxTension 0, FightSeconds 0.06 (1e-5), Recoveries 0}}`; cue LineLanded |
 | `RodStateMachine_Hooked_SnapTimerReachesGrace_Snaps` | `ToHooked`, `ToSnapped` | Snapped; `SendResult{Snapped}`, then `SendRodEvent{Snapped, SizeClass 1}` |
 | `RodStateMachine_Hooked_PinnedTooLong_EscapesPinned` | `Fight.ForceState{Lateral 1, Calm, PhaseTimer 5, PinnedTimer 4.99, Stamina 1, Line 10}`, TickFight(In(0, false)) | Escaped / Pinned with SendResult |
@@ -1053,6 +1059,11 @@ Filter: `FishGame.Tests.EditMode.RodStateMachineTests`.
   - Per slot (`EnsureSlot` once; later calls are no-ops): `RodIndex = defaultRodIndex`, `BaitIndex = defaultBaitIndex`, and a stock per bait (`FishingConstants.DebugBaitStock` = 20; unlimited baits are not counted).
   - Per clientId: `Slot`, `LastAcceptedCastId` (starts 0), an optional `ActiveCast`, and the last 16 resolutions (`castId -> (Outcome, Reason)`) for orphans.
   - `Tick` iterates clients in ascending clientId order, so output order is deterministic.
+- **Bad-luck nudge, ledger side (R65 / M2-D23; `Pity` is host-decided, deterministic, no RNG):**
+  - Per slot (same lifetime as bait stock; survives rejoin): `FailStreak` (int, starts 0).
+  - At accept, after `PlaceholderRoller.Roll`: `roll.Pity = Tuning.PityAfterFailures > 0 && FailStreak >= Tuning.PityAfterFailures`. The roller's draw order is untouched; the verdict's `Roll.Pity` and `ActiveCast.Roll.Pity` carry it. `FishingHost` (T17) announces a pity accept.
+  - Counting, when a FIRST resolution is stored (never for orphans): `Landed` -> `FailStreak = 0`. `Snapped`, or `Escaped` with any reason (Missed, Pinned, ThrewHook, Dropped, Timeout, Invalid) -> `FailStreak++`, unless the resolved cast was a Pity cast, in which case `FailStreak = 0` whatever the outcome. `Cancelled` (owner cancel, stuck-Waiting refund, recall) neither counts nor resets: a cancelled Pity cast leaves `FailStreak` as it was, so the next accepted cast is Pity again. `Disconnect` clears the cast without a resolution: no change.
+  - Landed-floor validation and everything else is unchanged by Pity.
 - **`EnsureSlot` / `GetLoadout`:** `BaitCount` = the stock of the selected bait, or `UnlimitedBaitCount` (0xFFFF) when unlimited.
 - **`SelectBait` / `SelectRod`:** false if the index is out of range or that client has an `ActiveCast`. Otherwise set it on the slot and return true.
 - **`TryComputeLanding(slot, req, out x, out z)`:** false for an unknown slot or a charge that is NaN or outside [0, 1]. Otherwise `distance = CastMath.Distance(charge, CastMinDist, Rods[slot rod].CastMaxDist)` and `CastMath.Landing(req.OriginX, req.OriginZ, req.YawDeg, distance, ...)`.
@@ -1084,9 +1095,10 @@ Filter: `FishGame.Tests.EditMode.RodStateMachineTests`.
 - **`Hooked`:**
   - No match: orphan, return true.
   - Already Hooked: return false, no change (duplicate).
-  - `CatchValidator.HookTooEarly(Now, a, HookTolerance)`: resolve `Escaped/Invalid`, no refund, Announce None, return true.
+  - `CatchValidator.HookTooEarly(Now, a, HookTolerance)`: resolve `Escaped/Invalid`, `Accepted = true` (a first resolution), no refund, Announce None, return true.
   - Otherwise: `Phase = Hooked`, `THooked = Now`, `LineLength0 = HostLineLength0(hostDistanceToLanding, LandDistance)`, return false.
-- **Orphan:** `Accepted = false`, `Outcome/Reason` = the stored resolution for that castId if any, else `Cancelled/None`. No refund, no announce, no creel.
+- **`CommitDecision.Accepted` (ruling E-Q6):** `false` only for an orphan repeat (a message for a cleared cast, below). Every FIRST resolution has `Accepted = true`, including timeouts, early-hook Invalid, validation Invalid, cancels and creel-full releases. `Accepted` does not say whether a fish was kept. Consumers (T17) act on the other fields: announce iff `Announce != None`; creel add iff `AddToCreel`; `FishCaught` iff `Outcome == Landed && AddToCreel`. Invalid and cancel resolutions have `Announce == None` by design.
+- **Orphan:** `Accepted = false`, `Outcome/Reason` = the stored resolution for that castId if any, else `Cancelled/None`. No refund, no announce, no creel (`Announce` None, `AddToCreel` false).
 - **`Tick(dt, paused, unsolicited)`:**
   - `Now += dt` unless paused.
   - Then for each active cast:
@@ -1215,6 +1227,9 @@ Every other `CatchValidator` member follows its C 7.9 comment.
 | `FishingHostLedger_ImplausibleCleanClaim_KeepsRolledQuality` | `HookAt`, Tick(10). Cases: `Clean(12.5)` (ahead of host 10 + 2); `Clean(4.0)` (below floor 4.7); control `Clean(11.9)` | first two: Landed, `AddToCreel`, `CleanBonus` false, quality and value = rolled; control: `CleanBonus` true |
 | `FishingHostLedger_SelfContradictoryCleanClaim_KeepsRolledQuality` | `Clean(9.5)` with Recoveries 1 | no bonus, still Landed |
 | `FishingHostLedger_NonCleanCatch_KeepsRolledQuality` | MaxTension 0.8 (equals threshold), 0.85, NaN | no bonus, Landed each time |
+| `FishingHostLedger_ThreeFailures_NextCastPity` (R65) | tuning `PityAfterFailures 3`; three casts resolved Snapped, Escaped/Missed, Escaped/Pinned (mix hooked and waiting as needed); then the fourth cast accepted; then a fifth cast after the Pity cast resolved Snapped | casts 1-3 `Roll.Pity` false; cast 4 `Roll.Pity` true in the verdict and in `TryGetActive`, and all other roll fields equal the roller's output for `Rng.Stream(seed, "catch", 4)`; cast 5 `Pity` false (count reset by the Pity cast whatever its outcome); a `PityAfterFailures 0` ledger never gives Pity |
+| `FishingHostLedger_Landed_ResetsPityCount` (R65) | two failures, then a Landed (valid, after `HookAt`), then two more failures, then a cast | no Pity on that cast (streak 2 after the reset); a third failure makes the next cast Pity |
+| `FishingHostLedger_CancelDoesNotCountTowardPity` (R65) | two failures; then three Waiting cancels (refunded); then a cast; also a stuck-Waiting timeout (refunded Cancelled) | the cast after the cancels is not Pity (streak still 2); a third real failure then makes the next cast Pity; a cancelled Pity cast leaves the following cast Pity; `Disconnect` and rejoin keep the slot's streak |
 | `FishingHostLedger_JunkCleanClaim_NoBonus` | `ForceJunk`, `HookAt`, Tick(1.5), Landed with `Clean(1.5)` | Landed, `CleanBonus` false, junk value 2 |
 | `CreelRules_OverweightRule_AcceptsUntilAlreadyFull` | (11, 14999, 12, 15000) true; (11, 15000) false; (12, 0) false; (11, 16000) false | as listed |
 | `CreelRules_Warn_AtEightyPercent` | entries 9 / 10 of 12 (weight 0): false / true; weight 11999 / 12000 of 15000: false / true | as listed |
@@ -1234,24 +1249,26 @@ Filter: `FishGame.Tests.EditMode.(FishingHostLedgerTests|CreelRulesTests)`.
 - Every path clears the ActiveCast and stores a resolution.
 - Orphans never refund or announce.
 - The ledger clock stops while paused.
-- 34 tests, all green.
+- 37 tests (34 + the three R65 pity tests), all green. Where an existing test compares a ledger roll with `PlaceholderRoller.Roll` output after three failures, it clears `Pity` before comparing.
 
 ---
 
-## Contract questions
+## Contract questions (all closed by controller rulings of 2026-10-11; C 15)
 
-1. **Test helper file outside C 12:** `Tests/EditMode/FishingTestData.cs`. It is created by T5 and only read by T6-T9. T14's `FishingData_SeedsMatchSpecTables` may reuse it. Please add it to C 12 under T5 so the owned-files check passes.
-2. **Internal test hooks not named in C 7.7:** `FightSim.DrawCount`, `FightSim.BurstLateralMult` and `FightSim.TimeEps` (all `internal`). C 7 allows internal helpers; listed so the scripted checks expect them.
-3. **`FightInput` type:** spec 9.5 shows `{ steer; reel }`, but the existing M1 type `Core/Input/FightInput.cs` (readonly, `Steer`/`Reel`) is used unchanged. C 7.7 never names its file; confirm no new type is wanted.
-4. **Side-run choice (spec 9.5 "else random"):** this plan reads it as 75% away, 25% toward (one draw), matching the `SideRunAgainstChance` comment. A literal reading gives 87.5% away.
-5. **Hand-check tests set `FlipRate = 0`** on the Runner, Bulldog and Thrasher copies (the spec arithmetic assumes no flip). They also use `weightT = 0.375` (`WeightFactor` 1.0). This departs from "spec 9.6 columns" in C 7.7's test-data note.
-6. **Same-tick endings:** Landed beats Snapped beats Pinned beats ThrewHook. The spec gives no order.
-7. **Flip gap at burst start:** the gap counter starts satisfied, so a flip may happen on the first burst tick. Spec 9.5 only says flips are "at least 0.5 s apart".
-8. **`CastMath_Apex_NeverBelowPointSixMeters`:** C 7.5 applies the 0.6 floor before `pitchApexMult`, so with mult 0.7 the apex can be 0.42 m. The test fixes mult = 1. If the floor should apply after the mult, the formula in C 7.5 changes.
-9. **Cancel while the host phase is Hooked:** resolved as Escaped(Dropped), announced Lost, no refund. Spec 9.9 defines Cancel only for Waiting.
-10. **`RequestCast` for a slot never passed to `EnsureSlot`:** rejected with `UnknownPlayer`. `FishingHost.OnPlayerReady` (T17) must call `EnsureSlot` first.
-11. **Disconnect refund:** this plan follows the plain C 7.9 reading (clear, no commit, **no** refund of a Waiting cast's bait). A friendlier variant would refund a Waiting cast like the owner-side cancel. The controller decides; it is a one-line change plus a test assert.
-12. **`IgnoredEventCount` is `internal`,** so T18 (assembly `FishGame.Fishing`) cannot read it. T18 must detect ignored events itself (castId mismatch, state) to "log once per state", and must never warn on the commit (or late result) for a cast it cancelled (T8 decision 10), or every ordinary cancel would warn in PlayMode. Alternatively add a public read-only counter or event to C 7.8.
-13. **`RodEventRpc` size class:** only Snapped carries `Roll.SizeClass` (C 7.8 wording); other events send 0. If remotes should scale the bite or escape splash by size too, C 7.8 should say so.
-14. **`RollOverrides.None`** must set `ForcedItemIndex = -1`. C 7.9 declares the field but not this value. A `default(RollOverrides)` would force species 0; T17's `FishingDebugSettings.ToOverrides` must start from `None`.
-15. **Calm drift and exhaustion:** the drift uses post-update stamina and stops once exhausted (C 7.7). The exhausted calm never expires and makes no draws. Spec 9.5's "stays Calm with no new bursts" is read as permanent for the fight.
+1. **Test helper file (closed, B-Q1).** `Tests/EditMode/FishingTestData.cs` is in the C 12 T5 manifest; read-only for T6-T9.
+2. **Internal test hooks (closed, B-Q2).** `FightSim.DrawCount`, `FightSim.BurstLateralMult`, `FightSim.TimeEps` (internal) are named in C 7.7.
+3. **`FightInput` type (closed, B-Q3).** The M1 `Core/Input/FightInput.cs` is reused unchanged.
+4. **Side-run choice (closed, B-Q4).** The literal spec 9.5 reading: 75% away, else a random side, so 87.5% away / 12.5% toward overall, with one draw (T7 decision 3 and the code block).
+5. **Hand-check test data (closed, B-Q5).** The hand-check tests set `FlipRate = 0` on the Runner, Bulldog and Thrasher copies and use `weightT = 0.375` (test data only; C 7.7 test-data note amended).
+6. **Same-tick endings (closed, B-Q6).** Landed > Snapped > Pinned > ThrewHook.
+7. **Flip gap at burst start (closed, B-Q7).** A flip is allowed on the first burst tick; the minimum gap applies only between flips.
+8. **Apex floor (closed, B-Q8).** Spec-literal: the 0.6 floor applies before the pitch multiplier; the test fixes the multiplier at 1.
+9. **Cancel while Hooked (closed, B-Q9).** Host Cancel in Hooked resolves Escaped(Dropped), announced Lost, no refund.
+10. **`RequestCast` for a slot never ensured (closed, B-Q10).** Rejected `UnknownPlayer`; T17 calls `EnsureSlot` before any `RequestCast`.
+11. **Disconnect refund (closed, B-Q11).** Disconnect does not refund a Waiting cast's bait.
+12. **`IgnoredEventCount` (closed, E-Q5 supersedes B-Q12).** Public getter (`public int IgnoredEventCount { get; private set; }`); T18 logs ignored events in debug builds and still must not warn on the reply to its own cancel (the machine consumes that silently, T8 decision 10).
+13. **`RodEventRpc` size class (closed, B-Q13).** Only Snapped carries the size class; other events send 0.
+14. **`RollOverrides.None` (closed, B-Q14).** `ForcedItemIndex = -1`; T17's override builder starts from `RollOverrides.None`.
+15. **Calm drift and exhaustion (closed, B-Q15).** An exhausted fish stays Calm: no drift, no draws.
+16. **`CommitDecision.Accepted` (closed, E-Q6).** False only for orphan repeats; consumers act on `Announce`, `AddToCreel` and `Outcome` (T9 behaviour bullet).
+17. **Bad-luck nudge (R65 / M2-D23, added 2026-10-11).** Pity is a roll flag set by the ledger; the multipliers live in `FightSim` (pity ctor argument) and the hook-window bonus in `RodStateMachine`. Interpretation to confirm: a cancelled Pity cast does not consume the pity (the ruling says both "resets when a Pity cast resolves, whatever its outcome" and "cancels neither count nor reset"; this plan lets the cancel win, so the next accepted cast is Pity again).

@@ -3,6 +3,7 @@
 - **Date:** 2026-10-11. Branch `m2-fishing-core`.
 - **Contract:** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` (binding; section numbers below refer to it as "C").
 - **Spec:** `docs/superpowers/specs/2026-10-09-fishgame-design.md` section 17.2 and the sections it cites. The user approved two design additions on 2026-10-11 (fight motions per profile, clean-catch bonus: C 13 M2-D15/D16); the spec is amended to match separately.
+- **Amendments (2026-10-11):** controller rulings, the consistency-check fixes, the staged fish models and the bad-luck nudge (R65 / C 13 M2-D23) are listed in C 15 and applied below. T1 (`1c8d78d`) and T4 (`43178ee`) are committed; T2 is in progress.
 - **Purpose:** task list, order, file ownership, tiers and the split for the section authors. Section authors write task bodies (behaviour, test cases, acceptance; code only for tricky parts: math, state machines, RPC sequences) in their own plan files. No section author changes a public name, path or test name from the contract; a needed change is reported to the controller as a contract change.
 
 ## 1. Rules for section authors
@@ -27,20 +28,20 @@ Columns: goal; owned files are exactly C 12 for that task (shared edits per C 2.
 
 | # | Task | Goal (one line) | Deps | Impl | Review |
 |---|---|---|---|---|---|
-| T1 | Carry: hygiene | EditMode asmdef refs; `Pcg32.Range(float)` fix; `LogOnce` + AudioBus warn rate limit; `EventIsolation` at the six session raise sites + comment fix | - | Sonnet | Opus high |
-| T2 | Carry: splits | `LocalNetworkSession` into 3 partial files; `UiFlowController` into router + `UiSessionActions` + `UiFocusRouter` + `IHudExtension` seam; behaviour unchanged | T1 | Sonnet | Opus high |
+| T1 | Carry: hygiene | EditMode asmdef refs; `Pcg32.Range(float)` fix; `LogOnce` + AudioBus warn rate limit (+ `AudioBusTests`); `EventIsolation` at the six session raise sites + comment fix. Done (`1c8d78d`) | - | Sonnet | Opus high |
+| T2 | Carry: splits | `LocalNetworkSession` into 3 partial files (main < 300 lines, the attempt lifecycle goes to `.Start.cs`); `UiFlowController` (< 400 lines) into router + `UiSessionActions` + `UiFocusRouter` + `IHudExtension` seam; behaviour unchanged. In progress | T1 | Sonnet | Opus high |
 | T3 | Carry: PlayMode harness | Frames+time waits, realtime guards, cancel on `Await` timeout, `ServiceRoots` asserts, `SuppressDevAutoStart` reset; new leave-after-Connected test | T2 | Sonnet | Opus high |
-| T4 | Carry: builders | Load assets after `NewScene` (Bootstrap, LakeDock); `MeshReferences`, `MissingScripts`, `BootstrapReferences` validators | T1 | Sonnet | Opus high |
-| T5 | Core: fishing model | Enums, `RodCue`, stats structs incl. motion fields, `FishingTuning` (incl. `CleanCatchMaxTension`), `FishingDatabase`, `CastMath`, `FishPointMath`, `RodWireQuant`, `FishingConstants`, `ToolKind` | T1 | Sonnet (Haiku if complete code) | Sonnet |
-| T6 | Core: bite and roll | `BitePlanner`, `CatchMath` (incl. clean-bonus tier upgrade), `PlaceholderRoller`, `FishingRoll`, `FishingRollValidation` | T5 | Sonnet | Sonnet |
-| T7 | Core: fight | `FightSim` per spec 9.5 + junk mode + motion parameters (ramp, calm drift, flip gap, lateral jitter) + forced-phase seams; `TensionCues` | T5 | Sonnet | Sonnet |
+| T4 | Carry: builders | Load assets after `NewScene` (Bootstrap, LakeDock); `MeshReferences`, `MissingScripts`, `BootstrapReferences` validators. Done (`43178ee`) | T1 | Sonnet | Opus high |
+| T5 | Core: fishing model | Enums (incl. `AnnounceKind.PityCast`), `RodCue`, stats structs incl. motion fields, `FishingTuning` (incl. `CleanCatchMaxTension` and the four pity fields), shared test data, `FishingDatabase`, `CastMath`, `FishPointMath`, `RodWireQuant`, `FishingConstants`, `ToolKind` | T1 | Sonnet (Haiku if complete code) | Sonnet |
+| T6 | Core: bite and roll | `BitePlanner`, `CatchMath` (incl. clean-bonus tier upgrade), `PlaceholderRoller`, `FishingRoll` (incl. `Pity`), `FishingRollValidation` | T5 | Sonnet | Sonnet |
+| T7 | Core: fight | `FightSim` per spec 9.5 + junk mode + motion parameters (ramp, calm drift, flip gap, lateral jitter) + pity multipliers + forced-phase seams; `TensionCues` | T5 | Sonnet | Sonnet |
 | T8 | Core: rod state machine | `RodStateMachine` with every 9.2 row, effects queue, `FightReport` on results; row-per-test map C 10.2 | T5, T6, T7 | Sonnet | Opus high |
-| T9 | Core: host ledger | `FishingHostLedger`, `CatchValidator` (incl. clean-claim bounds), `CreelRules`, `CreelLedger`, slot/client keys | T5, T6, T8 | Sonnet | Opus high |
+| T9 | Core: host ledger | `FishingHostLedger` (incl. the per-slot bad-luck counter), `CatchValidator` (incl. clean-claim bounds), `CreelRules`, `CreelLedger`, slot/client keys | T5, T6, T8 | Sonnet | Opus high |
 | T10 | Input and context | Router rod rows, `InteractLive`, `GameplayContextArbiter`, `IDevInput` (adapter + fake), settings fields | T1 | Sonnet | Opus high |
 | T11 | Audio M2 | M2 recipes + `Rod_Thunk`, `SfxRecipes.All`, `MinDistance`, AudioBus loops/duck/cue overrides, `RodCueAudio`, `CaptionRequested`, audition menu | T5 | Sonnet | Opus high |
 | T12 | Water math and meshes | `WaveMath`, `WaterSurface` time/wave seam, `MeshBuilder`, `RippleMath`, `FaceJitter`, `ShaderGlobals` | T1 | Sonnet | Sonnet |
 | T13 | Data defs and registry | All Defs (C 7.13) incl. `FightProfileDef` motion fields and tuning `cleanCatchMaxTension`; `ContentRegistry` fishing categories, singletons, `Fishing` database | T5, T6, T11, T12 | Sonnet | Sonnet |
-| T14 | Seeds and content builder | `FishingSeedData` (spec tables + motion seeds), `FishingContentBuilder` (create-if-missing), `FishingValidators`, ContentBuilder/ValidationRunner/AppBootstrap hooks; generate assets | T13, T4 | Sonnet | Sonnet |
+| T14 | Seeds and content builder | `FishingSeedData` (spec tables + motion seeds + pity seeds), `FishingContentBuilder` (create-if-missing), `FishingValidators` (incl. one-submesh models), ContentBuilder/ValidationRunner/AppBootstrap hooks; generate assets | T13, T4 | Sonnet | Sonnet |
 | T15 | Tuning bots | Greedy/CounterReel/Rhythm bots on the real assets, every profile x Twig/Handmade, signature-motion and clean-rate prints; retune data until 9.12 targets pass or are recorded as tuning items | T7, T14 | Sonnet | Sonnet (Opus high if a target needs more than data) |
 | T16 | Gameplay hooks | `NetTool`, `ServerInitialized`, `PlayerCreel` + `CreelEntry`, `SessionState.ServerCreels`, context arbitration + movement lock + aiming speed in `PlayerLocomotion`, `Teleported`, interactor gate, rig paths, `AddFovKick`, bell debug sell | T5, T9, T10 | Sonnet | Opus high |
 | T17 | Fishing network and host | Wire structs, `FishingRodNetwork` (RPCs C 8.2, NetVars C 8.3), `FishingHost`, `CastProbe`, `FishingDebugSettings`, bus messages, `ProtocolVersion = 2` | T6, T9, T13, T16 | Sonnet | Opus high |
@@ -55,7 +56,7 @@ Columns: goal; owned files are exactly C 12 for that task (shared edits per C 2.
 | T26 | Dev overlay | F3 overlay and F4-F9 selectors through `IDevInput` | T25 | Sonnet | Opus high |
 | T27 | Telemetry | `FightLogRow`, `FightLogCsv`, `FightTelemetry` on the scene `Fishing` root | T18, T19 | Sonnet | Sonnet |
 | T28 | Lake dock rebuild | MeshBuilder props, water grid + shader, sky, fog, volumes, presentation and fishing roots; perf and water-pass numbers | T22, T24, T27 | Sonnet | Opus high |
-| T29 | Blender species models | Bluegill, carp, trout, catfish FBX (perch re-export only if it lacks vertex colours); build wires models | T20, T28 | Controller (Blender MCP) | Sonnet + user look check |
+| T29 | Species models | Import and verify the staged `Art/Export/Fish_{Bluegill,Perch,Carp,Trout,Catfish}.fbx` (one submesh, linear vertex colours; the new perch replaces the spike perch); build wires models | T20, T28 | Controller (Blender MCP only if a fix is needed) | Sonnet + user look check |
 | T30 | Acceptance | M2 acceptance checklist, MPPM list, 9.13 walk, fun-gate template, README, final `check`; then Opus xhigh branch review | all | Sonnet | Sonnet, then Opus xhigh (branch) |
 
 Serial order: T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12 -> T13 -> T14 -> T15 -> T16 -> T17 -> T18 -> T19 -> T20 -> T21 -> T22 -> T23 -> T24 -> T25 -> T26 -> T27 -> T28 -> T29 -> T30.
@@ -71,9 +72,9 @@ Serial order: T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -
 | UI: charge ring, marker, captions, gauge, creel, toasts, F3 overlay, settings | T24 (marker), T25, T26 |
 | Telemetry CSV | T27 |
 | Lake dock rebuilt with props and water shader; ripple debug key | T28, T26 (F9) |
-| Blender species models (17.2 user action, spike passed) | T20 (import), T29 (models) |
+| Species models (17.2 user action; staged in `Art/Export/`) | T20 (import settings), T29 (import and verify) |
 | EditMode state machine/cast, bite, fight, roll and ledger, data and input, Tuning bots; PlayMode; manual MPPM | C 10 (T5-T19, T27); T30 (manual) |
-| User additions 2026-10-11: fight motions (C M2-D15), clean-catch bonus (C M2-D16) | T5, T6, T7, T8, T9, T13, T14, T15, T17, T18, T25, T27 |
+| User additions 2026-10-11: fight motions (C M2-D15), clean-catch bonus (C M2-D16), bad-luck nudge (C M2-D23) | T5, T6, T7, T8, T9, T13, T14, T15, T17, T18, T25, T26, T27, T30 |
 
 ## 5. Pipelining (implement N+1 while N is in review)
 
@@ -123,22 +124,22 @@ Authors may run in parallel (they only write their own plan file). Cross-section
 ## 7. Per-task acceptance highlights (for authors to expand)
 
 - **T1-T4:** EditMode and PlayMode stay green after each; `LakeDock` layout byte-identical after T1 and T4 (`git diff --stat Assets/_Project/Scenes` shows only fileID churn, then restore).
-- **T7:** all spec 9.5 hand-worked checks hold with motion parameters at 0; each profile's signature test passes with its seeds.
+- **T7:** all spec 9.5 hand-worked checks hold with motion parameters at 0; each profile's signature test passes with its seeds; the pity run snaps later than the normal run for the same seed.
 - **T8:** C 10.2 table complete (38 row tests + 6 rule tests).
-- **T9:** every clean-claim rejection keeps the rolled quality and still lands the fish.
+- **T9:** every clean-claim rejection keeps the rolled quality and still lands the fish; three failed casts make the next cast Pity, a Landed resets, cancels neither count nor reset.
 - **T15:** bot output pasted in the task report; any missed target either retuned (asset + seed) or listed as a tuning item for T30.
 - **T19:** `check` green; manual solo cast-to-land on keyboard and gamepad by the controller (acceptance 1 dry run).
 - **T20/T21:** `Validation_Shaders_Pass` green in `-nographics` batchmode; first screenshot check by the user in the editor.
 - **T28:** lake dock looks complete (user check); frame time and SRP batches within 10% of the M1 baseline or noted.
-- **T30:** every 17.2 acceptance criterion has a checklist line and an owner; the fun gate is a user activity (30+ logged fights with at least one friend) recorded after M2 code is done.
+- **T30:** every 17.2 acceptance criterion has a checklist line and an owner; the fun gate is a user activity (30+ logged fights with at least one friend) recorded after M2 code is done; a USER line for the bad-luck nudge (keep / tune / remove).
 
 ## 8. Open questions and risks (controller decides; not resolved by the spec)
 
-1. Perch FBX vertex colours unverified (C G6); if missing, T29 re-exports it and the reveal uses the fallback until then.
-2. V11: whether `DeferLocal` on `SendTo.Owner` defers when the host owns the object; T19's ordering test is the check, and a failure needs a manual one-frame deferral in `FishingRodNetwork` (contract change).
+1. Perch FBX vertex colours (C G6): resolved. The spike perch (5 submeshes, no vertex colours) is replaced by the staged single-submesh perch in T29; until then T14 leaves `perch.model` null and the reveal uses the fallback mesh.
+2. V11: `DeferLocal` on a host-owned object is source-confirmed (net plan N1); T19's ordering test stays as the runtime check, and a failure needs a manual one-frame deferral in `FishingRodNetwork` (contract change). `CatchAnnouncedRpc` now also defers locally (ruling E-Q8).
 3. Clean-claim bounds are one-sided on the clock (owner never ahead of host + 2.0 s) and cannot check the profile without a host replay (spec 9.9 forbids it); a skilled cheat is out of scope (friends-only, spec 1.2), and the 2.0 s slack is a guess to confirm under MPPM at 150 ms RTT.
 4. Motion seeds (C 7.7) are first guesses; Darter micro-bursts at flipRate 1.0 and Bulldog calm drift may push medians out of the 9.12/17.2 targets. T15 decides by data.
-5. `RodStateData` change detection relies on our `IEquatable`; if NGO 2.13.3 uses memcmp on padded memory, padding bytes could cause extra sends (cosmetic bandwidth only).
+5. `RodStateData` change detection: closed. NGO uses `Equals` for unmanaged `IEquatable` types (net plan N3), so padding cannot cause extra sends.
 6. `PlayerFishingRigBuilder` and `PrefabBuilder` are edited by four tasks in sequence; a later rebuild that reorders root NetworkBehaviours would change NGO behaviour indices. Only T19 adds NetworkBehaviours (C 6.3).
-7. `-nographics` shader validation (V13): if `ShaderUtil` reports nothing under `-nographics`, `Validation_Shaders_Pass` needs a graphics batchmode run; T20 must establish which before T21.
+7. `-nographics` shader validation (V13): if `ShaderUtil` reports nothing under `-nographics`, T20 owns a minimal `Tools/unity.ps1` change (graphics-capable mode for the validation run; ruling F-Q4); T20 must settle it before T21.
 8. Gamepad verification (acceptance 1) needs a controller on the user's machine; schedule it with the T19/T30 manual checks.

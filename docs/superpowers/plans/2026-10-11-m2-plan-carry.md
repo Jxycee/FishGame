@@ -1,7 +1,7 @@
 # FishGame M2 - Section A plan: Carry-forwards (T1, T2, T3, T4)
 
 - **Date:** 2026-10-11. Branch `m2-fishing-core`. Code line numbers below refer to commit `f5e045a` (M1 code as it is today).
-- **Binding contract:** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` ("C" below). Skeleton: `docs/superpowers/plans/2026-10-11-m2-plan-skeleton.md`. If this file disagrees with C, C wins; the known tensions are listed under "Contract questions" at the end.
+- **Binding contract:** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` ("C" below). Skeleton: `docs/superpowers/plans/2026-10-11-m2-plan-skeleton.md`. If this file disagrees with C, C wins; every tension raised is closed by a controller ruling, listed under "Contract questions" at the end.
 - **Scope:** behaviour-preserving refactors plus the M1 review fixes (C 14: DA1, DA19-DA23). Nothing here adds gameplay.
 - **Order:** T1 -> T2 -> T3 -> T4 (serial, one Unity lock). Pipelining (skeleton 5): while T1 is in review, T4 may run before T2; T2 must wait for T1's review because both edit `LocalNetworkSession.cs`.
 
@@ -20,9 +20,9 @@ $env:FG_OUT = '<scratch>\m2-tN'; New-Item -ItemType Directory -Force $env:FG_OUT
 ```
 
 - Result lines and exit codes: M1 contract section 11 (`FG RESULT ... PASS|FAIL|LOCKED|TIMEOUT`; exit 0 pass, 1 fail, 2 locked, 3 timeout, 4 usage).
-- **Exit 2 (LOCKED):** the user has the editor open. Stop and ask the user to close it. Never kill Unity.
+- **Exit 2 (LOCKED):** the user has the editor open. Stop and ask the user to close it. Never kill Unity. Stop only when `unity.ps1` reports LOCKED (exit 2): Unity leaves `Temp/UnityLockfile` behind after a batch run (for example a compile-error abort), and a file that is merely present is not a lock; locked means the file is HELD (exclusive open fails), which the script tests.
 - `check` = build -> test-edit -> test-play, stopping at the first failure. Use `-TimeoutMinutes 15` for `check` and `test-play`.
-- Skeleton 7 requires EditMode **and** PlayMode green after each of T1-T4, so every task in this section ends with `check` (C 2.4 starts routine `test-play` at T19; this section is the exception, see Contract question Q4).
+- Skeleton 7 requires EditMode **and** PlayMode green after each of T1-T4, so every task in this section ends with `check` (C 2.4 now says the same: PlayMode is green after each of T1-T4, ruling A-Q4; `test-play` is then routine from T19 on).
 
 ### 0.3 Scene identity check (used by T1, T2, T3, T4 after `check`)
 Every `build` renumbers fileIDs (C 2.8 #6). This check tells fileID churn from a real change. Run it in Git Bash from the repo root:
@@ -68,8 +68,9 @@ The diff may only show: `using` lines, `namespace`/class declaration/brace lines
 
 **Goal:** EditMode tests can reach Gameplay and Fishing; `Pcg32.Range(float, float)` never returns max and rejects `max <= min`; AudioBus warns once per `(reason, id)`; every M1 session event raise isolates each subscriber; the wrong comment at `UgsNetworkSession.cs:78` is fixed.
 
+- **Status:** done (committed `1c8d78d`).
 - **Owned files (C 12):** `Tests/EditMode/FishGame.Tests.EditMode.asmdef`, `Core/Random/Pcg32.cs`, `Core/Diagnostics/LogOnce.cs` (new; new folder `Core/Diagnostics/`), `Runtime/Services/EventIsolation.cs` (new), `Runtime/Audio/AudioBus.cs`, `Networking/LocalNetworkSession.cs`, `Networking/UgsNetworkSession.cs`, `Networking/UgsNetworkSession.Teardown.cs`, `Networking/CompositeNetworkSession.cs`.
-- **Tests owned:** `Tests/EditMode/Pcg32Tests.cs` (add), `Tests/EditMode/LogOnceTests.cs` (new), `Tests/EditMode/EventIsolationTests.cs` (new), `Tests/EditMode/AudioBusTests.cs` (new, extra; see Q3).
+- **Tests owned:** `Tests/EditMode/Pcg32Tests.cs` (add), `Tests/EditMode/LogOnceTests.cs` (new), `Tests/EditMode/EventIsolationTests.cs` (new), `Tests/EditMode/AudioBusTests.cs` (new; in the C 12 T1 manifest, ruling A-Q3). T11 later adds the `unknown|` and `missing|` warn-once cases to this file (T1 review carry-over; not T1's work).
 - **Shared edits (C 2.6):** asmdef (T1 only); `Pcg32.cs` (T1); `AudioBus.cs` (T1 now, T11 later: keep your edit small and local to `TryPrepare` so T11 merges cleanly); `LocalNetworkSession.cs` (two raise sites; T2 splits the file next); `UgsNetworkSession.cs`, `UgsNetworkSession.Teardown.cs`, `CompositeNetworkSession.cs`; `Runtime/Services/` new file.
 - **Depends on:** nothing.
 - **Implementer:** Sonnet. **Reviewer:** Opus high.
@@ -217,7 +218,7 @@ Effect: a throwing subscriber is logged once (by the innermost isolating raiser)
 - `EventIsolation_NullEvent_IsNoOp` (required): `Invoke((Action)null)`, `Invoke<int>(null, 1)`, `Invoke<int, int>(null, 1, 2)` do not throw; `LogAssert.NoUnexpectedReceived()`.
 - `EventIsolation_ActionAndActionOfT_ThrowingSubscriber_OthersStillRun` (added): same three-subscriber pattern for `Action` and for `Action<string>`; two `LogAssert.Expect(LogType.Exception, ...)` with distinct messages; both survivors ran once each, in order, with the argument passed through.
 
-`AudioBusTests.cs` (new, extra; Q3):
+`AudioBusTests.cs` (new; C 12 manifest, ruling A-Q3):
 - `AudioBus_NotReady_WarnsOncePerId`: `var go = new GameObject("AudioBusTest"); var bus = go.AddComponent<AudioBus>();` (never initialized). Count messages through `Application.logMessageReceived` with `type == LogType.Warning` and text containing `"AudioBus not initialized"`. Calls: `PlayUi("x")`, `PlayUi("x")`, `PlayAt("x", Vector3.zero)`, `PlayUi("y")`. Assert count `== 2`. Unsubscribe and `Object.DestroyImmediate(go)` in `finally`. (Do not use `LogAssert` for warnings.)
 
 **Existing tests that prove behaviour is unchanged:** `Pcg32_Seed42Stream54_MatchesReferenceVector`, `Pcg32_ZeroSeed_IsReplaced`, `Pcg32_RangeInt_StaysInBounds`, `Pcg32_FloatDraws_StayInHalfOpenRanges`, all of `RngTests`, `EventBusTests` (unchanged pattern), the full EditMode run; PlayMode `Bootstrap_Loads_Menu`, `Solo_Start_SpawnsOneOwnedPlayerWithCamera`, `Solo_LeaveThenRestart_Works`, `FakeInput_MoveForward_MovesPlayerMoreThanOneMeterInOneSecond`, `TeleportRpc_OnDeck_LandsWithinFiveCentimetersWithZeroVelocity` (these drive `LocalNetworkSession` and `CompositeNetworkSession` StateChanged/Ended through `SceneFlow` and `UiFlowController`); the scene identity check (rocks and trees from `Pcg32.Range`).
@@ -247,28 +248,29 @@ git add Assets/_Project/Tests/EditMode/FishGame.Tests.EditMode.asmdef Assets/_Pr
 
 **Goal:** `LocalNetworkSession` becomes three partial files; `UiFlowController` becomes the screen router plus two internal helpers (`UiSessionActions`, `UiFocusRouter`) and gains the `IHudExtension` seam for T25/T26. Public surface and runtime behaviour are unchanged (C 7.2, DA21).
 
+- **Status:** in progress (implementer has rulings A-Q1 and A-Q2).
 - **Owned files (C 12):** `Networking/LocalNetworkSession.cs`, `Networking/LocalNetworkSession.Start.cs` (new), `Networking/LocalNetworkSession.NgoEvents.cs` (new), `UI/UiFlowController.cs`, `UI/UiSessionActions.cs` (new), `UI/UiFocusRouter.cs` (new), `UI/IHudExtension.cs` (new).
 - **Shared edits (C 2.6):** `LocalNetworkSession.cs` (T1 then T2); `UiFlowController.cs` (T2 split; later T25 and T26 add one hook line each).
 - **Depends on:** T1 committed **and reviewed** (both edit `LocalNetworkSession.cs`).
 - **Implementer:** Sonnet. **Reviewer:** Opus high.
 
 ### T2.1 Constraints that bite here (C 2.8)
-- Moves are verbatim. Never reformat, rename locals, reorder statements or cut comments to hit a line count; report the count instead (Q1, Q2).
+- Moves are verbatim. Never reformat, rename locals, reorder statements or cut comments to hit a line count; report the count instead (rulings A-Q1, A-Q2 set the targets).
 - #3 cancel convention and the D37 ordering in `SetupAndStartAsync` ("after StartHost returned, never from inside OnServerStarted") are preserved by not editing those bodies.
 - #9: PlayMode warning-free and LogError-free (the PlayMode tests are the behaviour proof).
 - Every new file states authority in its class comment (CLAUDE.md): partial files point at the main file's comment, the UI helpers say "Authority: client-only (local UI)".
-- DA10: after the split, `ToastRequested` is raised by `UiSessionActions` only (inside `UI/`).
+- DA10: after the split, `ToastRequested` is raised by `UiSessionActions` only (inside `UI/`, at T2; T25 later adds a publisher in `UI/Fishing/FishingHudPresenter.cs`, ruling G-Q1).
 
 ### T2.2 `LocalNetworkSession` member-to-file map
 All three files declare `public sealed partial class LocalNetworkSession` in `namespace FishGame.Networking`; only the main file lists `: INetworkSession` and keeps the authority comment (lines 12-15). Each part file starts with the same style as `UgsNetworkSession.NgoEvents.cs`: `// Part of LocalNetworkSession (see LocalNetworkSession.cs for the authority comment): <what>. Split only to keep each file near ~300 lines.` Each file has only the `using`s it needs.
 
 | File | Members (M1 line ranges, all verbatim; T1's two isolated raise sites included) |
 |---|---|
-| `LocalNetworkSession.cs` (responsibilities 1, 2, 4, 6) | all fields `:18-33`; ctor `:35-39`; `Port`, `ActivePort`, `State`, `Mode`, `IsHost`, `JoinCode`, `StateChanged`, `Ended`, `Nm`, `IsLive`, `DevAllowed` `:41-64`; `HostOnlineAsync`, `JoinOnlineAsync`, `StartLocalAsync`, `JoinDirectAsync`, `SetJoinableAsync`, `LeaveAsync`, `Dispose` `:66-136`; `AttemptAsync`, `PostCancel`, `CancelAttempt` `:138-202`; `WatchTimeoutAsync` `:328-335`; `Established`, `Fail`, `RequestShutdown`, `TeardownAsync`, `OnStateMachineChanged`, `RaiseEnded` `:342-459`; `CancelAttemptToken`, `DisposeAttemptToken` `:470-494` |
-| `LocalNetworkSession.Start.cs` (responsibility 3) | `SetupAndStartAsync` `:204-294`; `StartNgo` `:296-309` (with its comment); `ShutdownNgoAsync` `:311-326`; `IsCurrent` `:337-340` (only `SetupAndStartAsync` calls it); `UninstallApprover` `:461-468` |
+| `LocalNetworkSession.cs` (responsibilities 1, 4, 6) | all fields `:18-33`; ctor `:35-39`; `Port`, `ActivePort`, `State`, `Mode`, `IsHost`, `JoinCode`, `StateChanged`, `Ended`, `Nm`, `IsLive`, `DevAllowed` `:41-64`; `HostOnlineAsync`, `JoinOnlineAsync`, `StartLocalAsync`, `JoinDirectAsync`, `SetJoinableAsync`, `LeaveAsync`, `Dispose` `:66-136`; `Established`, `Fail`, `RequestShutdown`, `TeardownAsync`, `OnStateMachineChanged`, `RaiseEnded` `:342-459`; `CancelAttemptToken`, `DisposeAttemptToken` `:470-494` |
+| `LocalNetworkSession.Start.cs` (responsibilities 2, 3; ruling A-Q1) | `AttemptAsync`, `PostCancel`, `CancelAttempt` `:138-202`; `SetupAndStartAsync` `:204-294`; `StartNgo` `:296-309` (with its comment); `ShutdownNgoAsync` `:311-326`; `WatchTimeoutAsync` `:328-335`; `IsCurrent` `:337-340` (only `SetupAndStartAsync` calls it); `UninstallApprover` `:461-468` |
 | `LocalNetworkSession.NgoEvents.cs` (responsibility 5) | `SubscribeNetwork` `:496-503`; `UnsubscribeNetwork` `:505-516` (with its comment); `OnConnectionEvent` `:518-534`; `OnClientStopped` `:536-547` (with its comment); `OnServerStopped` `:549-556`; `SecondsSinceBegin` `:558-561` |
 
-Keep the member order inside each file as in M1. Expected sizes: main about 345 lines, Start about 155, NgoEvents about 85. C 7.2 asks for each file under 300; the main file cannot reach that with responsibilities 1, 2, 4 and 6 kept verbatim (Q1). Do not move more than the table says; report the three counts.
+Keep the member order inside each file as in M1. Expected sizes: main about 270 lines, Start about 230, NgoEvents about 85; every file is under 300 (C 7.2, ruling A-Q1: responsibility 2, the attempt lifecycle of about 75 lines, moves with the NGO start into `.Start.cs`). Do not move more than the table says; report the three counts.
 
 ### T2.3 `UiFlowController` split
 
@@ -291,7 +293,7 @@ Keep the member order inside each file as in M1. Expected sizes: main about 345 
 
 **Controller call sites after the split:** `Show(MainMenu)`: `_focus.SetMenuActions(_session.State == ConnState.Offline && !_actions.HasAttempt, false);` `Show(Pause)`: `_actions.ShowPauseData();` `HandleBack` Busy: `_actions.CancelAttempt();` `OnSessionStateChanged`: `_focus.SetMenuActions(current == ConnState.Offline && !_actions.HasAttempt, true);` `OnSessionEnded`: `_focus.PreferFocusFor(reason);` then the Busy check. `OnDestroy`: `_actions?.CancelForDestroy();` at the position of `_attempt?.Cancel();` (**not** `CancelAttempt()`, which would call `LeaveSession` when no attempt exists and change PlayMode teardown).
 
-Expected sizes: `UiFlowController.cs` about 350-365 lines (C 7.2 asks for under 300; not reachable with the four-file manifest, see Q2), `UiSessionActions.cs` about 150, `UiFocusRouter.cs` about 85, `IHudExtension.cs` about 15. Report the counts.
+Expected sizes: `UiFlowController.cs` under 400 lines (about 350-365; C 7.2 target is < 400 with no fifth file, ruling A-Q2), `UiSessionActions.cs` about 150, `UiFocusRouter.cs` about 85, `IHudExtension.cs` about 15. Report the counts.
 
 ### T2.4 `IHudExtension` seam (C 7.2; used by T25 and T26)
 ```csharp
@@ -343,8 +345,8 @@ No new tests (C 10 has none for T2; the split is behaviour-preserving). **Existi
 - Member-to-file maps (T2.2, T2.3) followed; verbatim-move diffs contain only the allowed residue; no statement reordering; comments kept.
 - Subscriptions unchanged in place and order; `OnDestroy` uses `CancelForDestroy`; `Show` clears the pending focus at the same point; live-state delegates used after awaits.
 - Public members unchanged; new members internal and exactly those listed; `IHudExtension` behaviour as T2.4.
-- `ToastRequested` raised only in `UiSessionActions.cs`.
-- `check` PASS; scenes restored; line counts reported (Q1/Q2 numbers).
+- At T2, `ToastRequested` is raised only in `UiSessionActions.cs` (`grep -n "new ToastRequested" Assets/_Project/UI/*.cs`, non-recursive). T25 later adds a publisher under `UI/Fishing/`; the final branch review must not flag that.
+- `check` PASS; scenes restored; line counts reported (main `LocalNetworkSession.cs` < 300, `UiFlowController.cs` < 400).
 
 ### T2.9 Commit
 ```powershell
@@ -450,6 +452,7 @@ git add Assets/_Project/Tests/PlayMode/PlayModeHarness.cs Assets/_Project/Tests/
 
 **Goal:** `SceneBuilder.BuildBootstrap` and `LakeDockBuilder.Build` load every asset after `EditorSceneManager.NewScene` (C 2.8 #14, DA23); three new validators catch the failure class that bit M1 (destroyed references saved as null) and missing scripts in scenes.
 
+- **Status:** done (committed `43178ee`).
 - **Owned files (C 12):** `Editor/Builders/SceneBuilder.cs`, `Editor/Builders/LakeDockBuilder.cs`, `Editor/Validation/Validators.cs`, `Editor/Validation/ValidationRunner.cs`.
 - **Tests owned:** `Tests/EditMode/ValidationTests.cs` (add three).
 - **Shared edits (C 2.6):** `SceneBuilder.cs` (T4 only in M2); `LakeDockBuilder.cs` (T4 now; T19, T22 add hook lines and T28 rebuilds it later: keep the edit to the load block at the top of `Build`); `Validators.cs` (T4; later validators go in new files); `ValidationRunner.cs` (T4 adds three lines; T14 and T20 add hooks later). `AssetPaths.cs`: no change (C 2.6 "T4 (none needed)").
@@ -498,7 +501,7 @@ Shared private helpers (in `Validators.cs`):
 
 **`ValidationRunner.Run`** adds, after the seven M1 lines and in this order: `Add(all, "MeshReferences", Validators.MeshReferences());`, `Add(all, "MissingScripts", Validators.MissingScripts());`, `Add(all, "BootstrapReferences", Validators.BootstrapReferences());`. So `build` now fails (`FG BUILDALL FAIL`) on any of them.
 
-If opening `Bootstrap.unity` additively in an EditMode run logs an error from a package (for example NGO's `NetworkManager` editor checks), the EditMode tests fail on it: stop and report. The fallback (YAML text scan of `m_Mesh: {fileID: 0}` and `m_Script` GUIDs) is a contract change (Q5).
+If opening `Bootstrap.unity` additively in an EditMode run logs an error from a package (for example NGO's `NetworkManager` editor checks), the EditMode tests would fail on it: use the YAML text scan of `m_Mesh: {fileID: 0}` and `m_Script` GUIDs instead for the affected scene(s); no stop and no report needed (ruling A-Q5, C 7.4 allows either approach). Say in the task report which approach each validator uses.
 
 ### T4.5 Steps (TDD)
 0. Baseline (0.3a) if T4 runs before T1 and it has not been recorded yet.
@@ -548,10 +551,10 @@ Implementers report the `total=` numbers from `check`; the controller compares t
 
 ---
 
-## Contract questions
+## Contract questions (all closed by controller rulings of 2026-10-11; C 15)
 
-- **Q1 (C 7.2, `LocalNetworkSession.cs` < 300 lines).** Responsibilities 1, 2, 4 and 6 kept verbatim measure about 374 lines in M1; after T1 shortens the two raise sites and T2 moves `IsCurrent` and `UninstallApprover` with responsibility 3, the main file is still about 345 (the cited pattern, `UgsNetworkSession.cs`, is 337). This plan keeps the 7.2 allocation and does not reformat. Options: accept about 345, or move responsibility 2 (`AttemptAsync`, `PostCancel`, `CancelAttempt`, `WatchTimeoutAsync`, about 75 lines) into `LocalNetworkSession.Start.cs` to reach about 270.
-- **Q2 (C 7.2, `UiFlowController.cs` < 300 lines).** With the 7.2 keep-list, plus the moves this plan adds (`ShowPauseData`, the session presenter wiring and the `Copied` toast into `UiSessionActions`; `IsMenuScreen`, `FocusedElement`, `BlurFocus`, gamepad refocus into `UiFocusRouter`), the controller still measures about 336 lines before the `IHudExtension` plumbing, so about 355-365 after it. Under 300 needs a fifth file (for example a partial `UI/UiFlowController.Screens.cs` holding `Bind`/`BindScreens` and the scene/session handlers), which is a manifest (C 12) change. This plan does not add it.
-- **Q3 (C 10/C 12).** T1 adds `Tests/EditMode/AudioBusTests.cs` (`AudioBus_NotReady_WarnsOncePerId`) because nothing else proves the DA19 fix in EditMode. The file is not in C 12; C 10 allows extra tests.
-- **Q4 (C 2.4 vs skeleton 7).** C 2.4 starts routine `test-play` at T19; skeleton 7 requires PlayMode green after each of T1-T4. This plan follows the skeleton (`check` ends T1-T4) because the Networking and UI changes in T1/T2 are only reachable from PlayMode.
-- **Q5 (C 7.4 vs the M1 header of `Validators.cs`).** `GetMonoBehavioursWithMissingScriptCount` and `MeshFilter.sharedMesh` need loaded objects, so the new validators open build scenes additively; the M1 header ("never opens a scene") is updated. If opening `Bootstrap.unity` in an EditMode run logs a package error, the fallback is a YAML text scan, which changes the 7.4 wording.
+- **Q1 (closed, A-Q1).** `LocalNetworkSession` responsibility 2 (`AttemptAsync`, `PostCancel`, `CancelAttempt`, `WatchTimeoutAsync`, about 75 lines) moves into `LocalNetworkSession.Start.cs`; the main file lands at about 270 lines (< 300). See T2.2.
+- **Q2 (closed, A-Q2).** No fifth file. C 7.2 now sets the `UiFlowController.cs` target to < 400 lines (about 350-365 expected). See T2.3.
+- **Q3 (closed, A-Q3).** `Tests/EditMode/AudioBusTests.cs` is in the T1 manifest (C 12).
+- **Q4 (closed, A-Q4).** PlayMode is green after each of T1-T4 (skeleton 7 wins); C 2.4 wording amended.
+- **Q5 (closed, A-Q5).** The validators open build scenes additively; if opening Bootstrap logs errors in EditMode, the YAML text-scan fallback is allowed (C 7.4 wording amended). See T4.4.
