@@ -253,7 +253,7 @@ Physics matrix (T15 applies): Fish ignores Player and RemotePlayer; Ragdoll igno
 public static class SlotPalette
 {
     public const int Count = 4;
-    // slot 0 coral (0.90,0.36,0.24); 1 blue (0.22,0.52,0.90); 2 green (0.30,0.72,0.32); 3 yellow (0.95,0.78,0.20); skin (0.96,0.80,0.66)
+    // slot 0 blue (0.22,0.52,0.90); 1 white (0.93,0.93,0.90); 2 green (0.45,0.82,0.35); 3 red (0.78,0.16,0.14); skin (0.96,0.80,0.66)
     public static void GetRgb(int slot, out float r, out float g, out float b); // ArgumentOutOfRangeException outside 0..3
     public static void GetSkinRgb(out float r, out float g, out float b);
 }

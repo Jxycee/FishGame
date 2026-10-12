@@ -37,7 +37,7 @@
 - [ ] **Steps:** Start the `Direct 4P` scenario. On the Main Editor, press **Host Direct**. On each additional instance, press **Join 127.0.0.1**. When all 4 stand on the dock, look at each other from every instance. In the Main Editor's Hierarchy (Play mode), expand each `PlayerFP` and check `HeadPivot/Shake/Camera`. Then walk to the `DockBell` at the end of the dock and press E.
 - **Expected:**
   - Nothing goes through UGS.
-  - Every instance sees the other 3 players. Each body shows its slot colour (slot 0 coral, 1 blue, 2 green, 3 yellow), and each has a nameplate with the right display name.
+  - Every instance sees the other 3 players. Each body shows its slot colour (slot 0 blue, 1 white, 2 green, 3 red), and each has a nameplate with the right display name.
   - On each instance, only the local player's Camera and AudioListener are enabled. The remote players' cameras are disabled, and the scene camera is off once your own player has spawned.
   - The bell rings (sound) on all 4 instances.
 - **Result:** ______
