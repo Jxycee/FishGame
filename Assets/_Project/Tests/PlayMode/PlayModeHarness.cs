@@ -27,6 +27,8 @@ namespace FishGame.Tests.PlayMode
                 "A previous test leaked the App (AppBootstrap.Current is not null); fix the first failing test's teardown first");
             Assert.That(Unity.Netcode.NetworkManager.Singleton, Is.Null,
                 "A previous test leaked a NetworkManager (NetworkManager.Singleton is not null)");
+            Assert.That(ServiceRoots.Game, Is.Null,
+                "A previous test leaked ServiceRoots.Game (a gameplay scene's GameScope survived)");
 
             AppBootstrap.SuppressDevAutoStart = true;
             SceneManager.LoadScene(SceneNames.Bootstrap, LoadSceneMode.Single);
@@ -47,7 +49,9 @@ namespace FishGame.Tests.PlayMode
             var session = app.Services.Get<INetworkSession>();
             Assert.That(session.State, Is.EqualTo(ConnState.Offline), "Solo start requested while the session is not Offline");
 
-            yield return Await(session.StartLocalAsync(false, CancellationToken.None), SessionTimeoutSeconds);
+            var cts = new CancellationTokenSource();
+            yield return Await(session.StartLocalAsync(false, cts.Token), SessionTimeoutSeconds, cts);
+            cts.Dispose();
             yield return WaitUntil(
                 () => PlayerNetState.Local != null && SceneManager.GetActiveScene().name == SceneNames.SpotLakeDock,
                 SessionTimeoutSeconds,
@@ -122,13 +126,17 @@ namespace FishGame.Tests.PlayMode
             }
 
             double deadline = Time.realtimeSinceStartupAsDouble + TeardownTimeoutSeconds;
-            while ((AppBootstrap.Current != null || Unity.Netcode.NetworkManager.Singleton != null || PlayerNetState.Active.Count > 0)
+            while ((AppBootstrap.Current != null || Unity.Netcode.NetworkManager.Singleton != null || PlayerNetState.Active.Count > 0
+                    || ServiceRoots.App != null || ServiceRoots.Game != null)
                    && Time.realtimeSinceStartupAsDouble < deadline)
             {
                 yield return null;
             }
             yield return null;
             yield return null;
+
+            // Reset before any Assert.Fail below so a failing teardown cannot leave the flag set for the next test.
+            AppBootstrap.SuppressDevAutoStart = false;
 
             if (problem == null && AppBootstrap.Current != null)
             {
@@ -141,6 +149,14 @@ namespace FishGame.Tests.PlayMode
             if (problem == null && PlayerNetState.Active.Count > 0)
             {
                 problem = $"{PlayerNetState.Active.Count} PlayerNetState(s) still registered after DestroyForTests";
+            }
+            if (problem == null && ServiceRoots.App != null)
+            {
+                problem = "ServiceRoots.App is still set after DestroyForTests";
+            }
+            if (problem == null && ServiceRoots.Game != null)
+            {
+                problem = "ServiceRoots.Game is still set (gameplay scene not unloaded)";
             }
             if (problem != null)
             {
@@ -161,7 +177,39 @@ namespace FishGame.Tests.PlayMode
             }
         }
 
-        public static IEnumerator Await(Task task, float timeoutSeconds)
+        // Frames AND realtime: a fixed sleep proves little on a slow machine, a frame count alone proves little on a fast one.
+        public static IEnumerator WaitFrames(int frames, float minRealtimeSeconds)
+        {
+            if (frames <= 0 && minRealtimeSeconds <= 0f)
+            {
+                yield break;
+            }
+
+            int startFrame = Time.frameCount;
+            double startTime = Time.realtimeSinceStartupAsDouble;
+            while (Time.frameCount - startFrame < frames || Time.realtimeSinceStartupAsDouble - startTime < minRealtimeSeconds)
+            {
+                yield return null;
+            }
+        }
+
+        // Game-time wait with a realtime guard, so a paused or zero timeScale fails fast instead of hanging.
+        public static IEnumerator WaitGameSeconds(float seconds, float realtimeTimeoutSeconds, string failMessage)
+        {
+            double deadline = Time.realtimeSinceStartupAsDouble + realtimeTimeoutSeconds;
+            float elapsed = 0f;
+            while (elapsed < seconds)
+            {
+                if (Time.realtimeSinceStartupAsDouble >= deadline)
+                {
+                    Assert.Fail($"{failMessage} (game time {elapsed:F3} of {seconds} s after {realtimeTimeoutSeconds} s realtime; timeScale {Time.timeScale})");
+                }
+                yield return null;
+                elapsed += Time.deltaTime;
+            }
+        }
+
+        public static IEnumerator Await(Task task, float timeoutSeconds, CancellationTokenSource cancelOnTimeout = null)
         {
             Assert.That(task, Is.Not.Null, "Await: task is null");
             double deadline = Time.realtimeSinceStartupAsDouble + timeoutSeconds;
@@ -169,6 +217,9 @@ namespace FishGame.Tests.PlayMode
             {
                 if (Time.realtimeSinceStartupAsDouble >= deadline)
                 {
+                    cancelOnTimeout?.Cancel();
+                    // Observe a late fault so it cannot surface as an unobserved task exception during a later test.
+                    task.ContinueWith(t => { var unused = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
                     Assert.Fail($"Task did not complete within {timeoutSeconds} s");
                 }
                 yield return null;

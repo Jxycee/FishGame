@@ -1,5 +1,7 @@
 // Authority: test-only. Solo start/leave/restart on the real stack: host-authoritative solo session on 127.0.0.1, port 7790 (plain UnityTransport).
 using System.Collections;
+using System.Threading;
+using System.Threading.Tasks;
 using FishGame.App;
 using FishGame.Core;
 using FishGame.Gameplay;
@@ -28,7 +30,7 @@ namespace FishGame.Tests.PlayMode
             yield return PlayModeHarness.StartSoloAndWaitForPlayer();
 
             // Give a duplicate spawn (OnLoadEventCompleted plus OnSynchronizeComplete) time to show up before counting.
-            yield return new WaitForSecondsRealtime(0.5f);
+            yield return PlayModeHarness.WaitFrames(30, 0.5f);
 
             var app = AppBootstrap.Current;
             var session = app.Services.Get<INetworkSession>();
@@ -98,6 +100,65 @@ namespace FishGame.Tests.PlayMode
             Assert.That(PlayerNetState.Local, Is.Not.Null, "Restart after leave did not spawn a local player");
             Assert.That(PlayerNetState.Active.Count, Is.EqualTo(1), "Exactly one player after restart");
             AssertSoloTransport(nm, local, "restart");
+        }
+
+        [UnityTest]
+        public IEnumerator Solo_LeaveRightAfterConnected_EndsOnMenu()
+        {
+            yield return PlayModeHarness.LoadBootstrapAndWaitForMenu();
+
+            var app = AppBootstrap.Current;
+            var session = app.Services.Get<INetworkSession>();
+            var local = app.Services.Get<LocalNetworkSession>();
+            local.Port = NetworkConstants.TestPort;
+            var nm = app.NetworkManager;
+            Assert.That(session.State, Is.EqualTo(ConnState.Offline), "Session must start Offline");
+
+            var cts = new CancellationTokenSource();
+            Task start = session.StartLocalAsync(false, cts.Token);
+
+            // Inline on purpose: the frame that sees Connected must not pass through a nested enumerator before LeaveAsync.
+            double deadline = Time.realtimeSinceStartupAsDouble + 20.0;
+            while (session.State != ConnState.Connected && !start.IsCompleted)
+            {
+                if (Time.realtimeSinceStartupAsDouble >= deadline)
+                {
+                    Assert.Fail("Solo start never reached Connected");
+                }
+                yield return null;
+            }
+
+            Assert.That(start.IsFaulted, Is.False, "Solo start faulted before Connected: " + start.Exception);
+            Assert.That(session.State, Is.EqualTo(ConnState.Connected), "Session must be Connected on the detection frame");
+            string sceneAtLeave = SceneManager.GetActiveScene().name;
+            TestContext.WriteLine("scene at leave: " + sceneAtLeave);
+            Task leave = session.LeaveAsync();
+
+            yield return PlayModeHarness.Await(leave, 20f);
+            yield return PlayModeHarness.Await(start, 20f);
+            cts.Dispose();
+
+            yield return PlayModeHarness.WaitUntil(
+                () => session.State == ConnState.Offline
+                      && !nm.ShutdownInProgress
+                      && !nm.IsListening
+                      && PlayerNetState.Local == null
+                      && SceneManager.GetActiveScene().name == SceneNames.Menu
+                      && ServiceRoots.Game == null,
+                20f,
+                "Did not settle on an idle Menu after leaving right after Connected");
+
+            // A late scene activation or a late spawn would show up inside this window; SceneFlow must have sent it back.
+            yield return PlayModeHarness.WaitFrames(30, 1.0f);
+
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo(SceneNames.Menu), "Active scene must be Menu after the stability window");
+            Assert.That(session.State, Is.EqualTo(ConnState.Offline), "Session must stay Offline");
+            Assert.That(PlayerNetState.Local, Is.Null, "No local player may appear after leaving");
+            Assert.That(PlayerNetState.Active.Count, Is.EqualTo(0), "No players may be registered after leaving");
+            Assert.That(ServiceRoots.Game, Is.Null, "No GameScope may remain after leaving");
+            Assert.That(nm.IsListening, Is.False, "NGO must not be listening after leaving");
+            Assert.That(nm.ShutdownInProgress, Is.False, "NGO ShutdownInProgress must be false after leaving");
+            Assert.That(app.Services.Get<IInputService>().MenuOpen, Is.True, "The main menu must be showing");
         }
 
         private static void AssertNgoIdle(Unity.Netcode.NetworkManager nm, string when)
