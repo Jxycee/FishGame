@@ -52,7 +52,7 @@ namespace FishGame.EditorTools
                 CastChargeTime = 1.0f, ChargePingPong = true, CastMinDist = 2.5f, MinLandDepth = 0.8f,
                 BiteWaitMin = 4f, BiteWaitMax = 18f, MinBiteWait = 1.0f, HookBeat = 0.25f, LandDistance = 2.0f,
                 ReelStrainBurst = 0.30f, CounterRelief = 0.5f, SteerStrain = 0.03f, OutOfWindowStrain = 0.20f, SpoolStrain = 0.50f, SpoolExtra = 12f,
-                RelaxRate = 0.45f, RelaxWhileReeling = 0.10f, ReelBurstPenalty = 1.0f, DiveRunMult = 1.5f,
+                RelaxRate = 0.45f, RelaxWhileReeling = 0.20f, ReelBurstPenalty = 1.0f, DiveRunMult = 1.5f,
                 SnapGrace = 0.25f, SnapGraceAssist = 0.75f, StrainScale = 1.0f, StrainScaleAssist = 0.6f,
                 PinEscapeTime = 5f, SlackEscapeTime = 12f, FishStaminaRegen = 0.04f, CalmCenterPull = 0.15f, LateralMaxDeg = 75f,
                 HookedLeash = 3f, JunkDragSpeed = 3f,
@@ -90,8 +90,8 @@ namespace FishGame.EditorTools
                 ("steady", "Steady", Profile(0.30f, 0.60f, 0.30f, 0.08f, 1.0f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0.6f, 0f, 0f, 0.5f, 0f)),
                 ("darter", "Darter", Profile(0.45f, 0.70f, 0.40f, 0.07f, 0.3f, 0.8f, 0.4f, 0.9f, 1.0f, 0f, 0f, 0f, 0f, 0.3f, 0f)),
                 ("bulldog", "Bulldog", Profile(0.60f, 0.60f, 0.50f, 0.06f, 1.0f, 3.0f, 2.0f, 4.0f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f)),
-                ("thrasher", "Thrasher", Profile(0.70f, 1.00f, 0.60f, 0.09f, 1.0f, 2.5f, 1.5f, 3.0f, 0.5f, 0f, 0f, 0f, 0f, 0.5f, 0.3f)),
-                ("runner", "Runner", Profile(0.85f, 0.80f, 0.80f, 0.05f, 1.0f, 2.0f, 2.5f, 4.0f, 0.1f, 0.25f, 0.8f, 0f, 0f, 0.5f, 0f)),
+                ("thrasher", "Thrasher", Profile(0.70f, 1.00f, 0.60f, 0.035f, 1.0f, 2.5f, 1.5f, 3.0f, 0.5f, 0f, 0f, 0f, 0f, 0.5f, 0.3f)),
+                ("runner", "Runner", Profile(0.85f, 0.80f, 0.80f, 0.035f, 1.0f, 2.0f, 2.5f, 4.0f, 0.1f, 0.25f, 0.8f, 0f, 0f, 0.5f, 0f)),
             };
             s_profiles = new ReadOnlyCollection<(string, string, FishFightProfile)>(profiles);
 

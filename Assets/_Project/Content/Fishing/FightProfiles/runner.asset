@@ -17,7 +17,7 @@ MonoBehaviour:
   pullStrength: 0.85
   lateralSpeed: 0.8
   runSpeed: 0.8
-  staminaDrain: 0.05
+  staminaDrain: 0.035
   calmMin: 1
   calmMax: 2
   burstMin: 2.5

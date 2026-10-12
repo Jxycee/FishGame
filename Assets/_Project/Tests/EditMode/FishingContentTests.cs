@@ -19,7 +19,12 @@ namespace FishGame.Tests.EditMode
         // Values T15 retuned away from the spec tables. Key "<category>.<id>.<field>" (profile.thrasher.staminaDrain, rod.rod_twig.lineStrength,
         // bait.bait_worm.rating, species.carp.baseValue, junk.old_boot.valueCoins) or "tuning.<field>" (tuning.snapGrace). Value = the tuned seed.
         // T15 may edit only this map (ruling D-Q2); the controller amends the spec tables afterwards.
-        static readonly Dictionary<string, float> TunedDeviations = new Dictionary<string, float>();
+        static readonly Dictionary<string, float> TunedDeviations = new Dictionary<string, float>
+        {
+            { "tuning.relaxWhileReeling", 0.20f },
+            { "profile.thrasher.staminaDrain", 0.035f },
+            { "profile.runner.staminaDrain", 0.035f },
+        };
 
         static float E(string key, float spec)
         {

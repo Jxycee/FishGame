@@ -28,7 +28,7 @@ MonoBehaviour:
   spoolStrain: 0.5
   spoolExtra: 12
   relaxRate: 0.45
-  relaxWhileReeling: 0.1
+  relaxWhileReeling: 0.2
   reelBurstPenalty: 1
   diveRunMult: 1.5
   snapGrace: 0.25
