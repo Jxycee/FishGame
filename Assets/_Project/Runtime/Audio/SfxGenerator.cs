@@ -20,7 +20,7 @@ namespace FishGame.Runtime
 
         public void GenerateAll(ulong seed)
         {
-            IReadOnlyList<SfxRecipe> recipes = SfxRecipes.M1;
+            IReadOnlyList<SfxRecipe> recipes = SfxRecipes.All;
             for (int i = 0; i < recipes.Count; i++)
             {
                 SfxRecipe recipe = recipes[i];
