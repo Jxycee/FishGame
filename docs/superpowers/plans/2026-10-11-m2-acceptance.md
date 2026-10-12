@@ -402,10 +402,15 @@ Add rows as needed. **Proposed bar (you confirm it):** 70% or more correct overa
 - **Also consider (can combine with A or B):** a minimum fight time or lead-in gate before a fish can be landed, and a minimum fight duration before the clean bonus can be earned.
 - **Until decided:** the fun-gate stats print an "instant landings" count; testers should cast at least half charge.
 - **Decision and date:** A, 2026-10-12 (user). Spec R67: the cast distance is measured from the rod tip (`castTipReach` constant on owner and host). Note: at minimum charge the owner line start becomes about `castMinDist` (2.5 m) against `landDistance` 2.0 m, so the very shortest casts are still short fights; the implementation report records the measured minimum-cast fight time per rod and whether a lead-in gate is still wanted.
+  - **Decided 2026-10-12 (user): no lead-in gate and no host landed/clean minimum - players mostly cast long.** The remaining short-cast fights (minimum charge 0.10) are accepted as they are.
+  - **Valid-landing ring moved outward:** with the cast measured from the rod tip, the landing is `castTipReach` further from the player, so the valid-landing ring moved 2.4 m outward. Near-shore minimum casts that used to land on the shore or too shallow are now valid.
+  - **Final fix wave (same day):** the host now rejects a charge below `MinChargeNorm` (0.10) with `BadCharge` (it was only range-checked to [0, 1]), and the release frame no longer advances the charge, so the marker the player saw is the cast the host gets.
   - **Measured after R67 (`9278b2e`):** in-game minimum charge is 0.10 (`MinChargeNorm`; charge 0 is not castable). At charge 0.10 the owner start line is 3.65-5.25 m across the shipped rods, and with an always-reel bot the time to Landed is 2.4-3.0 s at the minimum and 2.6-4.3 s at the median. Clean claims are 48-77% at charge 0.10.
 
 ### F.2 Bot report (criterion 8): T15 `FishingBots`, 200 seeds per cell
-Command: `Tools\unity.ps1 test-edit -Filter "FishGame.Tests.EditMode.FishingBots"`. Result: 9 of 9 passed, matrix time 2.4 s. Columns: `land` = landed share, `snap` = snapped share, `len` = fight length of landed fights (p10 / median / p90, seconds), `snapT` = median time to the snap, `near-snap rec>=1` = share of fights with at least one near-snap recovery, `clean` = the printed clean pair (claimed share / landed-and-clean share).
+Command: `Tools\unity.ps1 test-edit -Filter "FishGame.Tests.EditMode.FishingBots"`. Result: 9 of 9 passed, matrix time 2.4 s.
+
+**Re-run 2026-10-12 after R67 (`9278b2e`) and the final fix wave (HEAD `f25c646`): every printed number below is unchanged, no target fails, no retune.** The bots start every fight at `FightSim` start line = `rod.CastMaxDist` (18 m Handmade, 14 m Twig), which is already the rod-tip basis that R67 made the cast distance, so moving the origin of the cast distance changes only the other charges, which the bots do not model. The R67 effect on short casts is measured in section F.1 (always-reel bot, charge 0.10: 2.4-3.0 s to Landed, 2.6-4.3 s median). The matrix, signature, fun-gate and tuning lines below are therefore the current ones. Columns: `land` = landed share, `snap` = snapped share, `len` = fight length of landed fights (p10 / median / p90, seconds), `snapT` = median time to the snap, `near-snap rec>=1` = share of fights with at least one near-snap recovery, `clean` = the printed clean pair (claimed share / landed-and-clean share).
 
 **Asserted targets (all PASS):**
 
@@ -502,6 +507,7 @@ No asserted bot target failed. These are the marginal or informational numbers t
 4. **Rhythm snap rate is 0.0%** in every Rhythm cell, so an expert human may find the game too safe; the 10-30% line is a human metric.
 5. **Clean catches are rare for a Rhythm bot on the hard profiles:** Thrasher Handmade weight 0.9 clean 18.5%, Twig 5% / 0%; Runner Handmade 42.5% / 17.0%, Twig 6% / 1%. Informational (R64).
 6. **Greedy Darter, Twig, weight 0.9** snaps 25.0%; Greedy Steady, Twig, snaps 2.0-3.5%. Informational.
+7. **R67 re-run (2026-10-12): no change.** The bot matrix is identical after R67 and the final fix wave (the bots start at `castMaxDist` from the tip). Not covered by the bots, so read it in the fun gate: short casts (charge 0.10 to about 0.25) end in 2.4-4.3 s with an always-reel bot (F.1). Per the F.1 decision there is no lead-in gate and no host landed/clean minimum; if testers still find short casts too easy, that is a new decision, not an open bug.
 
 ### F.4 Skeleton section 8 risks and status
 | # | Risk | Status 2026-10-12 |
