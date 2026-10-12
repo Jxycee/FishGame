@@ -137,7 +137,7 @@ For every row: **Steps**, **Expected** (always "the rod is Idle within 3 s, no s
   - Expected: recall, no bait used.
   - Result: ______
 - [ ] **Walking away while Waiting**
-  - Steps: cast about 15 m, then walk back along the dock to the shore until you are past `maxLineOut` (Handmade 18 + 12 = 30 m).
+  - Steps: cast about 15 m, then walk back along the dock to the shore until you are past `maxLineOut`. R67: the limit is measured from the rod tip (Handmade 18 + 12 = 30 m), so it trips at about 32.4 m from the player to the bobber (30 m + `castTipReach` 2.4 m).
   - Expected: auto-reel, bait refunded (check the F3 count).
   - Result: ______
 - [ ] **Fish over land or dock (cosmetic)**
@@ -188,6 +188,8 @@ For every row: **Steps**, **Expected** (always "the rod is Idle within 3 s, no s
 
 ### Columns (contract 5.3)
 `profile,species,weightG,castDist,castToBite,fightSec,outcome,reason,nearSnapRecoveries,maxTension,rod,assist,clean,pity`
+
+`castDist` is the cast distance from the rod tip (R67, `9278b2e`); the horizontal origin-to-landing distance is `castDist` + `castTipReach` (2.4 m). Rows logged before `9278b2e` measured it from the player.
 
 `outcome` and `reason` are enum names (Landed, Snapped, Escaped, Cancelled / None, Missed, Pinned, ThrewHook, Dropped, Timeout, Invalid, Disconnected). `assist`, `clean` and `pity` are 1 or 0. One row per cast that reached Waiting (cancels and misses included). Delete a file to start a fresh log.
 
@@ -400,6 +402,7 @@ Add rows as needed. **Proposed bar (you confirm it):** 70% or more correct overa
 - **Also consider (can combine with A or B):** a minimum fight time or lead-in gate before a fish can be landed, and a minimum fight duration before the clean bonus can be earned.
 - **Until decided:** the fun-gate stats print an "instant landings" count; testers should cast at least half charge.
 - **Decision and date:** A, 2026-10-12 (user). Spec R67: the cast distance is measured from the rod tip (`castTipReach` constant on owner and host). Note: at minimum charge the owner line start becomes about `castMinDist` (2.5 m) against `landDistance` 2.0 m, so the very shortest casts are still short fights; the implementation report records the measured minimum-cast fight time per rod and whether a lead-in gate is still wanted.
+  - **Measured after R67 (`9278b2e`):** in-game minimum charge is 0.10 (`MinChargeNorm`; charge 0 is not castable). At charge 0.10 the owner start line is 3.65-5.25 m across the shipped rods, and with an always-reel bot the time to Landed is 2.4-3.0 s at the minimum and 2.6-4.3 s at the median. Clean claims are 48-77% at charge 0.10.
 
 ### F.2 Bot report (criterion 8): T15 `FishingBots`, 200 seeds per cell
 Command: `Tools\unity.ps1 test-edit -Filter "FishGame.Tests.EditMode.FishingBots"`. Result: 9 of 9 passed, matrix time 2.4 s. Columns: `land` = landed share, `snap` = snapped share, `len` = fight length of landed fights (p10 / median / p90, seconds), `snapT` = median time to the snap, `near-snap rec>=1` = share of fights with at least one near-snap recovery, `clean` = the printed clean pair (claimed share / landed-and-clean share).

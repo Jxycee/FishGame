@@ -840,7 +840,7 @@ Units: metres and seconds. The fight runs at a fixed **50 Hz (dt 0.02 s)** from 
 | Casting / Waiting | `CastResult.valid == false` | Idle | Recall animation (bobber bounces back) |
 | Casting | no `CastResult` within 3 s (`resultTimeout`) | Idle | Recall; `CancelRpc(castId)` so the host refunds if it accepted |
 | Waiting | Secondary pressed (edge) | Idle | `CancelRpc`; bait refunded |
-| Waiting | player–bobber distance > `maxLineOut` | Idle | Auto reel-in; `CancelRpc`; refunded |
+| Waiting | line out past `maxLineOut`: horizontal root-to-bobber distance minus `castTipReach` > `maxLineOut` (R67: the limit is measured from the rod tip) | Idle | Auto reel-in; `CancelRpc`; refunded |
 | Waiting | bite timer ≥ `biteWait` | Bite | Bite cue; `RodEventRpc(Bite)` |
 | Bite | `hookWindow == 0`, after `hookBeat` 0.25 s | Hooked | `HookedRpc(castId)`; `FightSim` starts from `fightSeed` |
 | Bite | `hookWindow > 0`, Primary within window | Hooked | `HookedRpc(castId)` |
@@ -1008,7 +1008,7 @@ M2 species also fill the 12.3 presentation fields (`displayName`, `bodyShape`, `
 
 ### 9.7 Rods, bait, line
 
-**`RodDef`** (mirrored as Core `RodStats`): `id`, `tier` (0–3), `castMaxDist` (also sets `maxLineOut = castMaxDist + 12`), `reelSpeed` (m/s in Calm), `lineStrength` (divides positive strain), `angleWindow`, `steerRate`, `relaxMult`, `shopCost` (coins at Night Camp shops, M4; 0 for the starter), `firstCamp` (the first Night Camp where it is stocked).
+**`RodDef`** (mirrored as Core `RodStats`): `id`, `tier` (0-3), `castMaxDist` (also sets `maxLineOut = castMaxDist + 12`; both are distances from the rod tip, R67, so a Handmade line may reach 30 m from the tip, about 32.4 m from the player), `reelSpeed` (m/s in Calm), `lineStrength` (divides positive strain), `angleWindow`, `steerRate`, `relaxMult`, `shopCost` (coins at Night Camp shops, M4; 0 for the starter), `firstCamp` (the first Night Camp where it is stocked).
 
 | Rod | Tier | castMaxDist | reelSpeed | lineStrength | angleWindow | steerRate | relaxMult | In-run source [tune] |
 |---|---|---|---|---|---|---|---|---|
@@ -1108,7 +1108,7 @@ lengthMm = round(400 * cbrt(weightG / 1000.0) * fish.lengthShapeK)
 **Host validation (`FishingHostLedger`, `CatchValidator`)**
 - **CastRequest:** no `ActiveCast` for this player; `castId` > last accepted; `chargeNorm` in [0,1]; `origin` within 3 m of the host's view of the player; bait available (bare hook always); recomputed validity passes (from M3 also: grid cell is water, minute < 1200; from M4 also: run phase is Day, because LastCast can start before minute 1200 through the vote; casts are therefore refused in Briefing, LastCast, Settle, NightCamp, SkillPick, InfiniteVote, Result and the Hub, and infinite days use the same Day guard). Distance validity uses the host's `castMaxDist` **including the player's Long Arm skill** (14.8); the owner's marker uses the same value, so honest casts never disagree. Accept → consume bait, roll, create `ActiveCast`, reply valid. Reject → reply invalid with a reason, no bait used.
 - **Cancel:** castId matches and phase is Waiting → refund, clear.
-- **Hooked:** castId matches, phase Waiting, `now − tAccepted ≥ tFlight + biteWait − hookTolerance` (0.75 s). Too early → resolve Escaped(Invalid) and commit. On accept the host sets `ActiveCast.lineLength0` = horizontal distance from **its current view of the player** to the landing point, minus 1.5 m slack (floor `landDistance`). The player may walk toward the bobber while Waiting, so the cast-time distance would wrongly fail an honest fast land.
+- **Hooked:** castId matches, phase Waiting, `now - tAccepted >= tFlight + biteWait - hookTolerance` (0.75 s). Too early -> resolve Escaped(Invalid) and commit. On accept the host sets `ActiveCast.lineLength0` = horizontal distance from **its current view of the player** to the landing point, minus `HookedLineSlack` 3.1 m (floor `landDistance`; the rig's max tip reach 2.52 m + 0.5 m margin), then raised to the walk bound `castTipReach + castDistance - sprintSpeed x elapsed - 3.1` (origin-to-landing distance, R67). The player may walk toward the bobber while Waiting, so the cast-time distance would wrongly fail an honest fast land.
 - **Result:** castId matches; phase Hooked (or Waiting for Missed). `Landed` requires `now − tHooked ≥ 0.8 × (lineLength0 − landDistance) / rod.reelSpeed − 0.5 s` (physical minimum on the host clock; junk uses `junkDragSpeed`; `rod` is the host's `NetRodIndex`, never a value the owner reports; skills never change `reelSpeed`, so the floor needs no skill term. Skills that change the fight, Iron Grip and Steady Nerves, alter only owner-side `FightSim` inputs, which the host does not replay). Landed → add to the creel (9.10), append to the catch log, `CatchAnnouncedRpc`, publish `FishCaught` on the host event bus. Snapped/Escaped → announce Lost (if hooked), discard the roll. Validation failure → resolve Escaped(Invalid) anyway so the owner never stalls. Always `CommitRpc` then clear.
 - **Timeouts** (NetworkVariables send only when dirty, so the host never relies on silence): disconnect clears the cast with no commit (`OnClientDisconnectCallback`); stuck in Waiting after `tFlight + biteWait + 30 s` → refunded cancel; stuck in Hooked after `maxFightTime` 240 s → Escaped(Timeout) and commit.
 - **Orphan messages:** a `HookedRpc`, `ResultRpc` or `CancelRpc` whose castId has no `ActiveCast` (already resolved by the host) gets an immediate `CommitRpc(castId, accepted = false, finalOutcome)` repeating the stored resolution. The owner then never waits on a cast the host has cleared.
@@ -1218,7 +1218,7 @@ Also: Steady (Rhythm) median 15–30 s; Runner (Rhythm) median 60–110 s, snaps
 |---|---|
 | Invalid spot under the marker | Release does nothing: thunk, stay Ready, no bait |
 | Owner/host disagree on validity | Host wins; recall; no bait |
-| Walking away while Waiting | Allowed; past `maxLineOut` auto-reel (refunded) |
+| Walking away while Waiting | Allowed; past `maxLineOut` (measured from the rod tip: root-to-bobber minus `castTipReach`, R67) auto-reel (refunded) |
 | Fish over land or dock (cosmetic) | View samples water every 0.2 s and holds the last valid water point; sim unaffected |
 | Fish takes all the line | Spooled: clamped, `spoolStrain` applies; tire it first |
 | Alt-tab mid-fight | Neutral input → tension relaxes; Run In Background keeps the session alive; rumble off |
@@ -2152,7 +2152,7 @@ any       --shoved while immune, Downed or Carried--------> ignored
 3. Fishing: `FishingRodNetwork` (RPCs 9.9, `NetRodState`, bait vars), `FishingRodController` (fixed-step tick, input context, movement lock while hooked, stow/equip with `NetTool`), creel writes on the host (`NetCreel`), debug loadout and selectors (rod, bait, forced bite, twitchy toggle).
 4. Presentation: `MeshBuilder` props, Toon/Water/Line/GradientSky shaders + `ShaderValidator`, `RenderingSetupBuilder`, `WaterTimeDriver`, `RippleField`, `RodPresenter` (rod bend, line sag/dash), bobber view (wave bob), splash particles, `FishingFeedback` (audio, camera trauma, rumble), catch reveal (procedural fish mesh), remote cast arc.
 5. UI: charge ring, in-world cast marker (valid/invalid shapes), captions, line gauge (Arc/Bar), creel count, catch toasts, dev overlay (F3), settings (gauge, captions, assist).
-6. Telemetry: in editor/dev builds each fight appends to `Application.persistentDataPath/fight-log.csv` (outside the repo): profile, species, weightG, castDist, castToBite, fightSec, outcome, reason, nearSnapRecoveries, maxTension, rod, assist.
+6. Telemetry: in editor/dev builds each fight appends to `Application.persistentDataPath/fight-log.csv` (outside the repo): profile, species, weightG, castDist (the cast distance from the rod tip, R67; origin-to-landing is `castDist + castTipReach`), castToBite, fightSec, outcome, reason, nearSnapRecoveries, maxTension, rod, assist.
 7. Lake-dock rebuilt with MeshBuilder props and the water shader; ripple debug key.
 
 **M2 tests**

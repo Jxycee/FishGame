@@ -605,7 +605,7 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
 |---|---|---|
 | Invalid spot under the marker | Aim at the dock or the shore, charge, release | Thunk, marker flash, stay Ready, bait count unchanged |
 | Owner/host disagree on validity | Hard to force by hand. Client under the simulator, strafing along the shore edge while releasing at a marginal spot. Covered by `RodStateMachine_Casting_InvalidResult_RecallsToIdle` / `_Waiting_InvalidResult_RecallsToIdle` | Recall, no bait used |
-| Walking away while Waiting | Cast about 15 m, walk back along the dock to the shore until past `maxLineOut` (Handmade 18 + 12 = 30 m) | Auto-reel, bait refunded (F3 count) |
+| Walking away while Waiting | Cast about 15 m, walk back along the dock to the shore until past `maxLineOut` (R67: Handmade 18 + 12 = 30 m measured from the rod tip, about 32.4 m from the player) | Auto-reel, bait refunded (F3 count) |
 | Fish over land or dock | During a fight, let a side run swing the fish point toward the dock | The bobber holds the last water point; the fight is unaffected |
 | Fish takes all the line | Twig rod (F4), raw meat (F5), cast long, hook a big fish and never reel | Spooled: the line clamps and tension rises (`spoolStrain`); tiring the fish first recovers it |
 | Alt-tab mid-fight | Alt-tab for 5 s while Hooked, with a gamepad rumbling | Neutral input, tension relaxes, the session stays alive, rumble stops on focus loss |
@@ -623,7 +623,7 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
   - MPPM clones and `-dev-profile` players write `fight-log_<name>.csv`.
   - The friend sends their CSV. Collect every `fight-log*.csv` into one scratch folder.
 - **Coverage.** Worm and grub reach only bluegill, perch and carp (rating vs `minBaitRating`). Trout needs shrimp or raw meat. Catfish needs raw meat and a landing at least 2.5 m deep. Testers rotate baits with F5, cast long, and aim for **at least 5 hooked fights per profile**. Leave F6/F7 **off** during gate sessions (forced bites distort cast-to-bite).
-- **Columns** (C 5.3): `profile,species,weightG,castDist,castToBite,fightSec,outcome,reason,nearSnapRecoveries,maxTension,rod,assist,clean,pity`.
+- **Columns** (C 5.3): `profile,species,weightG,castDist,castToBite,fightSec,outcome,reason,nearSnapRecoveries,maxTension,rod,assist,clean,pity`. `castDist` is the cast distance from the rod tip (R67); origin-to-landing is `castDist` + 2.4 m.
 - **Stats recipe** (the doc spells out a PowerShell 5.1 snippet; the T30 implementer writes it and tests it on a hand-made 6-row CSV in the scratchpad):
   1. Import every `fight-log*.csv` (`Import-Csv`). Parse numbers with `CultureInfo.InvariantCulture`.
   2. Read `outcome` and `reason` as enum names. If they are digits, map them through the C 7.5 enum order. Read `assist` and `clean` as `true`/`1` (case-insensitive).

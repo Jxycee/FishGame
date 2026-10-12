@@ -334,7 +334,7 @@ Shader "FishGame/Toon"
                 half3 vertexFactor = lerp(input.color.rgb, 2.0h * input.color.rgb, _JitterEncoded);   // BF-7: grey meshes have r == g == b
                 half3 baseRgb = _UsePalette > 0.5h ? FG_PaletteColor(input.uv1.x) * vertexFactor : vertexFactor;
                 half3 albedo = baseRgb * _BaseColor.rgb;
-                half grey = dot(albedo, half3(0.299h, 0.587h, 0.114h));
+                half grey = dot(albedo, half3(0.2126h, 0.7152h, 0.0722h));   // Rec.709 luma (linear colours); was 0.299/0.587/0.114 until the polish batch 1e82274
                 output.albedo = lerp(albedo, grey.xxx, _Desaturate);
                 output.fogFactor = FG_FogFactor(pos.positionCS.z);
                 return output;

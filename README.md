@@ -136,7 +136,7 @@ In the editor and in development builds each cast that reaches Waiting appends o
 
 The file name carries the instance profile: `fight-log.csv` for the main editor, and `fight-log_<name>.csv` for `-dev-profile <name>` players and for MPPM clones. The automated test runs use `-dev-profile fgtest`, so they write `fight-log_fgtest.csv`. Delete the file to start a fresh log.
 
-Columns: `profile,species,weightG,castDist,castToBite,fightSec,outcome,reason,nearSnapRecoveries,maxTension,rod,assist,clean,pity`. The fun-gate stats recipe (a PowerShell script) is in the M2 acceptance doc, section D.
+Columns: `profile,species,weightG,castDist,castToBite,fightSec,outcome,reason,nearSnapRecoveries,maxTension,rod,assist,clean,pity`. `castDist` is the cast distance from the rod tip (add the 2.4 m tip reach for origin-to-landing). The fun-gate stats recipe (a PowerShell script) is in the M2 acceptance doc, section D.
 
 ## Generated scenes are disposable
 

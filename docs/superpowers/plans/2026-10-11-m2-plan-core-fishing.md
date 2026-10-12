@@ -697,7 +697,7 @@ namespace FishGame.Core
         public float StateTime { get; private set; }
         public uint CastId { get; private set; }
         public float ChargeNorm { get; private set; }
-        public float CastDistance { get; private set; }
+        public float CastDistance { get; private set; }   // R67: the cast distance FROM THE ROD TIP; the landing is CastTipReach further from the root
         public bool MarkerOn => State == RodState.Ready || State == RodState.Charging;
         public bool HasResult { get; private set; }
         public FishingRoll Roll { get; private set; }
@@ -776,7 +776,7 @@ namespace FishGame.Core
         private void TickWaiting(float dt, in RodFrame f)
         {
             if (f.SecondaryPressed) { Recall(sendCancel: true); return; }             // row: Waiting / Secondary pressed
-            if (f.PlayerToBobber > _rod.MaxLineOut(_t.SpoolExtra)) { Recall(sendCancel: true); return; } // row: maxLineOut
+            if (f.PlayerToBobber - FishingConstants.CastTipReach > _rod.MaxLineOut(_t.SpoolExtra)) { Recall(sendCancel: true); return; } // row: maxLineOut (R67: measured from the rod tip, so root-to-bobber minus the fixed CastTipReach)
             BiteTimer += dt;
             while (_nibblesDone < Roll.NibbleCount && _nibblesDone < FishingConstants.MaxNibbleSlots
                    && BiteTimer >= NibbleAt(_nibblesDone))
@@ -997,7 +997,7 @@ namespace FishGame.Core
 | `RodStateMachine_Waiting_InvalidResult_RecallsToIdle` | `ToWaiting`, `OnCastResult(1, false, ...)` | Idle, Recall, no SendCancel |
 | `RodStateMachine_Casting_ResultTimeout_RecallsAndSendsCancel` | `ToCasting`, Tick(1.0) x 2, then Tick(1.0) | Casting at 2.0 s; at 3.0 s Idle with SendCancel{CastId 1} and Recall; a late `OnCastResult(1, true, ...)` and then `OnCommit(1, true, Cancelled, None)` leave `IgnoredEventCount` at 0 |
 | `RodStateMachine_Waiting_SecondaryPressed_CancelsToIdle` | `ToWaiting`, Tick(0.1, SecondaryPressed), then `OnCommit(1, true, Cancelled, None)` | Idle, SendCancel + Recall; the commit reply leaves `IgnoredEventCount` at 0 and the state Idle |
-| `RodStateMachine_Waiting_BeyondMaxLineOut_AutoReelsAndCancels` | `ToWaiting`; PlayerToBobber 30 gives Waiting; 30.5 | Idle, SendCancel + Recall |
+| `RodStateMachine_Waiting_BeyondMaxLineOut_AutoReelsAndCancels` | `ToWaiting`; R67: PlayerToBobber `CastTipReach` + 29.99 gives Waiting (the limit is 30 m from the tip); `CastTipReach` + 30.5 | Idle, SendCancel + Recall |
 | `RodStateMachine_Waiting_BiteTimerElapsed_EntersBiteAndSendsBiteEvent` | `ToWaiting`, Tick(1.9) then Tick(0.2) | Waiting, then Bite with cue Bite and `SendRodEvent{Bite}` |
 | `RodStateMachine_Bite_AutoHookAfterHookBeat_EntersHookedAndStartsFight` | `ToBite`, Tick(0.2) then Tick(0.1) | Bite at 0.2; Hooked at 0.3; effects in order: HookSet cue, SendHooked{1}, SendRodEvent{HookSet}, StartFight; `Fight` non-null, `Fight.State.LineLength == 10` |
 | `RodStateMachine_Bite_PrimaryInsideHookWindow_EntersHooked` | roll hookWindow 1.0; `ToBite`; Tick(0.5, PrimaryPressed) | Hooked |
@@ -1069,7 +1069,7 @@ Filter: `FishGame.Tests.EditMode.RodStateMachineTests`.
   - Landed-floor validation and everything else is unchanged by Pity.
 - **`EnsureSlot` / `GetLoadout`:** `BaitCount` = the stock of the selected bait, or `UnlimitedBaitCount` (0xFFFF) when unlimited.
 - **`SelectBait` / `SelectRod`:** false if the index is out of range or that client has an `ActiveCast`. Otherwise set it on the slot and return true.
-- **`TryComputeLanding(slot, req, out x, out z)`:** false for an unknown slot or a charge that is NaN or outside [0, 1]. Otherwise `distance = CastMath.Distance(charge, CastMinDist, Rods[slot rod].CastMaxDist)` and `CastMath.Landing(req.OriginX, req.OriginZ, req.YawDeg, distance, ...)`.
+- **`TryComputeLanding(slot, req, out x, out z)`:** false for an unknown slot or a charge that is NaN or outside [0, 1]. Otherwise `distance = CastMath.Distance(charge, CastMinDist, Rods[slot rod].CastMaxDist)` and `CastMath.Landing(req.OriginX, req.OriginZ, req.YawDeg, distance, ...)`. R67: `distance` is from the rod tip and the shared `CastMath.Landing` adds `FishingConstants.CastTipReach` inside, so owner and host stay bit-identical.
 - **`CatchValidator.ValidateCast`:** order as in C 7.9.
   - `!view.CastingAllowed` gives `NotAllowedNow`.
   - `hasActive` gives `ActiveCast`.

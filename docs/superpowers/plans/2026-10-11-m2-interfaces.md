@@ -43,7 +43,7 @@ Every type, file, asset, constant, event, RPC and test that two or more tasks us
 | G6 | `Fish_Perch.fbx.meta`: `materialImportMode: 2`, `globalScale: 1`, `useFileScale: 1`, `bakeAxisConversion: 0`. The spike import is identity transform, scale 1, nose +Z, flat normals. T20's postprocessor sets material import to None. The spike perch has 5 submeshes and no vertex colours (ruling G-Q6); the staged `Art/Export/Fish_Perch.fbx` (one submesh, per-face LINEAR vertex colours) replaces it in T29. | `Content/Models/Fish_Perch.fbx.meta` |
 | G7 | `Pcg32.Range(float, float)` callers today: `AmbienceBed` (lap interval) and `LakeDockBuilder` (rocks, trees). The T1 fix keeps the draw count and every value except the exact-max edge, so the lake layout is byte-identical. | grep |
 | G8 | Isolation today: `LocalNetworkSession.OnStateMachineChanged`/`RaiseEnded`, `UgsNetworkSession.OnStateMachineChanged` and the `Teardown.cs` Ended raise each wrap the **whole** invoke in one try/catch. `CompositeNetworkSession.OnBackendStateChanged`/`OnBackendEnded` have no try at all. The comment at `UgsNetworkSession.cs:78` ("Subscribers are isolated") is wrong. | code |
-| G9 | Lake geometry for the PlayMode cast fixture (M1 contract 6.5, D34): dock deck x in [-1.5, 1.5], z in [-52, -40], top y 0.6; water trigger top y 0; lakebed depth at the dock end (z -40) is 1.5 m and deepens outward. A player at (0, 0.65, -41) facing +z (yaw 0) with chargeNorm 0.15 (Handmade: 2.5 + 15.5 x 0.15 = 4.83 m) lands at z about -36.2, over water about 2 m deep. `lineLength0` = 4.83 - 1.5 = 3.33 m, so the host's Landed floor is 0.8 x (3.33 - 2.0) / 1.0 - 0.5 = 0.56 s. | M1 contract 6.5; spec 9.9 |
+| G9 | Lake geometry for the PlayMode cast fixture (M1 contract 6.5, D34): dock deck x in [-1.5, 1.5], z in [-52, -40], top y 0.6; water trigger top y 0; lakebed depth at the dock end (z -40) is 1.5 m and deepens outward. A player at (0, 0.65, -41) facing +z (yaw 0) with chargeNorm 0.15 (Handmade: 2.5 + 15.5 x 0.15 = 4.83 m) lands (R67: the distance is from the rod tip, so the landing is `CastTipReach` 2.4 + 4.83 = 7.23 m from the player) at z about -33.8, over deeper water than the pre-R67 spot (z about -36.2, about 2 m deep). The host `lineLength0` = max(landDistance, 7.23 - `HookedLineSlack` 3.1) = 4.13 m, so the host's Landed floor is 0.8 x (4.13 - 2.0) / 1.0 - 0.5 = 1.2 s. The G9 minimum marker (charge 0, `castMinDist` 2.5) is `CastTipReach` + 2.5 = 4.9 m from the player, z -36.1. | M1 contract 6.5; spec 9.9 |
 | G10 | `SfxGenerator.GenerateAll` and `SfxRecipes.TryGet` iterate only `M1Table`. `AudioBus` plays one-shots only (`loop = false`, no minDistance control, no ducking). | code |
 
 Closed by package-source reading (section 15): V11 `DeferLocal` defers on a host-owned object (net plan N1; the T19 PlayMode test stays as the runtime check) and NetworkVariable change detection uses `IEquatable` (N3). Still to verify at runtime (owners in brackets): V12 trigger-water raycast with `QueryTriggerInteraction.Collide`, water first when a dock is above [T19]; V13 water facet-normal sign, C#/HLSL wave parity, fog variants in a player build, `ShaderUtil` messages in `-nographics` batchmode [T21, T28, T30].
@@ -245,7 +245,8 @@ public static class FishingConstants
     public const float HostOriginSlack = 3.0f;           // cast origin vs host view, horizontal metres
     public const float HostWaitSlackSeconds = 30f;       // stuck-Waiting refund after tFlight + biteWait + 30
     public const float LandedFloorFactor = 0.8f, LandedFloorSlackSeconds = 0.5f;
-    public const float HookedLineSlack = 1.5f;           // lineLength0 = hostDistance - 1.5, floor landDistance. T19-R1: the T19-fix re-derives this from the rod's measured forward reach (max horizontal TipAnchor reach over camera pitch -60..+60 at the owner pose, + 0.5 m, rounded up to 0.1); new value TBD, then C 7.9, spec 9.9 and the ledger tests follow it. It also feeds WalkBoundedLineLength0 (T9-R1)
+    public const float HookedLineSlack = 3.1f;           // lineLength0 = hostDistance - 3.1, floor landDistance. T19-R1 re-derived it from the rod's measured forward reach (max horizontal TipAnchor reach 2.52 m over camera pitch -60..+60 at the owner pose, + 0.5 m margin, rounded up to 0.1). It also feeds WalkBoundedLineLength0 (T9-R1). Unchanged by R67 (hostDistance is root -> landing, the owner line is tip -> landing, both to the same landing)
+    public const float CastTipReach = 2.4f;              // R67 (spec 3.2 / 9.3): the rod tip's horizontal forward reach from the player root in the owner rest pose at look pitch 0, measured from TipAnchor (PlayMode FishingSoloTests.RodTip_ForwardReachAtPitchZero_MatchesCastTipReach), rounded to 0.1 m. Rig geometry, not tuning: fixed on owner AND host, pitch never changes it. Re-derive after changing the rod rig. Added ONLY inside CastMath.Landing (subtracted again for the maxLineOut check and the telemetry castDist)
     public const float JunkWeightLowRating = 0.6f;       // effRating 1-2
     public const float JunkWeightMidRating = 0.2f;       // effRating 3-5
     public const float JunkWeightHighRating = 0.05f;     // effRating 6+
@@ -537,7 +538,8 @@ public static class CastMath
     public static float PitchApexMult(float pitchDeg);                                      // 0.7..1.3, linear over -30..45 deg, clamped
     public static float Apex(float distance, float pitchApexMult);                          // max(0.6, 0.12 * distance) * mult
     public static void Landing(float originX, float originZ, float yawDeg, float distance, out float x, out float z);
-        // flat forward from yaw only (x += sin(yaw) * d, z += cos(yaw) * d)
+        // R67: distance is measured FROM THE ROD TIP; the fixed FishingConstants.CastTipReach is added INSIDE, the one place it is added (owner marker, cast request and host TryComputeLanding stay bit-identical).
+        // flat forward from yaw only (x += sin(yaw) * d, z += cos(yaw) * d) with d = CastTipReach + distance
     public static void ArcPoint(float t01, float startX, float startY, float startZ, float endX, float endY, float endZ,
                                 float apex, out float x, out float y, out float z);         // parabola, apex above the higher end
     public static bool IsValidLanding(in WaterProbe probe, float minLandDepth);             // FirstHitIsWater && HasBed && Depth >= minLandDepth
@@ -706,7 +708,7 @@ public struct RodFrame            // one owner frame of inputs and guards
 {
     public bool PrimaryPressed, PrimaryReleased, PrimaryHeld, SecondaryPressed, SecondaryReleased, SecondaryHeld;
     public bool MarkerValid;      // owner CastProbe at the current marker (Ready/Charging)
-    public float PlayerToBobber;  // horizontal player-root to bobber (Waiting auto reel-in)
+    public float PlayerToBobber;  // horizontal player-root to bobber (Waiting auto reel-in; the machine subtracts FishingConstants.CastTipReach so maxLineOut is measured from the rod tip, R67)
     public float TipToBobber;     // horizontal rod tip to bobber (FightSim start line at hook)
     public float HookDisplacement;// horizontal distance from the root position at hook time (Hooked leash)
     public bool InWater;          // player is in water (Hooked -> Dropped)
@@ -731,7 +733,7 @@ public sealed class RodStateMachine
     public float StateTime { get; }             // seconds in the current state (unpaused)
     public uint CastId { get; }                 // last issued cast id (starts 0; each cast request uses ++CastId)
     public float ChargeNorm { get; }            // live in Charging; frozen at release
-    public float CastDistance { get; }          // at release
+    public float CastDistance { get; }          // at release; R67: the cast distance FROM THE ROD TIP (flight time uses it as is; the landing is CastTipReach further from the root)
     public bool MarkerOn { get; }               // Ready or Charging
     public bool HasResult { get; }              // valid CastResult held for CastId
     public FishingRoll Roll { get; }            // owner-only roll (valid when HasResult)
@@ -772,7 +774,7 @@ public struct ActiveCast   // spec 9.9 plus host bookkeeping
     public uint CastId; public FishingRoll Roll; public CastPhase Phase; public double TAccepted, THooked;
     public float LineLength0, TFlight; public bool Assist; public ushort RodIndex; public byte BaitIndex;
     public float LandingX, LandingZ;
-    public float CastDistance;     // horizontal origin -> landing, host-derived at accept (anti-teleport bound; T9-R1)
+    public float CastDistance;     // R67: cast distance FROM THE ROD TIP, host-derived at accept (origin -> landing is CastTipReach + this; anti-teleport bound T9-R1, TFlight)
 }
 public struct CastRequestData { public uint CastId; public float OriginX, OriginY, OriginZ, YawDeg, ChargeNorm; public byte BaitIndex; public bool Assist; }
 public struct HostCastView    // host-side facts the Fishing adapter supplies
@@ -829,14 +831,15 @@ public static class CatchValidator   // pure host checks (spec 9.9)
     public static bool IsFinite(float v);                                   // not NaN, not +/-Inf
     public static bool IsOriginFinite(in CastRequestData req);              // OriginX/Y/Z and YawDeg finite; FishingHost checks it BEFORE the physics probe (T17 follow-up)
     public static float WalkBoundedLineLength0(float hostLineLength0, float castDistance, double elapsedSeconds, float landDistance);
-        // T9-R1: max(hostLineLength0, castDistance - MovementMath.SprintSpeed * elapsed - 1.5), floored at landDistance; a NaN bound is ignored.
+        // T9-R1: max(hostLineLength0, castDistance - MovementMath.SprintSpeed * elapsed - HookedLineSlack 3.1), floored at landDistance; a NaN bound is ignored.
+        // R67: castDistance here is the horizontal ORIGIN -> LANDING distance; the ledger passes FishingConstants.CastTipReach + ActiveCast.CastDistance.
         // No new tuning: MaxWalkSpeed is the Core sprint speed. A teleport-adjacent player still gets a real floor (tested).
     public static bool HookTooEarly(double now, in ActiveCast cast, float hookTolerance);
         // now - TAccepted < TFlight + Roll.BiteWait - hookTolerance
     public static float LandedFloorSeconds(float lineLength0, float landDistance, float speed);
         // max(0, 0.8 * (lineLength0 - landDistance) / speed - 0.5)
     public static bool LandedTooFast(double now, in ActiveCast cast, float landDistance, float speed);
-    public static float HostLineLength0(float hostDistance, float landDistance);  // max(landDistance, hostDistance - 1.5); a NaN distance gives landDistance (safe default only: Hooked fails closed on NaN, I-2)
+    public static float HostLineLength0(float hostDistance, float landDistance);  // max(landDistance, hostDistance - HookedLineSlack 3.1); a NaN distance gives landDistance (safe default only: Hooked fails closed on NaN, I-2)
     public static AnnounceKind AnnounceFor(FightOutcome outcome, EscapeReason reason, bool wasHooked);
         // Landed -> Landed; Snapped -> Lost; Escaped after hook with Pinned/ThrewHook/Dropped/Timeout -> Lost; everything else None
     public static bool CleanClaimAccepted(in FightReport report, double now, in ActiveCast cast, float landDistance, float reelSpeed,
@@ -862,7 +865,7 @@ public sealed class FishingHostLedger
     public PlayerLoadout GetLoadout(byte slot);
     public bool SelectBait(ulong clientId, byte slot, byte baitIndex);  // refused while that client has an ActiveCast or index invalid
     public bool SelectRod(ulong clientId, byte slot, ushort rodIndex);
-    public bool TryComputeLanding(byte slot, in CastRequestData req, out float x, out float z); // host rod castMaxDist; false for an unknown slot, an invalid charge (NaN or outside [0,1]) or a non-finite YawDeg (I-1)
+    public bool TryComputeLanding(byte slot, in CastRequestData req, out float x, out float z); // host rod castMaxDist; false for an unknown slot, an invalid charge (NaN or outside [0,1]) or a non-finite YawDeg (I-1); R67: the distance is from the rod tip and the shared CastMath.Landing adds CastTipReach
     public CastVerdict RequestCast(ulong clientId, byte slot, in CastRequestData req, in HostCastView view, in RollOverrides overrides);
         // accept: consume bait (not unlimited), HostCastCounter++, rng = Rng.Stream(RunSeed, FishingConstants.CatchStreamId, HostCastCounter),
         // PlaceholderRoller.Roll, then Roll.Pity = (PityAfterFailures > 0 && slot FailStreak >= PityAfterFailures) (R65, no RNG),
@@ -872,7 +875,7 @@ public sealed class FishingHostLedger
         // (B-Q9; the owner never sends Cancel while Hooked). Orphan -> Accepted = false, repeat stored resolution.
     public bool Hooked(ulong clientId, uint castId, float hostDistanceToLanding, out CommitDecision commit);
         // true = a commit must be sent (too early -> Escaped(Invalid); a NON-FINITE hostDistanceToLanding -> Escaped(Invalid), fail closed (I-2); orphan).
-        // false = accepted (Phase Hooked, THooked = Now, LineLength0 = WalkBoundedLineLength0(HostLineLength0(hostDistance, landDistance), CastDistance, Now - TAccepted, landDistance); T9-R1).
+        // false = accepted (Phase Hooked, THooked = Now, LineLength0 = WalkBoundedLineLength0(HostLineLength0(hostDistance, landDistance), CastTipReach + CastDistance, Now - TAccepted, landDistance); T9-R1, R67: ActiveCast.CastDistance is from the rod tip, so the reach is added for the origin -> landing bound).
     public CommitDecision Result(ulong clientId, uint castId, FightOutcome outcome, EscapeReason reason, in FightReport report,
                                  in CreelSnapshot creel);
         // validation per spec 9.9; Landed: if CatchValidator.CleanClaimAccepted -> Roll.Catch = CatchMath.WithCleanBonus(...), CleanBonus = true;
@@ -1324,7 +1327,7 @@ public sealed class FishingRodController : MonoBehaviour, IPlayerContextSource
 // Fishing/Owner/FightEnded.cs - telemetry payload (also published on the App EventBus)
 public readonly struct FightEnded
 {
-    public readonly string ProfileId, ItemId, RodId; public readonly int WeightG; public readonly float CastDistance, CastToBite, FightSeconds;
+    public readonly string ProfileId, ItemId, RodId; public readonly int WeightG; public readonly float CastDistance, CastToBite, FightSeconds;   // R67: CastDistance = cast distance FROM THE ROD TIP (fight-log castDist): origin -> adopted landing minus CastTipReach (floored at 0) when a landing was adopted, else Machine.CastDistance
     public readonly FightOutcome Outcome; public readonly EscapeReason Reason; public readonly int NearSnapRecoveries; public readonly float MaxTension;
     public readonly bool Assist; public readonly bool CleanClaimed;   // owner-side claim (maxTension < threshold on a landed fish)
     public readonly bool Pity;                                        // R65: Machine.Roll.Pity of that cast (false without a result)
@@ -1335,7 +1338,7 @@ public readonly struct FightEnded
 Behaviour the other tasks rely on:
 - Equip: `Intent.EquipPressed` toggles `PlayerNetState.OwnerSetTool(Rod/None)` when the context allows (Free/RodReady/RodAiming); stowing with a line out uses `ForceEnd(Stow)`.
 - Swim: when `PlayerLocomotion.IsSwimming` turns on, `ForceEnd(Swim)`, stow and remember; restore on leaving water. Teleport/respawn: `PlayerLocomotion.Teleported` -> `ForceEnd(Teleport)`.
-- Marker: in Ready/Charging, every frame `CastMath.Landing` from the root, camera yaw and the live distance; `CastProbe` colours it.
+- Marker: in Ready/Charging, every frame `CastMath.Landing` from the root, camera yaw and the live distance (R67: the distance is from the rod tip and `CastMath.Landing` adds `CastTipReach`, so the minimum marker is `CastTipReach` + `castMinDist` = 4.9 m from the player); `CastProbe` colours it.
 - `NetRodState`: written every frame through `OwnerWriteState` (quantized; the NetworkVariable throttles to 15 Hz). `BobberPos` = landing target while Casting, then the bobber / fish point (`FishPointMath` + water sampling every 0.2 s, holding the last valid water point).
 - Pause (`IPauseState.Paused`, solo): `RodFrame.Paused = true`; the fight accumulator does not advance.
 - Assist from `settings.fishingAssist`, captured at release by the machine.
@@ -1591,7 +1594,7 @@ Server handlers forward to `FishingHost`. The owner drops a `CastResultRpc` whos
 
 **Fight and result.** Owner: 50 Hz `TickFight`; `NetRodState` carries phase flags, lateral, tension and the fish point. End -> `ResultRpc(castId, outcome, reason, maxTension, fightSeconds, recoveries)` (+ `RodEventRpc(Snapped|Escaped)` on a loss). Host `Ledger.Result`: spec 9.9 validation (Landed floor on the host clock, host rod or junk speed), clean-catch claim (only ever downgrades), creel check -> `CommitRpc` -> creel add (`PlayerCreel.ServerTryAdd`, iff `AddToCreel`) -> `CatchAnnouncedRpc` (Landed / Lost / ReleasedCreelFull, iff `Announce != None`) -> `FishCaught` (iff Landed and added). Every FIRST resolution commits and announces per its decision fields; only orphan repeats are silent (ruling E-Q6). Owner: 1.5 s beat, then Idle on the commit (or after 3 s with a warning).
 
-**Cancel and recall.** Waiting + RMB, line past `maxLineOut`, teleport, stow, swim -> `CancelRpc`; the host refunds (Waiting only) and commits. Unsolicited commits (stuck-Waiting refund, `MaxFightTime`) arrive in Waiting/Bite/Hooked and run the 1.5 s beat with no `ResultRpc`.
+**Cancel and recall.** Waiting + RMB, line past `maxLineOut` (R67: measured from the rod tip, root-to-bobber minus `CastTipReach`), teleport, stow, swim -> `CancelRpc`; the host refunds (Waiting only) and commits. Unsolicited commits (stuck-Waiting refund, `MaxFightTime`) arrive in Waiting/Bite/Hooked and run the 1.5 s beat with no `ResultRpc`.
 
 **Orphans.** A Hooked, Result or Cancel for a cleared cast -> immediate `CommitRpc(castId, false, stored outcome, stored reason)`.
 
@@ -1661,7 +1664,7 @@ EditMode files live in `Assets/_Project/Tests/EditMode/` (namespace `FishGame.Te
 | Waiting / invalid result | `RodStateMachine_Waiting_InvalidResult_RecallsToIdle` |
 | Casting / no result in 3 s | `RodStateMachine_Casting_ResultTimeout_RecallsAndSendsCancel` |
 | Waiting / Secondary pressed | `RodStateMachine_Waiting_SecondaryPressed_CancelsToIdle` |
-| Waiting / beyond maxLineOut | `RodStateMachine_Waiting_BeyondMaxLineOut_AutoReelsAndCancels` |
+| Waiting / beyond maxLineOut (R67: `PlayerToBobber - CastTipReach > MaxLineOut`) | `RodStateMachine_Waiting_BeyondMaxLineOut_AutoReelsAndCancels` |
 | Waiting / bite timer | `RodStateMachine_Waiting_BiteTimerElapsed_EntersBiteAndSendsBiteEvent` |
 | Bite / auto-hook | `RodStateMachine_Bite_AutoHookAfterHookBeat_EntersHookedAndStartsFight` |
 | Bite / Primary in window | `RodStateMachine_Bite_PrimaryInsideHookWindow_EntersHooked` |
@@ -1775,7 +1778,7 @@ Unchanged: M1 contract section 11 (`Tools/unity.ps1 compile | build | test-edit 
 | Task | Extra files |
 |---|---|
 | T7 | `Core/AssemblyInfo.cs` (InternalsVisibleTo `FishGame.Tests.EditMode`; was already listed above) |
-| T9 | `Tests/EditMode/{CatchValidatorTests,FishingHostLedgerTests}.cs`; `Core/Fishing/CatchValidator.cs` gains `OriginWithinSlack`, `IsFinite`, `IsOriginFinite`, `WalkBoundedLineLength0` (T17 follow-up and mini-fix: `IsOriginFinite`, `OriginWithinSlack`); `ActiveCast.CastDistance` |
+| T9 | `Tests/EditMode/{CatchValidatorTests,FishingHostLedgerTests}.cs`; `Core/Fishing/CatchValidator.cs` gains `OriginWithinSlack`, `IsFinite`, `IsOriginFinite`, `WalkBoundedLineLength0` (T17 follow-up and mini-fix: `IsOriginFinite`, `OriginWithinSlack`); `ActiveCast.CastDistance` (from the rod tip since R67) |
 | T11 | `Tests/PlayMode/AudioBusPlayModeTests.cs` (+`.meta`), `Runtime/Audio/AudioLoop.cs` (listed above) |
 | T12 | `Tests/EditMode/{MeshBuilderTests,RippleMathTests,WaveMathTests,WaterSurfaceTests}.cs` |
 | T13 | `Tests/EditMode/{FishingDefsTests,ContentRegistryTests}.cs` (registry tests extended) |
@@ -1811,14 +1814,14 @@ Unchanged: M1 contract section 11 (`Tools/unity.ps1 compile | build | test-edit 
 | M2-D16 | Clean-catch bonus (user-approved 2026-10-11) | Landed with fight `MaxTension < cleanCatchMaxTension` (seed 0.8) -> +1 quality tier (cap Trophy), value recomputed. `ResultRpc` carries `maxTension, fightSeconds, nearSnapRecoveries`; the host accepts the claim only within `CatchValidator.CleanClaimAccepted` bounds and otherwise keeps the rolled quality (never upgrades blindly, never invalidates the catch). | Rewards the rhythm the fight teaches; owner-simulated fight (N6) means the host can only bound-check. The spec is amended to match. |
 | M2-D17 | HoldNode / AttachableNode | Stay M5 (V16). M2 adds the plain `Body/ArmR/Hand` transform M5 converts. | Not needed for a rod. |
 | M2-D18 | Rod and bait selection keys | F4/F5 dev keys plus `SelectRodRpc`/`SelectBaitRpc`; forced bite / twitchy (F6/F7) are host-only statics. | Spec 17.2 debug selectors; the host owns rolls. |
-| M2-D19 | Cast origin | The owner's root position (feet), not the rod tip; the line and fight start use the rod tip. | Simple, identical on owner and host. |
+| M2-D19 | Cast origin | The owner's root position (feet), not the rod tip; the line and fight start use the rod tip. R67 (2026-10-12): the cast DISTANCE is measured from the rod tip (landing = origin + yaw forward x (`CastTipReach` + distance)); the origin itself stays the root. | Simple, identical on owner and host. |
 | M2-D20 | Ledger keys | Bait, rod, selected bait by slot; cast ids, ActiveCast and stored resolution by clientId. | castIds restart per connection; R46 needs slot persistence. |
 | M2-D21 | EditMode reach | EditMode tests reference Gameplay and Fishing (wire structs). | G1: wire structs can't live in Core. |
 | M2-D22 | Pitch to apex | Linear map -30..45 deg -> x0.7..x1.3, clamped. | Spec 9.3 gives the range, not the mapping. |
 | M2-D23 | Bad-luck nudge (R65, user-approved 2026-10-11) | The host counts consecutive failed casts per slot (Snapped, or Escaped with any reason; a Landed resets; cancels and recalls neither count nor reset; kept in the slot data, survives rejoin). At `pityAfterFailures` (seed 3, 0 = off) the next accepted cast gets `FishingRoll.Pity = true`, set by the ledger at accept with no extra RNG draw. A Pity cast resolving (other than Cancelled) resets the count. Owner-side effects, deterministic: `FightSim` strain scale x `pityStrainMult` (0.85) and snap grace x `pityGraceMult` (1.5), a real bite hook window plus `pityHookWindowBonus` (0.3 s). No change to species, weight or quality odds; the host's Landed-floor validation is unchanged. Visible to the crew: the host sends `CatchAnnouncedRpc` with the new `AnnounceKind.PityCast = 4` (smallest contract change: no new RPC; the wire roll carries the bit in `FishingRollNet.Flags`) and every peer shows `toast.pity` "{0} has a lucky line!" through `toast.raw`; the fight log gets a `pity` column. All numbers are `FishingTuningDef` seeds; Core holds none. | Fishing should not punish a streak of snaps without the user noticing why; the user decides keep / tune / remove at playtest (T30). The spec section 3.2 is amended by the controller. |
 | M2-D24 | Unsolicited commit while Casting (T8-R1, T8 review, 2026-10-12) | `RodStateMachine.OnCommit` while `Casting` is a legal event: it takes the same path as Waiting/Bite/Hooked (a `Cancelled` commit -> `Escaped` with `Recalling = true` and cue `Recall`, the 1.5 s cancel beat per M2-D5, then Idle; any other commit -> `Escaped(finalReason)`, `None` -> `Invalid`). Casting is removed from the IllegalEvents expectation for commits. | Spec 9.13 "LastCast" intent (a host cancel/timeout during the flight must recall the line) wins over the 9.2 row list. Spec 9.2 carries a note. |
 | M2-D25 | Invalid cast result remembers the cast (T8-R2, T8 review) | Any invalid `OnCastResult` (Casting or Waiting) sets `_cancelledCastId = castId` before the recall, so the host's `Cancelled` commit for it is consumed silently (no `IgnoredEventCount`, no beat). Only the owner-side `CastResultRpc` handler sends the one `CancelRpc` (BF-5). | The host always answers a rejected cast with a cancel commit; without the flag it would be counted as an illegal event or replay a beat. |
-| M2-D26 | Walk-bounded hook line (T9-R1, T9 review; hardening) | At accept the ledger stores `ActiveCast.CastDistance` (horizontal origin -> landing); at `Hooked`, `LineLength0 = max(HostLineLength0(hostDistance), CastDistance - SprintSpeed * (THooked - TAccepted) - 1.5)`, floored at `landDistance` (`CatchValidator.WalkBoundedLineLength0`). No new tuning: `SprintSpeed` is the Core `MovementMath` constant. Non-finite `hostDistanceToLanding` -> `Escaped(Invalid)` (I-2); non-finite `YawDeg` -> `OriginTooFar` and `TryComputeLanding` false (I-1). | A client teleported next to the landing could shrink the Landed floor to zero; the player cannot have walked faster than sprint since the cast was accepted. Knockback is an M5 concern (C 16.2). |
+| M2-D26 | Walk-bounded hook line (T9-R1, T9 review; hardening) | At accept the ledger stores `ActiveCast.CastDistance` (R67: the distance from the rod tip; origin -> landing is `CastTipReach` + this); at `Hooked`, `LineLength0 = max(HostLineLength0(hostDistance), CastTipReach + CastDistance - SprintSpeed * (THooked - TAccepted) - HookedLineSlack 3.1)`, floored at `landDistance` (`CatchValidator.WalkBoundedLineLength0`). No new tuning: `SprintSpeed` is the Core `MovementMath` constant. Non-finite `hostDistanceToLanding` -> `Escaped(Invalid)` (I-2); non-finite `YawDeg` -> `OriginTooFar` and `TryComputeLanding` false (I-1). | A client teleported next to the landing could shrink the Landed floor to zero; the player cannot have walked faster than sprint since the cast was accepted. Knockback is an M5 concern (C 16.2). |
 | M2-D27 | Slot takeover resets the creel (T16-R1, T16 review) | `CreelLedger.ClearSlot(slot)` (Core, T9 file, allowed in the T16 fix). `SessionState.Upsert` clears that slot's creel and debug coins when the slot is assigned to a DIFFERENT persistent identity (JoinRules takeover rule c); the same identity rejoining keeps both (R46). The mini-fix batch after T19 extends the same trigger (`SessionState.SlotTakenOver`) to the host ledger slot (`FishingHostLedger.ResetSlot`). | A new player must not inherit the previous holder's fish or coins; a returning player must (R46). |
 | M2-D28 | Rod geometry vs host slack (T19-R1, T19 review) | The rod's local rotation makes it point camera-forward pitched up about 35 deg in the owner arm pose (and plausibly in the remote pose); `FishingConstants.HookedLineSlack` is re-derived from the measured maximum forward reach of `TipAnchor` over pitch -60..+60 plus 0.5 m (rounded up to 0.1; value TBD, set by the T19-fix); the host stays conservative (owner start line >= host `LineLength0` for every honest cast). `SoloHost_CastBiteFight_Lands` asserts the tip is in front of the camera and below head height + 1 m. The T19-fix also amends the PlayMode driver surface (C 7.19) and the harness `PrepareResetScene`. | The T19 review found the host slack was not tied to the real rod reach, so an honest cast could start with a line shorter than the host's floor. |
 
@@ -1977,11 +1980,11 @@ What changed between the plan and the code after T1-T19 were implemented and rev
 | T8 docs wording | Effect order is "cue first, then SendCastRequest" (decision 9) | C 9 flow 1; core-fishing status note |
 | T9 review I-1 | `ValidateCast` rejects a non-finite `YawDeg` as `OriginTooFar`; `TryComputeLanding` false for non-finite yaw; NaN and +Inf tested | T9 `abecb40` `CatchValidator.cs`, `FishingHostLedger.cs`; C 7.9 |
 | T9 review I-2 | Fail closed on a non-finite `hostDistanceToLanding`: `Hooked` resolves `Escaped(Invalid)` | T9 `abecb40` `FishingHostLedger.cs`; C 7.9 |
-| T9-R1 | Walk-bounded hook line: `ActiveCast.CastDistance`, `CatchValidator.WalkBoundedLineLength0` (sprint speed, no new tuning) | T9 `abecb40`; C 7.9, C 13 M2-D26 |
+| T9-R1 | Walk-bounded hook line: `ActiveCast.CastDistance` (from the rod tip since R67), `CatchValidator.WalkBoundedLineLength0` (sprint speed, no new tuning; takes the origin -> landing distance `CastTipReach` + `CastDistance`) | T9 `abecb40`; C 7.9, C 13 M2-D26 |
 | T9 review minors | `Tick` ignores NaN/negative/infinite dt; `CreelRules` (8, 0, 10, 15000) warns; `CreelLedger` last slot and `ctor(0)` throws; pity rows for Escaped(Timeout)/(Dropped); landing floor with a non-Handmade rod | T9 `abecb40` tests; C 7.9 |
 | T9 notes for T30 | Criterion 7 holds against forged messages; owner-written transform limits position checks (friends-only, spec 1.2); a bare-hook reroll by cancelling is accepted design | T30 text (16.2) |
 | T8-fix / T10 review | Press F3 in the editor (overlay) and in a non-development build (no-op); `OnAssistChanged` pure helper with an EditMode test (G-Q4); M5: Staggered row must zero Move; optional comment wording at `RodStateMachine.cs:20` | T25, T26, T30 (16.2) |
-| T9-fix / T11 review | Docs: ActiveCast.CastDistance, `IsFinite`/`WalkBoundedLineLength0`, yaw rule order, Hooked NaN, dt guard, `ApplyCueTable` replaces. M5: knockback must end the cast or the walk bound must add max knockback. T23 brief MUST pass `follow` for 2D loops and `StopLoop` in `OnDisable`. T14 validator rejects non-finite cue values | C 7.9, C 7.11; T23, T30 (16.2); `FishingValidators` |
+| T9-fix / T11 review | Docs: ActiveCast.CastDistance (from the tip since R67), `IsFinite`/`WalkBoundedLineLength0`, yaw rule order, Hooked NaN, dt guard, `ApplyCueTable` replaces. M5: knockback must end the cast or the walk bound must add max knockback. T23 brief MUST pass `follow` for 2D loops and `StopLoop` in `OnDisable`. T14 validator rejects non-finite cue values | C 7.9, C 7.11; T23, T30 (16.2); `FishingValidators` |
 | T11 follow-up (`2296e1a`) | `AudioBus` rejects non-finite cue values (`BaseVolume`, `MinDistance`, `MaxDistance`, `MinInterval`); `AudioLoop.IsPlaying` uses `Source != null`; `AuditionCuesMenu` counts only real plays (`Play2D` returns bool); optional PlayMode duck test widening; the optional walk-bound latency allowance (SprintSpeed * 0.25) was REJECTED | T11 `AudioBus.cs`, `AudioLoop.cs`, `AuditionCuesMenu.cs`, `AudioBusPlayModeTests.cs`; C 7.11 |
 | T12 review (`4385084`) | Winding test for every primitive; `WaveMath` non-finite fields are zero terms (Term and AmplitudeSum); `ShaderGlobals.PaletteLength = 16`, `WavesLength = 4`; `WaterSurface` class comment (HeightAt main-thread only unless a time source is set) | T12 `MeshBuilder`/`WaveMath`/`ShaderGlobals`/`WaterSurface` and tests; C 7.12; T21 (16.2) |
 | T14 implementer notes | T21 Water shader must treat ANY non-finite wave field as a zero term; `Editor/AssemblyInfo.cs` InternalsVisibleTo added; `TunedDeviations` key format `tuning.<field>` (creel `tuning.creelMaxWeightG` in grams), `<category>.<id>.<field>` | C 2.6, C 7.15; T21 (16.2) |
@@ -1999,6 +2002,7 @@ What changed between the plan and the code after T1-T19 were implemented and rev
 | T17 follow-up (`071dc2d`) | `CatchValidator.IsOriginFinite` before the probe; `FishingRollValidation.IsSaneCatch` public and used to vet announcements; lazy NetworkManager; ledger-creation failure handling; no-creel-ledger path still announces | T17 `FishingHost.cs`, `FishingRodNetwork.cs`; C 7.6, C 7.17 |
 | T18 (`dea35f8`) | Internal helpers `FightRecorder`, `FishPointSampler`, `RodControllerRules` and `RodControllerHelperTests.cs`; `FightEnded` carries `Pity` | C 7.18, C 12 |
 | T19-R1 (T19 review, CHANGES REQUIRED) | Rod geometry vs host slack: rod rest rotation points camera-forward pitched up ~35 deg in the owner pose; `HookedLineSlack` re-derived from the measured forward reach of `TipAnchor` (pitch -60..+60) + 0.5 m, rounded up to 0.1 (value TBD); PlayMode tip assertion (`Dot > 0.8`, `tip.y < cam.y + 1.0`); minors: `PrepareResetScene` reuse of `FG_TestReset`; driver surface amended in C 7.19; C 10.4 is 8 tests; dry run walks to the deck end first; optional internal `SpawnPlayerIfMissing` + `InternalsVisibleTo` instead of reflection | T19-fix (after the mini-fix batch; Sonnet + Opus re-review); C 5.2, C 7.19, C 10.4, C 13 M2-D28; net T19 text; T24 (16.2); spec 9.9 note (controller) |
+| R67 (`9278b2e`) | Cast distance measured from the rod tip (user decision A, spec R67, 3.2, 9.3): new `FishingConstants.CastTipReach = 2.4` (TipAnchor forward reach at pitch 0, PlayMode-checked); `CastMath.Landing` = origin + yawForward x (`CastTipReach` + distance), the only place the reach is added (owner and host bit-identical); `RodStateMachine.CastDistance`, `ActiveCast.CastDistance` and `FightEnded.CastDistance` (fight-log `castDist`) are distances FROM THE TIP; owner maxLineOut check is `PlayerToBobber - CastTipReach > MaxLineOut` (limit from the tip, full 12 m spool slack kept: Handmade 30 m from the tip, 32.4 m from the player); host `WalkBoundedLineLength0` takes the origin -> landing distance `CastTipReach + CastDistance`; `HookedLineSlack` is 3.1 (stale 1.5 mentions fixed); `BobberView` arc uses tip -> landing; G9 minimum marker is 4.9 m from the player | `9278b2e` `CastMath.cs`, `FishingConstants.cs`, `RodStateMachine.cs`, `FishingHostLedger.cs`, `CatchValidator.cs`, `FishingRodController.cs`, `BobberView.cs`, `CastTipReachTests.cs`; C 5.2, C 7.5, C 7.9, C 7.18, C 13 M2-D19 and M2-D26, spec R67 |
 
 ### 16.2 Carry-forward into the not-yet-implemented tasks (also written into the task texts)
 
