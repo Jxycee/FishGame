@@ -243,6 +243,81 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("feedback loops");
         }
 
+        // Catches (final review I-1): solo pause mid-fight leaving the rumble, the Line_Creak / Dive_Thrum loops, the reel clicks and the
+        // cap.straining caption running. The view stays Hooked with frozen tension while paused (the controller still publishes it), so only the
+        // pause gate can silence them. 3.3 s of pause outlasts the 3 s caption gap, so a caption leak would show. Unpausing restarts the loops.
+        [UnityTest]
+        public IEnumerator FeedbackSolo_SoloPause_SilencesRumbleLoopsClicksAndCaptions()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig, teleport: false);
+            FishingRig rig = _rig;
+
+            Assert.That(ServiceRoots.App.TryGet(out AudioBus audio), Is.True, "AudioBus");
+            Assert.That(ServiceRoots.App.TryGet(out EventBus bus), Is.True, "EventBus");
+            Assert.That(ServiceRoots.Game, Is.Not.Null, "GameScope");
+            Assert.That(ServiceRoots.Game.TryGet(out IPauseState pause), Is.True, "IPauseState");
+            Transform tip = rig.Player.transform.Find(PlayerRigPaths.RodTipAnchor);
+            Vector3 bobber = tip.position + new Vector3(0f, -1f, 5f);
+            Dictionary<(string, bool, int, int), float> lastPlayed = LastPlayed(audio);
+            var clicks = new PlayCounter(lastPlayed, (SfxIds.ReelClick, false, 0, 0));
+            var captions = new List<string>();
+
+            try
+            {
+                rig.Controller.enabled = false;   // the view is whatever the test sets
+                yield return PlayModeHarness.WaitFrames(2, 0.05f);
+                rig.Log.AssertEmpty("disabling the rod controller at Idle");
+
+                using (bus.Subscribe<CaptionRequested>(c => captions.Add(c.Key)))
+                {
+                    SetView(rig, RodState.Hooked, RodWireQuant.FlagDive | RodWireQuant.FlagReel, 0.9f, bobber);
+
+                    // Positive controls: everything the pause must silence is running first.
+                    yield return PlayModeHarness.WaitUntil(
+                        () => FindLoop(audio, "Loop_Line_Creak") != null && FindLoop(audio, "Loop_Dive_Thrum") != null,
+                        2f, "Hooked at tension 0.9 with a dive must start both loops");
+                    yield return Hold(clicks, 0.4);
+                    Assert.That(clicks.Count, Is.GreaterThan(0), "positive control: the reel ticks while reeling");
+                    Assert.That(captions, Does.Contain("cap.straining"), "positive control: cap.straining at tension 0.9");
+                    Assert.That(Mathf.Max(rig.Fake.LastRumbleLow, rig.Fake.LastRumbleHigh), Is.GreaterThan(0f), "positive control: rumble while fighting");
+
+                    pause.SetPaused(true);
+                    yield return PlayModeHarness.WaitFrames(3, 0.1f);
+                    captions.Clear();
+                    int clicksAtPause = clicks.Count;
+
+                    // The view is still Hooked at 0.9 with the dive and reel flags latched; 3.3 s of it must stay silent.
+                    double start = Time.realtimeSinceStartupAsDouble;
+                    while (Time.realtimeSinceStartupAsDouble - start < 3.3)
+                    {
+                        yield return null;
+                        clicks.Poll();
+                        Assert.That(rig.Fake.LastRumbleLow, Is.EqualTo(0f), "rumble low while paused");
+                        Assert.That(rig.Fake.LastRumbleHigh, Is.EqualTo(0f), "rumble high while paused");
+                        Assert.That(HasLoop(audio), Is.False, "no Loop_ child may run while paused");
+                    }
+
+                    Assert.That(clicks.Count, Is.EqualTo(clicksAtPause), "no reel click while paused");
+                    Assert.That(captions, Is.Empty, "no caption while paused");
+
+                    pause.SetPaused(false);
+                    yield return PlayModeHarness.WaitUntil(
+                        () => FindLoop(audio, "Loop_Line_Creak") != null && FindLoop(audio, "Loop_Dive_Thrum") != null,
+                        2f, "unpausing mid-fight must restart both loops from the polled view");
+                    yield return Hold(clicks, 0.4);
+                    Assert.That(clicks.Count, Is.GreaterThan(clicksAtPause), "the reel ticks again after unpausing");
+                }
+            }
+            finally
+            {
+                pause.SetPaused(false);
+                if (rig.Controller != null) rig.Controller.enabled = true;
+            }
+
+            rig.Log.AssertEmpty("solo pause feedback");
+        }
+
         // Catches (T23 review): HookSet's four clicks dropped by the Reel_Click rate limit (0.05 s against the last click that PLAYED) because the
         // later clicks were anchored to the first one: at a frame time of 40 ms the anchored clicks give three plays. Frames are slowed with a sleep so
         // the frame time is known; 8 ms is a fast-frame control that must also give four. A play is counted when the bus's last-played time for the

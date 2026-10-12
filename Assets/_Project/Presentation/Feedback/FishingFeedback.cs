@@ -11,6 +11,8 @@
 // CastRelease) use the positional overload everywhere, because Play2D has no pitch overload (ruling C-Q8) and the owner's rod tip is at the ear.
 // No coroutines: every delayed effect is a timer ticked in Update (the snap jump is posed in LateUpdate), so disabling the component cancels them all. Once OnDisable has run
 // (or !isActiveAndEnabled) Cue and Announced are ignored, all loops are stopped, and the owner's rumble is zeroed.
+// Solo pause (ServiceRoots.Game IPauseState) does the same for the polled feedback: loops stop (and restart from polling on resume), rumble is
+// zeroed, and reel ticks, trauma, captions and pending timers are skipped, because the controller keeps publishing the frozen Hooked view.
 using System.Collections.Generic;
 using FishGame.Core;
 using FishGame.Data;
@@ -303,6 +305,19 @@ namespace FishGame.Presentation
             RodViewState vs = _rod.ViewState;
             bool owner = IsOwner;
             if (owner) _ownerSeen = true;
+
+            // Solo pause (spec 9.2: it stops the rod tick). The controller still publishes the frozen Hooked view (and the latched reel/dive flags),
+            // so the state-driven feedback gates itself: loops stop (they restart from polling on resume), the rumble is zeroed like a lost focus,
+            // and no reel tick, trauma, caption or delayed one-shot runs. Pending timers are dropped (a stale burst on resume would be wrong).
+            if (IsPaused())
+            {
+                StopLoops();
+                _timers.Clear();
+                _reelAcc = 0f;
+                if (owner) UpdateRumble(now, vs, false, default, true);
+                return;
+            }
+
             bool hooked = vs.State == RodState.Hooked;
 
             TensionCueState cue = default;
@@ -329,7 +344,7 @@ namespace FishGame.Presentation
                         Caption("cap.straining");
                     }
                 }
-                UpdateRumble(now, vs, hooked, in cue);
+                UpdateRumble(now, vs, hooked, in cue, false);
             }
 
             if (_wasHooked && !hooked) _lastStrainCaption = float.NegativeInfinity;   // next fight starts fresh
@@ -474,14 +489,14 @@ namespace FishGame.Presentation
 
         // Target per motor = max(continuous, active pulse), times cameraMotion. Terminal states (and Idle) have no continuous part, but
         // their one-shot pulse plays to completion (BF-2). Idle, lost focus and disable cancel everything at once.
-        private void UpdateRumble(float now, in RodViewState vs, bool hooked, in TensionCueState cue)
+        private void UpdateRumble(float now, in RodViewState vs, bool hooked, in TensionCueState cue, bool paused)
         {
             IInputService input = FeedbackServices.Get<IInputService>();
             if (input == null) return;
 
             float low = 0f, high = 0f;
             bool idle = vs.State == RodState.Idle;
-            if (idle || !input.HasFocus)
+            if (idle || paused || !input.HasFocus)
             {
                 _pulses.Clear();
             }
@@ -605,6 +620,12 @@ namespace FishGame.Presentation
         {
             ISettings settings = FeedbackServices.Get<ISettings>();
             return settings != null && settings.Current != null ? Mathf.Clamp01(settings.Current.cameraMotion) : 1f;
+        }
+
+        private static bool IsPaused()
+        {
+            ServiceRegistry game = ServiceRoots.Game;
+            return game != null && game.TryGet(out IPauseState pause) && pause.Paused;
         }
 
         private float ReelSpeed()
