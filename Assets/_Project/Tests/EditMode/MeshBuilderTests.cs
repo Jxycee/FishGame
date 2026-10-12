@@ -361,6 +361,17 @@ namespace FishGame.Tests.EditMode
             var ico = new MeshBuilder(1);
             ico.Icosphere(c, 0.8f, 2, 0);
             AssertFacesOutward("Icosphere2", ico, c, Quaternion.identity, new List<(int, Part)> { (ico.TriangleCount, Part.Side) });
+
+            // Grid: the only non-closed primitive. "Outward" is +Y: stored normals are up and every triangle winds the same way as its normal.
+            Mesh grid = Track(MeshBuilder.Grid(5, 4, 1.25f, "faceOutwardGrid"));
+            Vector3[] gv = grid.vertices, gn = grid.normals;
+            int[] gi = grid.triangles;
+            for (int i = 0; i < gn.Length; i++) Assert.AreEqual(Vector3.up, gn[i], "Grid vertex " + i + " normal is up");
+            for (int t = 0; t < gi.Length / 3; t++)
+            {
+                Vector3 geo = Vector3.Cross(gv[gi[3 * t + 1]] - gv[gi[3 * t]], gv[gi[3 * t + 2]] - gv[gi[3 * t]]);
+                Assert.Greater(Vector3.Dot(geo, gn[gi[3 * t]]), 0f, "Grid triangle " + t + " winds with its normal");
+            }
         }
 
         // extra

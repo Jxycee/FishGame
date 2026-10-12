@@ -772,38 +772,75 @@ namespace FishGame.Tests.EditMode
 
         // ---- entry points on the real assets ----
 
-        // Catches: All() dropping one of its two parts or its prefixes; FishingContent() / SpeciesModels() not reading the generated assets.
+        // Catches: the prefix step dropping a part, swapping the two prefixes, or leaving one part unprefixed. In memory only: the real
+        // assets are never edited by a test (a failing test must not be able to leave a committed asset changed).
         [Test]
-        public void FishingValidators_All_PrefixesBothParts_OnTheRealAssets()
+        public void FishingValidators_Prefixed_PrefixesBothParts_InMemory()
         {
-            CollectionAssert.IsEmpty(FishingValidators.All(), "the generated assets pass");
+            SeedSet set = MakeSeedSet();
+            SetNum(set.Tuning, "castChargeTime", 5.0);
+            List<string> content = FishingValidators.CheckRegistry(set.Registry);
+            List<string> models = FishingValidators.CheckSpeciesModel("perch", MakeMesh(true, 1), AssetPaths.MeshesFolder + "/LakeDock_Shore.asset");
+            Assert.AreEqual(1, content.Count, "exactly the tuning error: " + string.Join("\n", content));
+            Assert.AreEqual(1, models.Count, "exactly the model-path error: " + string.Join("\n", models));
 
-            var tuning = AssetDatabase.LoadAssetAtPath<FishingTuningDef>(AssetPaths.FishingTuningAsset);
-            var perch = AssetDatabase.LoadAssetAtPath<FishSpeciesDef>(AssetPaths.SpeciesFolder + "/perch.asset");
-            Assert.IsNotNull(tuning, "run Tools/unity.ps1 build first");
-            Assert.IsNotNull(perch);
-            float originalCharge = tuning.CastChargeTime;
-            Mesh originalModel = perch.Model;
-            var badModel = AssetDatabase.LoadAssetAtPath<Mesh>(AssetPaths.MeshesFolder + "/LakeDock_Shore.asset");
-            Assert.IsNotNull(badModel, "the M1 shore mesh is the stand-in for a model from outside Content/Models");
-            try
+            List<string> all = FishingValidators.Prefixed(content, models);
+            CollectionAssert.AreEqual(new[]
             {
-                Edit(tuning, so => SetNum(so, "castChargeTime", 5.0));
-                Edit(perch, so => Prop(so, "model").objectReferenceValue = badModel);
-                List<string> all = FishingValidators.All();
-                Assert.IsTrue(all.Any(e => e.StartsWith("FishingContent: tuning: castChargeTime = 5 outside [0.6, 1.5]", StringComparison.Ordinal)),
-                    string.Join("\n", all));
-                Assert.IsTrue(all.Any(e => e.StartsWith("SpeciesModels: species perch: model is not from ", StringComparison.Ordinal)), string.Join("\n", all));
-                Assert.AreEqual(1, FishingValidators.FishingContent().Count, "FishingContent reports only the tuning error");
-                Assert.IsTrue(FishingValidators.SpeciesModels().Any(e => e.StartsWith("species perch: model is not from ", StringComparison.Ordinal)),
-                    "SpeciesModels reports the model error");
-            }
-            finally
-            {
-                Edit(tuning, so => SetNum(so, "castChargeTime", originalCharge));
-                Edit(perch, so => Prop(so, "model").objectReferenceValue = originalModel);
-            }
-            CollectionAssert.IsEmpty(FishingValidators.All(), "restored");
+                "FishingContent: tuning: castChargeTime = 5 outside [0.6, 1.5]",
+                "SpeciesModels: species perch: model is not from " + AssetPaths.ModelsFolder + "/*.fbx (" + AssetPaths.MeshesFolder + "/LakeDock_Shore.asset)",
+            }, all);
+
+            CollectionAssert.IsEmpty(FishingValidators.Prefixed(new List<string>(), new List<string>()), "no errors, no prefix noise");
+            CollectionAssert.AreEqual(new[] { "SpeciesModels: m" }, FishingValidators.Prefixed(new List<string>(), new List<string> { "m" }));
+            CollectionAssert.AreEqual(new[] { "FishingContent: c" }, FishingValidators.Prefixed(new List<string> { "c" }, new List<string>()));
+        }
+
+        // Catches: All() / FishingContent() / SpeciesModels() reporting a problem on the generated assets (READ ONLY: nothing is written).
+        [Test]
+        public void FishingValidators_EntryPoints_PassOnTheRealAssets()
+        {
+            Assert.IsNotNull(AssetDatabase.LoadAssetAtPath<ContentRegistry>(AssetPaths.ContentRegistryAsset), "run Tools/unity.ps1 build first");
+            CollectionAssert.IsEmpty(FishingValidators.All(), "the generated assets pass");
+            CollectionAssert.IsEmpty(FishingValidators.FishingContent());
+            CollectionAssert.IsEmpty(FishingValidators.SpeciesModels());
+        }
+
+        // ---- non-finite water and palette values ----
+
+        // Catches: a NaN / Infinity wave direction or colour channel accepted (they poison the water shader and the ambient blend).
+        [Test]
+        public void FishingValidators_NonFiniteWaterAndPaletteValues_AreReported()
+        {
+            SeedSet set = MakeSeedSet();
+            Edit(set.Water, so => Prop(so, "dirAmpLenSpeed.Array.data[1]").vector4Value = new Vector4(float.NaN, 0.025f, 7f, 1f));
+            AssertContains(Check(set), "water wave 1: direction = NaN is not finite");
+
+            set = MakeSeedSet();
+            Edit(set.Water, so => Prop(so, "dirAmpLenSpeed.Array.data[2]").vector4Value = new Vector4(float.PositiveInfinity, 0.025f, 6.5f, 0.8f));
+            AssertContains(Check(set), "water wave 2: direction = Infinity is not finite");
+
+            set = MakeSeedSet();
+            Edit(set.Water, so => Prop(so, "shallowColor").colorValue = new Color(0.1f, float.NaN, 0.3f, 1f));
+            AssertContains(Check(set), "water: shallowColor has a non-finite channel (0.1, NaN, 0.3, 1)");
+
+            set = MakeSeedSet();
+            Edit(set.Water, so => Prop(so, "deepColor").colorValue = new Color(0.1f, 0.2f, 0.3f, float.PositiveInfinity));
+            AssertContains(Check(set), "water: deepColor has a non-finite channel (0.1, 0.2, 0.3, Infinity)");
+
+            set = MakeSeedSet();
+            Edit(set.Palette, so => Prop(so, "seasons.Array.data[1].colors.Array.data[4]").colorValue = new Color(float.NaN, 0f, 0f, 1f));
+            AssertAnyStartsWith(Check(set), "palette season 1: colour 4 has a non-finite channel", ")");
+
+            set = MakeSeedSet();
+            Edit(set.Palette, so => Prop(so, "skinTone").colorValue = new Color(0f, float.PositiveInfinity, 0f, 1f));
+            AssertAnyStartsWith(Check(set), "palette: skinTone has a non-finite channel", ")");
+
+            set = MakeSeedSet();
+            Edit(set.Palette, so => Prop(so, "uiText").colorValue = new Color(0f, 0f, float.NaN, 1f));
+            AssertAnyStartsWith(Check(set), "palette: uiText has a non-finite channel", ")");
+
+            CollectionAssert.IsEmpty(Check(MakeSeedSet()), "finite seed values pass");
         }
     }
 }

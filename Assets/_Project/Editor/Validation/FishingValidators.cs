@@ -23,9 +23,15 @@ namespace FishGame.EditorTools
 
         public static List<string> All()
         {
+            return Prefixed(FishingContent(), SpeciesModels());
+        }
+
+        // The prefixing seam: tests feed it in-memory results so the prefixes can be checked without editing any committed asset.
+        internal static List<string> Prefixed(List<string> contentErrors, List<string> modelErrors)
+        {
             var all = new List<string>();
-            foreach (string error in FishingContent()) all.Add("FishingContent: " + error);
-            foreach (string error in SpeciesModels()) all.Add("SpeciesModels: " + error);
+            foreach (string error in contentErrors) all.Add("FishingContent: " + error);
+            foreach (string error in modelErrors) all.Add("SpeciesModels: " + error);
             return all;
         }
 
@@ -333,6 +339,19 @@ namespace FishGame.EditorTools
             }
             Range(e, L, "faceJitter", a.FaceJitter, 0f, 0.1f);
             Range(e, L, "m2Season", a.M2Season, 0f, 3f);
+            for (int i = 0; i < a.Seasons.Count; i++)
+            {
+                PaletteSeason s = a.Seasons[i];
+                if (s == null || s.colors == null) continue;
+                for (int c = 0; c < s.colors.Length; c++) FiniteColour(e, L + " season " + i, "colour " + c, s.colors[c]);
+            }
+            FiniteColour(e, L, "skinTone", a.SkinTone);
+            FiniteColour(e, L, "uiAccent", a.UiAccent);
+            FiniteColour(e, L, "uiGood", a.UiGood);
+            FiniteColour(e, L, "uiWarn", a.UiWarn);
+            FiniteColour(e, L, "uiBad", a.UiBad);
+            FiniteColour(e, L, "uiPanel", a.UiPanel);
+            FiniteColour(e, L, "uiText", a.UiText);
         }
 
         private static void CheckWater(List<string> e, WaterSettingsDef w)
@@ -343,6 +362,7 @@ namespace FishGame.EditorTools
             {
                 Vector4 v = w.DirAmpLenSpeed[i];
                 string l = "water wave " + i;
+                if (!IsFinite(v.x)) e.Add(l + ": direction = " + Fmt(v.x) + " is not finite");
                 Range(e, l, "amplitude", v.y, 0f, 0.08f);
                 AtLeast(e, l, "wavelength", v.z, 5f);
                 Range(e, l, "speed", v.w, 0f, 3f);
@@ -351,6 +371,14 @@ namespace FishGame.EditorTools
             if (!(sum >= 0f && sum <= 0.12f)) e.Add("water: amplitude sum = " + Fmt(sum) + " outside [0, 0.12]");
             Positive(e, "water", "depthRange", w.DepthRange);
             Positive(e, "water", "foamWidth", w.FoamWidth);
+            FiniteColour(e, "water", "shallowColor", w.ShallowColor);
+            FiniteColour(e, "water", "deepColor", w.DeepColor);
+        }
+
+        private static void FiniteColour(List<string> e, string label, string field, Color c)
+        {
+            if (!IsFinite(c.r) || !IsFinite(c.g) || !IsFinite(c.b) || !IsFinite(c.a))
+                e.Add(label + ": " + field + " has a non-finite channel (" + Fmt(c.r) + ", " + Fmt(c.g) + ", " + Fmt(c.b) + ", " + Fmt(c.a) + ")");
         }
 
         private static void CheckCues(List<string> e, SfxCueTableDef table)
