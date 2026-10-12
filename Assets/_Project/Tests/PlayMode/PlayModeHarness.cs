@@ -54,6 +54,7 @@ namespace FishGame.Tests.PlayMode
                         TestContext.WriteLine("leak recovery: DestroyForTests threw: " + e.GetBaseException().Message);
                     }
                 }
+                TestContext.WriteLine("LoadBootstrapAndWaitForMenu: " + leak);   // before recovery, so the original cause survives a recovery failure
                 yield return RecoverFromLeakedScenes();
                 Assert.Fail(leak);
             }
@@ -188,6 +189,7 @@ namespace FishGame.Tests.PlayMode
                 if (ServiceRoots.Game != null || ServiceRoots.App != null)
                 {
                     // Recover so later tests start clean; the failure below still reports the original problem.
+                    TestContext.WriteLine("TearDownApp: " + (problem ?? "App/Game service roots survived DestroyForTests"));   // before recovery
                     yield return RecoverFromLeakedScenes();
                 }
                 if (problem != null)
@@ -208,18 +210,7 @@ namespace FishGame.Tests.PlayMode
         {
             double deadline = Time.realtimeSinceStartupAsDouble + RecoveryTimeoutSeconds;
 
-            Scene reset = SceneManager.CreateScene(ResetSceneName);
-            SceneManager.SetActiveScene(reset);
-
-            var toUnload = new List<Scene>();
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-            {
-                Scene scene = SceneManager.GetSceneAt(i);
-                if (scene.isLoaded && scene.handle != reset.handle)
-                {
-                    toUnload.Add(scene);
-                }
-            }
+            List<Scene> toUnload = PrepareResetScene();
 
             foreach (Scene scene in toUnload)
             {
@@ -259,6 +250,32 @@ namespace FishGame.Tests.PlayMode
                 ServiceRoots.SetApp(null);
             }
             yield return null;
+        }
+
+        // Not an iterator, so it may catch: a failure here (CreateScene, SetActiveScene or the scan) is logged and recovery carries on
+        // with whatever it could list, instead of escaping and replacing the original leak message.
+        private static List<Scene> PrepareResetScene()
+        {
+            var toUnload = new List<Scene>();
+            try
+            {
+                Scene reset = SceneManager.CreateScene(ResetSceneName);
+                SceneManager.SetActiveScene(reset);
+                for (int i = 0; i < SceneManager.sceneCount; i++)
+                {
+                    Scene scene = SceneManager.GetSceneAt(i);
+                    if (scene.isLoaded && scene.handle != reset.handle)
+                    {
+                        toUnload.Add(scene);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                TestContext.WriteLine("leak recovery: could not prepare the reset scene: " + e.GetBaseException().Message);
+            }
+
+            return toUnload;
         }
 
         // Records Warning/Error/Exception/Assert log entries while alive. Wrap a region in using and call AssertNoWarnings at its end.

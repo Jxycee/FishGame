@@ -116,6 +116,10 @@ namespace FishGame.EditorTools
             Prim(t, PlayerRigPaths.LegLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.4f, 0f), new Vector3(0.16f, 0.4f, 0.16f), body);
             Prim(t, PlayerRigPaths.LegRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.4f, 0f), new Vector3(0.16f, 0.4f, 0.16f), body);
             Empty(t, PlayerRigPaths.NameplateAnchor, new Vector3(0f, 2.05f, 0f));
+
+            // T19 hook (C 2.6): the fishing rig, its components after the M1 list, then the presentation hook. RefreshNetworkObjectHash follows in BuildPlayer.
+            PlayerFishingRigBuilder.Build(root);
+            PlayerFishingRigBuilder.AddPresentation(root);
         }
 
         // Contract 6.4.
