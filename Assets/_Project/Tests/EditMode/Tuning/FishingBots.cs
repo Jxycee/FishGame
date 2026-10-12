@@ -386,6 +386,72 @@ namespace FishGame.Tests.EditMode
 
         // ------------------------------------------------------------------ tests
 
+        // The matrix cache is static and survives a domain that is not reloaded between runs; start every run from an empty one.
+        [OneTimeSetUp]
+        public void ClearBotCaches()
+        {
+            s_cache.Clear();
+            s_sig.Clear();
+            s_matrixSeconds = double.NaN;
+            s_matrixDone = false;
+        }
+
+        static FightState Fs(FightPhase phase, sbyte burstDir, float lateral, float tension)
+        {
+            return new FightState { Phase = phase, BurstDir = burstDir, Lateral = lateral, Tension = tension };
+        }
+
+        // Catches: a bot rule drifting silently (retuning is only meaningful while the bots mean what the plan says): Rhythm reeling during a
+        // dive, counter-steering at the wrong side or too long, hysteresis easing off at the wrong thresholds; Greedy/CounterReel gaining brains.
+        [Test]
+        public void FishingBots_RhythmDecide_PinsDiveEasingAndSteerRules()
+        {
+            Assert.AreEqual(FishingConstants.CenterDeadzone, CounterHold, "ruling D-Q3: CounterHold == CenterDeadzone");
+
+            bool easing = false;
+            FightInput dive = Decide(BotKind.Rhythm, Fs(FightPhase.Burst, 0, 0f, 0f), ref easing);
+            Assert.AreEqual(0f, dive.Steer, "dive: no steer");
+            Assert.IsFalse(dive.Reel, "dive: Rhythm does not reel");
+
+            easing = false;
+            FightInput run = Decide(BotKind.Rhythm, Fs(FightPhase.Burst, 1, 0f, 0f), ref easing);
+            Assert.AreEqual(-1f, run.Steer, "side run +1 at centre: counter-steer -1");
+            Assert.IsTrue(run.Reel, "side run: Rhythm keeps reeling");
+
+            easing = false;
+            FightInput past = Decide(BotKind.Rhythm, Fs(FightPhase.Burst, 1, -0.2f, 0f), ref easing);
+            Assert.AreEqual(0f, past.Steer, "side run +1 already past centre beyond CounterHold: stop steering");
+
+            easing = false;
+            FightInput calm = Decide(BotKind.Rhythm, Fs(FightPhase.Calm, 0, 0f, 0f), ref easing);
+            Assert.AreEqual(0f, calm.Steer, "calm: no steer");
+            Assert.IsTrue(calm.Reel, "calm: reel");
+
+            easing = false;
+            FightInput hot = Decide(BotKind.Rhythm, Fs(FightPhase.Calm, 0, 0f, 0.8f), ref easing);
+            Assert.IsTrue(easing, "tension 0.8 starts easing");
+            Assert.IsFalse(hot.Reel, "tension 0.8: reel off");
+            FightInput mid = Decide(BotKind.Rhythm, Fs(FightPhase.Calm, 0, 0f, 0.6f), ref easing);
+            Assert.IsTrue(easing, "0.6 is inside the hysteresis band: still easing");
+            Assert.IsFalse(mid.Reel, "0.6 while easing: reel stays off");
+            FightInput cool = Decide(BotKind.Rhythm, Fs(FightPhase.Calm, 0, 0f, 0.49f), ref easing);
+            Assert.IsFalse(easing, "0.49 clears easing");
+            Assert.IsTrue(cool.Reel, "0.49: reel again");
+
+            foreach (FightState s in new[] { Fs(FightPhase.Calm, 0, 0f, 0f), Fs(FightPhase.Burst, 1, 0f, 0.95f), Fs(FightPhase.Burst, 0, 0f, 0.9f) })
+            {
+                easing = false;
+                FightInput g = Decide(BotKind.Greedy, s, ref easing);
+                Assert.AreEqual(0f, g.Steer, "Greedy never steers");
+                Assert.IsTrue(g.Reel, "Greedy always reels");
+            }
+
+            easing = false;
+            FightInput counterDive = Decide(BotKind.CounterReel, Fs(FightPhase.Burst, 0, 0f, 0.9f), ref easing);
+            Assert.AreEqual(0f, counterDive.Steer, "CounterReel in a dive: no steer");
+            Assert.IsTrue(counterDive.Reel, "CounterReel in a dive: still reels");
+        }
+
         // Catches: Bulldog tuned so that a good player cannot or cannot fail: Greedy must snap (reel-and-pray punished), CounterReel must snap
         // sometimes (steering alone is not enough), Rhythm must land safely in 35-55 s (spec 9.12 / 17.2).
         [Test]
