@@ -43,6 +43,7 @@ namespace FishGame.EditorTools
             AddExits();
             AddBellAnchor(bellPrefab);
             FishingSceneObjects.AddTo(scene);
+            PresentationSceneObjects.AddTo(scene);
 
             BuilderUtil.SaveScene(scene, AssetPaths.LakeDockScene);
         }
