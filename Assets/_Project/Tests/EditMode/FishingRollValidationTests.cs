@@ -73,6 +73,30 @@ namespace FishGame.Tests.EditMode
             m = junk; m.Catch.WeightG = 1;
             Assert.That(FishingRollValidation.IsSane(in m, db), Is.False, "junk with weight 1");
 
+            // WeightT must be finite and inside [0, 1]; the bounds themselves are fine (junk rolls carry 0).
+            // Catches: a missing WeightT check, a check written as (< 0 || > 1) that lets NaN through, or an off-by-one on the bounds.
+            foreach (float bad in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity, -0.1f, 1.1f, -0.0001f, 1.0001f })
+            {
+                m = fish; m.WeightT = bad;
+                Assert.That(FishingRollValidation.IsSane(in m, db), Is.False, "WeightT " + bad);
+            }
+            m = fish; m.WeightT = 0f;
+            Assert.That(FishingRollValidation.IsSane(in m, db), Is.True, "WeightT 0 is allowed");
+            m = fish; m.WeightT = 1f;
+            Assert.That(FishingRollValidation.IsSane(in m, db), Is.True, "WeightT 1 is allowed");
+
+            // Nibble times must be finite (all three slots, used or not).
+            // Catches: validating only Nibble0, or only the used slots.
+            foreach (float bad in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity })
+            {
+                m = fish; m.Nibble0 = bad;
+                Assert.That(FishingRollValidation.IsSane(in m, db), Is.False, "Nibble0 " + bad);
+                m = fish; m.Nibble1 = bad;
+                Assert.That(FishingRollValidation.IsSane(in m, db), Is.False, "Nibble1 " + bad);
+                m = fish; m.Nibble2 = bad;
+                Assert.That(FishingRollValidation.IsSane(in m, db), Is.False, "Nibble2 " + bad);
+            }
+
             // Pity is ignored by the check.
             m = fish; m.Pity = true;
             Assert.That(FishingRollValidation.IsSane(in m, db), Is.True, "Pity does not affect sanity");

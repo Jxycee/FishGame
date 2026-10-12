@@ -211,6 +211,7 @@ namespace FishGame.Tests.EditMode
                 }
                 flipDraws += s.DrawCount - drawsBefore;
             }
+            Assert.That(flipDraws, Is.GreaterThan(5000), "the hazard estimate needs thousands of flip checks (exhaustion must not cut the bursts short)");
             double hazard = flips / (flipDraws * (double)Dt);
             Assert.That(hazard, Is.InRange(0.8, 1.2), "flips " + flips + ", draws " + flipDraws);
 
@@ -301,6 +302,76 @@ namespace FishGame.Tests.EditMode
             Assert.That(normal.State.Elapsed, Is.EqualTo(2.84f).Within(0.06f));
             Assert.That(pity.State.Elapsed, Is.GreaterThan(normal.State.Elapsed + 0.4f));
             Assert.That(pity.State.Elapsed, Is.InRange(3.2f, 3.5f));
+        }
+
+        // Starts a burst from a forced Calm state (profile Steady: DiveChance 0, no jitter, so every start draws exactly 3 values)
+        // and counts the burst directions chosen.
+        static void SideRunDirectionCounts(float lateral, int starts, uint seed, out int minus, out int plus)
+        {
+            FightSim s = Make(Base(FishingTestData.ProfileSteady), 0.375f, seed);
+            minus = 0; plus = 0;
+            for (int i = 0; i < starts; i++)
+            {
+                var st = new FightState { Phase = FightPhase.Calm, PhaseTimer = 0.02f, Lateral = lateral, FishStamina = 1f, LineLength = 10f };
+                s.ForceState(in st);
+                int d0 = s.DrawCount;
+                s.Tick(In(0f, true));
+                if (s.State.Phase != FightPhase.Burst) Assert.Fail("burst " + i + " did not start");
+                if (s.DrawCount - d0 != 3) Assert.Fail("burst start " + i + " made " + (s.DrawCount - d0) + " draws, want 3");
+                if (s.State.BurstDir < 0) minus++;
+                else if (s.State.BurstDir > 0) plus++;
+                else Assert.Fail("a dive from a DiveChance 0 profile");
+            }
+        }
+
+        // Catches: the 0.875 away-share changed (0.75 = 'one draw, 75% away' mistake, or 1.0), away/toward swapped, the mirror case
+        // for negative lateral broken, the centre deadzone (|lateral| < 0.1 -> 50/50) ignored, or an extra/missing draw at burst start.
+        [Test]
+        public void FightMotion_SideRunDirection_EightySevenPointFivePercentAwayFromCurrentSide()
+        {
+            const int n = 20000;
+            SideRunDirectionCounts(+0.5f, n, 11, out int minus, out int plus);
+            Assert.That(minus / (double)n, Is.EqualTo(0.875).Within(0.03), "lateral +0.5: away is -1; counts -/+ " + minus + "/" + plus);
+            SideRunDirectionCounts(-0.5f, n, 12, out minus, out plus);
+            Assert.That(plus / (double)n, Is.EqualTo(0.875).Within(0.03), "lateral -0.5: away is +1; counts -/+ " + minus + "/" + plus);
+            SideRunDirectionCounts(0f, n, 13, out minus, out plus);
+            Assert.That(minus / (double)n, Is.EqualTo(0.5).Within(0.03), "lateral 0: 50/50; counts -/+ " + minus + "/" + plus);
+            SideRunDirectionCounts(0.05f, n, 14, out minus, out plus);
+            Assert.That(minus / (double)n, Is.EqualTo(0.5).Within(0.03), "lateral 0.05 (inside the deadzone): 50/50; counts -/+ " + minus + "/" + plus);
+        }
+
+        // Catches: pity changing anything but the strain gain: lateral, line length or stamina differing from the normal sim on any tick,
+        // pity applied to tension with another factor, or pity multiplying relax (tension would no longer be a clean 0.85x while rising).
+        [Test]
+        public void FightMotion_Pity_OnlyTensionScalesLateralLineStaminaIdentical()
+        {
+            FishFightProfile runner = Base(FishingTestData.ProfileRunner);
+            runner.FlipRate = 0f;
+            FightSim normal = Make(runner, 0.375f, 777, 18f, false);
+            FightSim pity = Make(runner, 0.375f, 777, 18f, true);
+            normal.ForcePhase(FightPhase.Burst, 1, 10f);
+            pity.ForcePhase(FightPhase.Burst, 1, 10f);
+            int compared = 0;
+            float maxNormalTension = 0f;
+            for (int i = 1; i <= 400; i++)
+            {
+                normal.Tick(In(0f, true));
+                pity.Tick(In(0f, true));
+                if (normal.State.Lateral != pity.State.Lateral) Assert.Fail("Lateral differs at tick " + i + ": " + normal.State.Lateral + " vs " + pity.State.Lateral);
+                if (normal.State.LineLength != pity.State.LineLength) Assert.Fail("LineLength differs at tick " + i);
+                if (normal.State.FishStamina != pity.State.FishStamina) Assert.Fail("FishStamina differs at tick " + i);
+                if (normal.State.Tension > 0f && normal.State.Tension < 1f)
+                {
+                    if (Math.Abs(pity.State.Tension - 0.85f * normal.State.Tension) > 1e-5f)
+                        Assert.Fail("tick " + i + ": pity tension " + pity.State.Tension + " is not 0.85 x " + normal.State.Tension);
+                    compared++;
+                    maxNormalTension = Math.Max(maxNormalTension, normal.State.Tension);
+                }
+                if (normal.State.Outcome != FightOutcome.None) break;
+            }
+            Assert.That(compared, Is.GreaterThanOrEqualTo(80), "ticks compared while tension was rising");
+            Assert.That(maxNormalTension, Is.GreaterThan(0.8f), "the comparison must cover the high-tension range");
+            Assert.That(normal.State.Outcome, Is.EqualTo(FightOutcome.Snapped));
         }
 
         [Test]

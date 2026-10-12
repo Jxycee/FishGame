@@ -1,3 +1,4 @@
+using System;
 using FishGame.Core;
 using NUnit.Framework;
 
@@ -172,6 +173,126 @@ namespace FishGame.Tests.EditMode
             Assert.That(PlaceholderRoller.Roll(db, in cat, ref rng).HookWindow, Is.EqualTo(0f));
             RollRequest twJunk = junk; twJunk.Twitchy = true;
             Assert.That(PlaceholderRoller.Roll(db, in twJunk, ref rng).HookWindow, Is.EqualTo(0f));
+        }
+
+        // Catches: skipping the item draw when an override forces the item (every later seeded value shifts by one draw),
+        // drawing the junk index only when the junk list has more than one entry, drawing the plan or seed in another order,
+        // an extra or missing draw anywhere in the roll. The hand replay uses a value copy of the stream.
+        [Test]
+        public void PlaceholderRoller_ForcedAndPlainRolls_ConsumeTheFixedDrawSequence()
+        {
+            FishingDatabase db = FishingTestData.Database();
+            RollRequest carp = Req(FishingTestData.BaitWorm, 3f); carp.ForcedItemIndex = FishingTestData.SpeciesCarp;
+            RollRequest junk = Req(FishingTestData.BaitWorm, 3f); junk.ForceJunk = true;
+            RollRequest nothing = Req(FishingTestData.BaitBareHook, 0.5f);   // nothing eligible: junk without a force
+            RollRequest plain = Req(FishingTestData.BaitWorm, 3f);
+            RollRequest[] reqs = { carp, junk, nothing, plain };
+            string[] names = { "forced carp", "forced junk", "nothing eligible", "plain" };
+            for (int q = 0; q < reqs.Length; q++)
+            {
+                RollRequest req = reqs[q];
+                BaitStats bait = db.Baits[req.BaitIndex];
+                for (ulong seed = 1; seed <= 40; seed++)
+                {
+                    var rng = new Pcg32(seed);
+                    Pcg32 hand = rng;
+                    FishingRoll r = PlaceholderRoller.Roll(db, in req, ref rng);
+                    string who = names[q] + " seed " + seed;
+
+                    hand.NextFloat();                                                      // 1. item draw, always one NextFloat
+                    float speciesBiteMod = 1f;
+                    if (r.Catch.IsJunk)
+                    {
+                        int ji = hand.Range(0, db.Junk.Count);                             // 2. junk index (int Range)
+                        Assert.That((int)r.Catch.ItemIndex, Is.EqualTo(ji), who + " junk index");
+                    }
+                    else
+                    {
+                        FishSpeciesData sp = db.Species[r.Catch.ItemIndex];
+                        speciesBiteMod = sp.BiteWaitMod;
+                        float u = hand.NextFloat();                                        // 2. RollFish: one NextFloat
+                        float t = CatchMath.SkewedT(u, CatchMath.Skew(sp.WeightSkew, req.Luck));
+                        Assert.That(r.WeightT, Is.EqualTo(t), who + " weight t");
+                        Assert.That(r.Catch.WeightG, Is.EqualTo(CatchMath.WeightG(sp.WeightMinG, sp.WeightMaxG, t)), who + " weight");
+                    }
+                    if (q == 0) Assert.That((int)r.Catch.ItemIndex, Is.EqualTo(FishingTestData.SpeciesCarp), who);
+                    if (q == 1 || q == 2) Assert.That(r.Catch.IsJunk, Is.True, who);
+
+                    float mult = BitePlanner.WaitMultiplier(bait.BiteSpeedMod, speciesBiteMod, req.Depth);
+                    BitePlan plan = BitePlanner.Plan(db.Tuning, mult, bait.MaxNibbles, ref hand);   // 3. plan draws
+                    uint fightSeed = hand.NextUInt();                                      // 4. fight seed
+                    Assert.That(r.BiteWait, Is.EqualTo(plan.BiteWait), who + " wait");
+                    Assert.That(r.NibbleCount, Is.EqualTo(plan.NibbleCount), who + " nibbles");
+                    Assert.That(r.Nibble0, Is.EqualTo(plan.Nibble0), who);
+                    Assert.That(r.FightSeed, Is.EqualTo(fightSeed == 0 ? 1u : fightSeed), who + " fight seed");
+                    Assert.That(rng.NextUInt(), Is.EqualTo(hand.NextUInt()), who + ": same stream position after the roll");
+                }
+            }
+        }
+
+        // Catches: a missing ForcedItemIndex range check (the failure would then come from the collection indexer, with another
+        // ParamName), and the check being skipped for indices just past the end.
+        [Test]
+        public void PlaceholderRoller_ForcedItemIndexPastSpeciesCount_ThrowsFromTheRollerCheck()
+        {
+            FishingDatabase db = FishingTestData.Database();
+            foreach (int bad in new[] { db.Species.Count, db.Species.Count + 1, 1000 })
+            {
+                RollRequest req = Req(FishingTestData.BaitWorm, 3f); req.ForcedItemIndex = bad;
+                var rng = new Pcg32(1);
+                var ex = Assert.Throws<ArgumentOutOfRangeException>(() => PlaceholderRoller.Roll(db, in req, ref rng), "index " + bad);
+                Assert.That(ex.ParamName, Is.EqualTo("req"), "must be the roller's own check, index " + bad);
+            }
+            RollRequest last = Req(FishingTestData.BaitWorm, 3f); last.ForcedItemIndex = db.Species.Count - 1;
+            var ok = new Pcg32(1);
+            Assert.That(PlaceholderRoller.Roll(db, in last, ref ok).Catch.ItemIndex, Is.EqualTo((ushort)(db.Species.Count - 1)), "last valid index is accepted");
+        }
+
+        // Catches: ignoring LoadedCount (catfish and trout never appear), a rating that does not scale with the loaded count,
+        // junk weight not following the effective rating (eff 9 -> 0.05).
+        [Test]
+        public void PlaceholderRoller_LoadedCountThree_RaisesEffectiveRatingAndOpensDeepSpecies()
+        {
+            FishingDatabase db = FishingTestData.Database();
+            RollRequest one = Req(FishingTestData.BaitWorm, 3f);      // eff 3: bluegill, carp, perch + junk 0.2
+            RollRequest three = one; three.LoadedCount = 3;           // eff 9 (worm rating 3 x 3): all five species + junk 0.05
+            const int n = 10000;
+            var rng = new Pcg32(1234);
+            var seen1 = new int[5]; var seen3 = new int[5];
+            int junk3 = 0;
+            for (int i = 0; i < n; i++)
+            {
+                FishingRoll a = PlaceholderRoller.Roll(db, in one, ref rng);
+                if (!a.Catch.IsJunk) seen1[a.Catch.ItemIndex]++;
+                FishingRoll b = PlaceholderRoller.Roll(db, in three, ref rng);
+                if (b.Catch.IsJunk) junk3++; else seen3[b.Catch.ItemIndex]++;
+            }
+            Assert.That(seen1[FishingTestData.SpeciesCatfish] + seen1[FishingTestData.SpeciesTrout], Is.EqualTo(0), "eff 3 cannot roll trout or catfish");
+            for (int s = 0; s < 5; s++)
+                Assert.That(seen3[s] / (double)n, Is.EqualTo(1.0 / 5.05).Within(0.02), "species " + s + " at eff 9");
+            Assert.That(junk3 / (double)n, Is.EqualTo(0.05 / 5.05).Within(0.01), "junk weight at eff 9");
+        }
+
+        // Catches: LoadedCount 0 (or negative) treated as 0 loaded (effective rating 0 makes every species ineligible, so all junk).
+        [Test]
+        public void PlaceholderRoller_LoadedCountZero_ClampedToOne()
+        {
+            FishingDatabase db = FishingTestData.Database();
+            RollRequest one = Req(FishingTestData.BaitWorm, 3f);
+            RollRequest zero = one; zero.LoadedCount = 0;
+            RollRequest negative = one; negative.LoadedCount = -4;
+            var a = new Pcg32(88); var b = new Pcg32(88); var c = new Pcg32(88);
+            int fish = 0;
+            for (int i = 0; i < 300; i++)
+            {
+                FishingRoll r1 = PlaceholderRoller.Roll(db, in one, ref a);
+                FishingRoll r0 = PlaceholderRoller.Roll(db, in zero, ref b);
+                FishingRoll rn = PlaceholderRoller.Roll(db, in negative, ref c);
+                AssertSameRoll(in r1, in r0);
+                AssertSameRoll(in r1, in rn);
+                if (!r0.Catch.IsJunk) fish++;
+            }
+            Assert.That(fish, Is.GreaterThan(200), "zero loaded baits still catches fish at the bait's base rating");
         }
 
         [Test]

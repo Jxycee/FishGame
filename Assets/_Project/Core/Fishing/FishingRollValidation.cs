@@ -25,6 +25,8 @@ namespace FishGame.Core
             if (roll.NibbleCount > FishingConstants.MaxNibbleSlots) return false;
             if (roll.FightSeed == 0) return false;
             if (roll.SizeClass > 2) return false;
+            if (!(roll.WeightT >= 0f && roll.WeightT <= 1f)) return false;      // also rejects NaN
+            if (!IsFinite(roll.Nibble0) || !IsFinite(roll.Nibble1) || !IsFinite(roll.Nibble2)) return false;
             if (!IsFinite(roll.HookWindow) || roll.HookWindow < 0f) return false;
             return true;
         }

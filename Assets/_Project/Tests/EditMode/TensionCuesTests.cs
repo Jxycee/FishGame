@@ -43,6 +43,73 @@ namespace FishGame.Tests.EditMode
             }
         }
 
+        // Exact cue values (spec 9.11 table + C 7.7 rumble ramp: low 0.6 r, high 0.4 r with r = (t - 0.8) / 0.2; Grace 0.8 / 0.6).
+        // Catches: wrong ramp slope or start, wrong Grace rumble constants, camera motion not scaling rumble/trauma, trauma 0.1 changed,
+        // Shake/LineDash set in the Creak band or missing in Grace, wrong LineWarm / Creak / RodBend windows.
+        [Test]
+        public void TensionCues_ExactValues_AtSpecPoints()
+        {
+            TensionCueState w = TensionCues.Evaluate(0.9f, false, 1f, 1f);
+            Assert.That(w.Band, Is.EqualTo(TensionBand.Warn));
+            Assert.That(w.RumbleLow, Is.EqualTo(0.3f).Within(1e-5f));
+            Assert.That(w.RumbleHigh, Is.EqualTo(0.2f).Within(1e-5f));
+            Assert.That(w.TraumaPerSecond, Is.EqualTo(0.1f).Within(1e-6f));
+            Assert.That(w.Shake, Is.True);
+            Assert.That(w.LineDash, Is.True);
+            Assert.That(w.LineWarn, Is.True);
+            Assert.That(w.CrackNow, Is.False);
+
+            TensionCueState wHalf = TensionCues.Evaluate(0.9f, false, 1f, 0.5f);
+            Assert.That(wHalf.RumbleLow, Is.EqualTo(0.15f).Within(1e-5f));
+            Assert.That(wHalf.RumbleHigh, Is.EqualTo(0.1f).Within(1e-5f));
+            Assert.That(wHalf.TraumaPerSecond, Is.EqualTo(0.05f).Within(1e-6f));
+            Assert.That(wHalf.Shake, Is.True, "any non-zero camera motion keeps the shake flag");
+
+            TensionCueState start = TensionCues.Evaluate(0.8f, false, 1f, 1f);
+            Assert.That(start.Band, Is.EqualTo(TensionBand.Warn));
+            Assert.That(start.RumbleLow, Is.EqualTo(0f).Within(1e-6f), "the ramp starts at 0.8");
+            Assert.That(start.RumbleHigh, Is.EqualTo(0f).Within(1e-6f));
+            Assert.That(start.Shake, Is.True);
+            Assert.That(start.LineDash, Is.True);
+            TensionCueState top = TensionCues.Evaluate(1.0f, false, 1f, 1f);
+            Assert.That(top.RumbleLow, Is.EqualTo(0.6f).Within(1e-5f));
+            Assert.That(top.RumbleHigh, Is.EqualTo(0.4f).Within(1e-5f));
+
+            TensionCueState g = TensionCues.Evaluate(1.0f, true, 1f, 1f);
+            Assert.That(g.Band, Is.EqualTo(TensionBand.Grace));
+            Assert.That(g.RumbleLow, Is.EqualTo(0.8f).Within(1e-5f));
+            Assert.That(g.RumbleHigh, Is.EqualTo(0.6f).Within(1e-5f));
+            Assert.That(g.LineDash, Is.True, "line dash stays on in Grace");
+            Assert.That(g.Shake, Is.True);
+            Assert.That(g.CrackNow, Is.True);
+            Assert.That(g.TraumaPerSecond, Is.EqualTo(0.1f).Within(1e-6f));
+            TensionCueState gHalf = TensionCues.Evaluate(1.0f, true, 1f, 0.5f);
+            Assert.That(gHalf.RumbleLow, Is.EqualTo(0.4f).Within(1e-5f));
+            Assert.That(gHalf.RumbleHigh, Is.EqualTo(0.3f).Within(1e-5f));
+
+            Assert.That(TensionCues.Evaluate(0.7f, false, 1f, 1f).LineWarm01, Is.EqualTo(0.5f).Within(1e-5f));
+            Assert.That(TensionCues.Evaluate(0.8f, false, 1f, 1f).CreakVolume01, Is.EqualTo(0.5f).Within(1e-5f));
+            Assert.That(TensionCues.Evaluate(0.65f, false, 1f, 1f).RodBend01, Is.EqualTo(0.5f).Within(1e-5f));
+            Assert.That(TensionCues.Evaluate(0.6f, false, 1f, 1f).LineWarm01, Is.EqualTo(0f).Within(1e-6f));
+            Assert.That(TensionCues.Evaluate(0.8f, false, 1f, 1f).LineWarm01, Is.EqualTo(1f).Within(1e-6f));
+
+            TensionCueState creak = TensionCues.Evaluate(0.79f, false, 1f, 1f);
+            Assert.That(creak.Band, Is.EqualTo(TensionBand.Creak));
+            Assert.That(creak.Shake, Is.False);
+            Assert.That(creak.LineDash, Is.False);
+            Assert.That(creak.LineWarn, Is.False);
+            Assert.That(creak.TraumaPerSecond, Is.EqualTo(0f));
+            Assert.That(creak.RumbleLow, Is.EqualTo(0f));
+            Assert.That(creak.RumbleHigh, Is.EqualTo(0f));
+
+            // Camera motion is clamped to 0..1.
+            TensionCueState over = TensionCues.Evaluate(0.9f, false, 1f, 3f);
+            Assert.That(over.RumbleLow, Is.EqualTo(0.3f).Within(1e-5f));
+            TensionCueState under = TensionCues.Evaluate(0.9f, false, 1f, -1f);
+            Assert.That(under.RumbleLow, Is.EqualTo(0f));
+            Assert.That(under.Shake, Is.False);
+        }
+
         [Test]
         public void TensionCues_CameraMotionZero_RemovesShakeTraumaAndRumble()
         {

@@ -37,6 +37,31 @@ namespace FishGame.Tests.EditMode
             Assert.That(sumT / n, Is.EqualTo(0.3125).Within(0.01), "mean t");
         }
 
+        // Catches: a wrong luck coefficient or sign (luck must make big fish likelier: skew down), and a missing clamp at either end
+        // (1.3 - 0.4 = 0.9 must clamp up to 1.2; 3.0 + 0.4 = 3.4 must clamp down to 3.0).
+        [Test]
+        public void CatchMath_Skew_LuckLowersSkewAndClampsToOnePointTwoAndThree()
+        {
+            Assert.That(CatchMath.Skew(2.2f, 1f), Is.EqualTo(1.8f).Within(1e-5f));
+            Assert.That(CatchMath.Skew(1.3f, 1f), Is.EqualTo(1.2f).Within(1e-6f));
+            Assert.That(CatchMath.Skew(3.0f, -1f), Is.EqualTo(3.0f).Within(1e-6f));
+            Assert.That(CatchMath.Skew(2.2f, 0f), Is.EqualTo(2.2f).Within(1e-6f));
+            Assert.That(CatchMath.Skew(2.2f, -1f), Is.EqualTo(2.6f).Within(1e-5f));
+            Assert.That(CatchMath.Skew(0.5f, 0f), Is.EqualTo(1.2f).Within(1e-6f), "low end clamp without luck");
+        }
+
+        // Catches: banker's rounding (MidpointRounding.ToEven gives 100), truncation, and an unclamped t.
+        [Test]
+        public void CatchMath_WeightG_RoundsMidpointAwayFromZeroAndClampsT()
+        {
+            Assert.That(CatchMath.WeightG(100, 101, 0.5f), Is.EqualTo(101));
+            Assert.That(CatchMath.WeightG(102, 103, 0.5f), Is.EqualTo(103), "102.5 rounds away from zero (ToEven gives 102)");
+            Assert.That(CatchMath.WeightG(200, 800, 0f), Is.EqualTo(200));
+            Assert.That(CatchMath.WeightG(200, 800, 1f), Is.EqualTo(800));
+            Assert.That(CatchMath.WeightG(200, 800, 2f), Is.EqualTo(800), "t above 1 clamps");
+            Assert.That(CatchMath.WeightG(200, 800, -1f), Is.EqualTo(200), "t below 0 clamps");
+        }
+
         [Test]
         public void CatchMath_Value_AwayFromZeroAndMinimumOne()
         {

@@ -347,6 +347,63 @@ namespace FishGame.Tests.EditMode
             Assert.That(idle.State.Reason, Is.EqualTo(EscapeReason.ThrewHook));
         }
 
+        // A side-run fish with no line run-out: tension stays pinned at 1 while reeling, and the reel brings the line in at 0.004 m/tick.
+        static FishFightProfile PinnedFish() { FishFightProfile p = NoFlip(FishingTestData.ProfileSteady); p.PullStrength = 0.8f; p.RunSpeed = 0f; return p; }
+
+        // Same-tick ending priority (step 8: Landed, Snapped, Pinned, ThrewHook). Every state below satisfies two endings after one tick.
+
+        // Catches: checking Snapped before Landed (tension 1 for 0.26 s and the line in on the same tick must land the fish).
+        [Test]
+        public void FightSim_SameTick_LandedBeatsSnapped()
+        {
+            // Tension 1, SnapTimer 0.24 (+0.02 >= grace 0.25), line 0.002 above LandDistance (reel 0.004/tick), reel on.
+            FightSim a = Make(PinnedFish());
+            var both = new FightState { Phase = FightPhase.Burst, BurstDir = 1, PhaseTimer = 10f, FishStamina = 1f, Tension = 1f, SnapTimer = 0.24f, LineLength = 2.002f };
+            a.ForceState(in both);
+            Assert.That(a.Tick(In(0f, true)), Is.EqualTo(FightOutcome.Landed));
+            Assert.That(a.State.Reason, Is.EqualTo(EscapeReason.None));
+            Assert.That(a.State.LineLength, Is.LessThanOrEqualTo(2f), "the line really was in");
+            Assert.That(a.State.SnapTimer, Is.GreaterThanOrEqualTo(0.25f), "the snap condition really was met on the same tick");
+
+            // Same state, line far from the landing: only the snap fires (also catches a Landed check without the line condition).
+            FightSim b = Make(PinnedFish());
+            var snapOnly = both; snapOnly.LineLength = 10f;
+            b.ForceState(in snapOnly);
+            Assert.That(b.Tick(In(0f, true)), Is.EqualTo(FightOutcome.Snapped));
+        }
+
+        // Catches: checking Pinned before Snapped.
+        [Test]
+        public void FightSim_SameTick_SnappedBeatsPinned()
+        {
+            FightSim c = Make(PinnedFish());
+            var snapPin = new FightState { Phase = FightPhase.Burst, BurstDir = 1, PhaseTimer = 10f, FishStamina = 1f, Tension = 1f, SnapTimer = 0.24f,
+                                           Lateral = 0.97f, PinnedTimer = 4.99f, LineLength = 10f };
+            c.ForceState(in snapPin);
+            Assert.That(c.Tick(In(0f, true)), Is.EqualTo(FightOutcome.Snapped));
+            Assert.That(c.State.Reason, Is.EqualTo(EscapeReason.None));
+            Assert.That(c.State.PinnedTimer, Is.GreaterThanOrEqualTo(5f), "the pin condition really was met on the same tick");
+        }
+
+        // Catches: checking ThrewHook before Pinned (a pinned fish with a slack line must report Pinned), and ThrewHook never firing alone.
+        [Test]
+        public void FightSim_SameTick_PinnedBeatsThrewHook()
+        {
+            FightSim d = Make(PinnedFish());
+            var pinSlack = new FightState { Phase = FightPhase.Calm, PhaseTimer = 10f, FishStamina = 1f, Lateral = 0.97f, PinnedTimer = 4.99f, SlackTimer = 11.99f, LineLength = 10f };
+            d.ForceState(in pinSlack);
+            Assert.That(d.Tick(In(0f, false)), Is.EqualTo(FightOutcome.Escaped));
+            Assert.That(d.State.Reason, Is.EqualTo(EscapeReason.Pinned));
+            Assert.That(d.State.SlackTimer, Is.GreaterThanOrEqualTo(12f), "the slack condition really was met on the same tick");
+
+            // Control: slack alone ends as ThrewHook.
+            FightSim e = Make(PinnedFish());
+            var slackOnly = new FightState { Phase = FightPhase.Calm, PhaseTimer = 10f, FishStamina = 1f, SlackTimer = 11.99f, LineLength = 10f };
+            e.ForceState(in slackOnly);
+            Assert.That(e.Tick(In(0f, false)), Is.EqualTo(FightOutcome.Escaped));
+            Assert.That(e.State.Reason, Is.EqualTo(EscapeReason.ThrewHook));
+        }
+
         // Extra: the spec 9.5 greedy side-run arithmetic for three profiles (profile index, expected snap seconds).
         [TestCase(FishingTestData.ProfileRunner, 2.84f)]
         [TestCase(FishingTestData.ProfileBulldog, 3.76f)]
