@@ -5,6 +5,10 @@ namespace FishGame.Core
 {
     public static class ShaderGlobals
     {
+        // Full array lengths (C 2.8 #18). The ripple array length is RippleMath.Slots (8).
+        public const int PaletteLength = 16;
+        public const int WavesLength = 4;
+
         public const string Palette = "_FGPalette";
         public const string Ripples = "_Ripples";
         public const string Waves = "_Waves";

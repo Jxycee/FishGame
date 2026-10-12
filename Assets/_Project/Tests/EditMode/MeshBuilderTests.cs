@@ -268,6 +268,101 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(Vector3.zero, big.bounds.center);
         }
 
+        enum Part { Side, Top, Bottom }
+
+        // Triangle segments of a Cylinder/Prism in emission order: sides, top cap (if radiusTop > 0), bottom cap (if radiusBottom > 0).
+        static List<(int count, Part part)> CylinderParts(float radiusBottom, float radiusTop, int sides)
+        {
+            var parts = new List<(int, Part)>();
+            parts.Add(((radiusBottom > 0f && radiusTop > 0f) ? 2 * sides : sides, Part.Side));
+            if (radiusTop > 0f) parts.Add((sides - 2, Part.Top));
+            if (radiusBottom > 0f) parts.Add((sides - 2, Part.Bottom));
+            return parts;
+        }
+
+        // Side and hemisphere faces: normal . (centroid - shapeCentre) > 0. Caps: normal . (+/- rotation * up) > 0.
+        void AssertFacesOutward(string name, MeshBuilder b, Vector3 shapeCentre, Quaternion rotation, List<(int count, Part part)> parts)
+        {
+            int expected = 0;
+            foreach (var p in parts) expected += p.count;
+            Assert.AreEqual(expected, b.TriangleCount, name + " triangle segments cover the whole mesh");
+            Mesh m = Track(b.ToMesh(name));
+            Vector3[] v = m.vertices;
+            Vector3[] n = m.normals;
+            int[] idx = m.triangles;
+            int tri = 0;
+            foreach (var p in parts)
+            {
+                for (int k = 0; k < p.count; k++, tri++)
+                {
+                    int i0 = idx[3 * tri], i1 = idx[3 * tri + 1], i2 = idx[3 * tri + 2];
+                    Vector3 geo = Vector3.Cross(v[i1] - v[i0], v[i2] - v[i0]).normalized;
+                    Assert.Less((n[i0] - geo).magnitude, 1e-4f, name + " tri " + tri + " stored normal is the geometric normal");
+                    if (p.part == Part.Side)
+                    {
+                        Vector3 centroid = (v[i0] + v[i1] + v[i2]) / 3f;
+                        Assert.Greater(Vector3.Dot(geo, centroid - shapeCentre), 0f, name + " tri " + tri + " side/hemisphere normal points away from the shape centre");
+                    }
+                    else
+                    {
+                        Vector3 axis = rotation * Vector3.up * (p.part == Part.Top ? 1f : -1f);
+                        Assert.Greater(Vector3.Dot(geo, axis), 0.99f, name + " tri " + tri + " " + p.part + " cap normal points along the outward axis");
+                    }
+                }
+            }
+        }
+
+        // extra: every primitive winds outward (clockwise seen from outside), with rotation and off-origin centres.
+        [Test]
+        public void MeshBuilder_AllPrimitives_FaceOutward()
+        {
+            Quaternion r1 = Quaternion.Euler(20f, 35f, 50f), r2 = Quaternion.Euler(80f, 10f, -25f), r3 = Quaternion.Euler(-130f, 70f, 15f);
+
+            Vector3 c = new Vector3(1.5f, -2f, 3f);
+            var prism = new MeshBuilder(1);
+            prism.Prism(c, 0.6f, 1.4f, 7, r1, 0);
+            AssertFacesOutward("Prism7", prism, c, r1, CylinderParts(0.6f, 0.6f, 7));
+
+            c = new Vector3(-4f, 0.5f, 2f);
+            var frustum = new MeshBuilder(1);
+            frustum.Cylinder(c, 0.7f, 0.3f, 1.8f, 6, r2, 0);
+            AssertFacesOutward("Frustum6", frustum, c, r2, CylinderParts(0.7f, 0.3f, 6));
+
+            var wide = new MeshBuilder(1); // top wider than bottom
+            wide.Cylinder(c, 0.2f, 0.8f, 1.2f, 5, r3, 0);
+            AssertFacesOutward("FrustumFlared5", wide, c, r3, CylinderParts(0.2f, 0.8f, 5));
+
+            c = new Vector3(3f, 3f, -1f);
+            var coneTop = new MeshBuilder(1); // top radius 0: apex up
+            coneTop.Cylinder(c, 0.5f, 0f, 2f, 8, r1, 0);
+            AssertFacesOutward("ConeTopZero", coneTop, c, r1, CylinderParts(0.5f, 0f, 8));
+
+            var coneBottom = new MeshBuilder(1); // bottom radius 0: apex down
+            coneBottom.Cylinder(c, 0f, 0.5f, 2f, 7, r2, 0);
+            AssertFacesOutward("ConeBottomZero", coneBottom, c, r2, CylinderParts(0f, 0.5f, 7));
+
+            c = new Vector3(-1f, 2f, 5f);
+            var capsule = new MeshBuilder(1); // body section present
+            capsule.Capsule(c, 0.4f, 2f, 8, 3, r3, 0);
+            AssertFacesOutward("CapsuleBody", capsule, c, r3, new List<(int, Part)> { (capsule.TriangleCount, Part.Side) });
+
+            var sphereCap = new MeshBuilder(1); // height == 2 * radius: no body section
+            sphereCap.Capsule(c, 0.5f, 1f, 6, 2, r1, 0);
+            AssertFacesOutward("CapsuleNoBody", sphereCap, c, r1, new List<(int, Part)> { (sphereCap.TriangleCount, Part.Side) });
+
+            var cylinderRot = new MeshBuilder(1); // plain cylinder, non-identity rotation
+            cylinderRot.Cylinder(c, 0.5f, 0.5f, 1f, 9, Quaternion.Euler(90f, 0f, 30f), 0);
+            AssertFacesOutward("CylinderRotated", cylinderRot, c, Quaternion.Euler(90f, 0f, 30f), CylinderParts(0.5f, 0.5f, 9));
+
+            var box = new MeshBuilder(1);
+            box.Box(c, new Vector3(1f, 2f, 0.5f), r2, 0);
+            AssertFacesOutward("BoxRotated", box, c, r2, new List<(int, Part)> { (box.TriangleCount, Part.Side) });
+
+            var ico = new MeshBuilder(1);
+            ico.Icosphere(c, 0.8f, 2, 0);
+            AssertFacesOutward("Icosphere2", ico, c, Quaternion.identity, new List<(int, Part)> { (ico.TriangleCount, Part.Side) });
+        }
+
         // extra
         [Test]
         public void FaceJitter_Grey_DeterministicAndWithinJitter()

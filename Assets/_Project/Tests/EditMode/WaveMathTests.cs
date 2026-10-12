@@ -102,6 +102,72 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(0f, WaveMath.AmplitudeSum(negLength), 0f);
         }
 
+        // extra: a non-finite Amplitude, Speed, DirectionDeg or Wavelength is a 0 term (height and amplitude sum), never NaN/Inf.
+        [Test]
+        public void WaveMath_NonFiniteWaveFields_AreZeroTerm()
+        {
+            float[] bad = { float.NaN, float.PositiveInfinity, float.NegativeInfinity };
+            string[] fields = { "Amplitude", "Speed", "DirectionDeg", "Wavelength" };
+            float[] xs = { 0f, 3.5f, -17f, 42.25f };
+            float[] zs = { 0f, -8f, 11f, 5.5f };
+            double[] ts = { 0.0, 1.5, 123.456 };
+            WaveSet finiteRest = Sample();
+            finiteRest.W0 = default; // the other two waves stay finite and must still contribute
+            float restSum = WaveMath.AmplitudeSum(finiteRest);
+            Assert.Greater(restSum, 0f);
+
+            foreach (string field in fields)
+            {
+                foreach (float value in bad)
+                {
+                    string what = field + "=" + value;
+                    Wave w = new Wave { DirectionDeg = 30f, Amplitude = 0.05f, Wavelength = 8f, Speed = 1.2f };
+                    switch (field)
+                    {
+                        case "Amplitude": w.Amplitude = value; break;
+                        case "Speed": w.Speed = value; break;
+                        case "DirectionDeg": w.DirectionDeg = value; break;
+                        default: w.Wavelength = value; break;
+                    }
+
+                    WaveSet alone = default;
+                    alone.W0 = w;
+                    Assert.AreEqual(0f, WaveMath.AmplitudeSum(alone), 0f, what + " alone: AmplitudeSum");
+
+                    // the bad wave sits in every slot of a set whose other two waves are finite
+                    WaveSet inW0 = Sample(); inW0.W0 = w;
+                    WaveSet inW1 = Sample(); inW1.W1 = w;
+                    WaveSet inW2 = Sample(); inW2.W2 = w;
+                    WaveSet w0Zero = Sample(); w0Zero.W0 = default;
+                    WaveSet w1Zero = Sample(); w1Zero.W1 = default;
+                    WaveSet w2Zero = Sample(); w2Zero.W2 = default;
+                    Assert.AreEqual(WaveMath.AmplitudeSum(w0Zero), WaveMath.AmplitudeSum(inW0), 1e-7f, what + " in W0: AmplitudeSum");
+                    Assert.AreEqual(WaveMath.AmplitudeSum(w1Zero), WaveMath.AmplitudeSum(inW1), 1e-7f, what + " in W1: AmplitudeSum");
+                    Assert.AreEqual(WaveMath.AmplitudeSum(w2Zero), WaveMath.AmplitudeSum(inW2), 1e-7f, what + " in W2: AmplitudeSum");
+
+                    for (int i = 0; i < xs.Length; i++)
+                    {
+                        foreach (double t in ts)
+                        {
+                            Assert.AreEqual(0f, WaveMath.HeightAt(alone, xs[i], zs[i], t), 0f, what + " alone: height");
+                            Assert.AreEqual(WaveMath.HeightAt(w0Zero, xs[i], zs[i], t), WaveMath.HeightAt(inW0, xs[i], zs[i], t), 0f, what + " in W0: height");
+                            Assert.AreEqual(WaveMath.HeightAt(w1Zero, xs[i], zs[i], t), WaveMath.HeightAt(inW1, xs[i], zs[i], t), 0f, what + " in W1: height");
+                            Assert.AreEqual(WaveMath.HeightAt(w2Zero, xs[i], zs[i], t), WaveMath.HeightAt(inW2, xs[i], zs[i], t), 0f, what + " in W2: height");
+                        }
+                    }
+                }
+            }
+        }
+
+        // extra: shader array lengths are named constants (C 2.8 #18); 8 stays RippleMath.Slots.
+        [Test]
+        public void ShaderGlobals_ArrayLengths_AreFullLength()
+        {
+            Assert.AreEqual(16, ShaderGlobals.PaletteLength);
+            Assert.AreEqual(4, ShaderGlobals.WavesLength);
+            Assert.AreEqual(8, RippleMath.Slots);
+        }
+
         // extra: pins the direction convention (0 deg = +Z, dir = (sin, cos) on (x, z)) and travel direction.
         [Test]
         public void WaveMath_Direction_ZeroDegIsPlusZ_AndWaveTravelsForward()

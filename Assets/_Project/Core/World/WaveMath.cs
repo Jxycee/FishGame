@@ -1,7 +1,7 @@
 // Core/World/WaveMath.cs: water surface height (spec 10.4). Core, pure.
 // One shared formula: T21's FishGame/Water vertex displacement must use the same direction convention and term:
 //   dir = (sin(deg), cos(deg)) on (x, z) (0 deg = +Z), k = 2*pi / Wavelength, term = A * sin(k * (dot(dir, (x, z)) - Speed * t)),
-//   and Wavelength <= 0 (or NaN) or Amplitude == 0 gives term 0.
+//   and Wavelength <= 0, Amplitude == 0, or any non-finite field (NaN, +/-Infinity) gives term 0.
 using System;
 
 namespace FishGame.Core
@@ -24,14 +24,27 @@ namespace FishGame.Core
             return Contribution(waves.W0) + Contribution(waves.W1) + Contribution(waves.W2);
         }
 
+        // A wave with any non-finite field (NaN or +/-Infinity) is a 0 term, in the height and in the amplitude sum.
+        private static bool IsUsable(in Wave w)
+        {
+            return w.Wavelength > 0f
+                && !float.IsInfinity(w.Wavelength)
+                && IsFinite(w.Amplitude) && IsFinite(w.Speed) && IsFinite(w.DirectionDeg);
+        }
+
+        private static bool IsFinite(float v)
+        {
+            return !float.IsNaN(v) && !float.IsInfinity(v);
+        }
+
         private static float Contribution(in Wave w)
         {
-            return w.Wavelength > 0f ? Math.Abs(w.Amplitude) : 0f;
+            return IsUsable(w) ? Math.Abs(w.Amplitude) : 0f;
         }
 
         private static double Term(in Wave w, float x, float z, double t)
         {
-            if (!(w.Wavelength > 0f) || w.Amplitude == 0f) return 0.0;
+            if (!IsUsable(w) || w.Amplitude == 0f) return 0.0;
             double th = w.DirectionDeg * DegToRad;
             double k = TwoPi / w.Wavelength;
             double along = Math.Sin(th) * x + Math.Cos(th) * z;

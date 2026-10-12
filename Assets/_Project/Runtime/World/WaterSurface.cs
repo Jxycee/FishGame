@@ -7,6 +7,7 @@ namespace FishGame.Runtime
     // Authority: none. Pure shared water height for every peer (spec 10.4).
     // Waves come from WaterTimeDriver (T22) via Configure; the clock via SetTimeSource (ServerTime in sessions).
     // Gameplay never reads _WaterTime.
+    // Threading: HeightAt(x, z) is main-thread only unless a time source is set (the default clock reads Time.timeSinceLevelLoad).
     public static class WaterSurface
     {
         public const float FlatHeight = 0f;
