@@ -62,7 +62,7 @@ namespace FishGame.Core
             return IsFinite(req.OriginX) && IsFinite(req.OriginY) && IsFinite(req.OriginZ) && IsFinite(req.YawDeg);
         }
 
-        // max(landDistance, hostDistance - 1.5); a NaN distance gives landDistance. The ledger never feeds a non-finite distance in
+        // max(landDistance, hostDistance - HookedLineSlack); a NaN distance gives landDistance. The ledger never feeds a non-finite distance in
         // (Hooked fails closed on one), so this fallback is only a safe default for other callers.
         public static float HostLineLength0(float hostDistance, float landDistance)
         {
@@ -71,7 +71,7 @@ namespace FishGame.Core
         }
 
         // Anti-teleport bound (T9-R1): a player cannot be nearer the landing than the cast distance minus what the fastest walk
-        // covers since the cast was accepted. max(hostLineLength0, castDistance - MaxWalkSpeed * elapsed - 1.5), floored at landDistance.
+        // covers since the cast was accepted. max(hostLineLength0, castDistance - MaxWalkSpeed * elapsed - HookedLineSlack), floored at landDistance.
         // MaxWalkSpeed is the sprint speed. A NaN bound (non-finite elapsed) is ignored.
         public static float WalkBoundedLineLength0(float hostLineLength0, float castDistance, double elapsedSeconds, float landDistance)
         {

@@ -122,31 +122,34 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void CatchValidator_HostLineLength0_LeashesToHostDistance()
         {
-            Assert.That(CatchValidator.HostLineLength0(10f, 2f), Is.EqualTo(8.5f).Within(1e-5f));
+            // The slack comes from the constant (it was a literal 1.5 until T19-R1 derived it from the rig's tip reach).
+            const float slack = FishingConstants.HookedLineSlack;
+            Assert.That(CatchValidator.HostLineLength0(10f, 2f), Is.EqualTo(10f - slack).Within(1e-5f));
             Assert.That(CatchValidator.HostLineLength0(3f, 2f), Is.EqualTo(2f), "never below the landing distance");
-            Assert.That(CatchValidator.HostLineLength0(3.4f, 2f), Is.EqualTo(2f));
-            Assert.That(CatchValidator.HostLineLength0(3.6f, 2f), Is.EqualTo(2.1f).Within(1e-5f));
+            Assert.That(CatchValidator.HostLineLength0(2f + slack - 0.1f, 2f), Is.EqualTo(2f));
+            Assert.That(CatchValidator.HostLineLength0(2f + slack + 0.1f, 2f), Is.EqualTo(2.1f).Within(1e-5f));
             Assert.That(CatchValidator.HostLineLength0(float.NaN, 2f), Is.EqualTo(2f), "a NaN distance maps to the landing distance here; the ledger never feeds it in (Hooked fails closed on a non-finite distance)");
         }
 
         // Catches: a bound that replaces instead of raising the host line (max written as min), a sign slip on the walk term,
-        // a missing 1.5 slack, a missing floor at the landing distance, using the wrong speed constant, and a NaN elapsed time
+        // a missing HookedLineSlack, a missing floor at the landing distance, using the wrong speed constant, and a NaN elapsed time
         // poisoning the result.
         [Test]
         public void CatchValidator_WalkBoundedLineLength0_RaisesTheHostLineOnly()
         {
             const float sprint = MovementMath.SprintSpeed;
-            // host line 2 ("standing at the bobber"), cast 24 m, 1 s since accept: 24 - sprint - 1.5
-            Assert.That(CatchValidator.WalkBoundedLineLength0(2f, 24f, 1.0, 2f), Is.EqualTo(24f - sprint - 1.5f).Within(1e-4f), "uses the Core sprint speed");
-            // elapsed 0: cast - 1.5
-            Assert.That(CatchValidator.WalkBoundedLineLength0(2f, 24f, 0.0, 2f), Is.EqualTo(22.5f).Within(1e-4f));
+            const float slack = FishingConstants.HookedLineSlack;   // a literal 1.5 until T19-R1
+            // host line 2 ("standing at the bobber"), cast 24 m, 1 s since accept: 24 - sprint - slack
+            Assert.That(CatchValidator.WalkBoundedLineLength0(2f, 24f, 1.0, 2f), Is.EqualTo(24f - sprint - slack).Within(1e-4f), "uses the Core sprint speed");
+            // elapsed 0: cast - slack
+            Assert.That(CatchValidator.WalkBoundedLineLength0(2f, 24f, 0.0, 2f), Is.EqualTo(24f - slack).Within(1e-4f));
             // an honest longer host line wins
             Assert.That(CatchValidator.WalkBoundedLineLength0(30f, 24f, 1.0, 2f), Is.EqualTo(30f));
             // bound below host line and below the landing distance: host line (already floored by HostLineLength0)
             Assert.That(CatchValidator.WalkBoundedLineLength0(2f, 24f, 10.0, 2f), Is.EqualTo(2f), "negative bound: floor at landDistance");
             Assert.That(CatchValidator.WalkBoundedLineLength0(5f, 24f, 10.0, 2f), Is.EqualTo(5f), "negative bound: host line");
-            // exact crossover: 24 - 6.6 * t - 1.5 == 5  ->  t = 17.5 / 6.6
-            double tCross = 17.5 / sprint;
+            // exact crossover: 24 - sprint * t - slack == 5  ->  t = (24 - slack - 5) / sprint
+            double tCross = (24f - slack - 5f) / sprint;
             Assert.That(CatchValidator.WalkBoundedLineLength0(5f, 24f, tCross - 0.1, 2f), Is.EqualTo(5f + sprint * 0.1f).Within(1e-3f));
             Assert.That(CatchValidator.WalkBoundedLineLength0(5f, 24f, tCross + 0.1, 2f), Is.EqualTo(5f));
             // the landing-distance floor applies even when the host line is below it (defensive)

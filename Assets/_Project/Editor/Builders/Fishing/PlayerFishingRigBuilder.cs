@@ -21,6 +21,13 @@ namespace FishGame.EditorTools
         const string ToonBaseMaterial = "M_Toon_Base";
         const string LineMaterial = "M_Line";
 
+        // Rod rotation relative to Hand (ruling T19-R1). The arm's own frame is NOT identity at runtime: on the owner PlayerBody.LateUpdate poses
+        // ArmR at camera * Euler(-90, 0, 0), which maps arm +Z to camera up, arm -Y (the way the arm mesh hangs) to camera forward, and arm +Y to
+        // camera back. For the rod's +Z to be camera forward pitched UP by 35 degrees (0, sin35, cos35 in camera space) it must be
+        // (0, -cos35, sin35) in arm space, i.e. +Z rotated toward -Y by 55 degrees = Euler(55, 0, 0) (90 - 35). On remotes the arm is
+        // Euler(-70 - pitch, 0, 0) in Body space, so the rod elevation is 70 - 55 + pitch = 15 + pitch degrees: forward-up when level, following the look.
+        const float RodLocalPitchDeg = 55f;
+
         const float SegmentLength = 0.3f;
         const float RodRadiusBase = 0.018f, RodRadiusTip = 0.006f;
         const int LinePointCount = 24;
@@ -42,7 +49,7 @@ namespace FishGame.EditorTools
             // 3. Children.
             Transform root = playerRoot.transform;
             Empty(root, PlayerRigPaths.Hand, new Vector3(0f, -0.5f, 0f), Quaternion.identity);
-            Empty(root, PlayerRigPaths.Rod, Vector3.zero, Quaternion.Euler(-35f, 0f, 0f));   // +Z forward-up 35 degrees
+            Empty(root, PlayerRigPaths.Rod, Vector3.zero, Quaternion.Euler(RodLocalPitchDeg, 0f, 0f));
             for (int i = 0; i < segments.Length; i++)
             {
                 Transform seg = Empty(root, PlayerRigPaths.RodSegmentPrefix + i, new Vector3(0f, 0f, SegmentLength * i), Quaternion.identity);

@@ -253,18 +253,35 @@ namespace FishGame.Tests.PlayMode
         }
 
         // Not an iterator, so it may catch: a failure here (CreateScene, SetActiveScene or the scan) is logged and recovery carries on
-        // with whatever it could list, instead of escaping and replacing the original leak message.
+        // with whatever it could list, instead of escaping and replacing the original leak message. The reset scene is reused when an
+        // earlier recovery left it loaded (CreateScene would throw on the duplicate name), and the unload list has its own try, so a
+        // CreateScene failure still lists every other loaded scene for unloading.
         private static List<Scene> PrepareResetScene()
         {
             var toUnload = new List<Scene>();
+            Scene reset = default;
             try
             {
-                Scene reset = SceneManager.CreateScene(ResetSceneName);
+                reset = SceneManager.GetSceneByName(ResetSceneName);
+                if (!reset.IsValid() || !reset.isLoaded)
+                {
+                    reset = SceneManager.CreateScene(ResetSceneName);
+                }
+
                 SceneManager.SetActiveScene(reset);
+            }
+            catch (Exception e)
+            {
+                TestContext.WriteLine("leak recovery: could not prepare the reset scene: " + e.GetBaseException().Message);
+            }
+
+            try
+            {
                 for (int i = 0; i < SceneManager.sceneCount; i++)
                 {
                     Scene scene = SceneManager.GetSceneAt(i);
-                    if (scene.isLoaded && scene.handle != reset.handle)
+                    bool isReset = reset.IsValid() && scene.handle == reset.handle;
+                    if (scene.isLoaded && !isReset)
                     {
                         toUnload.Add(scene);
                     }
@@ -272,7 +289,7 @@ namespace FishGame.Tests.PlayMode
             }
             catch (Exception e)
             {
-                TestContext.WriteLine("leak recovery: could not prepare the reset scene: " + e.GetBaseException().Message);
+                TestContext.WriteLine("leak recovery: could not list the loaded scenes: " + e.GetBaseException().Message);
             }
 
             return toUnload;

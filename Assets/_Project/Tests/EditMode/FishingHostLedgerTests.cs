@@ -5,11 +5,13 @@ using NUnit.Framework;
 namespace FishGame.Tests.EditMode
 {
     // Host ledger (T9, spec 9.9). Shared setup: ledger seed 42, handmade rod, worm bait, slot 0 / client 100; cast 0.5 charge lands at
-    // distance 10.25 (flight 0.573 s). Ov forces a 2 s bite on a carp, so HookAt(tf + 2.0) hooks exactly on time. A hook at host distance
-    // 10 gives LineLength0 8.5, so the handmade landing floor is 0.8 x 6.5 / 1.0 - 0.5 = 4.7 s (junk: 0.8 x 6.5 / 3 - 0.5 = 1.233 s).
+    // distance 10.25 (flight 0.573 s). Ov forces a 2 s bite on a carp, so HookAt(tf + 2.0) hooks exactly on time. A hook at HookDistance
+    // (8.5 + HookedLineSlack, so it tracks the constant; it was a literal 10 while the slack was 1.5, T19-R1) gives LineLength0 8.5, so the
+    // handmade landing floor is 0.8 x 6.5 / 1.0 - 0.5 = 4.7 s (junk: 0.8 x 6.5 / 3 - 0.5 = 1.233 s).
     public class FishingHostLedgerTests
     {
         const ulong Client = 100;
+        const float HookDistance = 8.5f + FishingConstants.HookedLineSlack;   // host distance whose LineLength0 is exactly 8.5
         const ulong Seed = 42;
         static readonly float Tf = CastMath.FlightTime(CastMath.Distance(0.5f, 2.5f, 18f));
 
@@ -67,12 +69,12 @@ namespace FishGame.Tests.EditMode
             return sink;
         }
 
-        // Tick to the forced bite (tf + 2.0 s after accept) and send the hook at host distance 10.
+        // Tick to the forced bite (tf + 2.0 s after accept) and send the hook at HookDistance (LineLength0 8.5).
         static void HookAt(FishingHostLedger l, uint id, ulong client = Client)
         {
             List<CommitDecision> sink = Tick(l, Tf + 2.0);
             Assert.That(sink, Is.Empty, "nothing may time out before the hook");
-            bool commit = l.Hooked(client, id, 10f, out CommitDecision d);
+            bool commit = l.Hooked(client, id, HookDistance, out CommitDecision d);
             Assert.That(commit, Is.False, "hook refused: " + d.Outcome + "/" + d.Reason);
         }
 
@@ -484,7 +486,7 @@ namespace FishGame.Tests.EditMode
             FishingHostLedger l = NewLedger();
             Accept(l, 1, Ov);
             Tick(l, Tf + 2.0 - 0.75 - 0.05);   // hook tolerance is 0.75 s
-            bool commit = l.Hooked(Client, 1, 10f, out CommitDecision d);
+            bool commit = l.Hooked(Client, 1, HookDistance, out CommitDecision d);
             Assert.That(commit, Is.True, "too early: a commit must be sent");
             Assert.That(d.Accepted, Is.True);
             Assert.That(d.Outcome, Is.EqualTo(FightOutcome.Escaped));
@@ -497,7 +499,7 @@ namespace FishGame.Tests.EditMode
 
             Accept(l, 2, Ov);
             Tick(l, Tf + 2.0 - 0.75 + 0.01);
-            bool commit2 = l.Hooked(Client, 2, 10f, out CommitDecision d2);
+            bool commit2 = l.Hooked(Client, 2, HookDistance, out CommitDecision d2);
             Assert.That(commit2, Is.False, "inside the tolerance: accepted, no commit");
             Assert.That(l.TryGetActive(Client, out ActiveCast a), Is.True);
             Assert.That(a.Phase, Is.EqualTo(CastPhase.Hooked));
@@ -689,7 +691,7 @@ namespace FishGame.Tests.EditMode
             Assert.That(Stock(l), Is.EqualTo(19));
 
             CommitDecision viaResult = Result(l, 1, FightOutcome.Landed, EscapeReason.None, Clean(9.5f));
-            bool commit = l.Hooked(Client, 1, 10f, out CommitDecision viaHook);
+            bool commit = l.Hooked(Client, 1, HookDistance, out CommitDecision viaHook);
             CommitDecision viaCancel = CancelCast(l, 1);
             Assert.That(commit, Is.True, "an orphan hook always answers with a commit");
             foreach (CommitDecision d in new[] { viaResult, viaHook, viaCancel })
@@ -723,7 +725,7 @@ namespace FishGame.Tests.EditMode
             CommitDecision d = Result(l, 1, FightOutcome.Landed, EscapeReason.None, Clean(9f), 12345);
             Assert.That(d.Accepted, Is.False);
             Assert.That(d.Outcome, Is.EqualTo(FightOutcome.Cancelled));
-            Assert.That(l.Hooked(12345, 1, 10f, out CommitDecision h), Is.True);
+            Assert.That(l.Hooked(12345, 1, HookDistance, out CommitDecision h), Is.True);
             Assert.That(h.Accepted, Is.False);
             Assert.That(l.CatchLog, Is.Empty);
         }
@@ -1054,7 +1056,7 @@ namespace FishGame.Tests.EditMode
             CastAndFail(l, 2, 0);                                // streak 2
             Accept(l, 3, Ov);                                    // early hook: Escaped/Invalid is a failure
             Tick(l, 0.1);
-            Assert.That(l.Hooked(Client, 3, 10f, out CommitDecision early), Is.True);
+            Assert.That(l.Hooked(Client, 3, HookDistance, out CommitDecision early), Is.True);
             Assert.That(early.Reason, Is.EqualTo(EscapeReason.Invalid));
             CommitDecision orphan = CancelCast(l, 3);            // orphans never count
             Assert.That(orphan.Accepted, Is.False);
@@ -1140,7 +1142,7 @@ namespace FishGame.Tests.EditMode
 
         // The anti-teleport bound (T9-R1). Carbon rod (cast 24 m, reel 1.2), full charge, 2 s bite: the player hooks at the earliest
         // allowed instant (bite - tolerance) claiming to stand beside the bobber. Without the bound the line is 2.0 and the landing
-        // floor is 0 s; with it the line is cast - sprint * (hooked - accepted) - 1.5.
+        // floor is 0 s; with it the line is cast - sprint * (hooked - accepted) - HookedLineSlack.
         // Catches: LineLength0 = HostLineLength0 only (no walk bound); the bound using the wrong elapsed time (e.g. Now alone);
         // a sign slip; the bound not floored; the floor not following the bounded length.
         [Test]
@@ -1189,7 +1191,7 @@ namespace FishGame.Tests.EditMode
             Tick(l, CastMath.FlightTime(24f) + 1.3);
             l.Hooked(Client, 1, 40f, out _);   // host says 40 m from the landing: longer than any walk bound
             l.TryGetActive(Client, out ActiveCast a);
-            Assert.That(a.LineLength0, Is.EqualTo(38.5f).Within(1e-4f));
+            Assert.That(a.LineLength0, Is.EqualTo(40f - FishingConstants.HookedLineSlack).Within(1e-4f));
         }
 
         // Catches: the walk bound lowering the line when it is negative (late hook), or the line dipping below the landing distance.
@@ -1198,7 +1200,7 @@ namespace FishGame.Tests.EditMode
         {
             FishingHostLedger l = NewLedger();
             Accept(l, 1, Ov);                       // 10.25 m cast, hook at tf + 2.0: the bound is negative
-            HookAt(l, 1);                           // host distance 10 -> 8.5
+            HookAt(l, 1);                           // host distance HookDistance -> 8.5
             l.TryGetActive(Client, out ActiveCast a);
             Assert.That(a.LineLength0, Is.EqualTo(8.5f).Within(1e-5f), "walk bound below the host line changes nothing");
 
@@ -1372,7 +1374,7 @@ namespace FishGame.Tests.EditMode
             Tick(l, Tf + 1.0);
             Tick(l, 500.0, paused: true);
             Tick(l, 1.0);   // total running time Tf + 2.0
-            bool commit = l.Hooked(Client, 1, 10f, out _);
+            bool commit = l.Hooked(Client, 1, HookDistance, out _);
             Assert.That(commit, Is.False, "paused time does not count toward the bite wait");
         }
     }

@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using FishGame.Core;
 using FishGame.Data;
 using FishGame.Fishing;
@@ -244,6 +243,41 @@ namespace FishGame.Tests.PlayMode
         {
             return new Vector2(a.x - b.x, a.z - b.z).magnitude;
         }
+
+        // Like Charge but for a (near) full-power cast: holds until ChargeNorm >= min. Leaves Secondary and Primary held.
+        public static IEnumerator ChargeToMax(FishingRig rig, float min = 0.95f)
+        {
+            FakeInputService fake = rig.Fake;
+            yield return Step(fake, new PlayerInputFrame { SecondaryHeld = true, PrimaryPressed = true, PrimaryHeld = true });
+            double deadline = Time.realtimeSinceStartupAsDouble + 3.0;
+            while (rig.Machine.ChargeNorm < min)
+            {
+                if (Time.realtimeSinceStartupAsDouble >= deadline) Assert.Fail("ChargeNorm never reached " + min + " (state " + rig.Machine.State + ")");
+                yield return Step(fake, new PlayerInputFrame { SecondaryHeld = true, PrimaryHeld = true });
+            }
+        }
+
+        // Shared TearDown body (ruling T19-R1): debug settings first (SubsystemRegistration resets only on entering Play Mode),
+        // then the log watch and the bus / commit subscriptions (teardown has its own checks), then the App.
+        public static IEnumerator TearDown(FishingRig rig)
+        {
+            ResetDebugSettings();
+            if (rig != null)
+            {
+                rig.Dispose();
+            }
+
+            yield return PlayModeHarness.TearDownApp();
+        }
+
+        // Moves the owner's look pitch to the given angle (positive = up) and waits until PlayerBody.LateUpdate has posed the arm for it.
+        // A coroutine resumes after Update and before LateUpdate, so the pose from the look Step exists only after a second frame.
+        public static IEnumerator SetPitch(FishingRig rig, PlayerCamera camera, float pitchDeg)
+        {
+            yield return Step(rig.Fake, new PlayerInputFrame { LookPitchDeg = pitchDeg - camera.PitchDeg });
+            yield return Step(rig.Fake, default);
+            Assert.That(camera.PitchDeg, Is.EqualTo(pitchDeg).Within(0.01f), "the look pitch did not reach the requested angle");
+        }
     }
 
     public class FishingSoloTests
@@ -253,13 +287,9 @@ namespace FishGame.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
-            FishingPlayModeDriver.ResetDebugSettings();   // before TearDownApp: SubsystemRegistration resets only on entering Play Mode
-            if (_rig != null)
-            {
-                _rig.Dispose();   // log watch off first: teardown has its own checks
-                _rig = null;
-            }
-            yield return PlayModeHarness.TearDownApp();
+            FishingRig rig = _rig;
+            _rig = null;
+            yield return FishingPlayModeDriver.TearDown(rig);
         }
 
         // Catches: any link of cast -> result -> bite -> hook -> fight -> commit -> creel -> announce being broken or mis-wired in the
@@ -285,6 +315,17 @@ namespace FishGame.Tests.PlayMode
             TestContext.WriteLine($"V12: Probe(0,-45) water={overDeck.FirstHitIsWater}; Probe(0,-36) water={offDeck.FirstHitIsWater} waterY={offDeck.WaterY:F3} depth={offDeck.Depth:F3}");
 
             yield return FishingPlayModeDriver.EquipAndReady(rig);
+
+            // T19-R1: in the owner arm pose the rod tip is in front of the eye and only slightly above it (the rod points forward-up, not up/back).
+            yield return PlayModeHarness.WaitFrames(2, 0f);   // PlayerBody.LateUpdate has posed the arm
+            Transform cam = rig.Player.transform.Find(PlayerRigPaths.Camera);
+            Assert.That(cam, Is.Not.Null, "the player camera transform");
+            Vector3 tipPos = rig.Controller.RodTipPosition;
+            float tipForwardDot = Vector3.Dot((tipPos - cam.position).normalized, cam.forward);
+            TestContext.WriteLine($"FG T19R1 tip dot={tipForwardDot:F3} tipAboveEye={tipPos.y - cam.position.y:F3}");
+            Assert.That(tipForwardDot, Is.GreaterThan(0.8f), "the rod tip must lie in front of the camera (rod points forward-up)");
+            Assert.That(tipPos.y, Is.LessThan(cam.position.y + 1.0f), "the rod tip must be below 1 m above the eye line");
+
             yield return FishingPlayModeDriver.ChargeAndRelease(rig);
             Assert.That(rig.Machine.State, Is.EqualTo(RodState.Casting), "state right after the release");
 
@@ -381,6 +422,104 @@ namespace FishGame.Tests.PlayMode
             Assert.That(rig.Creel.Count, Is.EqualTo(0));
             Assert.That(rig.Announced, Is.Empty, "a cancel announces nothing");
             rig.Log.AssertEmpty("cancel in waiting");
+        }
+
+        // Catches (T19-R1): HookedLineSlack smaller than the rig's real tip reach + margin. TipAnchor is posed in camera space by
+        // PlayerBody, so its horizontal distance from the player root depends on the look pitch. The Core constant must be that
+        // maximum (over pitch -60..+60) + 0.5 m, rounded up to 0.1 m, or an honest owner start line could undercut the host's LineLength0.
+        [UnityTest]
+        public IEnumerator RodTip_MaxHorizontalReachOverPitch_FitsHookedLineSlack()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig, teleport: false);
+            FishingRig rig = _rig;
+
+            PlayerCamera camera = rig.Player.GetComponent<PlayerCamera>();
+            Assert.That(camera, Is.Not.Null, "PlayerCamera missing");
+            Transform tip = rig.Player.transform.Find(PlayerRigPaths.RodTipAnchor);
+            Assert.That(tip, Is.Not.Null, "TipAnchor missing");
+
+            float maxFlat = 0f, maxFlatPitch = 0f, maxForward = 0f;
+            for (int pitch = -60; pitch <= 60; pitch++)
+            {
+                yield return FishingPlayModeDriver.SetPitch(rig, camera, pitch);
+                Vector3 root = rig.Player.transform.position;
+                Vector3 d = tip.position - root;
+                Vector3 flatForward = Vector3.ProjectOnPlane(rig.Player.transform.forward, Vector3.up).normalized;
+                float flat = new Vector2(d.x, d.z).magnitude;
+                float forward = Vector3.Dot(new Vector3(d.x, 0f, d.z), flatForward);
+                if (flat > maxFlat) { maxFlat = flat; maxFlatPitch = pitch; }
+                if (forward > maxForward) maxForward = forward;
+            }
+
+            float expectedSlack = Mathf.Ceil((maxFlat + 0.5f) * 10f - 1e-3f) / 10f;
+            TestContext.WriteLine($"FG T19R1 reach maxFlat={maxFlat:F4} at pitch {maxFlatPitch} maxForward={maxForward:F4} expectedSlack={expectedSlack:F1} constant={FishingConstants.HookedLineSlack:F1}");
+            Assert.That(FishingConstants.HookedLineSlack, Is.GreaterThanOrEqualTo(maxFlat + 0.5f),
+                "HookedLineSlack must cover the measured max tip reach (" + maxFlat.ToString("F3") + ") + 0.5 m");
+            Assert.That(FishingConstants.HookedLineSlack, Is.EqualTo(expectedSlack).Within(0.01f),
+                "HookedLineSlack must equal the measured reach + 0.5 m rounded up to 0.1 m (re-derive it after changing the rod rig)");
+            rig.Log.AssertEmpty("rod tip reach sweep");
+        }
+
+        // Catches (T19-R1): the owner's start line (rod tip to bobber, FightSim's first LineLength) shorter than the host's LineLength0
+        // (hostDistance - HookedLineSlack, floored at the landing distance): the host Landed floor would then reject an honest catch.
+        // G9: the short 0.15 charge from the deck end.
+        [UnityTest]
+        public IEnumerator SoloHost_OwnerStartLine_CoversHostLineLength0_AtG9Cast()
+        {
+            FishingDebugSettings.ForcedBiteWait = 0.1f;
+            FishingDebugSettings.ForcedSpeciesId = "bluegill";
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+
+            yield return FishingPlayModeDriver.EquipAndReady(rig);
+            yield return FishingPlayModeDriver.ChargeAndRelease(rig);
+            yield return FishingPlayModeDriver.WaitForState(rig, RodState.Hooked, 6f);
+            yield return AssertOwnerLineCoversHost(rig, "G9");
+            rig.Log.AssertEmpty("owner start line at the G9 cast");
+        }
+
+        // Same, at a (near) full-power cast: the longest distance the rod can throw, where a slack smaller than the tip reach shows most.
+        [UnityTest]
+        public IEnumerator SoloHost_OwnerStartLine_CoversHostLineLength0_AtMaxCast()
+        {
+            FishingDebugSettings.ForcedBiteWait = 0.1f;
+            FishingDebugSettings.ForcedSpeciesId = "bluegill";
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+
+            yield return FishingPlayModeDriver.EquipAndReady(rig);
+            yield return FishingPlayModeDriver.ChargeToMax(rig);
+            yield return FishingPlayModeDriver.Release(rig);
+            yield return FishingPlayModeDriver.WaitForState(rig, RodState.Hooked, 8f);
+            ActiveCast cast = default;
+            yield return AssertOwnerLineCoversHost(rig, "max", c => cast = c);
+            float rodMax = rig.Registry.Fishing.Rods[rig.Registry.RodIndex("rod_handmade")].CastMaxDist;
+            Assert.That(cast.CastDistance, Is.GreaterThan(0.85f * rodMax), "this must be a max-distance cast (rod max " + rodMax + ")");
+            rig.Log.AssertEmpty("owner start line at the max cast");
+        }
+
+        // Waits for the host to record Hooked, then compares the owner's tip-to-landing distance (what BuildFrame feeds FightSim as the
+        // start line; the player is still, so it equals the hook-frame value) with the host's LineLength0.
+        private static IEnumerator AssertOwnerLineCoversHost(FishingRig rig, string label, Action<ActiveCast> capture = null)
+        {
+            FishingHost host = FishingHost.Current;
+            Assert.That(host, Is.Not.Null, "the solo host's FishingHost");
+            ulong client = rig.Player.OwnerClientId;
+            ActiveCast cast = default;
+            yield return PlayModeHarness.WaitUntil(
+                () => host.Ledger.TryGetActive(client, out cast) && cast.Phase == CastPhase.Hooked,
+                3f, "the host never recorded the Hooked phase");
+            capture?.Invoke(cast);
+
+            float ownerLine = FishingPlayModeDriver.Flat(rig.Controller.RodTipPosition, new Vector3(cast.LandingX, 0f, cast.LandingZ));
+            float hostDistance = FishingPlayModeDriver.Flat(rig.Player.transform.position, new Vector3(cast.LandingX, 0f, cast.LandingZ));
+            float hostLine = cast.LineLength0;
+            TestContext.WriteLine($"FG T19R1 {label}: castDistance={cast.CastDistance:F3} hostDistance={hostDistance:F3} hostLineLength0={hostLine:F3} ownerStartLine={ownerLine:F3} fightLine={rig.Machine.Fight.State.LineLength:F3} slack={FishingConstants.HookedLineSlack:F1}");
+            Assert.That(ownerLine, Is.GreaterThanOrEqualTo(hostLine),
+                label + ": the owner's start line (" + ownerLine.ToString("F3") + ") must not undercut the host's LineLength0 (" + hostLine.ToString("F3") + ")");
         }
 
         // Catches: the movement lock leaking into RodReady (a rod in hand must not freeze the walk).
@@ -503,16 +642,14 @@ namespace FishGame.Tests.PlayMode
             Assert.That(rig.Creel.ServerTryAdd(in item, 10, 100000, out _), Is.True);
             byte slot = rig.Player.Slot;
 
-            // A real respawn: despawn the host's player, then run PlayerSpawner's idempotent entry (private) as OnLoadEventCompleted would.
+            // A real respawn: despawn the host's player, then run PlayerSpawner's idempotent entry (internal) as OnLoadEventCompleted would.
             NetworkObject old = rig.Player.GetComponent<NetworkObject>();
             old.Despawn(true);
             yield return PlayModeHarness.WaitUntil(() => PlayerNetState.Local == null, PlayModeHarness.DefaultTimeoutSeconds, "the old player never despawned");
 
             PlayerSpawner spawner = PlayerSpawner.Current;
             Assert.That(spawner, Is.Not.Null, "PlayerSpawner missing");
-            MethodInfo spawn = typeof(PlayerSpawner).GetMethod("SpawnPlayerIfMissing", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(spawn, Is.Not.Null, "PlayerSpawner.SpawnPlayerIfMissing not found");
-            spawn.Invoke(spawner, new object[] { NetworkManager.Singleton, NetworkManager.ServerClientId });
+            spawner.SpawnPlayerIfMissing(NetworkManager.Singleton, NetworkManager.ServerClientId);
 
             yield return PlayModeHarness.WaitUntil(() => PlayerNetState.Local != null, PlayModeHarness.DefaultTimeoutSeconds, "the respawned player never appeared");
             PlayerCreel creel = PlayerNetState.Local.GetComponent<PlayerCreel>();

@@ -30,7 +30,7 @@ namespace FishGame.Core
         public const float HostOriginSlack = 3.0f;           // cast origin vs host view, horizontal metres
         public const float HostWaitSlackSeconds = 30f;       // stuck-Waiting refund after tFlight + biteWait + 30
         public const float LandedFloorFactor = 0.8f, LandedFloorSlackSeconds = 0.5f;
-        public const float HookedLineSlack = 1.5f;           // lineLength0 = hostDistance - 1.5, floor landDistance
+        public const float HookedLineSlack = 3.1f;           // lineLength0 = hostDistance - slack, floor landDistance; derived from the rig's max tip reach (2.52 m) + 0.5 m margin, T19-R1
         public const float JunkWeightLowRating = 0.6f;       // effRating 1-2
         public const float JunkWeightMidRating = 0.2f;       // effRating 3-5
         public const float JunkWeightHighRating = 0.05f;     // effRating 6+
