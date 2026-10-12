@@ -424,6 +424,73 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("cancel in waiting");
         }
 
+        // Catches (F4/F5 select race call site): HandleCastResult not adopting the host's landing when the rod was switched mid-charge. The host
+        // accepts the select (no ActiveCast yet) and casts with the NEW rod's castMaxDist; the owner's ApplyRod refuses (not Idle) and charged
+        // with the OLD rod. The published bobber (ViewState.BobberPos) must be the ledger's landing, not the owner-derived one; and the
+        // telemetry cast distance (FightEnded.CastDistance) must be origin -> the adopted landing, not Machine.CastDistance.
+        // Rods: handmade (18 m) held, twig (14 m) selected; charge >= 0.15 -> about 0.5 m apart at the shortest, both well inside the lake.
+        [UnityTest]
+        public IEnumerator SoloHost_SelectRodMidCharge_OwnerAdoptsHostLanding_AndTelemetryUsesIt()
+        {
+            FishingDebugSettings.ForcedBiteWait = 30f;   // no bite: the cast stays in Waiting while it is inspected
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+
+            FishingHost host = FishingHost.Current;
+            Assert.That(host, Is.Not.Null, "the solo host's FishingHost");
+            ulong client = rig.Player.OwnerClientId;
+            ushort handmade = rig.Registry.RodIndex("rod_handmade");
+            ushort twig = rig.Registry.RodIndex("rod_twig");
+            Assert.That(twig, Is.Not.EqualTo(handmade));
+
+            var ended = new List<FightEnded>();
+            rig.Controller.FightEnded += e => ended.Add(e);
+
+            yield return FishingPlayModeDriver.EquipAndReady(rig);
+            yield return FishingPlayModeDriver.Charge(rig);
+            Assert.That(rig.Machine.State, Is.EqualTo(RodState.Charging));
+            Assert.That(host.Ledger.TryGetActive(client, out _), Is.False, "no ActiveCast yet, so the ledger accepts the select");
+
+            // The race: the host switches rods while the owner is Charging; the owner's ApplyRod refuses (not Idle) and keeps the old rod.
+            host.HandleSelectRod(rig.Net, twig);
+            Assert.That(rig.Net.NetRodIndex.Value, Is.EqualTo(twig), "the host mirrored the new rod");
+            Assert.That(rig.Machine.State, Is.EqualTo(RodState.Charging), "the select must not disturb the charge");
+
+            yield return FishingPlayModeDriver.Release(rig);
+            Vector3 origin = rig.Player.transform.position;
+            float yaw = rig.Player.transform.eulerAngles.y;
+            yield return FishingPlayModeDriver.WaitForState(rig, RodState.Waiting, 4f);
+            yield return PlayModeHarness.WaitFrames(2, 0f);   // the published view is written in the owner's Update
+
+            Assert.That(host.Ledger.TryGetActive(client, out ActiveCast cast), Is.True, "the host must have accepted the cast (else this test proves nothing)");
+            Assert.That(cast.RodIndex, Is.EqualTo(twig), "the host cast with the newly selected rod");
+
+            CastMath.Landing(origin.x, origin.z, yaw, rig.Machine.CastDistance, out float ownerX, out float ownerZ);   // what the owner predicted (old rod)
+            Vector3 ownerLanding = new Vector3(ownerX, 0f, ownerZ);
+            Vector3 hostLanding = new Vector3(cast.LandingX, 0f, cast.LandingZ);
+            float separation = FishingPlayModeDriver.Flat(ownerLanding, hostLanding);
+            Assert.That(CastProbe.Probe(ownerX, ownerZ).FirstHitIsWater, Is.True, "the owner-derived (old rod) landing is on water too");
+            Assert.That(CastProbe.Probe(cast.LandingX, cast.LandingZ).FirstHitIsWater, Is.True, "the host landing is on water");
+            TestContext.WriteLine($"FG LANDRACE: charge={rig.Machine.ChargeNorm:F3} handmade/owner distance={rig.Machine.CastDistance:F3} twig/host distance={cast.CastDistance:F3} separation={separation:F3}");
+            Assert.That(separation, Is.GreaterThan(0.05f), "the two landings must differ or the test cannot tell adoption from no adoption");
+
+            Vector3 bobber = rig.Net.ViewState.BobberPos;
+            Assert.That(bobber.x, Is.EqualTo(cast.LandingX).Within(1e-3f), "the bobber x is the host landing");
+            Assert.That(bobber.z, Is.EqualTo(cast.LandingZ).Within(1e-3f), "the bobber z is the host landing");
+            Assert.That(FishingPlayModeDriver.Flat(bobber, ownerLanding), Is.GreaterThan(0.05f), "the bobber is not the owner-derived landing");
+
+            // Recall: Idle ends the recording, which publishes FightEnded.
+            yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { SecondaryPressed = true, SecondaryHeld = true });
+            rig.Fake.Frame = default;
+            yield return FishingPlayModeDriver.WaitForState(rig, RodState.Idle, 1f);
+            Assert.That(ended.Count, Is.EqualTo(1), "one FightEnded for the cast");
+            float expectedDistance = FishingPlayModeDriver.Flat(origin, hostLanding);
+            TestContext.WriteLine($"FG LANDRACE: telemetry castDistance={ended[0].CastDistance:F3} origin->hostLanding={expectedDistance:F3} machine={rig.Machine.CastDistance:F3}");
+            Assert.That(ended[0].CastDistance, Is.EqualTo(expectedDistance).Within(1e-3f), "the recorded cast distance is origin -> the adopted landing");
+            rig.Log.AssertEmpty("select rod mid-charge");
+        }
+
         // Catches (T19-R1): HookedLineSlack smaller than the rig's real tip reach + margin. TipAnchor is posed in camera space by
         // PlayerBody, so its horizontal distance from the player root depends on the look pitch. The Core constant must be that
         // maximum (over pitch -60..+60) + 0.5 m, rounded up to 0.1 m, or an honest owner start line could undercut the host's LineLength0.

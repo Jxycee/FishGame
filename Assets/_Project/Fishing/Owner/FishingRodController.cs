@@ -61,7 +61,7 @@ namespace FishGame.Fishing
         private bool _draining, _redrain;
         private bool _wasSwimming, _swimStowed;
         private bool _hasLanding;
-        private Vector3 _landing, _lastPoint, _hookRoot;
+        private Vector3 _landing, _lastPoint, _hookRoot, _castOrigin;
         private float _castYaw;
         private float _clock;
         private float _fightAccumulator;
@@ -396,6 +396,7 @@ namespace FishGame.Fishing
                                 _landing = new Vector3(lx, WaterSurface.FlatHeight, lz);   // set before the RPC: solo handles it inline
                                 _hasLanding = true;
                                 _castYaw = yaw;
+                                _castOrigin = root;
                                 _recorder.OnCastRequested(_clock, Machine.Assist);
                                 if (CanSend) _net.CastRequestRpc(e.CastId, root, yaw, e.ChargeNorm, _net.NetSelectedBait.Value, Machine.Assist);
                                 break;
@@ -463,7 +464,10 @@ namespace FishGame.Fishing
             switch (to)
             {
                 case RodState.Waiting:
-                    if (from == RodState.Casting) _recorder.OnWaiting(Machine.Roll, Machine.CastDistance);   // ResetCast will wipe the roll
+                    if (from == RodState.Casting)
+                        // ResetCast will wipe the roll. The telemetry distance is origin -> the ADOPTED landing (the host's, F4/F5 race), not
+                        // Machine.CastDistance (the owner's pre-adoption number, which only feeds the landing prediction and the flight time).
+                        _recorder.OnWaiting(Machine.Roll, _hasLanding ? Flat(_castOrigin, _landing) : Machine.CastDistance);
                     break;
                 case RodState.Bite:
                     _recorder.OnBite(_clock);

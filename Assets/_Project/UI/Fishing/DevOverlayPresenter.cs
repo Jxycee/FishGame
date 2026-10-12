@@ -32,6 +32,7 @@ namespace FishGame.UI
         };
 
         private readonly StringBuilder _sb = new StringBuilder(768);
+        private readonly LogOnce _log = new LogOnce();
 
         private bool _bound;
         private bool _visible;                  // survives scene loads: this presenter lives in the App root
@@ -69,7 +70,20 @@ namespace FishGame.UI
             ApplyVisible();
         }
 
+        // Never throws: UiFlowController's extension loop would skip the later extensions' work (an RPC during shutdown can throw here).
         public void Tick(float dt)
+        {
+            try
+            {
+                TickCore(dt);
+            }
+            catch (Exception exception)
+            {
+                if (_log.ShouldLog("tick")) Debug.LogException(exception);
+            }
+        }
+
+        private void TickCore(float dt)
         {
             if (!_bound) return;
 
