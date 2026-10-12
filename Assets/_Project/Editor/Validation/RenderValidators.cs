@@ -29,7 +29,10 @@ namespace FishGame.EditorTools
             return all;
         }
 
-        public static List<string> ToonMeshesHaveVertexColours()
+        public static List<string> ToonMeshesHaveVertexColours() => ToonMeshesHaveVertexColours(PrefabsFolder);
+
+        // Same check with the prefab folder given (tests point it at Tests/__Temp so no test prefab ever lands in the shipped Prefabs/ folder).
+        internal static List<string> ToonMeshesHaveVertexColours(string prefabsFolder)
         {
             var errors = new List<string>();
             foreach (string sceneName in SceneNames.BuildOrder)
@@ -38,7 +41,7 @@ namespace FishGame.EditorTools
                 if (!File.Exists(BuilderUtil.Abs(scenePath))) continue;   // Validators.BuildScenes reports a missing file
                 ForEachSceneRoot(scenePath, errors, root => CheckRoot(scenePath, root, errors));
             }
-            foreach (string guid in AssetDatabase.FindAssets("t:Prefab", new[] { PrefabsFolder }))
+            foreach (string guid in AssetDatabase.FindAssets("t:Prefab", new[] { prefabsFolder }))
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
                 GameObject root = AssetDatabase.LoadAssetAtPath<GameObject>(path);

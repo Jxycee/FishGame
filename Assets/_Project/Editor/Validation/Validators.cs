@@ -257,10 +257,13 @@ namespace FishGame.EditorTools
         }
 
         // M2 T4: every MeshFilter, MeshCollider and SkinnedMeshRenderer in the build scenes and in Prefabs/ has a mesh (catches destroyed references saved as null).
-        public static List<string> MeshReferences()
+        public static List<string> MeshReferences() => MeshReferences(PrefabsFolder);
+
+        // Same check with the prefab folder given (tests point it at Tests/__Temp so no test prefab ever lands in the shipped Prefabs/ folder).
+        internal static List<string> MeshReferences(string prefabsFolder)
         {
             var errors = new List<string>();
-            VisitAllObjects(errors, (assetPath, go) =>
+            VisitAllObjects(errors, prefabsFolder, (assetPath, go) =>
             {
                 MeshFilter filter = go.GetComponent<MeshFilter>();
                 if (filter != null && filter.sharedMesh == null) errors.Add(assetPath + ": " + HierarchyPath(go) + " MeshFilter has no mesh");
@@ -276,7 +279,7 @@ namespace FishGame.EditorTools
         public static List<string> MissingScripts()
         {
             var errors = new List<string>();
-            VisitAllObjects(errors, (assetPath, go) =>
+            VisitAllObjects(errors, PrefabsFolder, (assetPath, go) =>
             {
                 int missing = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(go);
                 if (missing > 0) errors.Add(assetPath + ": " + HierarchyPath(go) + " has " + missing + " missing script(s)");
@@ -317,7 +320,7 @@ namespace FishGame.EditorTools
         }
 
         // Visits every GameObject (inactive included) of every existing build scene, one scene at a time, then of every prefab under PrefabsFolder.
-        static void VisitAllObjects(List<string> errors, System.Action<string, GameObject> visit)
+        static void VisitAllObjects(List<string> errors, string prefabsFolder, System.Action<string, GameObject> visit)
         {
             foreach (string sceneName in SceneNames.BuildOrder)
             {
@@ -325,7 +328,7 @@ namespace FishGame.EditorTools
                 if (!File.Exists(BuilderUtil.Abs(scenePath))) continue; // BuildScenes reports a missing file
                 ForEachSceneObject(scenePath, errors, go => visit(scenePath, go));
             }
-            foreach (string guid in AssetDatabase.FindAssets("t:Prefab", new[] { PrefabsFolder }))
+            foreach (string guid in AssetDatabase.FindAssets("t:Prefab", new[] { prefabsFolder }))
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
                 GameObject root = AssetDatabase.LoadAssetAtPath<GameObject>(path);

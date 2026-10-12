@@ -43,10 +43,19 @@ namespace FishGame.Tests.EditMode
         public void BuildTempContent()
         {
             DeleteTempFolders();
-            BuilderUtil.EnsureFolder(Root);
-            registry = ScriptableObject.CreateInstance<ContentRegistry>();
-            AssetDatabase.CreateAsset(registry, Root + "/ContentRegistry.asset");
-            FishingContentBuilder.BuildAt(Root, registry);
+            try
+            {
+                BuilderUtil.EnsureFolder(Root);
+                registry = ScriptableObject.CreateInstance<ContentRegistry>();
+                AssetDatabase.CreateAsset(registry, Root + "/ContentRegistry.asset");
+                FishingContentBuilder.BuildAt(Root, registry);
+            }
+            catch
+            {
+                // NUnit does not run OneTimeTearDown when OneTimeSetUp throws: clean up here so a failed build never leaves Tests/__Temp behind.
+                DeleteTempFolders();
+                throw;
+            }
         }
 
         [OneTimeTearDown]
@@ -109,6 +118,32 @@ namespace FishGame.Tests.EditMode
             Load<JunkDef>(T(AssetPaths.JunkFolder) + "/tin_can.asset");
         }
 
+        // Catches: Rooted silently mangling a path that is not under the real Content root (Substring would cut a wrong prefix and BuildAt would
+        // write to a made-up location) instead of throwing.
+        [Test]
+        public void FishingContentBuilder_RootedPath_RejectsPathsOutsideTheContentRoot()
+        {
+            Assert.AreEqual(Root + "/Fishing/Rods", FishingContentBuilder.RootedPath(Root, AssetPaths.RodsFolder));
+            Assert.AreEqual(Root, FishingContentBuilder.RootedPath(Root, RealContentRoot));
+            Assert.Throws<ArgumentException>(() => FishingContentBuilder.RootedPath(Root, "Assets/_Project/Other/Fishing"));
+            Assert.Throws<ArgumentException>(() => FishingContentBuilder.RootedPath(Root, "Assets/_Project/ContentX/Fishing"));
+            Assert.Throws<ArgumentException>(() => FishingContentBuilder.RootedPath(Root, "Packages/com.x/y.asset"));
+            Assert.Throws<ArgumentException>(() => FishingContentBuilder.RootedPath(Root, ""));
+            Assert.Throws<ArgumentException>(() => FishingContentBuilder.RootedPath(Root, null));
+        }
+
+        // Catches: the species-model step reading the REAL Content/Models folder (un-rooted AssetPaths.ModelsFolder) while the rest of BuildAt is
+        // re-rooted. The computed path must sit under the temp root; and since the temp Models folder holds no FBX, no temp species may get a model
+        // even when the real Models folder has valid fish models.
+        [Test]
+        public void FishingContentBuilder_BuildAt_ReRootsTheModelsFolder()
+        {
+            Assert.AreEqual(Root + "/Models", FishingContentBuilder.ModelsFolderAt(Root));
+            Assert.AreEqual(AssetPaths.ModelsFolder, FishingContentBuilder.ModelsFolderAt(RealContentRoot));
+            foreach (FishSpeciesDef def in registry.Species)
+                Assert.IsNull(def.Model, "temp species " + def.Id + " got a model: the real Models folder was read");
+        }
+
         // Catches: a BuildAt that accepts a root outside Assets/ or a null registry (it would write somewhere unintended / throw later).
         [Test]
         public void FishingContentBuilder_BuildAt_RejectsBadArguments()
@@ -121,7 +156,7 @@ namespace FishGame.Tests.EditMode
         // Catches: a Configure outside an `if (asset == null)` branch (the value would reset to the seed), a singleton overwritten, and a
         // registry list that is appended again on every run (counts would double).
         [Test]
-        public void FishingContentBuilder_Build_NeverReconfiguresExistingAssets()
+        public void FishingContentBuilder_BuildAt_NeverReconfiguresExistingAssets()
         {
             var tuning = Load<FishingTuningDef>(T(AssetPaths.FishingTuningAsset));
             var rod = Load<RodDef>(T(AssetPaths.RodsFolder) + "/rod_twig.asset");
@@ -226,7 +261,7 @@ namespace FishGame.Tests.EditMode
         // Catches: the registry step not re-adding a seed asset that dropped out of a list (it is appended exactly once), a null singleton
         // not refilled, and a list entry that is already present being appended again.
         [Test]
-        public void FishingContentBuilder_Build_AppendsMissingRegistryEntriesOnce()
+        public void FishingContentBuilder_BuildAt_AppendsMissingRegistryEntriesOnce()
         {
             var rod = Load<RodDef>(T(AssetPaths.RodsFolder) + "/rod_deepsea.asset");
             var water = Load<WaterSettingsDef>(T(AssetPaths.WaterSettingsAsset));

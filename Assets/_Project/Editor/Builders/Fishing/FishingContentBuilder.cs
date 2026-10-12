@@ -34,7 +34,7 @@ namespace FishGame.EditorTools
             if (string.IsNullOrEmpty(contentRoot) || !contentRoot.StartsWith("Assets/", StringComparison.Ordinal))
                 throw new ArgumentException("contentRoot must be a project-relative path under Assets/: " + contentRoot, nameof(contentRoot));
             if (registry == null) throw new ArgumentNullException(nameof(registry));
-            string Rooted(string path) => contentRoot + path.Substring(RealContentRoot.Length);
+            string Rooted(string path) => RootedPath(contentRoot, path);
 
             BuilderUtil.EnsureFolder(Rooted(AssetPaths.RodsFolder));
             BuilderUtil.EnsureFolder(Rooted(AssetPaths.BaitsFolder));
@@ -114,8 +114,24 @@ namespace FishGame.EditorTools
                 }, FishingSeedData.WaterShallowColor, FishingSeedData.WaterDeepColor, FishingSeedData.WaterDepthRange, FishingSeedData.WaterFoamWidth);
             });
 
-            FillSpeciesModels(species, Rooted(AssetPaths.ModelsFolder));
+            FillSpeciesModels(species, ModelsFolderAt(contentRoot));
             WireRegistry(registry, rods, baits, profiles, species, junk, tuning, cues, palette, water);
+        }
+
+        // Re-roots one AssetPaths constant: contentRoot replaces RealContentRoot as the path prefix.
+        // Throws when the path is not RealContentRoot or under it (Substring would otherwise cut a wrong prefix and silently build a made-up path).
+        internal static string RootedPath(string contentRoot, string realPath)
+        {
+            if (realPath == null
+                || !(realPath == RealContentRoot || realPath.StartsWith(RealContentRoot + "/", StringComparison.Ordinal)))
+                throw new ArgumentException("path is not under " + RealContentRoot + ": " + realPath, nameof(realPath));
+            return contentRoot + realPath.Substring(RealContentRoot.Length);
+        }
+
+        // The Models folder BuildAt reads species models from (FillSpeciesModels): re-rooted like every other constant.
+        internal static string ModelsFolderAt(string contentRoot)
+        {
+            return RootedPath(contentRoot, AssetPaths.ModelsFolder);
         }
 
         // True when the mesh may be a species model: it has a vertex colour channel AND exactly one submesh (rulings D-Q4, G-Q6).

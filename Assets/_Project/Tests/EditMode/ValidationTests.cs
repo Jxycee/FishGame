@@ -9,9 +9,9 @@ namespace FishGame.Tests.EditMode
 {
     public class ValidationTests
     {
-        const string TempMissingMeshPrefab = "Assets/_Project/Prefabs/__TestMissingMesh.prefab";
-        const string TempToonPrefab = "Assets/_Project/Prefabs/__TestToonMesh.prefab";
         const string TempFolder = "Assets/_Project/Tests/__Temp";   // gitignored
+        const string TempMissingMeshPrefab = TempFolder + "/__TestMissingMesh.prefab";
+        const string TempToonPrefab = TempFolder + "/__TestToonMesh.prefab";
         const string TempToonMaterial = TempFolder + "/__TestToonJitter.mat";
         GameObject tempObject;
 
@@ -55,7 +55,7 @@ namespace FishGame.Tests.EditMode
             tempObject.AddComponent<MeshFilter>().sharedMesh = null;
             PrefabUtility.SaveAsPrefabAsset(tempObject, TempMissingMeshPrefab);
 
-            List<string> errors = Validators.MeshReferences();
+            List<string> errors = Validators.MeshReferences(TempFolder);   // scans the temp prefab folder, not Prefabs/
 
             Assert.That(errors.Count, Is.EqualTo(1), string.Join("\n", errors));
             StringAssert.Contains(TempMissingMeshPrefab, errors[0]);
@@ -108,7 +108,7 @@ namespace FishGame.Tests.EditMode
             tempObject.AddComponent<MeshRenderer>().sharedMaterial = MaterialLibrary.Get("M_Toon_Base");
             PrefabUtility.SaveAsPrefabAsset(tempObject, TempToonPrefab);
 
-            List<string> errors = RenderValidators.ToonMeshesHaveVertexColours();
+            List<string> errors = RenderValidators.ToonMeshesHaveVertexColours(TempFolder);   // scans the temp prefab folder, not Prefabs/
 
             Assert.That(errors.Count, Is.EqualTo(1), string.Join("\n", errors));
             StringAssert.Contains(TempToonPrefab, errors[0]);
@@ -127,7 +127,7 @@ namespace FishGame.Tests.EditMode
             tempObject.AddComponent<MeshRenderer>().sharedMaterial = wrong;
             PrefabUtility.SaveAsPrefabAsset(tempObject, TempToonPrefab);
 
-            List<string> errors = RenderValidators.ToonMeshesHaveVertexColours();
+            List<string> errors = RenderValidators.ToonMeshesHaveVertexColours(TempFolder);   // scans the temp prefab folder, not Prefabs/
 
             Assert.That(errors.Count, Is.EqualTo(1), string.Join("\n", errors));
             StringAssert.Contains("has the wrong _JitterEncoded", errors[0]);
