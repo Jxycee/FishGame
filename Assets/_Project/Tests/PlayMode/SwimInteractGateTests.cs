@@ -25,8 +25,9 @@ namespace FishGame.Tests.PlayMode
             yield return FishingPlayModeDriver.TearDown(rig);
         }
 
-        // Catches: PlayerInteractor staying live while Swimming, so one Interact press at the ladder both climbs and rings the bell
-        // (and, in a debug build, sells the creel). The climb itself must still start from the same press.
+        // Catches: PlayerInteractor staying live while Swimming (it would hold the bell as Current here), so one Interact press at the ladder
+        // both climbs and rings the bell (and, in a debug build, sells the creel). The climb itself must still start from the same press.
+        // The pre-press Current == null assert fails on a build without the InteractLive Swimming gate and does not depend on update order.
         [UnityTest]
         public IEnumerator Swimming_InteractAtLadderExit_ClimbsAndDoesNotRingBell()
         {
@@ -60,6 +61,9 @@ namespace FishGame.Tests.PlayMode
             // Precondition: the owner's own sphere cast would reach the bell from here, so only the context gate can stop the ring.
             Assert.That(CastReachesBell(camera, bell), Is.True, "precondition: the aimed sphere cast must hit the bell from " + rig.Player.transform.position);
             Assert.That(bell.CanInteract(0UL), Is.True, "precondition: the bell is off cooldown");
+            PlayerInteractor interactor = rig.Player.GetComponent<PlayerInteractor>();
+            Assert.That(interactor, Is.Not.Null, "PlayerInteractor missing on PlayerFP");
+            Assert.That(interactor.Current, Is.Null, "precondition: a swimmer has no current interactable even with the bell in cast range");
 
             yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { InteractPressed = true });
             rig.Fake.Frame = default;
@@ -76,8 +80,69 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("swim interact at the ladder");
         }
 
+        // Catches: a WADER (in water, not yet swimming: context still Free) at the ladder exit whose one Interact press both starts the climb and
+        // reaches the bell, because PlayerInteractor ran before PlayerLocomotion in the frame and still saw Free. The interactor orders after the
+        // locomotion, so the climb has already flipped the context to Climbing by the time it looks.
+        [UnityTest]
+        public IEnumerator Wading_InteractAtLadderExit_ClimbsAndDoesNotRingBell()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig, teleport: false);
+            FishingRig rig = _rig;
+
+            DockBell bell = UnityEngine.Object.FindAnyObjectByType<DockBell>();
+            Assert.That(bell, Is.Not.Null, "the DockBell anchor must have spawned in Spot_LakeDock");
+            PlayerCamera camera = rig.Player.GetComponent<PlayerCamera>();
+            Assert.That(camera, Is.Not.Null, "PlayerCamera missing on PlayerFP");
+            PlayerInteractor interactor = rig.Player.GetComponent<PlayerInteractor>();
+            Assert.That(interactor, Is.Not.Null, "PlayerInteractor missing on PlayerFP");
+
+            var item = new CreelItem { ItemIndex = 1, WeightG = 300, ValueCoins = 7, Quality = CatchQuality.Normal };
+            Assert.That(rig.Creel.ServerTryAdd(in item, 10, 100000, out _), Is.True);
+            Assert.That(rig.Creel.ServerTryAdd(in item, 10, 100000, out _), Is.True);
+            int coinsBefore = rig.Creel.NetDebugCoins.Value;
+            int ringsBefore = bell.LocalRingCount;
+            int rangEvents = 0;
+            bell.Rang += () => rangEvents++;
+
+            // Root y -0.9 is wading depth (in water: below surface - 0.3; not swimming: above surface - 1.2) inside the LadderR trigger box.
+            // Gravity pulls the wader toward the bed (about -1.3 m), so the press goes in on the frame right after the preconditions hold.
+            var root = new Vector3(2.1f, -0.9f, -41.0f);
+            yield return AimAtBell(rig, camera, bell, root);
+            rig.Locomotion.ApplyTeleport(root, YawTo(root, bell));
+            yield return PlayModeHarness.WaitUntil(() => IsWading(rig) && rig.Fake.GameplayContext == InputContext.Free && interactor.Current == bell,
+                PlayModeHarness.DefaultTimeoutSeconds, "the teleported wader never reached context Free with the bell as the current interactable at " + root);
+
+            Assert.That(rig.Fake.GameplayContext, Is.EqualTo(InputContext.Free), "precondition: the wader is not swimming");
+            Assert.That(interactor.Current, Is.SameAs(bell), "precondition: the bell is the wader's current interactable");
+            Assert.That(WaterExit.FindContaining(rig.Player.transform.position), Is.Not.Null, "precondition: the wader is inside a WaterExit");
+            Assert.That(bell.CanInteract(0UL), Is.True, "precondition: the bell is off cooldown");
+
+            yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { InteractPressed = true });
+            rig.Fake.Frame = default;
+            Assert.That(rig.Locomotion.IsClimbing, Is.True, "the Interact press inside a WaterExit must start the climb");
+            Assert.That(rig.Fake.GameplayContext, Is.EqualTo(InputContext.Climbing));
+
+            yield return PlayModeHarness.WaitUntil(() => !rig.Locomotion.IsClimbing, PlayModeHarness.DefaultTimeoutSeconds, "the climb never finished");
+            yield return PlayModeHarness.WaitFrames(5, 0.1f);   // any stray InteractRpc would have landed by now
+
+            Assert.That(bell.LocalRingCount, Is.EqualTo(ringsBefore), "the bell must not ring from the press that started the climb");
+            Assert.That(rangEvents, Is.EqualTo(0));
+            Assert.That(rig.Creel.Count, Is.EqualTo(2), "the debug bell sell must not run");
+            Assert.That(rig.Creel.NetDebugCoins.Value, Is.EqualTo(coinsBefore));
+            rig.Log.AssertEmpty("wading interact at the ladder");
+        }
+
+        // In water (root below surface - WadeDepth) but not swimming (root above surface - SwimEnterDepth), with margin for the swell and one frame of fall.
+        private static bool IsWading(FishingRig rig)
+        {
+            Vector3 p = rig.Player.transform.position;
+            float surface = WaterSurface.HeightAt(p.x, p.z);
+            return p.y < surface - MovementMath.WadeDepth - 0.1f && p.y > surface - MovementMath.SwimEnterDepth + 0.1f;
+        }
+
         // Catches: the same gate when there is no exit to climb (open water just off the ladder, bell in range): the press must do nothing.
-        // Unlike the ladder case this does not depend on whether the locomotion or the interactor updates first in the frame.
+        // No climb starts here, so the bell is the only thing the press could reach.
         [UnityTest]
         public IEnumerator Swimming_InteractInOpenWater_DoesNotRingBell()
         {
