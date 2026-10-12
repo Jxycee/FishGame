@@ -152,6 +152,17 @@ The user decided these at spec review. They override every earlier row and secti
 | R59 | A7 Meta currency = cosmetics only | Runs, won or lost, pay a meta currency that **only buys cosmetics** (hats, rod skins, bobber skins, emotes, colours). No permanent rods, perks or map unlocks are bought with currency. Rod tiers (Twig/Handmade/Carbon/Deep-sea) become **in-run purchases at Night Camp shops**, and every run starts with the Twig starter kit. `meta.json` holds cosmetic currency, owned cosmetics, unlocked maps, `skillByMap[5]`, best infinite day per map, journal, stats and a pending-run snapshot reference. | R4, R7, R30–R32, 9.7, 14.7, 14.8, 14.10 |
 | R60 | A8 Infinite mode | After a day-7 win, the crew is offered **"Keep Fishing (Infinite)"** by unanimous vote (otherwise the run ends as a win). The map skill is awarded at the day-7 win, **before** Infinite starts, so it can't be lost. Days 8+ use the same day loop. The quota keeps rising (`dayMult[d] = 2.0 × 1.2^(d−7)` [tune]) and escalation stays at the top tier with crazier modifier stacks, until a Settle fails. Infinite pays cosmetic currency per day survived and records the best day reached per map. The nightly save applies in Infinite too. | 14.2, 14.4, 14.8, 15.4 |
 
+### 3.2 Amendment log (user decisions, 2026-10-11, start of M2)
+
+| # | Amendment | Decision (user) | Updated in |
+|---|---|---|---|
+| R61 | Slot colours | Host (slot 0) blue, then white, light green, dark red. Green and red also differ in lightness (10.2). | 7.4, `SlotPalette` |
+| R62 | Blender fish models | The Blender MCP spike passed (`Content/Models/Fish_Perch.fbx`), so the M2 species get Blender FBX models with per-face vertex colours on the Toon shader; the procedural fish mesh is only a fallback. | 9.6, 17.2 |
+| R63 | Distinct fight motions | Each fight profile also differs in motion, not only in strength: runs that ramp up (Steady, Runner), a slow creep during calm (Bulldog), rapid flips (Darter), per-run speed jitter (Thrasher). The fight stays Rust-style. A single "fight intensity" knob, tackle-style assist levers and a Stardew-style bite wait were considered and not adopted. | 9.5, 9.6 |
+| R64 | Clean-catch bonus | A fish landed without the line ever reaching the clean threshold (seed 0.8 tension) gets +1 quality tier. The owner reports its fight stats; the host bound-checks the claim and only ever withholds the upgrade, never the catch. | 9.8, 9.9 |
+
+Contract details for R61-R64: `docs/superpowers/plans/2026-10-11-m2-interfaces.md` (M2-D3, D15, D16 and section 7.7).
+
 ---
 
 ## 4. Engineering foundation
@@ -974,6 +985,8 @@ Five shared `FightProfileDef` assets (R3). M2 has one placeholder species per pr
 | Thrasher | Trout | 0.70 | 1.00 | 0.60 | 0.09 | 1.0–2.5 | 1.5–3.0 | 0.5 | 0 | Fast, frequent flips; outruns a weak rod's steer, so you chase |
 | Runner | Catfish | 0.85 | 0.80 | 0.80 | 0.05 | 1.0–2.0 | 2.5–4.0 | 0.1 | 0.25 | Long strong runs that take line; needs the tire-then-reel rhythm |
 
+**Motion parameters (R63).** `FightProfileDef` also has `burstRamp` s, `calmDrift` m/s, `calmDriftRamp` s, `flipMinGap` s and `lateralJitter` (all 0, gap 0.5, reproduce 9.5 exactly). Seeds: Steady `burstRamp` 0.6; Darter micro-bursts (calm 0.3–0.8 s, burst 0.4–0.9 s, `flipRate` 1.0, `flipMinGap` 0.3); Bulldog `calmDrift` 0.12, `calmDriftRamp` 2.5; Thrasher `lateralJitter` 0.3 with calm kept ≥ 1.0 s; Runner `burstRamp` 0.8. Rules are in the M2 contract 7.7; the tuning bots judge them against the target fight lengths.
+
 **M2 placeholder species** (`FishSpeciesDef`):
 
 | id | Profile | kg min–max | baseValue | biteWaitMod | minBaitRating | minDepth m |
@@ -986,7 +999,7 @@ Five shared `FightProfileDef` assets (R3). M2 has one placeholder species per pr
 
 Junk (`old_boot`, `tin_can`): 0 kg, 2 coins.
 
-M2 species also fill the 12.3 presentation fields (`displayName`, `bodyShape`, `colorA`/`colorB`, `weightSkew` 2.2, `lengthShapeK` 1.0), because the M2 catch reveal builds its procedural fish mesh from them.
+M2 species also fill the 12.3 presentation fields (`displayName`, `bodyShape`, `colorA`/`colorB`, `weightSkew` 2.2, `lengthShapeK` 1.0). The M2 catch reveal shows each species' Blender model (R62); the procedural fish mesh built from these fields is the fallback when a model is missing.
 
 **Target fight lengths** (full 18 m Handmade cast, rhythm player): small 15–30 s; mid 35–55 s; trophy 60–110 s. Shorter casts land faster, traded against depth.
 
@@ -1046,6 +1059,8 @@ qMult   = Trophy 1.5 | Good 1.15 | Normal 1.0
 value   = max(1, round(baseValue * (0.6 + 0.8 * t) * qMult))   // MidpointRounding.AwayFromZero; junk uses its own value, may be 0
 lengthMm = round(400 * cbrt(weightG / 1000.0) * fish.lengthShapeK)
 ```
+
+- **Clean-catch bonus (R64):** a Landed fish whose fight `maxTension < cleanCatchMaxTension` (`FishingTuningDef`, seed 0.8) is raised one quality tier (cap Trophy) and its value recomputed with the new `qMult`. The owner's `ResultRpc` carries `maxTension`, `fightSeconds` and `nearSnapRecoveries`; the host accepts the claim only within `CatchValidator.CleanClaimAccepted` bounds (9.9), and a rejected claim keeps the rolled quality without invalidating the catch.
 
 - **Skill hooks into the roll (M4, R58):** `ctx.Luck = clamp(event luck + skill luck, −1, 1)`, where the angler's Lucky Lure skill adds +0.15 [tune]. Rare Whisperer multiplies the angler's Uncommon and Rare rule weights in the 12.4 pool (step 3) by 1.15 [tune]. Skills apply only to the casting player's own rolls; the host reads them from that player's loadout (14.8).
 
