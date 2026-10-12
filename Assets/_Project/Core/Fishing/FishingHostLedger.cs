@@ -66,10 +66,26 @@ namespace FishGame.Core
         public void EnsureSlot(byte slot)
         {
             if (_slots.ContainsKey(slot)) return;
+            _slots[slot] = NewSlotState();
+        }
+
+        // Slot takeover by a different persistent identity: the slot's rod, selected bait and bait stock go back to the fresh-slot loadout
+        // (exactly what EnsureSlot gives a new slot) and its pity FailStreak to 0. Touches no other slot and no client state (cast ids,
+        // ActiveCast, stored resolutions), so other clients' casts are unaffected. A slot never ensured is left alone: the EnsureSlot that
+        // later creates it already gives the fresh loadout. Returns true if a slot was reset.
+        public bool ResetSlot(int slot)
+        {
+            if (slot < byte.MinValue || slot > byte.MaxValue || !_slots.ContainsKey((byte)slot)) return false;
+            _slots[(byte)slot] = NewSlotState();
+            return true;
+        }
+
+        private SlotState NewSlotState()
+        {
             var stock = new ushort[_db.Baits.Count];
             for (int i = 0; i < stock.Length; i++)
                 stock[i] = _db.Baits[i].Unlimited ? FishingConstants.UnlimitedBaitCount : FishingConstants.DebugBaitStock;
-            _slots[slot] = new SlotState(_defaultRod, _defaultBait, stock);
+            return new SlotState(_defaultRod, _defaultBait, stock);
         }
 
         // BaitCount is the stock of the selected bait, or UnlimitedBaitCount for an unlimited bait. An unknown slot gives default.

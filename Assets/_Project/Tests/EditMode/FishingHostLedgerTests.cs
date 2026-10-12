@@ -1287,6 +1287,81 @@ namespace FishGame.Tests.EditMode
             Assert.That(Accept(m, 4, Ov).Roll.Pity, Is.True, "three Dropped resolutions alone make the next cast Pity");
         }
 
+        // ---- slot takeover reset -------------------------------------------------------------------------------------
+
+        // Catches: a slot taken over by a different identity inheriting the previous occupant's rod, selected bait, bait stock or bad-luck
+        // streak (pity); a reset that restores only some of them.
+        [Test]
+        public void FishingHostLedger_ResetSlot_RestoresFreshLoadoutAndClearsPityStreak()
+        {
+            FishingHostLedger l = NewLedger();
+            CastAndFail(l, 1, 0); CastAndFail(l, 2, 1); CastAndFail(l, 3, 2);   // stock 17, streak 3
+            Assert.That(Stock(l), Is.EqualTo(17));
+            Assert.That(l.SelectRod(Client, 0, FishingTestData.RodTwig), Is.True);
+            Assert.That(l.SelectBait(Client, 0, (byte)FishingTestData.BaitGrub), Is.True);
+            Assert.That(l.GetLoadout(0).RodIndex, Is.EqualTo((ushort)FishingTestData.RodTwig), "precondition");
+            Assert.That(l.SelectBait(Client, 0, (byte)FishingTestData.BaitWorm), Is.True);
+
+            Assert.That(l.ResetSlot(0), Is.True);
+
+            PlayerLoadout lo = l.GetLoadout(0);
+            Assert.That(lo.RodIndex, Is.EqualTo((ushort)FishingTestData.RodHandmade), "default rod");
+            Assert.That(lo.BaitIndex, Is.EqualTo((byte)FishingTestData.BaitWorm), "default bait");
+            Assert.That(lo.BaitCount, Is.EqualTo(FishingConstants.DebugBaitStock), "worm stock back to the starting loadout");
+            Assert.That(l.SelectBait(Client, 0, (byte)FishingTestData.BaitGrub), Is.True);
+            Assert.That(Stock(l), Is.EqualTo(FishingConstants.DebugBaitStock), "every bait is back at the starting stock");
+            Assert.That(l.SelectBait(Client, 0, (byte)FishingTestData.BaitBareHook), Is.True);
+            Assert.That(Stock(l), Is.EqualTo(FishingConstants.UnlimitedBaitCount), "the unlimited bait is still uncounted");
+            Assert.That(l.SelectBait(Client, 0, (byte)FishingTestData.BaitWorm), Is.True);
+
+            CastVerdict four = Accept(l, 4, Ov);
+            Assert.That(four.Roll.Pity, Is.False, "the previous occupant's three failures do not make the newcomer's first cast Pity");
+            Assert.That(l.TryGetActive(Client, out ActiveCast a), Is.True);
+            Assert.That(a.RodIndex, Is.EqualTo((ushort)FishingTestData.RodHandmade));
+        }
+
+        // Catches: a reset of one slot touching another slot's loadout or pity streak, or cancelling another client's ActiveCast, or
+        // resetting the whole ledger instead of one slot.
+        [Test]
+        public void FishingHostLedger_ResetSlot_LeavesOtherSlotsAndActiveCastsAlone()
+        {
+            const ulong Other = 200;
+            FishingHostLedger l = NewLedger();
+            l.EnsureSlot(1);
+            CastAndFail(l, 1, 0, Other, 1); CastAndFail(l, 2, 1, Other, 1); CastAndFail(l, 3, 2, Other, 1);   // slot 1: streak 3, stock 17
+            Assert.That(l.SelectRod(Other, 1, FishingTestData.RodTwig), Is.True);
+            CastAndFail(l, 1, 0); CastAndFail(l, 2, 1);                                                       // slot 0: streak 2, stock 18
+            CastVerdict active = Accept(l, 3, Ov);                                                            // client 100 mid-cast, stock 17
+            Assert.That(active.Roll.Pity, Is.False);
+
+            Assert.That(l.ResetSlot(1), Is.True);
+
+            Assert.That(l.GetLoadout(1).RodIndex, Is.EqualTo((ushort)FishingTestData.RodHandmade), "slot 1 reset");
+            Assert.That(Stock(l, 1), Is.EqualTo(FishingConstants.DebugBaitStock), "slot 1 reset");
+            Assert.That(Stock(l, 0), Is.EqualTo(17), "slot 0 stock untouched");
+            Assert.That(l.TryGetActive(Client, out ActiveCast still), Is.True, "another client's ActiveCast survives");
+            Assert.That(still.CastId, Is.EqualTo(3u));
+            HookAt(l, 3);
+            CommitDecision d = Result(l, 3, FightOutcome.Snapped, EscapeReason.None, NotClean(3f));
+            Assert.That(d.Accepted, Is.True, "the surviving cast still resolves normally");
+            Assert.That(d.Outcome, Is.EqualTo(FightOutcome.Snapped));
+            Assert.That(Accept(l, 4, Ov).Roll.Pity, Is.True, "slot 0 streak (2 + the snap) is intact, so its next cast is Pity");
+            Assert.That(Accept(l, 4, Ov, Other, 1).Roll.Pity, Is.False, "slot 1 streak was cleared");
+        }
+
+        // Catches: ResetSlot creating a slot that was never ensured (which would defeat the UnknownPlayer rule B-Q10) or throwing on a bad index.
+        [Test]
+        public void FishingHostLedger_ResetSlot_UnknownOrOutOfRangeSlot_ReturnsFalseAndCreatesNothing()
+        {
+            FishingHostLedger l = NewLedger();
+            Assert.That(l.ResetSlot(5), Is.False);
+            Assert.That(l.ResetSlot(-1), Is.False);
+            Assert.That(l.ResetSlot(256), Is.False);
+            Assert.That(l.ResetSlot(int.MinValue), Is.False);
+            Assert.That(Request(l, 1, Ov, 300, 5).Reason, Is.EqualTo(CastRejectReason.UnknownPlayer), "slot 5 is still never-ensured");
+            Assert.That(l.ResetSlot(0), Is.True, "a known slot is reset");
+        }
+
         // ---- pause-aware clock extras ------------------------------------------------------------------------------
 
         [Test]

@@ -9,6 +9,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using FishGame.Core;
+using FishGame.Data;
+using FishGame.Fishing;
 using FishGame.Gameplay;
 using FishGame.Runtime;
 using NUnit.Framework;
@@ -194,7 +196,8 @@ namespace FishGame.Tests.PlayMode
             while (Time.timeAsDouble < end)
             {
                 yield return null;
-                maxY = Mathf.Max(maxY, locomotion.transform.position.y);            }
+                maxY = Mathf.Max(maxY, locomotion.transform.position.y);
+            }
 
             Assert.That(locomotion.IsGrounded, Is.True, "the rig landed");
             Assert.That(maxY - pressY, Is.LessThan(0.05f), "landing while locked must not fire the buffered jump (rose " + (maxY - pressY).ToString("F2") + " m)");
@@ -489,6 +492,9 @@ namespace FishGame.Tests.PlayMode
 
         // Catches (T16-R1): a player who takes over another identity's slot inheriting that slot's creel and debug coins; ALSO the opposite
         // bug, a same-identity rejoin (R46) losing its creel; ALSO clearing every slot instead of only the taken-over one.
+        // Catches (takeover follow-up): FishingHost not hearing SessionState.SlotTakenOver, so the newcomer keeps the old occupant's rod, bait,
+        // bait stock and pity streak; the NetRodIndex / NetSelectedBait mirror not refreshed on the spawned rod; a SAME-identity rejoin
+        // wrongly resetting the fishing loadout (R46 covers it too).
         [UnityTest]
         public IEnumerator SessionState_SlotTakeover_ClearsCreelForNewIdentity_KeepsItForSameIdentity()
         {
@@ -510,14 +516,60 @@ namespace FishGame.Tests.PlayMode
             ledger.Add(slot, item);        // one item in the creel
             ledger.Add(other, item);       // a neighbour that must never be touched
 
-            // Same identity rejoins its own slot: R46 keeps the creel and the wallet.
+            // Host fishing state for the slot: a non-default rod and bait (mirrored to the rod), and three failed casts by a stand-in
+            // client (stock 20 -> 17, FailStreak 3 = the next cast would be Pity).
+            FishingHost fishingHost = FishingHost.Current;
+            Assert.That(fishingHost, Is.Not.Null, "the Fishing scene root must be present");
+            FishingHostLedger fishing = fishingHost.Ledger;
+            Assert.That(fishing, Is.Not.Null, "the host ledger exists once the local player is ready");
+            FishingRodNetwork rodNet = PlayerNetState.Local.GetComponent<FishingRodNetwork>();
+            Assert.That(ServiceRoots.App.TryGet(out ContentRegistry registry), Is.True);
+            PlayerLoadout fresh = fishing.GetLoadout(slot);
+            Assert.That(fresh.BaitCount, Is.EqualTo(FishingConstants.DebugBaitStock), "precondition: a fresh slot loadout");
+            ushort otherRod = (ushort)((fresh.RodIndex + 1) % registry.Fishing.Rods.Count);
+            byte otherBait = (byte)((fresh.BaitIndex + 1) % registry.Fishing.Baits.Count);
+            const ulong standIn = 9001;
+            var water = new WaterProbe { FirstHitIsWater = true, WaterY = 0f, HasBed = true, Depth = 3f };
+            var view = new HostCastView { CastingAllowed = true, Probe = water };
+            RollOverrides none = RollOverrides.None;
+            var report = new FightReport();
+            var emptyCreel = new CreelSnapshot(0, 0, 12, 15000);
+            for (uint id = 1; id <= 3; id++)
+            {
+                var req = new CastRequestData { CastId = id, ChargeNorm = 0.5f, BaitIndex = fresh.BaitIndex };
+                Assert.That(fishing.RequestCast(standIn, slot, in req, in view, in none).Valid, Is.True, "stand-in cast " + id);
+                CommitDecision miss = fishing.Result(standIn, id, FightOutcome.Escaped, EscapeReason.Missed, in report, in emptyCreel);
+                Assert.That(miss.Outcome, Is.EqualTo(FightOutcome.Escaped));
+            }
+            fishingHost.HandleSelectRod(rodNet, otherRod);
+            fishingHost.HandleSelectBait(rodNet, otherBait);
+            Assert.That(rodNet.NetRodIndex.Value, Is.EqualTo(otherRod), "precondition: the rod mirror shows the selected rod");
+            Assert.That(rodNet.NetSelectedBait.Value, Is.EqualTo(otherBait), "precondition: the bait mirror shows the selected bait");
+
+            // Same identity rejoins its own slot: R46 keeps the creel and the wallet, and the fishing loadout too.
             Assert.That(session.Upsert(new ApprovedJoin(Unity.Netcode.NetworkManager.ServerClientId, hostKey, "Fisher", slot, true)), Is.True);
             Assert.That(ledger.Items(slot).Count, Is.EqualTo(1), "same identity keeps its creel");
             Assert.That(ledger.DebugCoins(slot), Is.EqualTo(5), "same identity keeps its debug coins");
+            Assert.That(fishing.GetLoadout(slot).RodIndex, Is.EqualTo(otherRod), "same identity keeps its rod");
+            Assert.That(fishing.GetLoadout(slot).BaitIndex, Is.EqualTo(otherBait), "same identity keeps its selected bait");
+            Assert.That(rodNet.NetRodIndex.Value, Is.EqualTo(otherRod), "same identity: the mirror is not refreshed to defaults");
 
-            // A different identity takes the slot over: fresh creel and wallet.
+            // A different identity takes the slot over: fresh creel and wallet, fresh rod, bait, stock and pity streak.
             var newcomer = new PlayerKey(IdentityKind.Local, "someone-else");
             Assert.That(session.Upsert(new ApprovedJoin(Unity.Netcode.NetworkManager.ServerClientId, newcomer, "Other", slot, false)), Is.True);
+            PlayerLoadout after = fishing.GetLoadout(slot);
+            Assert.That(after.RodIndex, Is.EqualTo(fresh.RodIndex), "takeover: default rod");
+            Assert.That(after.BaitIndex, Is.EqualTo(fresh.BaitIndex), "takeover: default bait");
+            Assert.That(after.BaitCount, Is.EqualTo(FishingConstants.DebugBaitStock), "takeover: bait stock back to the starting loadout (was 17)");
+            Assert.That(rodNet.NetRodIndex.Value, Is.EqualTo(fresh.RodIndex), "takeover: the spawned rod's NetRodIndex mirror is refreshed");
+            Assert.That(rodNet.NetSelectedBait.Value, Is.EqualTo(fresh.BaitIndex), "takeover: NetSelectedBait is refreshed");
+            Assert.That(rodNet.NetSelectedBaitCount.Value, Is.EqualTo(FishingConstants.DebugBaitStock), "takeover: NetSelectedBaitCount is refreshed");
+            var next = new CastRequestData { CastId = 4, ChargeNorm = 0.5f, BaitIndex = fresh.BaitIndex };
+            CastVerdict verdict = fishing.RequestCast(standIn, slot, in next, in view, in none);
+            Assert.That(verdict.Valid, Is.True);
+            Assert.That(verdict.Roll.Pity, Is.False, "takeover: the previous occupant's three failures do not make the next cast Pity");
+            fishing.Disconnect(standIn);
+
             Assert.That(ledger.Items(slot), Is.Empty, "a different identity starts with an empty creel");
             Assert.That(ledger.DebugCoins(slot), Is.EqualTo(0), "a different identity starts with no debug coins");
             Assert.That(ledger.Items(other).Count, Is.EqualTo(1), "the neighbour slot is untouched");

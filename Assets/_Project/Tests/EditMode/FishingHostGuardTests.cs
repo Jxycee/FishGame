@@ -39,6 +39,25 @@ namespace FishGame.Tests.EditMode
             }
         }
 
+        // Catches: the host pre-probe origin check using a wrong radius (not the ledger's 3 m, not inclusive at exactly 3 m), ignoring one axis
+        // (X or Z), measuring from the wrong centre, or letting a NaN or infinite component through (every comparison with NaN is false).
+        [Test]
+        public void CatchValidator_OriginWithinSlack_ThreeMetreHorizontalRuleAndNonFinite()
+        {
+            Assert.That(CatchValidator.OriginWithinSlack(0f, 0f, 0f, 0f), Is.True);
+            Assert.That(CatchValidator.OriginWithinSlack(3f, 0f, 0f, 0f), Is.True, "exactly 3 m on X is inside");
+            Assert.That(CatchValidator.OriginWithinSlack(0f, -3f, 0f, 0f), Is.True, "exactly 3 m on Z is inside");
+            Assert.That(CatchValidator.OriginWithinSlack(3.01f, 0f, 0f, 0f), Is.False, "just past 3 m on X");
+            Assert.That(CatchValidator.OriginWithinSlack(0f, 3.01f, 0f, 0f), Is.False, "just past 3 m on Z");
+            Assert.That(CatchValidator.OriginWithinSlack(2.2f, 2.2f, 0f, 0f), Is.False, "diagonal 3.11 m");
+            Assert.That(CatchValidator.OriginWithinSlack(12f, -7f, 10f, -8f), Is.True, "relative to the player, not the world origin");
+            Assert.That(CatchValidator.OriginWithinSlack(14.1f, -8f, 10f, -8f), Is.False, "4.1 m from a far-away player");
+            Assert.That(CatchValidator.OriginWithinSlack(float.NaN, 0f, 0f, 0f), Is.False);
+            Assert.That(CatchValidator.OriginWithinSlack(0f, float.NaN, 0f, 0f), Is.False);
+            Assert.That(CatchValidator.OriginWithinSlack(float.PositiveInfinity, 0f, 0f, 0f), Is.False);
+            Assert.That(CatchValidator.OriginWithinSlack(0f, 0f, float.NaN, 0f), Is.False, "a NaN host view also fails closed");
+        }
+
         // Catches: quality above Trophy, species weight outside [min, max] (either side), junk with a weight, indices outside the database.
         [Test]
         public void FishingRollValidation_IsSaneCatch_ChecksQualityWeightAndIndex()

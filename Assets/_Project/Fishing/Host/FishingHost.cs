@@ -63,6 +63,7 @@ namespace FishGame.Fishing
 
             ResolveNetworkManager();   // may still be null here; resolved lazily on first server use
             FishingRodNetwork.Despawned += HandleRodDespawned;
+            SessionState.SlotTakenOver += HandleSlotTakenOver;
 
             // Rods that spawned before this host enabled.
             var rods = FishingRodNetwork.Active;
@@ -80,6 +81,7 @@ namespace FishGame.Fishing
             if (_nm != null) _nm.OnConnectionEvent -= HandleConnectionEvent;
             _nm = null;
             FishingRodNetwork.Despawned -= HandleRodDespawned;
+            SessionState.SlotTakenOver -= HandleSlotTakenOver;
             Ledger = null;
             if (s_current == this) s_current = null;
         }
@@ -190,6 +192,21 @@ namespace FishGame.Fishing
             if (Ledger != null) Ledger.Disconnect(data.ClientId);
         }
 
+        // A different identity took a slot over (SessionState.Upsert, host only): its rod, bait, stock and pity streak start fresh, like a new
+        // slot. Mirrors the reset loadout into that slot's rod if one is already spawned; otherwise OnPlayerReady mirrors it later.
+        private void HandleSlotTakenOver(int slot)
+        {
+            if (Ledger == null || !IsServerActive) return;
+            if (!Ledger.ResetSlot(slot)) return;
+            var rods = FishingRodNetwork.Active;
+            for (int i = 0; i < rods.Count; i++)
+            {
+                FishingRodNetwork rod = rods[i];
+                if (rod != null && rod.IsServer && rod.Player != null && rod.Player.IsServerInitialized && rod.Player.Slot == slot)
+                    MirrorLoadout(rod, (byte)slot);
+            }
+        }
+
         private void HandleRodDespawned(FishingRodNetwork rod)
         {
             if (rod == null || _nm == null || !_nm.IsServer) return;
@@ -200,10 +217,9 @@ namespace FishGame.Fishing
 
         internal void HandleCastRequest(FishingRodNetwork rod, in CastRequestData req)
         {
-            var origin = new Vector3(req.OriginX, req.OriginY, req.OriginZ);
             if (!EnsureLedger() || rod.Player == null || !rod.Player.IsServerInitialized)
             {
-                rod.CastResultRpc(req.CastId, false, (byte)CastRejectReason.UnknownPlayer, origin, default);
+                rod.CastResultRpc(req.CastId, false, (byte)CastRejectReason.UnknownPlayer, Vector3.zero, default);   // never echo the client origin
                 return;
             }
 
@@ -217,6 +233,11 @@ namespace FishGame.Fishing
             byte slot = rod.Player.Slot;
             Ledger.EnsureSlot(slot);   // B-Q10: RequestCast for a slot never ensured is UnknownPlayer
             Vector3 seen = rod.transform.position;   // the host's interpolated view of the sender's root
+            if (!CatchValidator.OriginWithinSlack(req.OriginX, req.OriginZ, seen.x, seen.z))   // same 3 m rule as the ledger, BEFORE any raycast
+            {
+                rod.CastResultRpc(req.CastId, false, (byte)CastRejectReason.OriginTooFar, Vector3.zero, default);
+                return;
+            }
             var view = new HostCastView { PlayerX = seen.x, PlayerY = seen.y, PlayerZ = seen.z, CastingAllowed = true };
             if (Ledger.TryComputeLanding(slot, in req, out float lx, out float lz)) view.Probe = CastProbe.Probe(lx, lz);
 

@@ -14,13 +14,20 @@ namespace FishGame.Core
             if (req.CastId <= lastAcceptedCastId) return CastRejectReason.StaleCastId;
             float charge = req.ChargeNorm;
             if (!(charge >= 0f && charge <= 1f)) return CastRejectReason.BadCharge;
-            float dx = req.OriginX - view.PlayerX;
-            float dz = req.OriginZ - view.PlayerZ;
-            float slack = FishingConstants.HostOriginSlack;
-            if (!(dx * dx + dz * dz <= slack * slack)) return CastRejectReason.OriginTooFar;
+            if (!OriginWithinSlack(req.OriginX, req.OriginZ, view.PlayerX, view.PlayerZ)) return CastRejectReason.OriginTooFar;
             if (!IsFinite(req.YawDeg)) return CastRejectReason.OriginTooFar;
             if (!baitAvailable) return CastRejectReason.NoBait;
             return CastMath.ProbeReason(in view.Probe, minLandDepth);
+        }
+
+        // Horizontal distance from the claimed cast origin to the host's view of the player is within HostOriginSlack (3 m, inclusive).
+        // A NaN component fails (so does an infinite one). The adapter runs this before the physics probe (no raycast for a far origin).
+        public static bool OriginWithinSlack(float originX, float originZ, float playerX, float playerZ)
+        {
+            float dx = originX - playerX;
+            float dz = originZ - playerZ;
+            float slack = FishingConstants.HostOriginSlack;
+            return dx * dx + dz * dz <= slack * slack;
         }
 
         // now - TAccepted < TFlight + Roll.BiteWait - hookTolerance

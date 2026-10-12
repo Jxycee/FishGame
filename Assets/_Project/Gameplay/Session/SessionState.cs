@@ -3,7 +3,7 @@
 // M2 (T16): ServerCreels is the host-only, slot-keyed creel store (R46: a creel survives a disconnect and rejoin). It is a plain C# object,
 // never networked: created in OnNetworkSpawn when IsServer, null on clients and after despawn. PlayerCreel (server) mirrors it to NetCreel.
 // Slot takeover (T16-R1): Upsert clears that slot's creel and debug coins when the slot passes to a DIFFERENT persistent identity; the same
-// identity rejoining keeps them (R46).
+// identity rejoining keeps them (R46). The same takeover raises SlotTakenOver so FishingHost resets that slot's rod, bait, stock and pity streak.
 using System;
 using System.Collections.Generic;
 using FishGame.Core;
@@ -22,6 +22,10 @@ namespace FishGame.Gameplay
 
         public static SessionState Current => current;
         public static event Action<SessionState> CurrentChanged;
+
+        // Host only (Upsert never runs elsewhere). Raised with the slot number after a DIFFERENT persistent identity took that slot over
+        // (never for the same identity rejoining, never for a brand-new slot). Subscribers reset their per-slot host state (FishingHost).
+        public static event Action<int> SlotTakenOver;
 
         public NetworkList<PlayerSlot> Roster;
         public readonly NetworkVariable<bool> NetJoinsOpen = new NetworkVariable<bool>(
@@ -52,6 +56,7 @@ namespace FishGame.Gameplay
         {
             current = null;
             CurrentChanged = null;
+            SlotTakenOver = null;
         }
 
         private void Awake()
@@ -267,12 +272,15 @@ namespace FishGame.Gameplay
                 {
                     // T16-R1: a different persistent identity taking the slot over starts with a fresh creel and debug wallet;
                     // the same identity rejoining keeps both (R46).
-                    if (!Roster[i].Id.Equals(entry.Id) && ServerCreels != null)
+                    bool takeover = !Roster[i].Id.Equals(entry.Id);
+                    if (takeover && ServerCreels != null)
                     {
                         ServerCreels.ClearSlot(join.Slot);
                     }
 
                     Roster[i] = entry;
+                    // Host-side fishing state (rod, bait, bait stock, pity streak) is reset by FishingHost through this hook.
+                    if (takeover) EventIsolation.Invoke(SlotTakenOver, (int)join.Slot);
                     return true;
                 }
             }

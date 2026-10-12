@@ -87,7 +87,8 @@ namespace FishGame.Gameplay
             base.OnDestroy();
         }
 
-        // Host only. Reads the ledger (the truth); elsewhere it is built from the replicated list.
+        // Host only. Reads the ledger (the truth). Off the server it throws (RequireServer); it never builds from the replicated list there.
+        // The replicated-list fallback below applies only on the server before ServerInit (slot not written yet).
         // Throws when not spawned on the server. Before the player's ServerInit (slot not written yet) the ledger is not touched:
         // the replicated list is the answer.
         public CreelSnapshot Snapshot(int maxEntries, int maxWeightG)

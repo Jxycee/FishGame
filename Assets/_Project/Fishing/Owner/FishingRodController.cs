@@ -377,7 +377,8 @@ namespace FishGame.Fishing
                         switch (e.Kind)
                         {
                             case RodEffectKind.Cue:
-                                _net.RaiseLocalCue(e.Cue, e.Cue == RodCue.Snapped ? e.SizeClass : (byte)0);   // BF-1: the Snapped cue carries Roll.SizeClass
+                                if (!_suppressSends)   // despawn path (OnDisable ForceEnd): no Recall/Escaped cue for a rod that is going away
+                                    _net.RaiseLocalCue(e.Cue, e.Cue == RodCue.Snapped ? e.SizeClass : (byte)0);   // BF-1: the Snapped cue carries Roll.SizeClass
                                 break;
                             case RodEffectKind.SendCastRequest:
                             {
