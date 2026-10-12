@@ -8,11 +8,12 @@ namespace FishGame.Core
     {
         private const double DegToRad = Math.PI / 180.0;
 
-        // u = held / chargeTime; pingPong ? 1 - |(u mod 2) - 1| : clamp01(u). held <= 0 -> 0.
+        // u = held / chargeTime; pingPong ? 1 - |(u mod 2) - 1| : clamp01(u). held <= 0 or NaN -> 0; infinite u -> 0 (ping-pong) or 1.
         public static float ChargeNorm(float heldSeconds, float castChargeTime, bool pingPong)
         {
             if (!(heldSeconds > 0f) || !(castChargeTime > 0f)) return 0f;
             float u = heldSeconds / castChargeTime;
+            if (float.IsInfinity(u)) return pingPong ? 0f : 1f;
             if (pingPong)
             {
                 float m = u % 2f;
@@ -22,10 +23,10 @@ namespace FishGame.Core
             return u > 1f ? 1f : u;
         }
 
-        // lerp(min, max, clamp01(chargeNorm))
+        // lerp(min, max, clamp01(chargeNorm)); NaN chargeNorm counts as 0
         public static float Distance(float chargeNorm, float castMinDist, float castMaxDist)
         {
-            float c = chargeNorm < 0f ? 0f : (chargeNorm > 1f ? 1f : chargeNorm);
+            float c = float.IsNaN(chargeNorm) || chargeNorm < 0f ? 0f : (chargeNorm > 1f ? 1f : chargeNorm);
             return castMinDist + (castMaxDist - castMinDist) * c;
         }
 
@@ -82,7 +83,7 @@ namespace FishGame.Core
         public static CastRejectReason ProbeReason(in WaterProbe probe, float minLandDepth)
         {
             if (!probe.FirstHitIsWater) return CastRejectReason.NotWater;
-            if (!probe.HasBed || probe.Depth < minLandDepth) return CastRejectReason.TooShallow;
+            if (!probe.HasBed || !(probe.Depth >= minLandDepth)) return CastRejectReason.TooShallow;
             return CastRejectReason.None;
         }
     }

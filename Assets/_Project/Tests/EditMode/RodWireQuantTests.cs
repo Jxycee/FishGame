@@ -33,5 +33,17 @@ namespace FishGame.Tests.EditMode
             Assert.That(RodWireQuant.QuantizeTension(-1f), Is.EqualTo((byte)0));
             Assert.That(RodWireQuant.QuantizeTension(float.NaN), Is.EqualTo((byte)0));
         }
+
+        [Test]
+        public void RodWireQuant_ExactValues()
+        {
+            Assert.That(RodWireQuant.QuantizeLateral(0.5f), Is.EqualTo((sbyte)64));
+            Assert.That(RodWireQuant.QuantizeLateral(-0.5f), Is.EqualTo((sbyte)-64));
+            Assert.That(RodWireQuant.QuantizeLateral(1f), Is.EqualTo((sbyte)127));
+            Assert.That(RodWireQuant.QuantizeLateral(-1f), Is.EqualTo((sbyte)-127));
+            Assert.That(RodWireQuant.QuantizeTension(0.5f), Is.EqualTo((byte)128));
+            Assert.That(RodWireQuant.QuantizeTension(1f), Is.EqualTo((byte)255));
+            Assert.That(RodWireQuant.DequantizeLateral(sbyte.MinValue), Is.EqualTo(-1f));
+        }
     }
 }

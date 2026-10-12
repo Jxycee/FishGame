@@ -116,5 +116,24 @@ namespace FishGame.Tests.EditMode
             Assert.That(CastMath.IsValidLanding(in land, 0.8f), Is.False);
             Assert.That(CastMath.ProbeReason(in land, 0.8f), Is.EqualTo(CastRejectReason.NotWater));
         }
+
+        [Test]
+        public void CastMath_Apex_FloorAppliesBeforeMultiplier()
+        {
+            Assert.That(CastMath.Apex(2.5f, 0.7f), Is.EqualTo(0.42f).Within(Eps));
+        }
+
+        [Test]
+        public void CastMath_ChargeNorm_NaNAndInfinityGuards()
+        {
+            Assert.That(CastMath.ChargeNorm(float.NaN, 1f, true), Is.EqualTo(0f));
+            Assert.That(CastMath.ChargeNorm(1f, 0f, true), Is.EqualTo(0f));
+            Assert.That(CastMath.ChargeNorm(float.PositiveInfinity, 1f, true), Is.EqualTo(0f));
+            Assert.That(CastMath.ChargeNorm(float.PositiveInfinity, 1f, false), Is.EqualTo(1f));
+            Assert.That(CastMath.Distance(float.NaN, 2.5f, 18f), Is.EqualTo(2.5f).Within(Eps));
+            var nanDepth = new WaterProbe { FirstHitIsWater = true, WaterY = 0f, HasBed = true, Depth = float.NaN };
+            Assert.That(CastMath.IsValidLanding(in nanDepth, 0.8f), Is.False);
+            Assert.That(CastMath.ProbeReason(in nanDepth, 0.8f), Is.EqualTo(CastRejectReason.TooShallow));
+        }
     }
 }
