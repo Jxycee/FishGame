@@ -432,6 +432,7 @@ namespace FishGame.Tests.PlayMode
             float flat = FishingPlayModeDriver.Flat(rig.Player.transform.position, start);
             Assert.That(flat, Is.LessThan(0.05f), "movement is locked while Hooked (moved " + flat.ToString("F3") + " m)");
             Assert.That(rig.Fake.GameplayContext, Is.EqualTo(InputContext.RodFighting));
+            rig.Log.AssertEmpty("rod fighting, movement locked");
             // Mid-fight teardown is fine: OnDisable suppresses sends and the host clears the cast through Disconnect.
         }
 
