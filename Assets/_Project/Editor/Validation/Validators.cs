@@ -256,7 +256,7 @@ namespace FishGame.EditorTools
             return errors;
         }
 
-        // M2 T4: every MeshFilter and MeshCollider in the build scenes and in Prefabs/ has a mesh (catches destroyed references saved as null).
+        // M2 T4: every MeshFilter, MeshCollider and SkinnedMeshRenderer in the build scenes and in Prefabs/ has a mesh (catches destroyed references saved as null).
         public static List<string> MeshReferences()
         {
             var errors = new List<string>();
@@ -264,8 +264,10 @@ namespace FishGame.EditorTools
             {
                 MeshFilter filter = go.GetComponent<MeshFilter>();
                 if (filter != null && filter.sharedMesh == null) errors.Add(assetPath + ": " + HierarchyPath(go) + " MeshFilter has no mesh");
-                MeshCollider collider = go.GetComponent<MeshCollider>();
-                if (collider != null && collider.sharedMesh == null) errors.Add(assetPath + ": " + HierarchyPath(go) + " MeshCollider has no mesh");
+                foreach (MeshCollider collider in go.GetComponents<MeshCollider>())
+                    if (collider.sharedMesh == null) errors.Add(assetPath + ": " + HierarchyPath(go) + " MeshCollider has no mesh");
+                SkinnedMeshRenderer skinned = go.GetComponent<SkinnedMeshRenderer>();
+                if (skinned != null && skinned.sharedMesh == null) errors.Add(assetPath + ": " + HierarchyPath(go) + " SkinnedMeshRenderer has no mesh");
             });
             return errors;
         }
@@ -305,7 +307,8 @@ namespace FishGame.EditorTools
 
         static void CheckBootstrapReference(AppBootstrap bootstrap, string property, string expectedPath, List<string> errors)
         {
-            SerializedProperty serialized = new SerializedObject(bootstrap).FindProperty(property);
+            using var so = new SerializedObject(bootstrap);
+            SerializedProperty serialized = so.FindProperty(property);
             if (serialized == null) { errors.Add("Bootstrap AppBootstrap." + property + " property not found"); return; }
             Object reference = serialized.objectReferenceValue;
             if (reference == null) { errors.Add("Bootstrap AppBootstrap." + property + " is null"); return; }
@@ -331,7 +334,7 @@ namespace FishGame.EditorTools
             }
         }
 
-        // Opens the scene additively unless it is already loaded, visits all its objects, and closes it (without saving) only if this call opened it.
+        // Opens the scene additively unless it is already loaded, visits all its objects, and closes it (without saving) only if this call opened it; a scene that was already in the hierarchy but unloaded is returned to unloaded, not removed.
         static void ForEachSceneObject(string scenePath, List<string> errors, System.Action<GameObject> visit)
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -340,7 +343,8 @@ namespace FishGame.EditorTools
                 return;
             }
             Scene scene = SceneManager.GetSceneByPath(scenePath);
-            bool opened = !(scene.IsValid() && scene.isLoaded);
+            bool wasValid = scene.IsValid();
+            bool opened = !(wasValid && scene.isLoaded);
             if (opened) scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
             try
             {
@@ -349,7 +353,7 @@ namespace FishGame.EditorTools
             }
             finally
             {
-                if (opened) EditorSceneManager.CloseScene(scene, true);
+                if (opened) EditorSceneManager.CloseScene(scene, !wasValid);
             }
         }
 
