@@ -61,8 +61,7 @@ namespace FishGame.Fishing
             s_current = this;
             _registered = true;
 
-            _nm = NetworkManager.Singleton;
-            if (_nm != null) _nm.OnConnectionEvent += HandleConnectionEvent;
+            ResolveNetworkManager();   // may still be null here; resolved lazily on first server use
             FishingRodNetwork.Despawned += HandleRodDespawned;
 
             // Rods that spawned before this host enabled.
@@ -85,7 +84,29 @@ namespace FishGame.Fishing
             if (s_current == this) s_current = null;
         }
 
-        private bool IsServerActive => _nm != null && _nm.IsServer && _nm.IsListening;
+        private bool IsServerActive
+        {
+            get
+            {
+                NetworkManager nm = ResolveNetworkManager();
+                return nm != null && nm.IsServer && nm.IsListening;
+            }
+        }
+
+        // Lazy: the scene object can enable before the NetworkManager singleton exists. Subscribes to connection events on first resolve.
+        private NetworkManager ResolveNetworkManager()
+        {
+            if (_nm == null)
+            {
+                NetworkManager nm = NetworkManager.Singleton;
+                if (nm != null)
+                {
+                    _nm = nm;
+                    _nm.OnConnectionEvent += HandleConnectionEvent;
+                }
+            }
+            return _nm;
+        }
 
         private bool IsPaused()
         {
@@ -116,9 +137,10 @@ namespace FishGame.Fishing
                 byte bait = (byte)_registry.BaitIndex(DefaultBaitId);
                 Ledger = new FishingHostLedger(_db, _runSeed, rod, bait);
             }
-            catch (KeyNotFoundException e)
+            catch (Exception e)   // KeyNotFoundException (missing default id) or a bad database: the handlers then use their fallback replies
             {
-                if (_log.ShouldLog("bad-default-id")) Debug.LogError("FishingHost: default loadout id missing from the registry: " + e.Message, this);
+                Ledger = null;
+                if (_log.ShouldLog("ledger-create-failed")) Debug.LogError("FishingHost: the ledger could not be created: " + e.Message, this);
                 return false;
             }
             return true;
@@ -182,6 +204,13 @@ namespace FishGame.Fishing
             if (!EnsureLedger() || rod.Player == null || !rod.Player.IsServerInitialized)
             {
                 rod.CastResultRpc(req.CastId, false, (byte)CastRejectReason.UnknownPlayer, origin, default);
+                return;
+            }
+
+            // The origin and yaw come from the client: never hand a non-finite one to the physics probe (reply through the normal invalid path).
+            if (!CatchValidator.IsOriginFinite(in req))
+            {
+                rod.CastResultRpc(req.CastId, false, (byte)CastRejectReason.OriginTooFar, Vector3.zero, default);
                 return;
             }
 
@@ -267,7 +296,14 @@ namespace FishGame.Fishing
             byte slot = rod.Player != null ? rod.Player.Slot : d.Slot;
             ref readonly FishingTuning t = ref _db.Tuning;
 
-            if (d.AddToCreel)   // 2. host creel (slot ledger + NetCreel mirror)
+            SessionState session = SessionState.Current;
+            bool creelLedger = session != null && session.ServerCreels != null;
+            if (d.AddToCreel && !creelLedger)
+            {
+                // No slot creel store (session despawning): skip the add but still announce, publish FishCaught and mirror the loadout.
+                if (_log.ShouldLog("no-creel-ledger")) Debug.LogError("FishingHost: SessionState.ServerCreels is missing; the catch is not added to the creel.", this);
+            }
+            else if (d.AddToCreel)   // 2. host creel (slot ledger + NetCreel mirror)
             {
                 var item = new CreelItem
                 {

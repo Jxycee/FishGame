@@ -9,18 +9,7 @@ namespace FishGame.Core
         public static bool IsSane(in FishingRoll roll, FishingDatabase db)
         {
             if (db == null) return false;
-            if ((byte)roll.Catch.Quality > 2) return false;
-            if (roll.Catch.IsJunk)
-            {
-                if (roll.Catch.ItemIndex >= db.Junk.Count) return false;
-                if (roll.Catch.WeightG != 0) return false;
-            }
-            else
-            {
-                if (roll.Catch.ItemIndex >= db.Species.Count) return false;
-                FishSpeciesData s = db.Species[roll.Catch.ItemIndex];
-                if (roll.Catch.WeightG < s.WeightMinG || roll.Catch.WeightG > s.WeightMaxG) return false;
-            }
+            if (!IsSaneCatch(in roll.Catch, db)) return false;
             if (!IsFinite(roll.BiteWait) || roll.BiteWait < 0f) return false;
             if (roll.NibbleCount > FishingConstants.MaxNibbleSlots) return false;
             if (roll.FightSeed == 0) return false;
@@ -28,6 +17,26 @@ namespace FishGame.Core
             if (!(roll.WeightT >= 0f && roll.WeightT <= 1f)) return false;      // also rejects NaN
             if (!IsFinite(roll.Nibble0) || !IsFinite(roll.Nibble1) || !IsFinite(roll.Nibble2)) return false;
             if (!IsFinite(roll.HookWindow) || roll.HookWindow < 0f) return false;
+            return true;
+        }
+
+        // The catch part of IsSane, also used to vet a crew announcement: quality 0..2, item inside the database, species weight in its range,
+        // junk weight 0.
+        public static bool IsSaneCatch(in CatchResult c, FishingDatabase db)
+        {
+            if (db == null) return false;
+            if ((byte)c.Quality > 2) return false;
+            if (c.IsJunk)
+            {
+                if (c.ItemIndex >= db.Junk.Count) return false;
+                if (c.WeightG != 0) return false;
+            }
+            else
+            {
+                if (c.ItemIndex >= db.Species.Count) return false;
+                FishSpeciesData s = db.Species[c.ItemIndex];
+                if (c.WeightG < s.WeightMinG || c.WeightG > s.WeightMaxG) return false;
+            }
             return true;
         }
 

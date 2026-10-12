@@ -48,6 +48,13 @@ namespace FishGame.Core
             return !float.IsNaN(v) && !float.IsInfinity(v);
         }
 
+        // The adapter checks this before it probes the physics world with a client-supplied position (T17 follow-up): all three origin
+        // components and the yaw must be finite.
+        public static bool IsOriginFinite(in CastRequestData req)
+        {
+            return IsFinite(req.OriginX) && IsFinite(req.OriginY) && IsFinite(req.OriginZ) && IsFinite(req.YawDeg);
+        }
+
         // max(landDistance, hostDistance - 1.5); a NaN distance gives landDistance. The ledger never feeds a non-finite distance in
         // (Hooked fails closed on one), so this fallback is only a safe default for other callers.
         public static float HostLineLength0(float hostDistance, float landDistance)

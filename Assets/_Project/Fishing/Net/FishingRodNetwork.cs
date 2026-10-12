@@ -445,16 +445,20 @@ namespace FishGame.Fishing
 
         // ------------------------------------------------------------------ helpers
 
-        // Kinds 1..4 only; for kinds 1..3 the item index must lie inside the registry's species / junk count when a registry exists.
-        // PityCast carries a default catch, so its index is not checked.
         private bool IsPlausible(in CatchAnnouncement a)
+        {
+            return IsPlausible(in a, ResolveDatabase());
+        }
+
+        // Kinds 1..4 only; for kinds 1..3, when a database exists, the catch must pass FishingRollValidation.IsSaneCatch (quality 0..2, item
+        // inside the species / junk count, species weight inside its range, junk weight 0). PityCast carries a default catch: not checked.
+        internal static bool IsPlausible(in CatchAnnouncement a, FishingDatabase db)
         {
             byte kind = (byte)a.Kind;
             if (kind < 1 || kind > 4) return false;
             if (a.Kind == AnnounceKind.PityCast) return true;
-            FishingDatabase db = ResolveDatabase();
             if (db == null) return true;
-            return a.Catch.IsJunk ? a.Catch.ItemIndex < db.Junk.Count : a.Catch.ItemIndex < db.Species.Count;
+            return FishingRollValidation.IsSaneCatch(in a.Catch, db);
         }
 
         private FishingHost ResolveHost()
