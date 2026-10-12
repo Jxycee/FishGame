@@ -85,5 +85,31 @@ namespace FishGame.Tests.EditMode
             Assert.That(junk, Is.Not.Null);
             Assert.That(Get(_real, true, 60000), Is.Not.SameAs(junk));
         }
+
+        // Catches: the uncached ring (UncachedCapacity 16) never destroying a plain mesh (a leak with every bad lookup), or destroying the wrong one
+        // (the newest, or one still inside the ring). The meshes are Unity objects: a destroyed one compares equal to null.
+        [Test]
+        public void FishFallbackMesh_UnresolvedRing_DestroysTheOldestOnThe17thCall()
+        {
+            const int capacity = 16;   // FishFallbackMesh.UncachedCapacity
+            var meshes = new Mesh[capacity + 1];
+            for (int i = 0; i < capacity; i++)
+            {
+                meshes[i] = Get(_real, false, (ushort)(60000 + i));
+                Assert.That(meshes[i], Is.Not.Null, "unresolved call " + (i + 1));
+            }
+
+            for (int i = 0; i < capacity; i++) Assert.That(meshes[i] != null, Is.True, "the ring holds " + capacity + " meshes: #" + (i + 1) + " is still alive");
+
+            meshes[capacity] = Get(_real, false, (ushort)(60000 + capacity));
+            Assert.That(meshes[capacity] != null, Is.True, "the 17th mesh is alive");
+            Assert.That(meshes[0] == null, Is.True, "the 17th unresolved call destroys the oldest mesh");
+            for (int i = 1; i <= capacity; i++) Assert.That(meshes[i] != null, Is.True, "mesh #" + (i + 1) + " is still alive after the first eviction");
+
+            Mesh next = Get(_real, true, 60000);   // the 18th: evicts the second oldest
+            Assert.That(next != null, Is.True);
+            Assert.That(meshes[1] == null, Is.True, "the 18th call destroys the next oldest");
+            Assert.That(meshes[2] != null, Is.True);
+        }
     }
 }

@@ -447,6 +447,11 @@ namespace FishGame.Tests.PlayMode
             var ended = new List<FightEnded>();
             rig.Controller.FightEnded += e => ended.Add(e);
 
+            // A non-zero yaw so the landing x (and the separation) also discriminates a wrong heading; yaw 0 puts every landing at x = 0.
+            rig.Locomotion.ApplyTeleport(new Vector3(0f, 0.65f, FishingPlayModeDriver.DeckTeleportZ), 25f);
+            yield return PlayModeHarness.WaitFrames(3, 0.05f);
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsGrounded, PlayModeHarness.DefaultTimeoutSeconds, "the player never became grounded after the yaw-25 teleport");
+
             yield return FishingPlayModeDriver.EquipAndReady(rig);
             yield return FishingPlayModeDriver.Charge(rig);
             Assert.That(rig.Machine.State, Is.EqualTo(RodState.Charging));
@@ -460,6 +465,7 @@ namespace FishGame.Tests.PlayMode
             yield return FishingPlayModeDriver.Release(rig);
             Vector3 origin = rig.Player.transform.position;
             float yaw = rig.Player.transform.eulerAngles.y;
+            Assert.That(yaw, Is.EqualTo(25f).Within(1f), "the player must still face the yaw-25 heading (else the x assert is back to yaw 0)");
             yield return FishingPlayModeDriver.WaitForState(rig, RodState.Waiting, 4f);
             yield return PlayModeHarness.WaitFrames(2, 0f);   // the published view is written in the owner's Update
 
@@ -530,7 +536,8 @@ namespace FishGame.Tests.PlayMode
 
         // Catches (T19-R1): the owner's start line (rod tip to bobber, FightSim's first LineLength) shorter than the host's LineLength0
         // (hostDistance - HookedLineSlack, floored at the landing distance): the host Landed floor would then reject an honest catch.
-        // G9: the short 0.15 charge from the deck end.
+        // G9: the short 0.15 charge from the deck end. Note: this short cast cannot discriminate the slack (a wrong HookedLineSlack still passes here);
+        // only the max-cast test below and the reach sweep (RodTip_MaxHorizontalReachOverPitch_FitsHookedLineSlack) can tell a too-small one.
         [UnityTest]
         public IEnumerator SoloHost_OwnerStartLine_CoversHostLineLength0_AtG9Cast()
         {
@@ -726,6 +733,51 @@ namespace FishGame.Tests.PlayMode
             Assert.That(creel.NetCreel[0].WeightG, Is.EqualTo(item.WeightG));
             Assert.That(creel.NetDebugCoins.Value, Is.EqualTo(18), "the wallet survives the respawn");
             rig.Log.AssertEmpty("creel mirror after respawn");
+        }
+
+        // Catches (T27 review): FightTelemetry writing the CSV header on every row (or not at all), dropping a row, or not appending. The scene's
+        // FightTelemetry is attached to the local controller; the event is raised through its backing field, so the real subscription runs.
+        // Its file is persistentDataPath/fight-log<suffix>.csv; the run must use the _fgtest profile (Tools/unity.ps1 passes -dev-profile fgtest),
+        // otherwise the test is ignored rather than touching the developer's own fight log. The file is deleted before and after.
+        [UnityTest]
+        public IEnumerator SoloHost_FightTelemetry_TwoFightEnded_OneHeaderTwoRows()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig, teleport: false);
+            FishingRig rig = _rig;
+
+            FightTelemetry telemetry = UnityEngine.Object.FindFirstObjectByType<FightTelemetry>();
+            Assert.That(telemetry, Is.Not.Null, "the Fishing root's FightTelemetry");
+            string path = telemetry.FilePath;
+            if (!path.EndsWith("_fgtest.csv", StringComparison.Ordinal))
+                Assert.Ignore("FightTelemetry writes " + path + " (not the _fgtest profile); run through Tools/unity.ps1 (-dev-profile fgtest).");
+
+            System.Reflection.FieldInfo field = typeof(FishingRodController).GetField("FightEnded", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, "the FightEnded event's backing field");
+            var raise = (Action<FightEnded>)field.GetValue(rig.Controller);
+            Assert.That(raise, Is.Not.Null, "FightTelemetry subscribed to the local controller's FightEnded");
+
+            if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+            try
+            {
+                raise(new FightEnded("steady", "bluegill", "rod_handmade", 250, 7.5f, 3.2f, 11.1f, FightOutcome.Landed, EscapeReason.None, 1, 0.62f, false, true, false));
+                raise(new FightEnded("darter", "perch", "rod_twig", 400, 9.25f, 4.5f, 6.75f, FightOutcome.Escaped, EscapeReason.ThrewHook, 0, 0.91f, true, false, true));
+
+                string[] lines = System.IO.File.ReadAllLines(path);
+                Assert.That(lines.Length, Is.EqualTo(3), "one header and two rows:\n" + string.Join("\n", lines));
+                Assert.That(lines[0], Is.EqualTo(FightLogCsv.Header), "the header is the first line");
+                Assert.That(lines[1], Does.StartWith("steady,bluegill,250,"), "row 1");
+                Assert.That(lines[2], Does.StartWith("darter,perch,400,"), "row 2");
+                int headers = 0;
+                foreach (string line in lines) if (line == FightLogCsv.Header) headers++;
+                Assert.That(headers, Is.EqualTo(1), "exactly one header");
+            }
+            finally
+            {
+                if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+            }
+
+            rig.Log.AssertEmpty("fight telemetry");
         }
     }
 }

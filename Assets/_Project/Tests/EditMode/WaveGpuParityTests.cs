@@ -25,6 +25,7 @@ namespace FishGame.Tests.EditMode
         // or too tight at t = 3600. TolCeiling guards against a broken bound (e.g. an Infinity amplitude) hiding every bug.
         const double TolFloor = 1e-5;
         const double TolRelative = 1.0 / 2097152.0;   // 2^-21
+        // 1e-3 leaves about 27% headroom over the largest bound at t ~ 3600 (the long-session samples). Raise it only together with a new derivation of the bound.
         const double TolCeiling = 1e-3;
         const int SampleCount = 240;
 
@@ -90,6 +91,8 @@ namespace FishGame.Tests.EditMode
                         Vector3 s = samples[i];
                         float cpu = WaveMath.HeightAt(in set, s.x, s.y, (double)s.z);   // t is already the float the GPU receives
                         float gpu = heights[i];
+                        Assert.That(float.IsNaN(cpu) || float.IsInfinity(cpu), Is.False,
+                            c.Name + ": CPU height is non-finite (" + cpu + ") at x=" + s.x + " z=" + s.y + " t=" + s.z + " (gpu " + gpu + ")");
                         Assert.That(float.IsNaN(gpu) || float.IsInfinity(gpu), Is.False,
                             c.Name + ": GPU height is non-finite (" + gpu + ") at x=" + s.x + " z=" + s.y + " t=" + s.z + " (cpu " + cpu + ")");
                         float err = Mathf.Abs(gpu - cpu);

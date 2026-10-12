@@ -9,7 +9,7 @@ namespace FishGame.Tests.EditMode
 {
     public class ValidationTests
     {
-        const string TempFolder = "Assets/_Project/Tests/__Temp";   // gitignored
+        const string TempFolder = "Assets/_Project/Tests/__Temp/Validation";   // gitignored; own subfolder so other fixtures' temp prefabs under __Temp cannot change the validators' counts
         const string TempMissingMeshPrefab = TempFolder + "/__TestMissingMesh.prefab";
         const string TempToonPrefab = TempFolder + "/__TestToonMesh.prefab";
         const string TempToonMaterial = TempFolder + "/__TestToonJitter.mat";
@@ -33,6 +33,7 @@ namespace FishGame.Tests.EditMode
             AssetDatabase.DeleteAsset(TempMissingMeshPrefab);
             AssetDatabase.DeleteAsset(TempToonPrefab);
             AssetDatabase.DeleteAsset(TempToonMaterial);
+            if (AssetDatabase.IsValidFolder(TempFolder)) AssetDatabase.DeleteAsset(TempFolder);
         }
 
         static void AssertNoErrors(List<string> errors)

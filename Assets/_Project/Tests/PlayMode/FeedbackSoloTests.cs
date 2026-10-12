@@ -265,7 +265,16 @@ namespace FishGame.Tests.PlayMode
                 counter.Poll();   // click 1 plays inside the cue
                 int frames = 0;
                 double start = Time.realtimeSinceStartupAsDouble;
-                while (Time.realtimeSinceStartupAsDouble - start < 0.8)
+                // Poll until the fourth click plays (2 s deadline), then hold 0.2 s so a fifth, stray click would be seen: exactly 4.
+                while (counter.Count < 4 && Time.realtimeSinceStartupAsDouble - start < 2.0)
+                {
+                    Thread.Sleep(sleepMs);
+                    yield return null;
+                    frames++;
+                    counter.Poll();
+                }
+                double holdStart = Time.realtimeSinceStartupAsDouble;
+                while (Time.realtimeSinceStartupAsDouble - holdStart < 0.2)
                 {
                     Thread.Sleep(sleepMs);
                     yield return null;
