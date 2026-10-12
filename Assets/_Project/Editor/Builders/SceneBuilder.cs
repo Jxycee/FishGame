@@ -11,6 +11,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
@@ -85,6 +86,8 @@ namespace FishGame.EditorTools
             Camera camera = cameraObject.AddComponent<Camera>();
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(0.07f, 0.10f, 0.14f);
+            // Post-processing on, like the Spot_LakeDock SceneCamera and PlayerFP (C 7.21): no colour-grade pop on the SceneCameraSwitch hand-over (T21 review).
+            BuilderUtil.GetOrAdd<UniversalAdditionalCameraData>(cameraObject).renderPostProcessing = true;
             cameraObject.AddComponent<AudioListener>();
 
             var sun = new GameObject("Sun");
