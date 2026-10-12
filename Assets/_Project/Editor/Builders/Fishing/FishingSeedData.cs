@@ -317,7 +317,7 @@ namespace FishGame.EditorTools
         }
 
         internal static readonly Color WaterShallowColor = new Color(0.36f, 0.72f, 0.70f, 0.75f);
-        internal static readonly Color WaterDeepColor = new Color(0.08f, 0.28f, 0.42f, 0.95f);
+        internal static readonly Color WaterDeepColor = new Color(0.14f, 0.42f, 0.58f, 0.85f);
         internal const float WaterDepthRange = 3.0f;
         internal const float WaterFoamWidth = 0.35f;
 

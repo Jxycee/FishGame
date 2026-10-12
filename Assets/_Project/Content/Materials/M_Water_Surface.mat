@@ -27,10 +27,10 @@ Material:
     m_Floats:
     - _DepthRange: 3
     - _FoamWidth: 0.35
-    - _RampMid: 0.45
-    - _RampSoft: 0.1
+    - _RampMid: 0.78
+    - _RampSoft: 0.04
     m_Colors:
-    - _DeepColor: {r: 0.079999976, g: 0.27999997, b: 0.41999996, a: 0.95}
+    - _DeepColor: {r: 0.14, g: 0.42, b: 0.58, a: 0.85}
     - _FoamColor: {r: 0.92, g: 0.96999997, b: 1, a: 1}
     - _ShallowColor: {r: 0.35999998, g: 0.72, b: 0.7, a: 0.75}
   m_BuildTextureStacks: []

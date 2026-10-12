@@ -55,6 +55,8 @@ namespace FishGame.EditorTools
             surfaceChanged |= SetColor(surface, Shader.PropertyToID("_DeepColor"), water.DeepColor);
             surfaceChanged |= SetFloat(surface, Shader.PropertyToID("_DepthRange"), water.DepthRange);
             surfaceChanged |= SetFloat(surface, Shader.PropertyToID("_FoamWidth"), water.FoamWidth);
+            surfaceChanged |= SetFloat(surface, RampMidId, 0.78f);    // water-specific ramp: facets band against the sun (pinned so an existing material follows the shader default)
+            surfaceChanged |= SetFloat(surface, RampSoftId, 0.04f);
             if (surfaceChanged) EditorUtility.SetDirty(surface);
 
             Material line = EnsureMaterial("M_Line", RequireShader("FishGame/Line"), out bool lineChanged);   // shader defaults

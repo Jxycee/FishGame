@@ -1,19 +1,20 @@
 // Shaders/Water.shader - FishGame/Water (spec 10.4, C 7.21). Owned by T21. ASCII only.
 // Vertex-displaced MeshBuilder.Grid (shared vertices) via _Waves/_WaterTime (mirrors WaveMath, F1); flat facet normal;
 // depth fade shallow -> deep over _DepthRange; foam band where scene depth is within _FoamWidth, broken by hash noise,
-// plus _Ripples (foam and brightness only). Transparent, ZWrite Off, one UniversalForward pass, URP fog.
+// plus _Ripples (foam and brightness only). Water-specific toon ramp (_RampMid 0.78, _RampSoft 0.04: the sun dot of a facet is about 0.77, so wave facets
+// band against the sun), ambient 0.4, sky-horizon fresnel (0.2). Transparent, ZWrite Off, one UniversalForward pass, URP fog.
 // The wave term comes ONLY from FishGameCommon.hlsl (FG_WaveHeight / FG_WaveTerm, with the non-finite guard): never re-implement it here.
 Shader "FishGame/Water"
 {
     Properties
     {
         _ShallowColor("Shallow Colour", Color) = (0.36, 0.72, 0.70, 0.75)
-        _DeepColor("Deep Colour", Color) = (0.08, 0.28, 0.42, 0.95)
+        _DeepColor("Deep Colour", Color) = (0.14, 0.42, 0.58, 0.85)
         _FoamColor("Foam Colour", Color) = (0.92, 0.97, 1.0, 1.0)
         _DepthRange("Depth Range (m)", Float) = 3.0
         _FoamWidth("Foam Width (m)", Float) = 0.35
-        _RampMid("Ramp Mid", Range(0, 1)) = 0.45
-        _RampSoft("Ramp Softness", Range(0.001, 0.5)) = 0.1
+        _RampMid("Ramp Mid", Range(0, 1)) = 0.78
+        _RampSoft("Ramp Softness", Range(0.001, 0.5)) = 0.04
     }
 
     SubShader
@@ -91,9 +92,12 @@ Shader "FishGame/Water"
                 Light mainLight = GetMainLight();
                 half band = smoothstep(_RampMid - _RampSoft, _RampMid + _RampSoft, saturate(dot(n, mainLight.direction)));
                 half3 tint = lerp(_ToonShade.rgb, mainLight.color, band);
-                half3 rgb = body.rgb * tint + body.rgb * _ToonAmbient.rgb * 0.15h;
+                half3 rgb = body.rgb * tint + body.rgb * _ToonAmbient.rgb * 0.4h;
+                // Sky-horizon fresnel: grazing views pick up the horizon colour (global, linear), so the far lake reads as lit water, not a dark slab.
+                half fresnel = pow(1.0h - saturate(dot(n, normalize(_WorldSpaceCameraPos - positionWS))), 3.0h);
+                rgb = lerp(rgb, _SkyHorizon.rgb, fresnel * 0.2h);
                 rgb += ripple * 0.25h * mainLight.color;              // ripples add brightness only (spec 10.4)
-                rgb = lerp(rgb, _FoamColor.rgb * tint, foam);
+                rgb = lerp(rgb, _FoamColor.rgb * mainLight.color, foam);   // foam is lit by the sun, never banded to shade (facet bands would tint it blue)
                 half alpha = saturate(max(body.a, foam * _FoamColor.a));
                 return half4(FG_ApplyFog(rgb, input.fogFactor), alpha);
             }
