@@ -11,8 +11,19 @@ namespace FishGame.Tests.EditMode
     {
         const string TempMissingMeshPrefab = "Assets/_Project/Prefabs/__TestMissingMesh.prefab";
         const string TempToonPrefab = "Assets/_Project/Prefabs/__TestToonMesh.prefab";
-        const string TempToonMaterial = "Assets/_Project/Prefabs/__TestToonJitter.mat";
+        const string TempFolder = "Assets/_Project/Tests/__Temp";   // gitignored
+        const string TempToonMaterial = TempFolder + "/__TestToonJitter.mat";
         GameObject tempObject;
+
+        // A crashed earlier run may have left its temp assets behind; they would be counted by the validators.
+        [SetUp]
+        public void SetUp()
+        {
+            AssetDatabase.DeleteAsset(TempMissingMeshPrefab);
+            AssetDatabase.DeleteAsset(TempToonPrefab);
+            AssetDatabase.DeleteAsset(TempToonMaterial);
+            BuilderUtil.EnsureFolder(TempFolder);
+        }
 
         [TearDown]
         public void TearDown()
@@ -62,6 +73,24 @@ namespace FishGame.Tests.EditMode
             ShaderUtil.allowAsyncCompilation = false;
             try { AssertNoErrors(ShaderValidator.Run()); }
             finally { ShaderUtil.allowAsyncCompilation = previous; }
+        }
+
+        // Catches: a Toon shader without a DepthNormals pass. PC_Renderer's SSAO (Source = DepthNormals) runs a DepthNormals prepass that also writes
+        // _CameraDepthTexture, so Toon geometry would be missing from the depth texture and FishGame/Water would lose its depth fade over it.
+        [Test]
+        public void Validation_ToonShader_HasDepthNormalsPass()
+        {
+            Shader toon = Shader.Find("FishGame/Toon");
+            Assert.That(toon, Is.Not.Null);
+            ShaderData data = ShaderUtil.GetShaderData(toon);
+            Assert.That(data.SubshaderCount, Is.GreaterThan(0));
+            var lightModes = new List<string>();
+            ShaderData.Subshader own = data.GetSubshader(0);
+            for (int i = 0; i < own.PassCount; i++)
+                lightModes.Add(own.GetPass(i).FindTagValue(new UnityEngine.Rendering.ShaderTagId("LightMode")).name.ToLowerInvariant());   // ShadowCaster reports as SHADOWCASTER
+            Assert.That(lightModes, Does.Contain("depthnormals"), "LightModes in subshader 0: " + string.Join(",", lightModes));
+            Assert.That(lightModes, Does.Contain("depthonly"));
+            Assert.That(lightModes, Does.Contain("shadowcaster"), string.Join(",", lightModes));
         }
 
         [Test] public void Validation_ToonMeshesHaveVertexColours_Pass() => AssertNoErrors(RenderValidators.ToonMeshesHaveVertexColours());

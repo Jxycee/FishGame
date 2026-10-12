@@ -9,9 +9,13 @@
 // keyword set. FINDING: under -nographics ShaderData.ActiveSubshader is a FALLBACK subshader (index 2 of 3 for FishGame/Toon; its own
 // subshader 0 holds the real passes), so using it would have reported a false PASS. Every subshader is compiled instead. A keyword in a
 // set only takes effect on a pass that declares it with multi_compile or shader_feature (others ignore it).
-// Cost with FishGame/Toon alone: 5 passes (3 own + 2 fallback), 30 compiles, ms=2201 cold and about 30 warm (compile cache).
+// Hardening (T20 review): the canary must be reported by the CompileVariant path (its error exists only under _ADDITIONAL_LIGHTS and it has a
+// FallBack like the project shaders); a shader whose own subshader 0 has zero successful compiles is an error; a fourth keyword set covers
+// _MAIN_LIGHT_SHADOWS/_LIGHT_LAYERS/FOG_EXP; a project shader FallBack other than Off or URP's FallbackError is an error.
+// Cost with FishGame/Toon alone (before the hardening and the DepthNormals pass): 5 passes (3 own + 2 fallback), 30 compiles, ms=2201 cold and about 30 warm (compile cache).
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Rendering;
 using Debug = UnityEngine.Debug;
@@ -20,14 +24,28 @@ namespace FishGame.EditorTools
 {
     public static class ShaderValidator
     {
-        // Data, copied from the plan. The undeclared identifier makes the fragment stage fail to compile.
+        // Data. The undeclared identifier sits behind _ADDITIONAL_LIGHTS (a multi_compile keyword), so the canary reproduces the trap where an error
+        // exists only under one keyword set: it is found only if the variant compile path covers that set. The FallBack mirrors the project shaders
+        // (under -nographics the active subshader is the fallback one). Only the CompileVariant path counts for the canary (see CanaryIsReported).
         const string CanarySource =
             "Shader \"Hidden/FishGame/ValidatorCanary\" { SubShader { Pass { HLSLPROGRAM\n" +
             "#pragma vertex Vert\n" +
             "#pragma fragment Frag\n" +
+            "#pragma multi_compile _ _ADDITIONAL_LIGHTS\n" +
             "float4 Vert(float4 p : POSITION) : SV_POSITION { return p; }\n" +
-            "float4 Frag() : SV_Target { return fg_canary_undeclared; }\n" +
-            "ENDHLSL } } }\n";
+            "float4 Frag() : SV_Target {\n" +
+            "#if defined(_ADDITIONAL_LIGHTS)\n" +
+            "return fg_canary_undeclared;\n" +
+            "#else\n" +
+            "return float4(0, 0, 0, 0);\n" +
+            "#endif\n" +
+            "}\n" +
+            "ENDHLSL } }\n" +
+            "FallBack \"Hidden/Universal Render Pipeline/FallbackError\" }\n";
+
+        // Fallbacks a project shader may name (or none). Anything else would pull in an unvalidated shader when the real subshaders are unsupported.
+        const string AllowedFallback = "Hidden/Universal Render Pipeline/FallbackError";
+        static readonly Regex FallbackLine = new Regex("^\\s*Fallback\\s+(?<name>\"[^\"]*\"|\\S+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
         static readonly string[][] KeywordSets =
         {
@@ -38,12 +56,14 @@ namespace FishGame.EditorTools
                 "_LIGHT_LAYERS", "_LIGHT_COOKIES", "FOG_EXP2", "_CASTING_PUNCTUAL_LIGHT_SHADOW", "INSTANCING_ON"
             },
             new[] { "_MAIN_LIGHT_SHADOWS_SCREEN", "_ADDITIONAL_LIGHTS_VERTEX", "FOG_LINEAR" },
+            new[] { "_MAIN_LIGHT_SHADOWS", "_ADDITIONAL_LIGHTS", "_LIGHT_LAYERS", "FOG_EXP" },
         };
 
         sealed class Counters
         {
             public int Passes;
             public int Compiles;
+            public int VariantErrors;   // errors added by the CompileVariant path (not by ShaderHasError / GetShaderMessages)
         }
 
         public static List<string> Run()
@@ -80,6 +100,7 @@ namespace FishGame.EditorTools
                     if (!shader.name.StartsWith("FishGame/", System.StringComparison.Ordinal))
                         errors.Add(path + ": shader name '" + shader.name + "' does not start with FishGame/");
                     CheckShader(shader, errors, counters);
+                    CheckFallback(path, shader.name, errors);
                 }
 
                 timer.Stop();
@@ -101,25 +122,42 @@ namespace FishGame.EditorTools
             foreach (string error in errors) Debug.Log("FG SHADERS ERROR " + error);
         }
 
-        // Fail closed: the deliberately broken in-memory shader must produce at least one error through the same routine the real shaders use.
+        // Fail closed: the deliberately broken in-memory shader must produce at least one error from the variant compile path (CompileVariant), not only
+        // from ShaderHasError, through the same routine the real shaders use. Its error exists only under _ADDITIONAL_LIGHTS.
         static bool CanaryIsReported(List<string> errors)
         {
             UnityEngine.Shader canary = ShaderUtil.CreateShaderAsset(CanarySource, false);
             try
             {
                 var canaryErrors = new List<string>();
-                CheckShader(canary, canaryErrors, new Counters());
-                if (canaryErrors.Count == 0)
+                var canaryCounters = new Counters();
+                CheckShader(canary, canaryErrors, canaryCounters);
+                if (canaryCounters.VariantErrors < 1)
                 {
-                    errors.Add("ShaderValidator: the shader compiler reported no error for the canary; shader errors are invisible in this mode");
+                    errors.Add("ShaderValidator: the variant compile path reported no error for the canary (errors=" + canaryErrors.Count +
+                               "); shader errors are invisible in this mode");
                     return false;
                 }
-                Debug.Log("FG SHADERS canary ok: " + string.Join(" | ", canaryErrors));
+                Debug.Log("FG SHADERS canary ok: variantErrors=" + canaryCounters.VariantErrors + " " + string.Join(" | ", canaryErrors));
                 return true;
             }
             finally
             {
                 if (canary != null) UnityEngine.Object.DestroyImmediate(canary);
+            }
+        }
+
+        // A project shader may declare no FallBack, FallBack Off, or URP's FallbackError. Reads the source text of the .shader file.
+        static void CheckFallback(string assetPath, string shaderName, List<string> errors)
+        {
+            string text;
+            try { text = System.IO.File.ReadAllText(BuilderUtil.Abs(assetPath)); }
+            catch (System.Exception e) { errors.Add(shaderName + ": cannot read " + assetPath + " (" + e.Message + ")"); return; }
+            foreach (Match match in FallbackLine.Matches(text))
+            {
+                string name = match.Groups["name"].Value.Trim('"');
+                if (name.Equals("Off", System.StringComparison.OrdinalIgnoreCase) || name == AllowedFallback) continue;
+                errors.Add(shaderName + ": FallBack \"" + name + "\" is not allowed (only Off or " + AllowedFallback + ")");
             }
         }
 
@@ -154,14 +192,19 @@ namespace FishGame.EditorTools
             {
                 ShaderData.Subshader subshader = data.GetSubshader(s);
                 if (subshader == null) { errors.Add(shaderName + ": subshader " + s + " is null"); continue; }
+                int successes = 0;
                 for (int p = 0; p < subshader.PassCount; p++)
-                    CheckPass(shaderName + " #" + s, subshader.GetPass(p), errors, counters, seen);
+                    successes += CheckPass(shaderName + " #" + s, subshader.GetPass(p), errors, counters, seen);
+                // The shader's own subshader (0) must really compile: if only the fallback subshaders compiled, a broken real pass would go unnoticed.
+                if (s == 0 && successes == 0) errors.Add(shaderName + ": subshader 0 produced no successful compile");
             }
         }
 
-        static void CheckPass(string shaderName, ShaderData.Pass pass, List<string> errors, Counters counters, HashSet<string> seen)
+        // Returns the number of successful variant compiles.
+        static int CheckPass(string shaderName, ShaderData.Pass pass, List<string> errors, Counters counters, HashSet<string> seen)
         {
             counters.Passes++;
+            int successes = 0;
             foreach (ShaderType stage in new[] { ShaderType.Vertex, ShaderType.Fragment })
             {
                 if (!pass.HasShaderStage(stage)) continue;
@@ -169,6 +212,7 @@ namespace FishGame.EditorTools
                 {
                     string label = shaderName + " / " + pass.Name + " / " + stage + " [" + string.Join(" ", keywords) + "]";
                     counters.Compiles++;
+                    int errorsBefore = errors.Count;
                     ShaderData.VariantCompileInfo info;
                     try
                     {
@@ -177,6 +221,7 @@ namespace FishGame.EditorTools
                     catch (System.Exception e)
                     {
                         errors.Add(label + ": CompileVariant threw " + e.GetType().Name + ": " + e.Message);
+                        counters.VariantErrors += errors.Count - errorsBefore;
                         continue;
                     }
 
@@ -192,8 +237,14 @@ namespace FishGame.EditorTools
                     {
                         errors.Add(label + ": empty bytecode");
                     }
+                    else
+                    {
+                        successes++;
+                    }
+                    counters.VariantErrors += errors.Count - errorsBefore;
                 }
             }
+            return successes;
         }
 
         static void ReportMessages(ShaderMessage[] messages, string label, List<string> errors, HashSet<string> seen)
