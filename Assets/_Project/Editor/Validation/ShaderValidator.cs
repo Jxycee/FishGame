@@ -50,8 +50,6 @@ namespace FishGame.EditorTools
         const string AllowedFallback = "Hidden/Universal Render Pipeline/FallbackError";
         static readonly Regex FallbackLine = new Regex("^\\s*Fallback\\s+(?<name>\"[^\"]*\"|\\S+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
-        static readonly Regex BlockComment = new Regex("/\\*.*?\\*/", RegexOptions.Singleline);
-        static readonly Regex LineComment = new Regex("//[^\\r\\n]*");
         static readonly Regex SubShaderKeyword = new Regex("(?<![A-Za-z0-9_])SubShader\\s*\\{", RegexOptions.IgnoreCase);
 
         static readonly string[][] KeywordSets =
@@ -185,11 +183,42 @@ namespace FishGame.EditorTools
                 errors.Add(shaderName + ": " + assetPath + " has " + count + " SubShader blocks (exactly 1 is required: only subshader 0 is compiled with every keyword set)");
         }
 
+        // One left-to-right pass: a "//" line comment, a "/* */" block comment and a "..." string literal are each skipped as a unit, so a "/*" inside a
+        // line comment or a quote inside a comment cannot start the wrong construct (the two-regex strip did get that wrong). Comments and string bodies
+        // become a space, then SubShaderKeyword counts the remaining "SubShader {" tokens.
         internal static int CountSubShaders(string source)
         {
-            string stripped = BlockComment.Replace(source, " ");
-            stripped = LineComment.Replace(stripped, string.Empty);
-            return SubShaderKeyword.Matches(stripped).Count;
+            if (string.IsNullOrEmpty(source)) return 0;
+            var sb = new System.Text.StringBuilder(source.Length);
+            int i = 0, n = source.Length;
+            while (i < n)
+            {
+                char c = source[i];
+                if (c == '/' && i + 1 < n && source[i + 1] == '/')
+                {
+                    while (i < n && source[i] != '\n' && source[i] != '\r') i++;
+                    sb.Append(' ');
+                }
+                else if (c == '/' && i + 1 < n && source[i + 1] == '*')
+                {
+                    int end = source.IndexOf("*/", i + 2, System.StringComparison.Ordinal);
+                    i = end < 0 ? n : end + 2;
+                    sb.Append(' ');
+                }
+                else if (c == '"')
+                {
+                    i++;
+                    while (i < n && source[i] != '"' && source[i] != '\n' && source[i] != '\r') i++;
+                    if (i < n && source[i] == '"') i++;
+                    sb.Append(' ');
+                }
+                else
+                {
+                    sb.Append(c);
+                    i++;
+                }
+            }
+            return SubShaderKeyword.Matches(sb.ToString()).Count;
         }
 
         // The same message at the same file and line is reported once per shader (the keyword sets and stages repeat it); the first label wins.

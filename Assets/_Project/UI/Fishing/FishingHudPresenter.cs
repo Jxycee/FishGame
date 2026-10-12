@@ -51,6 +51,7 @@ namespace FishGame.UI
         private FishingRodController _controller;
         private PlayerNetState _creelOwner;
         private PlayerCreel _creel;
+        private bool _creelLookedUp;
         private bool _creelDirty;
 
         // Per-element state (visibility flags avoid redundant style writes; draw values gate repaints).
@@ -217,7 +218,8 @@ namespace FishGame.UI
             if (!ReferenceEquals(_controller, controller)) SetController(controller);
 
             var owner = PlayerNetState.Local;
-            if (!ReferenceEquals(_creelOwner, owner) || (_creel == null && owner != null))
+            // An owner without a PlayerCreel is looked up once per owner (_creelLookedUp), not on every Tick; a destroyed creel is looked up again.
+            if (!ReferenceEquals(_creelOwner, owner) || (_creel == null && owner != null && (!_creelLookedUp || !ReferenceEquals(_creel, null))))
             {
                 PlayerCreel creel = owner != null ? owner.GetComponent<PlayerCreel>() : null;
                 SetCreel(owner, creel);
@@ -229,6 +231,7 @@ namespace FishGame.UI
         private void SetCreel(PlayerNetState owner, PlayerCreel creel)
         {
             _creelOwner = owner;
+            _creelLookedUp = owner != null;   // reset on every owner change; true once this owner's creel has been looked up
             if (!ReferenceEquals(_creel, creel))
             {
                 if (!ReferenceEquals(_creel, null)) _creel.Changed -= OnCreelChanged;   // also for a destroyed component: a plain C# event

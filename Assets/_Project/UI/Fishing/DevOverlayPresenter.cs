@@ -79,7 +79,7 @@ namespace FishGame.UI
             }
             catch (Exception exception)
             {
-                if (_log.ShouldLog("tick")) Debug.LogException(exception);
+                if (_log.ShouldLog("tick:" + exception.GetType().Name)) Debug.LogException(exception);   // once per exception type, so a new kind is not hidden
             }
         }
 
