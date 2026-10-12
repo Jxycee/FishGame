@@ -27,6 +27,14 @@
 .crosshair { position: absolute; left: 50%; top: 50%; translate: -50% -50%; font-size: 22px; color: rgb(255, 255, 255); }
 .hud-prompt { position: absolute; left: 50%; top: 56%; translate: -50% 0; font-size: 18px; color: rgb(255, 255, 255); -unity-text-outline-width: 1px; -unity-text-outline-color: rgb(0, 0, 0); }
 .hud-strip { position: absolute; left: 16px; bottom: 16px; font-size: 14px; color: rgb(220, 226, 232); -unity-text-outline-width: 1px; -unity-text-outline-color: rgb(0, 0, 0); }
-.toast-stack { position: absolute; right: 16px; bottom: 16px; width: 320px; max-width: 60%; align-items: flex-end; }
+.toast-stack { position: absolute; right: 16px; bottom: 48px; width: 320px; max-width: 60%; align-items: flex-end; }
 .toast { background-color: rgba(20, 30, 44, 0.92); padding: 10px 14px; margin: 4px 0; border-radius: 6px; color: rgb(255, 255, 255); font-size: 16px; max-width: 320px; white-space: normal; }
 .nameplate { position: absolute; font-size: 14px; -unity-font-style: bold; -unity-text-align: middle-center; translate: -50% -100%; -unity-text-outline-width: 1px; -unity-text-outline-color: rgb(0, 0, 0); }
+.fishing-ring { position: absolute; left: 50%; top: 50%; width: 72px; height: 72px; translate: -50% -50%; }
+.fishing-gauge { position: absolute; left: 50%; top: 50%; width: 140px; height: 70px; translate: -50% 0; }
+.fishing-gauge.bar { width: 160px; height: 12px; margin-top: 42px; }
+.fishing-hook { position: absolute; left: 50%; bottom: 120px; translate: -50% 0; font-size: 30px; -unity-font-style: bold; color: rgb(255, 255, 255); -unity-text-outline-width: 1px; -unity-text-outline-color: rgb(0, 0, 0); }
+.fishing-caption { position: absolute; left: 50%; bottom: 72px; translate: -50% 0; font-size: 22px; color: rgb(255, 255, 255); -unity-text-outline-width: 1px; -unity-text-outline-color: rgb(0, 0, 0); }
+.fishing-creel { position: absolute; right: 16px; bottom: 16px; font-size: 18px; color: rgb(235, 240, 245); -unity-text-outline-width: 1px; -unity-text-outline-color: rgb(0, 0, 0); }
+.fishing-creel.warn { -unity-font-style: bold; color: rgb(255, 200, 70); border-left-width: 3px; border-left-color: rgb(255, 200, 70); padding-left: 6px; }
+.fishing-creel.full { -unity-font-style: bold; color: rgb(255, 110, 90); }

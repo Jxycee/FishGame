@@ -6,6 +6,11 @@
             <ui:Label name="Crosshair" class="crosshair" text="+" picking-mode="Ignore" />
             <ui:Label name="InteractPrompt" class="hud-prompt" picking-mode="Ignore" />
             <ui:Label name="PromptStrip" class="hud-strip" picking-mode="Ignore" />
+            <ui:VisualElement name="FishingChargeRing" class="fishing-ring" picking-mode="Ignore" focusable="false" />
+            <ui:VisualElement name="FishingLineGauge" class="fishing-gauge" picking-mode="Ignore" focusable="false" />
+            <ui:Label name="FishingHookPrompt" class="fishing-hook" picking-mode="Ignore" focusable="false" />
+            <ui:Label name="FishingCaption" class="fishing-caption" picking-mode="Ignore" focusable="false" />
+            <ui:Label name="FishingCreel" class="fishing-creel" picking-mode="Ignore" focusable="false" />
         </ui:VisualElement>
 
         <ui:VisualElement name="ScreenMainMenu" class="screen hidden">
@@ -52,6 +57,9 @@
                     <ui:Toggle name="InvertY" class="setting" />
                     <ui:SliderInt name="FieldOfView" class="setting" low-value="80" high-value="110" />
                     <ui:Slider name="CameraMotion" class="setting" low-value="0" high-value="1" />
+                    <ui:SliderInt name="LineGauge" class="setting" low-value="0" high-value="2" />
+                    <ui:Toggle name="Captions" class="setting" />
+                    <ui:Toggle name="FishingAssist" class="setting" />
                     <ui:Toggle name="SprintToggle" class="setting" />
                     <ui:Toggle name="AimToggle" class="setting" />
                     <ui:Toggle name="StreamerMode" class="setting" />

@@ -211,6 +211,7 @@ namespace FishGame.UI
             _pausePresenter.SettingsRequested += () => OpenSettings(UiScreen.Pause);
 
             _hudPresenter = new HudPresenter(_hud, _bus, _input);
+            AttachHudExtension(new FishingHudPresenter());
             _toasts = new ToastPresenter(_root, _bus, _settings);
             _nameplates = new NameplateOverlay(nameplateLayer);
 

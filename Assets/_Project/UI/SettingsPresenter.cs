@@ -48,6 +48,10 @@ namespace FishGame.UI
             BindBool(root, "InvertY", "settings.invert_y", d => d.invertY, (d, v) => d.invertY = v);
             BindInt(root, "FieldOfView", "settings.fov", 80, 110, d => (int)Math.Round(d.fieldOfView), (d, v) => d.fieldOfView = v);
             BindFloat(root, "CameraMotion", "settings.cam_motion", 0f, 1f, d => d.cameraMotion, (d, v) => d.cameraMotion = v);
+            var refreshGauge = BindChoice(root, "LineGauge", "settings.line_gauge",
+                new[] { "settings.gauge_off", "settings.gauge_arc", "settings.gauge_bar" }, d => d.lineGauge, (d, v) => d.lineGauge = v);
+            BindBool(root, "Captions", "settings.captions", d => d.captions, (d, v) => d.captions = v);
+            BindAssist(root, refreshGauge);
             BindBool(root, "SprintToggle", "settings.sprint_toggle", d => d.sprintToggle, (d, v) => d.sprintToggle = v);
             BindBool(root, "AimToggle", "settings.aim_toggle", d => d.aimToggle, (d, v) => d.aimToggle = v);
             BindBool(root, "StreamerMode", "settings.streamer", d => d.streamerMode, (d, v) => d.streamerMode = v);
@@ -104,6 +108,48 @@ namespace FishGame.UI
                 slider.label = label + "  " + value.ToString(CultureInfo.InvariantCulture);
             });
             _firstControl ??= slider;
+        }
+
+        // A SliderInt over a short list of named values (no DropdownField: its popup is unreliable with gamepad-only navigation).
+        // Returns the refresh action so a related control can update this slider.
+        private Action BindChoice(VisualElement root, string name, string labelKey, string[] valueKeys,
+            Func<SettingsData, int> get, Action<SettingsData, int> set)
+        {
+            var slider = UiQuery.Req<SliderInt>(root, name);
+            var label = UiStrings.Get(labelKey);
+            int last = valueKeys.Length - 1;
+            slider.lowValue = 0;
+            slider.highValue = last;
+            slider.RegisterValueChangedCallback(e =>
+            {
+                set(_settings.Current, e.newValue);
+                _settings.NotifyChanged();
+                slider.label = label + "  " + UiStrings.Get(valueKeys[Math.Max(0, Math.Min(last, e.newValue))]);
+            });
+            Action refresh = () =>
+            {
+                var value = Math.Max(0, Math.Min(last, get(_settings.Current)));
+                slider.SetValueWithoutNotify(value);
+                slider.label = label + "  " + UiStrings.Get(valueKeys[value]);
+            };
+            _refreshers.Add(refresh);
+            return refresh;
+        }
+
+        // Fishing assist (ruling G-Q4): every false-to-true change with the gauge Off sets the gauge to Arc (FishingHudRules.OnAssistChanged).
+        private void BindAssist(VisualElement root, Action refreshGauge)
+        {
+            var toggle = UiQuery.Req<Toggle>(root, "FishingAssist");
+            toggle.label = UiStrings.Get("settings.assist");
+            toggle.RegisterValueChangedCallback(e =>
+            {
+                var data = _settings.Current;
+                bool gaugeChanged = FishingHudRules.OnAssistChanged(data, e.previousValue, e.newValue);
+                data.fishingAssist = e.newValue;
+                _settings.NotifyChanged();
+                if (gaugeChanged) refreshGauge();
+            });
+            _refreshers.Add(() => toggle.SetValueWithoutNotify(_settings.Current.fishingAssist));
         }
 
         private void BindFloat(VisualElement root, string name, string labelKey, float low, float high,

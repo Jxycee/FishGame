@@ -64,6 +64,26 @@ namespace FishGame.UI
             ["hud.key"] = "[{0}]",
             ["hud.strip_interact"] = "[{0}] Interact",
             ["hud.strip_pause"] = "[{0}] Pause",
+            ["cap.bite"] = "Bite!",
+            ["cap.straining"] = "Line straining",
+            ["cap.snapped"] = "Snapped",
+            ["cap.escaped"] = "Got away",
+            ["hud.click"] = "Click!",
+            ["hud.creel"] = "{0}/{1}  {2} kg",
+            ["hud.creel_full"] = "Full - sell!",
+            ["toast.catch"] = "{0} caught {1} kg {2} (${3})",
+            ["toast.lost"] = "It got away!",
+            ["toast.creel_full"] = "Creel full! {0} released",
+            ["toast.clean"] = "Clean catch!",
+            ["toast.raw"] = "{0}",
+            ["toast.junk"] = "{0} fished up {1} (${2})",
+            ["toast.pity"] = "{0} has a lucky line!",
+            ["settings.line_gauge"] = "Line gauge",
+            ["settings.captions"] = "Captions",
+            ["settings.assist"] = "Fishing assist",
+            ["settings.gauge_off"] = "Off",
+            ["settings.gauge_arc"] = "Arc",
+            ["settings.gauge_bar"] = "Bar",
             ["err.host_left"] = "Host ended the session.",
             ["err.rejected"] = "The host did not accept this connection.",
             ["err.joins_closed"] = "Run in progress. Join when the crew is in the Hub, at the Briefing or at Night Camp.",
@@ -83,5 +103,9 @@ namespace FishGame.UI
         }
 
         public static string Format(string key, string arg) => string.Format(Get(key), arg ?? string.Empty);
+
+        // Several placeholders (T25). Never pass a literal null as the only argument after the key: it is ambiguous with the overload above.
+        public static string Format(string key, params string[] args) =>
+            string.Format(Get(key), (object[])(args ?? Array.Empty<string>()));
     }
 }
