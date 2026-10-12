@@ -1,6 +1,7 @@
 # FishGame M2 - Plan Section G: UI, world, acceptance (T25, T26, T28, T29, T30)
 
 - **Date:** 2026-10-11. Branch `m2-fishing-core`.
+- **Status (2026-10-12):** not started. Each task header below carries a "Carry-forward (2026-10-12)" block (T25, T26, T28, T29) and T30 has the criterion 7 wording, fun-gate metric notes and section J; contract C 16.2 lists them all.
 - **Contract ("C"):** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` (binding). **Skeleton:** `docs/superpowers/plans/2026-10-11-m2-plan-skeleton.md`.
 - **Spec:** `docs/superpowers/specs/2026-10-09-fishgame-design.md` sections 9.11, 9.13, 10.1-10.7, 11.1-11.4, 11.6, 17.2 and 3.2 (R62-R64).
 - **Scope:** T25 Fishing HUD, T26 Dev overlay, T28 Lake dock rebuild, T29 Blender species models (controller checklist), T30 Acceptance and final hand-off.
@@ -63,6 +64,14 @@ The last line of every run is `FG RESULT <command> PASS|FAIL|LOCKED|TIMEOUT`. Ex
 - **Tests:** none in C 10 (C 2.8 #8). Gate: `compile`, `build`, full `test-edit`, full `test-play`, then the manual checks below (controller).
 - **Biggest trap (G0.2 #2):** `UiStrings.cs` already holds two non-ASCII M1 lines. Edit the file in place and leave those lines alone.
 - **Spec:** 9.11 (accessibility block), 11.1 (UI Toolkit rules), 11.4 (HUD table), 11.6 (settings rows), 10.2 (shape-not-hue rule).
+
+**Carry-forward (2026-10-12, C 16.2; from the T2, T10, T16 and T17 reviews). These are requirements of this task:**
+- **`OnAssistChanged` pure helper + EditMode test.** Extract the G-Q4 rule (assist turned on while the gauge is Off sets Arc, every time; any other change leaves the gauge alone) into a pure static helper `OnAssistChanged(data, old, new)` in the presenter's file (or beside it), no `VisualElement` or `ISettings` dependency, and add an EditMode test for it (this task's only automated test; name the wrong implementation each case catches: "sets Arc only the first time", "changes the gauge when assist turns off", "overwrites Bar/Arc when the gauge is already on").
+- **Creel HUD reads `PlayerCreel.Count` at spawn.** The initial NetworkList sync raises no `Changed`, so the HUD must read `Count` and `TotalWeightG` when the local `PlayerCreel` appears, not only on `Changed`.
+- **Creel HUD must not reveal a species before `CatchAnnounced`.** On the host the creel `Changed` and `FishCaught` fire one frame BEFORE `CatchAnnounced`: the creel widget shows count and weight only (no species name or icon), or waits for the announce.
+- **`IHudExtension.Bind` must never throw.** `UiFlowController`'s bind loop has no try/catch (T2 review): a throw blocks the whole UI. Guard everything inside `Bind` (missing services, null elements) and return quietly.
+- **Extension-created buttons play their own `Ui_Click`.** The click-sound loop runs before the bind loop, so buttons the HUD creates after it must call `AudioBus.PlayUi(SfxIds.UiClick)` themselves.
+- Manual smoke list (T2.7 in the carry plan) gained steps 3b, 5b, 6b, 7, 8 in the T2 review; the controller runs them again after T25 because the HUD attaches through the same hook.
 
 ### T25.1 Public surface (C 7.25, exact)
 ```csharp
@@ -218,6 +227,11 @@ git -C C:\Dev\FishGame add Assets/_Project/UI/Fishing/FishingHudPresenter.cs Ass
 - **Implementer:** Sonnet (may share one dispatch with T25, as separate commits and reviews, skeleton section 5 batches). **Reviewer:** Opus high.
 - **Tests:** none in C 10. The gate is as for T25.
 
+**Carry-forward (2026-10-12, C 16.2; from the T8-fix, T10, T16 and T17 reviews). Requirements of this task:**
+- **F4 / F5 rod and bait selection can race the owner's Readying/Charging.** The host answers `SelectRodRpc`/`SelectBaitRpc` and re-derives landing from the HOST rod's `castMaxDist`. On a valid `CastResult` the owner controller therefore adopts the host's landing x/z (keeping `FlatHeight`) or, at the very least, calls `LogOnce` when the host landing differs from the owner's by more than 0.05 m. The change is in `FishingRodController` (T18's file): do it under the integration-fix rule as a named `fix(FishingRodController.cs): ...` commit, or report it as a defect; do not leave the mismatch silent.
+- **Manual F3 check (add to this task's manual list and to the T30 checklist):** F3 toggles the overlay in the editor, and in a NON-development player build F3 and F4-F9 do nothing (`Debug.isDebugBuild` is false; no exception, no overlay).
+- The overlay and key handlers go through `IDevInput` only; the host-only selectors (F6, F7) stay static `FishingDebugSettings` writes on the host.
+
 ### T26.1 Surface (C 7.26)
 ```csharp
 internal sealed class DevOverlayPresenter : IHudExtension   // UI/Fishing/DevOverlayPresenter.cs
@@ -303,6 +317,10 @@ git -C C:\Dev\FishGame add Assets/_Project/UI/Fishing/DevOverlayPresenter.cs Ass
 - **Depends on:** T22, T24, T27 (and therefore T20 `M_Toon_Base`, T21 `M_Water_Surface`, `M_Sky`, the volume profiles and `RenderingSetupBuilder.ApplySceneLighting`, T12 `MeshBuilder`, `FaceJitter`).
 - **Implementer:** Sonnet. **Reviewer:** Opus high.
 - **Tests:** none in C 10. The gate is `build` run twice, the full `test-edit` (the validators include `MeshReferences`, `MissingScripts` and `ToonMeshesHaveVertexColours`) and the full `test-play` (the G9 cast fixture and the movement and teleport tests must stay green), plus the collider fingerprint (T28.4) and the user look check.
+
+**Carry-forward (2026-10-12, C 16.2; rulings F-Q12 and the T16 note):**
+- **Integration-fix duty for waves.** T22 reports any M1 swim or water-height test (EditMode `WaterSurfaceTests` M1 case, PlayMode swim and water-timeout tests) that waves break. T28 FIXES it under the integration-fix rule (named `fix(<file>): <what>`, public surface frozen): either the test's expectation is made wave-aware (sample `WaterSurface.HeightAt(x, z)` instead of a literal 0) or the production check uses the wave-aware height; decide per failure and record the decision in the task report. The full `test-play` must be green before the commit.
+- **Swimming interact gate playtest.** T16 gated `PlayerInteractor` on `InputContextRouter.InteractLive(context) && !MenuOpen`. During the look check, swim to the dock ladder and the bell, with the rod out and stowed, and confirm what can and cannot be interacted with; record the result in the task report (it feeds the T30 playtest notes).
 
 ### T28.1 What must not change (the physics fingerprint)
 - The root names and order of M1 contract 6.5, and every child name below them: `Rock_NN`, `Tree_NN/Trunk`, `Tree_NN/Canopy`, `Deck`, `Post_L0..`, `Ladder_L/R`, `RampDeck`, `Exits/*`, `Spawn0..3`.
@@ -451,6 +469,14 @@ git -C C:\Dev\FishGame add Assets/_Project/Editor/Builders/LakeDockBuilder.cs As
 - **Depends on:** T20 (`FishModelPostprocessor`, `M_Toon_Fish`, `RenderValidators`), T14 (`Validation_SpeciesModels_Pass` incl. the one-submesh check), T23 (`FishFallbackMesh`, used for the colour comparison), T28 (committed or in review; skeleton section 5).
 - **Review:** Sonnet (import settings, LFS, validators, asset diffs), then the **user look check**. The commit trailer names the controller's model.
 
+**Carry-forward (2026-10-12, C 16.2; the T14-fix minors, to be done in the same small commit as the model fill because this task is the first to exercise it):**
+1. `FishingContentBuilder.Rooted()` throws (`ArgumentException`/`InvalidOperationException`) when a path is not under `RealContentRoot` instead of silently mangling it with `Substring`; add a test.
+2. A test covers the `ModelsFolder` re-root under `BuildAt` (assert the computed path, or use a temp FBX under `Tests/__Temp/`).
+3. Rename the `FishingContentBuilder_Build_*` tests to `FishingContentBuilder_BuildAt_*` (`FishingContentBuilder_Build_NeverReconfiguresExistingAssets`, `FishingContentBuilder_Build_AppendsMissingRegistryEntriesOnce`), since they call `BuildAt`; the contract C 10 names are unchanged.
+4. `FishingContentBuilderTests` `[OneTimeSetUp]`: wrap the temp build in try/catch and call the delete-temp-folders helper on failure, so a failed build never leaves `Tests/__Temp/` behind.
+5. Move the `ValidationTests` temp prefab under `Assets/_Project/Tests/__Temp/` (git-ignored, deleted in TearDown).
+6. The models are IMPORTED from the staged `Art/Export/` files; they are not rebuilt. Only the controller touches Blender, and only if a staged model fails verification.
+
 ### A. Inputs
 1. The five staged FBX files and the source `.blend` (committed; LFS, `.gitattributes` tracks `*.fbx`).
 2. Species colours: `colorA`, `colorB`, `bodyShape` from `Assets/_Project/Content/Fishing/Species/<id>.asset` (the runtime truth), to compare with the staged vertex colours in step D.
@@ -556,7 +582,7 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
 | 4 | Tension and phase readable with no HUD and with sound off | User | Gauge Off, captions off, master volume 0. Fight 3 fish (one Bulldog). Name aloud: side run vs dive (splash column vs plunge and line down), creak band (rod bend), warn (shake plus the line dash and width pulse). A second person watches the screen and confirms. Then repeat with sound on and eyes on the rod only. |
 | 5 | Rod back to Idle within 3 s in every 9.13 case; no stuck states; no rumble left | User + Claude | Section C below (the 9.13 walk). Gamepad connected, so rumble is observable. |
 | 6 | Bait consumed on accept, refunded on cancel/recall, lost on snap/escape/miss; bare hook never runs out | Claude (tests) + User | EditMode `FishingHostLedger_Accept_ConsumesBaitAndRolls`, `FishingHostLedger_CancelInWaiting_RefundsBait`, `FishingHostLedger_SnapEscapeMiss_DoNotRefund`, `FishingHostLedger_BareHook_NeverRunsOut`; PlayMode `SoloHost_CancelInWaiting_RefundsBait`. Manual: F3 LOADOUT count 20 -> 19 on a cast, back to 20 after RMB cancel; a miss (F7 twitchy, don't click) keeps 19; bare hook shows `inf`. |
-| 7 | Host rejects forged or out-of-order casts and hooks and impossibly fast catches; species and weight come from the host roll | Claude (tests) + Opus xhigh review | EditMode ledger tests (C 10.1 T9 rows: stale/duplicate id, charge range, origin > 3 m, no bait, early hook, landed below floor, implausible or self-contradictory clean claims). The branch review confirms that no owner-side path decides species, weight or quality (the owner only displays `CastResultRpc`'s roll; the creel and announce use `CommitDecision.Roll`). |
+| 7 | Host rejects forged or out-of-order casts and hooks and impossibly fast catches; species and weight come from the host roll | Claude (tests) + Opus xhigh review | EditMode ledger tests (C 10.1 T9 rows: stale/duplicate id, charge range, origin > 3 m, no bait, early hook, landed below floor, implausible or self-contradictory clean claims). The branch review confirms that no owner-side path decides species, weight or quality (the owner only displays `CastResultRpc`'s roll; the creel and announce use `CommitDecision.Roll`). **Wording (2026-10-12, C 16.2):** the criterion is "the host rejects forged and out-of-order messages (stale or duplicate cast ids, non-finite or far origins and yaw, no bait, early hooks, landings faster than the floor, implausible or self-contradictory clean claims) and bounds the line start by what a player could have walked (T9-R1)"; position checks are bounded by the OWNER-WRITTEN transform (the player moves under owner authority), which is accepted for a friends-only game (spec 1.2); a bare-hook reroll by cancelling is accepted design. It does NOT claim protection against a skilled cheater who forges a plausible whole fight (spec 9.9: the host never replays the fight). |
 | 8 | Bots meet the 9.12 targets (a failure passes only with numbers recorded as a tuning item) | Claude (T30) | `test-edit -Filter "FishGame.Tests.EditMode.FishingBots"`. Paste the printed tables into section F. Each failing target is listed under "Open tuning items" with its numbers. |
 | 9 | All tuning lives in assets; Core holds none except test defaults | Claude + User | Claude: the branch review's grep for 9.12 default literals in `Core/` outside `FishingConstants` (formula constants) and tests. User: in Play mode, change `Content/Fishing/FishingTuning.asset` `castChargeTime` 1.0 -> 0.6 in the Inspector; the ring fills faster on the next charge. Revert, or keep only if wanted (create-if-missing keeps Inspector edits). |
 | 10 | Assist, line gauge, captions and Camera motion behave as 9.11 defines | User | Assist on: grace feels longer (snap later), and the gauge goes to Arc each time assist is turned on while the gauge is Off (T25 rule, ruling G-Q4). Gauge Arc/Bar/Off. Captions on/off ("Bite!", "Line straining", "Snapped", "Got away"). Camera motion 0: no shake, no FOV kicks, no rumble. |
@@ -619,6 +645,8 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
      - the assist row count;
      - the pity row count and, for information, the landed share of pity casts versus the rest (R65).
   5. Mark each target PASS/FAIL. A failed gate means **tuning data, not new mechanics** (17.2): retune the assets plus the matching `FishingSeedData` seeds (C 2.6 data row).
+  6. **Near-snap recovery >= 40% is a HUMAN fun-gate metric (2026-10-12, C 16.2).** The T15 bots only print it (Rhythm bot at `5a652bd`: bulldog 3%, thrasher 6%, runner 57.5%; bots do not model a human reacting to the warn cue), so the T30 acceptance row for it is read from the playtest CSVs, never from `FishingBots`. Tuning hints if the Bulldog or Thrasher share is low: `tuning.relaxWhileReeling` sits at 0.20, the TOP of the 9.12 range (no headroom upward). The ruling's hints are: lower `relaxWhileReeling` toward 0.15, or raise the Thrasher `pullStrength`; and, because relax is at its ceiling, prefer raising the Bulldog/Thrasher `pullStrength` or lowering their calm minimum over relax. Record the per-profile shares and the chosen change.
+  7. **Duration notes for the playtest:** the Twig-rod Thrasher trophy (weightT 0.9) has a bot median of about 93 s, and the Bulldog Rhythm median is 37.4 s against the 35 s floor. Watch both in real fights; if testers find the 93 s fight tedious, retune in data (assets plus seeds plus `TunedDeviations`; `thrasher.staminaDrain` is 0.035 after T15) and let the controller pick the lever.
 - **Blind tell-apart sheet.**
   - Before each reveal or loss toast, the tester writes their guess: Steady, Darter, Bulldog, Thrasher or Runner.
   - Columns: fight #, tester, guess, confidence (1-3), actual (from the CSV `profile`, matched by order among that tester's hooked rows), match.
@@ -647,6 +675,7 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
 **H. Bad-luck nudge (R65 / M2-D23) - USER.**
 - Steps: in the Inspector set `Content/Fishing/FishingTuning.asset` `pityAfterFailures` to 3 (the seed). Fail three casts in a row (miss with F7 twitchy and no click, or let a fish snap the line). The next cast shows "<name> has a lucky line!" on every peer; that fight has a longer snap grace and lower strain; the fight log row has `pity` 1. A Landed catch or a cancel never shows the toast.
 - Expected: the nudge is noticeable but not a free win (same species, weight and quality odds).
+- **USER playtest line (2026-10-12):** after at least 10 nudged casts, write down whether the longer snap grace and the lucky-line toast are noticed, whether failures now feel less punishing, and whether anyone feels the game is helping too much.
 - Record: **USER playtests the bad-luck nudge and decides keep / tune / remove.** `Result: ______`
 
 **I. User actions due.**
@@ -655,6 +684,16 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
 - Decide the bad-luck nudge: keep / tune / remove (section H).
 - Approve the T29 look.
 - Approve merging `m2-fishing-core` to `main` after the final review.
+
+**J. Carried manual checks and later-milestone hand-offs (2026-10-12, C 16.2). The doc includes this section.**
+- Manual checks carried from reviews:
+  - **F3 overlay:** press F3 in the editor (overlay toggles and updates through a cast, bite and fight); in a NON-development player build F3 and F4-F9 are no-ops (T8-fix/T10 review).
+  - **Swimming interact gate:** swim to the ladder and the bell with the rod out and stowed; confirm what can be interacted with (T16 note; recorded by the T28 look check).
+  - **150 ms RTT clean-claim slack:** the 2.0 s `CleanClaimClockSlackSeconds` is a guess (skeleton risk 3); note the MPPM result.
+  - **Gamepad:** acceptance 1 and rumble 0 on every terminal state need a controller.
+  - **Rod geometry (ruling T19-R1):** with the T19-fix in, cast from the deck end at min and max charge at camera pitch -60, 0 and +60: the rod tip stays in front of the camera and the line never starts shorter than the host expects (no `Invalid` escapes from the early-hook or landed-floor checks on honest casts).
+- **M4 hand-off note:** `FishCaught` is published even when the host's creel store was missing (the fish was not stored). Quota consumers (M4) must count creel data (`PlayerCreel` / `CreelLedger`), never `FishCaught` events.
+- **M5 hand-off notes:** (1) knockback (`PlayerLocomotion.AddKnockback`) must END the cast, or the host walk bound (`CatchValidator.WalkBoundedLineLength0`, sprint speed) must be raised by the maximum knockback; otherwise a knocked-back player can look "teleported" to the line-start check. (2) The router's `Staggered` row must zero `Move` (M2 only guarantees RodFighting does; ruling C-Q7).
 
 ### T30.2 README edits
 - **Top bullet list:** add `M2 manual acceptance checklist: docs/superpowers/plans/2026-10-11-m2-acceptance.md`.
@@ -685,7 +724,7 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
 4. Edit `README.md` (T30.2).
 5. **Docs self-check** (a scratch PowerShell script in `$env:FG_OUT\t30\`, not committed):
    - no byte above 0x7F in either file;
-   - the acceptance doc contains `Criterion 1` through `Criterion 11`, all nine MPPM items (MP1-MP9), every 9.13 case name from the spec table and the "Bad-luck nudge" block;
+   - the acceptance doc contains `Criterion 1` through `Criterion 11`, all nine MPPM items (MP1-MP9), every 9.13 case name from the spec table, the "Bad-luck nudge" block and section J ("Carried manual checks and later-milestone hand-offs": F3 editor and non-development check, M4 FishCaught note, M5 knockback and Staggered notes);
    - the README contains the headings `Fishing dev keys` and `Fight log`.
 6. **Final `check`.** On FAIL, apply the integration-fix rule (C 2.6): fix the defect in the earlier task's file, keeping the public surface frozen, commit `fix(<file>): <what>`, and rerun until `FG RESULT check PASS`. A fix that needs a contract signature change: stop and report.
 7. **Review the working tree** against the baseline. Only the two docs, any fix files and regenerated outputs may appear. Restore scene fileID churn.

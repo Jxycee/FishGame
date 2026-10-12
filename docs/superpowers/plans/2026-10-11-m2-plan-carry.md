@@ -1,5 +1,6 @@
 # FishGame M2 - Section A plan: Carry-forwards (T1, T2, T3, T4)
 
+- **Status (2026-10-12):** T1-T4 are implemented and committed (`1c8d78d`, `649fb88`, `ed20831` + `1c3b423`, `43178ee` + `4eb9edc`). Review notes: the T2 manual smoke list (T2.7) gained steps 3b, 5b, 6b, 7, 8 (text in the T2 review report); `UiFlowController` limit is < 400 lines (A-Q2); `IHudExtension.Bind` must never throw and extension buttons play their own `Ui_Click` (carried to T25); T4 validators loop all `MeshCollider`s, dispose the `SerializedObject` and keep unloaded scenes closed correctly (`4eb9edc`); T19 later made one integration fix in the T3 harness (original leak message logged before recovery; `PrepareResetScene` try/catch helper; C 2.6).
 - **Date:** 2026-10-11. Branch `m2-fishing-core`. Code line numbers below refer to commit `f5e045a` (M1 code as it is today).
 - **Binding contract:** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` ("C" below). Skeleton: `docs/superpowers/plans/2026-10-11-m2-plan-skeleton.md`. If this file disagrees with C, C wins; every tension raised is closed by a controller ruling, listed under "Contract questions" at the end.
 - **Scope:** behaviour-preserving refactors plus the M1 review fixes (C 14: DA1, DA19-DA23). Nothing here adds gameplay.

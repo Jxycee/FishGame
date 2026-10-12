@@ -1,6 +1,7 @@
 # FishGame M2 - Section B: Core fishing (T5, T6, T7, T8, T9)
 
 - **Date:** 2026-10-11. Branch `m2-fishing-core`. Author: section B (Opus, effort high).
+- **Status (2026-10-12):** T5-T9 are implemented and committed. Where the code and review rulings differ from the task text below, C 16 wins: T8-R1 (an unsolicited commit while Casting plays the cancel beat; the text below that lists Casting as illegal for commits is superseded), T8-R2 (an invalid cast result remembers the cast id so the host's Cancelled commit is consumed silently), T9-R1 (`CatchValidator.WalkBoundedLineLength0`, `ActiveCast.CastDistance`), I-1/I-2 (non-finite yaw and host distance), `FishingRollValidation.IsSaneCatch` public, the `ForcedItemIndex` throw. Effect order in the T8 transitions is "cue first, then the send effect" (decision 9).
 - **Binding contract:** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` ("C" below). Public names, paths and test names come from C 7.5-7.9, C 10.1-10.2 and C 12 and are not changed here. Every doubt raised is closed by a controller ruling, listed under "Contract questions" at the end.
 - **Behaviour source:** spec `docs/superpowers/specs/2026-10-09-fishgame-design.md` sections 9.1-9.9, 9.12, 9.13 and 3.2 (R63 fight motions, R64 clean-catch bonus).
 - **Length note:** this file is about 1,260 lines, slightly over the 1,200 guide. The extra lines are the three code blocks the skeleton assigns to this section (`FightSim`, `RodStateMachine`, `FishingHostLedger.Result` + `CatchValidator.CleanClaimAccepted`).

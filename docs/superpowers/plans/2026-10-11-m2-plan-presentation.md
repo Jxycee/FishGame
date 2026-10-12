@@ -1,6 +1,7 @@
 # FishGame M2 - Plan Section F: Presentation (T20, T21, T22, T23, T24)
 
 - **Date:** 2026-10-11. **Branch:** `m2-fishing-core`.
+- **Status (2026-10-12):** not started (T20 follows the T19-fix and the mini-fix batch). Each task header below carries a "Carry-forward (2026-10-12)" block: T21 (non-finite wave fields, palette push not per frame), T22.1, T23 (loops with `follow`, `StopLoop` in `OnDisable`, no cues during despawn), T24 (`TipAnchor` never moved, rest pose from the T19-fix). Contract C 16.2 lists them all.
 - **Contract (binding, "C" below):** `docs/superpowers/plans/2026-10-11-m2-interfaces.md`. If this file disagrees with C, C wins; every doubt raised here is closed by a controller ruling, listed under "Contract questions" at the end.
 - **Skeleton:** `docs/superpowers/plans/2026-10-11-m2-plan-skeleton.md` (rows T20-T24, section 6 row F, section 8 risk 7).
 - **Spec (behaviour source):** `docs/superpowers/specs/2026-10-09-fishgame-design.md` 9.11 (feedback mapping), 10.1-10.5, 10.7, 3.2 (R62).
@@ -44,7 +45,7 @@ Expected result lines are those in M1 contract 11 (`FG RESULT <cmd> PASS ...`). 
 
 ### 0.3 Section decisions (F1-F9; pinned for T20-T24)
 
-- **F1 `_Waves` packing (T22 pushes, T20/T21 read).** `_Waves[i] = (DirectionDeg, Amplitude, Wavelength, Speed)` for i = 0..2, the same as `WaterSettingsDef.dirAmpLenSpeed[i]` and `WaveSet.W0..W2`. `_Waves[3] = (0,0,0,0)`. The HLSL wave term mirrors T12's `WaveMath`: 0 deg = +Z, `dir = (sin th, cos th)` on (x, z), `k = 2 pi / L`, `A * sin(k * (dot(dir, xz) - S * t))`, and a term is 0 when `L <= 0` or `A == 0`.
+- **F1 `_Waves` packing (T22 pushes, T20/T21 read).** `_Waves[i] = (DirectionDeg, Amplitude, Wavelength, Speed)` for i = 0..2, the same as `WaterSettingsDef.dirAmpLenSpeed[i]` and `WaveSet.W0..W2`. `_Waves[3] = (0,0,0,0)`. The HLSL wave term mirrors T12's `WaveMath`: 0 deg = +Z, `dir = (sin th, cos th)` on (x, z), `k = 2 pi / L`, `A * sin(k * (dot(dir, xz) - S * t))`, and a term is 0 when `L <= 0`, `A == 0` or any of the four fields is non-finite (C 16.2; `FG_WaveTerm` in T20.3 carries the `all(isfinite(w))` guard).
 - **F2 Palette slot channel.** `MeshBuilder` stores the slot in UV channel 1 (`mesh.SetUVs(1, ...)`), which is shader `TEXCOORD1`, the spec's `uv1.x` (T12 plan).
 - **F3 Colour space.** The project is Linear (`ProjectSettings m_ActiveColorSpace: 1`).
   - `Shader.SetGlobalColor` and material colour properties are converted by Unity.
@@ -162,9 +163,11 @@ half3 FG_PaletteColor(float slot)
 }
 
 // Mirrors FishGame.Core.WaveMath (T12) term for term: 0 deg = +Z, dir = (sin th, cos th) on (x, z), k = 2 pi / L,
-// term = A * sin(k * (dot(dir, xz) - S * t)); L <= 0 or A == 0 -> 0. Change WaveMath and this together, never one.
+// term = A * sin(k * (dot(dir, xz) - S * t)); L <= 0, A == 0 or ANY non-finite field (NaN, +/-Inf) -> 0 (T12 follow-up, C 16.2:
+// WaveMath treats a non-finite field as a zero term; without this guard CPU and GPU heights diverge). Change WaveMath and this together, never one.
 float FG_WaveTerm(float4 w, float2 xz, float t)
 {
+    if (!all(isfinite(w))) return 0.0;
     if (w.z <= 0.0 || w.y == 0.0) return 0.0;
     float th = radians(w.x);
     float k = 6.28318530718 / w.z;
@@ -552,6 +555,8 @@ Ask the user to open `PlayerFP` in prefab mode. Expected: flat faces with a visi
 
 C 2.8 that bite: #2, #4, #6, #11, #13 (the shaders go through `Validation_Shaders_Pass`), #20, #21. V13 items owned here: water facet-normal sign (resolved in code below by forcing the normal up) and C#/HLSL wave parity (F1, reviewed line by line against T12's `WaveMath`). Fog variants in a player build stay with T28/T30.
 
+**Carry-forward (2026-10-12, C 16.2).** (1) T12's follow-up made `WaveMath` treat ANY non-finite wave field (NaN or +/-Inf in direction, amplitude, wavelength or speed) as a zero term, in the height and in the amplitude sum. `Water.shader` must do the same per wave, or the CPU and GPU heights diverge. The guard lives in `FG_WaveTerm` (T20.3, `all(isfinite(w))` on the four fields of each `_Waves` entry, so a term is 0 when any field is non-finite, wavelength <= 0 or amplitude == 0): `Water.shader` must call `FG_WaveHeight`/`FG_WaveTerm` and never re-implement the term. Add the non-finite case to the F1 line-by-line review. (2) `ArtPaletteDef.PaletteVectors(season)` allocates a `Vector4[16]`: nothing in this task may call it per frame; the palette is pushed once on enable and on validate (T22.1 `PaletteGlobals` keeps one cached array).
+
 ### T21.1 `Water.shader` (complete code; spec 10.4, C 7.21)
 
 ```hlsl
@@ -773,7 +778,7 @@ C 2.8 that bite: #6 (this task really changes the lake scene: commit it), #8, #9
 
 - `[ExecuteAlways]`. Private `[SerializeField] ArtPaletteDef palette` (set by the builder, F8). At runtime, a null field falls back to `ServiceRoots.App?.TryGet<ContentRegistry>()?.ArtPalette`. Still null -> no-op (no warning).
 - `public void Apply()`:
-  - `Shader.SetGlobalVectorArray(ShaderGlobals.Palette, v)` where `v = palette.PaletteVectors(palette.M2Season)` (length 16). Each entry is linearised when `QualitySettings.activeColorSpace == ColorSpace.Linear` (F3). Reuse one cached `Vector4[16]`.
+  - `Shader.SetGlobalVectorArray(ShaderGlobals.Palette, v)` where `v = palette.PaletteVectors(palette.M2Season)` (length 16). Each entry is linearised when `QualitySettings.activeColorSpace == ColorSpace.Linear` (F3). Reuse one cached `Vector4[16]`. `PaletteVectors(season)` allocates, so `Apply()` runs from `OnEnable` and the editor `OnValidate` only, never from `Update` or `LateUpdate` (C 16.2).
   - Day phase = `palette.Phases[1]` (M2 has no clock; M3 adds `DayNightController`):
     - `Shader.SetGlobalColor` for `ShaderGlobals.ToonShade` = `toonShade`, `ToonAmbient` = `toonAmbient`, `SkyTop`, `SkyHorizon`, `SkyGround`;
     - only when `Application.isPlaying`: `RenderSettings.fogColor` = `fogColor` and `RenderSettings.fogDensity` = `fogDensity` (Day 0.008). In edit mode these writes would rewrite the fog of whatever scene is active (validators open the lake scene; `OnValidate` fires during `build`). Never `RenderSettings.fog`: the fog switch is not toggled (C 6.4).
@@ -865,6 +870,8 @@ Ask the user to enter Play mode solo on the lake dock. Toon bodies now have the 
 | Reviewer | Opus high |
 
 C 2.8 that bite: #9 (no warnings: a missing `RippleField.Current`, a missing model or a missing clip are silent), #17, plus the statics rule (0.1). Both components have `// Authority: local only. On PlayerFP; reads its FishingRodNetwork (Cue, ViewState, Announced).` (C 7.23). Neither may reference a T24 type (C 3 rule: no later-task types).
+
+**Carry-forward (2026-10-12, C 16.2).** (1) Every loop `FishingFeedback` starts passes a `follow` transform, owner (2D) loops included (`Line_Creak` follows `rodTip`, `Dive_Thrum` follows `FeedbackAnchor`; `StartLoop` keeps a `null`-follow loop at the bus, where it would play forever after a scene change) and `OnDisable` calls `StopLoop` on every loop (idempotent, null-safe). (2) No cues while the rod is despawning: the controller already suppresses its own local Recall/Escaped cues on the despawn path (mini-fix batch, C 16.3); `FishingFeedback` additionally ignores `Cue` and `Announced` events once `OnDisable` has run or `!isActiveAndEnabled`, and plays nothing from the polled section while disabled. (3) Test against the driver exactly as in C 7.19 (`FishingRig` first argument, `rig.Log`).
 
 ### T23.1 `FishingFeedback` (C 7.23, spec 9.11)
 
@@ -1027,6 +1034,8 @@ git commit -m "m2(feedback): FishingFeedback cues, loops, rumble, captions, snap
 | Reviewer | Opus high |
 
 C 2.8 that bite: #4 (no NetworkBehaviour added; C 6.3 order), #9, #10 (remote view from NetVars only), #17, #19 (Toon renderers here use MeshBuilder meshes). Each class carries `// Authority: local only (every peer; CastMarkerView renders on the owner only). Reads FishingRodNetwork.ViewState; never writes gameplay state.`
+
+**Carry-forward (2026-10-12, C 16.2, ruling T19-R1).** `RodPresenter` bends only `TipVisual` and the `Seg*` transforms: it must NEVER move or re-parent `TipAnchor` (the controller reads it for `RodTipPosition`, the fish point and `TipToBobber`, and the host slack `FishingConstants.HookedLineSlack` is derived from its measured reach). The rod REST pose (local rotation of `Rod`, so that in the owner arm pose the rod points camera-forward pitched up about 35 deg) is set by the T19-fix in `PlayerFishingRigBuilder`, not by T24; T24 keeps the rest pose and only adds bend on top. PlayMode tests for T24 reuse the driver as written in C 7.19 (every method takes a `FishingRig` first; `rig.Log` is the log watch; `FishingPlayModeDriver.TearDown(rig)` after the T19-fix).
 
 ### T24.1 `RodPresenter` (C 7.24, spec 10.5)
 

@@ -1,6 +1,7 @@
 # FishGame M2 - Plan Section D: Data and tuning (T13, T14, T15)
 
 - **Date:** 2026-10-11. Branch `m2-fishing-core`.
+- **Status (2026-10-12):** T13-T15 are implemented and committed (`8b34985`, `1d50a04`, `5a652bd` and follow-ups). Deltas from the text below are in C 16: `FishingContentBuilder.BuildAt(contentRoot, registry)` (internal; builder tests build under `Tests/__Temp/`, git-ignored), the `Ensure<T>` wrong-type refusal, `FishingValidators.Prefixed`, T15 tuned values (`tuning.relaxWhileReeling` 0.20, `profile.thrasher.staminaDrain` 0.035, `profile.runner.staminaDrain` 0.035) and the bot `Decide` pin test. Near-snap recovery >= 40% is a human fun-gate metric, not a bot gate. The T14-fix minors are carried into T29.
 - **Contract (binding):** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` ("C" below). Sections used: 1, 2, 3, 5, 6, 7.7, 7.13-7.15, 10.3, 12, 13, 14.
 - **Skeleton:** `docs/superpowers/plans/2026-10-11-m2-plan-skeleton.md` (rules in its section 1, rows T13-T15, section 6 row D).
 - **Spec (behaviour source):** `docs/superpowers/specs/2026-10-09-fishgame-design.md` 9.5 (fight), 9.6 (profiles, species), 9.7 (rods, bait), 9.10 (creel cap), 9.12 (tuning table, bot targets), 10.2-10.4 (palette, phases, water), 11.7 (cue rows), 17.2 (tuning bots, acceptance 8, 9, 11, fun gate), 3.2 R62-R64.

@@ -1,6 +1,7 @@
 # FishGame M2 - Plan Section C: Core support (T10, T11, T12)
 
 - **Date:** 2026-10-11. Branch `m2-fishing-core`.
+- **Status (2026-10-12):** T10-T12 are implemented and committed (with review follow-ups `2296e1a`, `4385084`). Deltas from the text below are in C 16: `AudioBus.Play2D` returns bool, `ApplyCueTable` replaces (never merges) and sanitises non-finite values, `AudioLoop.IsPlaying` checks `Source != null`, `WaveMath` treats any non-finite field as a zero term, `ShaderGlobals.PaletteLength/WavesLength`, winding tests for every `MeshBuilder` primitive. Carried to later tasks: 2D loops pass `follow` and are stopped in `OnDisable` (T23).
 - **Binding contract:** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` ("C" below). If this file and C disagree, C wins; every doubt raised here is closed by a controller ruling, listed under "Contract questions" at the end.
 - **Skeleton:** `docs/superpowers/plans/2026-10-11-m2-plan-skeleton.md` (rows T10, T11, T12; section 6 row C).
 - **Spec:** `docs/superpowers/specs/2026-10-09-fishgame-design.md` sections 8 (input), 9.11 (feedback), 10.2-10.4 (palette, meshes, water), 11.6 (settings), 11.7 (audio).

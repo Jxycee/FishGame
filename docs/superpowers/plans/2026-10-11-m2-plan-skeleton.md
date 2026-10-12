@@ -3,7 +3,8 @@
 - **Date:** 2026-10-11. Branch `m2-fishing-core`.
 - **Contract:** `docs/superpowers/plans/2026-10-11-m2-interfaces.md` (binding; section numbers below refer to it as "C").
 - **Spec:** `docs/superpowers/specs/2026-10-09-fishgame-design.md` section 17.2 and the sections it cites. The user approved two design additions on 2026-10-11 (fight motions per profile, clean-catch bonus: C 13 M2-D15/D16); the spec is amended to match separately.
-- **Amendments (2026-10-11):** controller rulings, the consistency-check fixes, the staged fish models and the bad-luck nudge (R65 / C 13 M2-D23) are listed in C 15 and applied below. T1 (`1c8d78d`) and T4 (`43178ee`) are committed; T2 is in progress.
+- **Amendments (2026-10-11):** controller rulings, the consistency-check fixes, the staged fish models and the bad-luck nudge (R65 / C 13 M2-D23) are listed in C 15 and applied below.
+- **Status (2026-10-12):** T1-T19 are committed (T19 is in review); per-task commits and the review fixes are in the status table below. Review findings, rulings T8-R1/R2, T9-R1, T16-R1 and the process notes since the section plans were written are in C 16 and applied to the not-yet-implemented task texts as "Carry-forward (2026-10-12)" blocks.
 - **Purpose:** task list, order, file ownership, tiers and the split for the section authors. Section authors write task bodies (behaviour, test cases, acceptance; code only for tricky parts: math, state machines, RPC sequences) in their own plan files. No section author changes a public name, path or test name from the contract; a needed change is reported to the controller as a contract change.
 
 ## 1. Rules for section authors
@@ -60,6 +61,39 @@ Columns: goal; owned files are exactly C 12 for that task (shared edits per C 2.
 | T30 | Acceptance | M2 acceptance checklist, MPPM list, 9.13 walk, fun-gate template, README, final `check`; then Opus xhigh branch review | all | Sonnet | Sonnet, then Opus xhigh (branch) |
 
 Serial order: T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> T8 -> T9 -> T10 -> T11 -> T12 -> T13 -> T14 -> T15 -> T16 -> T17 -> T18 -> T19 -> T20 -> T21 -> T22 -> T23 -> T24 -> T25 -> T26 -> T27 -> T28 -> T29 -> T30.
+
+### 3.1 Status (2026-10-12; branch `m2-fishing-core`)
+
+"Fix" = the review follow-up commit(s) already landed. Details of every review finding and ruling: C 16.
+
+| # | Status | Commit(s) |
+|---|---|---|
+| T1 | done | `1c8d78d` |
+| T2 | done | `649fb88` |
+| T3 | done | `ed20831`, fix `1c3b423` |
+| T4 | done | `43178ee`, fix `4eb9edc` |
+| T5 | done | `7879ad1`, fix `339742f` (test strength, NaN/infinity guards) |
+| T6 | done | `fdd8cde`; tests strengthened in `96a5f89` (with T7) |
+| T7 | done | `f6b0495`, tests `96a5f89` |
+| T8 | done | `7a809c8`, fix `95e31ee` (T8-R1, T8-R2) |
+| T9 | done | `0d0c02b`, fix `abecb40` (I-1, I-2, T9-R1) |
+| T10 | done | `27c076f` |
+| T11 | done | `3f1c62c`, fix `2296e1a` |
+| T12 | done | `c1e1291`, fix `4385084` |
+| T13 | done | `8b34985`, tests `a51e072` |
+| T14 | done | `1d50a04`, fix `03bb4a9` (`BuildAt`, create-if-missing guard) |
+| T15 | done | `5a652bd` (tuned values below), tests `f1476c3`, spec tables `4a4028f` |
+| T16 | done | `37f6723`, fix `d40534a` (T16-R1) |
+| T17 | done | `b9f31ac`, fix `071dc2d` |
+| T18 | done | `dea35f8` |
+| T19 | done, in review | `0c070a0`, test tweak `d2d119a` |
+| T20-T30 | not started | - |
+
+**Mini-fix batch (after T19 review, before T20; Sonnet + Sonnet re-review):** slot takeover also resets the host ledger slot (`FishingHostLedger.ResetSlot`), `PlayerKey.MaxIdLength` 61, `PlayerCreel.cs:91` comment, `PlayerHooksTests` brace formatting, `FishingHost` UnknownPlayer reply sends `Vector3.zero`, cheap origin-vs-seen check before `CastProbe`, no local Recall/Escaped cues during despawn (C 16.3). In progress at the time of writing.
+
+**T19-fix (T19 review, CHANGES REQUIRED; ruling T19-R1, C 13 M2-D28; after the mini-fix batch; Sonnet impl + Opus re-review):** rod rest rotation so the rod points camera-forward pitched up about 35 deg in the owner pose, `FishingConstants.HookedLineSlack` re-derived from the rod's measured forward reach (value TBD), the tip assertion in `SoloHost_CastBiteFight_Lands`, the shared `TearDown(rig)` driver helper and the amended driver surface (C 7.19), `PrepareResetScene` reuse. T24 must not move `TipAnchor`.
+
+**T15 tuned values (recorded in `FishingSeedData`, the assets and `TunedDeviations`; spec 9.6/9.7/9.12 tables updated in `4a4028f`):** `tuning.relaxWhileReeling` 0.10 -> 0.20 (the TOP of the 9.12 range: no headroom), `profile.thrasher.staminaDrain` 0.09 -> 0.035, `profile.runner.staminaDrain` 0.05 -> 0.035. Near-snap recovery >= 40% (spec 17.2) is a human fun-gate metric, not a bot gate (bots, informational: Rhythm bulldog 3%, thrasher 6%, runner 57.5%); bulldog Rhythm median 37.4 s (floor 35 s); Twig thrasher trophy (weightT 0.9) median about 93 s, noted for playtest (C 16.2, T30).
 
 ## 4. Coverage map (17.2 build list and tests -> tasks)
 
@@ -131,7 +165,7 @@ Authors may run in parallel (they only write their own plan file). Cross-section
 - **T19:** `check` green; manual solo cast-to-land on keyboard and gamepad by the controller (acceptance 1 dry run).
 - **T20/T21:** `Validation_Shaders_Pass` green in `-nographics` batchmode; first screenshot check by the user in the editor.
 - **T28:** lake dock looks complete (user check); frame time and SRP batches within 10% of the M1 baseline or noted.
-- **T30:** every 17.2 acceptance criterion has a checklist line and an owner; the fun gate is a user activity (30+ logged fights with at least one friend) recorded after M2 code is done; a USER line for the bad-luck nudge (keep / tune / remove).
+- **T30:** every 17.2 acceptance criterion has a checklist line and an owner; the fun gate is a user activity (30+ logged fights with at least one friend) recorded after M2 code is done; a USER line for the bad-luck nudge (keep / tune / remove). Added 2026-10-12 (C 16): criterion 7 wording (host rejects forged and out-of-order messages; owner-written transform limits position checks; friends-only), near-snap recovery >= 40% as a human fun-gate metric with tuning hints, F3 overlay check in the editor and in a non-development build, the Twig thrasher trophy time, and the M4/M5 hand-off notes.
 
 ## 8. Open questions and risks (controller decides; not resolved by the spec)
 

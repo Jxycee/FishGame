@@ -3,7 +3,7 @@
 - **Date:** 2026-10-11
 - **Scope:** Milestone M2 Fishing core (spec `docs/superpowers/specs/2026-10-09-fishgame-design.md` section 17.2 and the sections it cites: 4.3-4.9, 6.7-6.9, 7.4-7.6, 8, 9, 10.1-10.5, 11.1-11.4, 11.6-11.7, 18, 19).
 - **Builds on:** the M1 contract `docs/superpowers/plans/2026-10-09-m1-interfaces.md` ("M1 contract" below). Every M1 name stays valid unless section 14 here ("Drift adopted") or a row in section 13 says otherwise. Where M1 code and the M1 contract disagree, the code is what exists, and section 14 records it.
-- **Status:** binding for every M2 task (T1-T30, listed in `docs/superpowers/plans/2026-10-11-m2-plan-skeleton.md`). Amended 2026-10-11 after section planning: controller rulings and the bad-luck nudge are in section 15 and applied inline. If a section plan disagrees with this file, this file wins. If this file disagrees with the spec, section 13 records why.
+- **Status:** binding for every M2 task (T1-T30, listed in `docs/superpowers/plans/2026-10-11-m2-plan-skeleton.md`). Amended 2026-10-11 after section planning: controller rulings and the bad-luck nudge are in section 15 and applied inline. Amended 2026-10-12 after T1-T19 were implemented: review findings, the rulings T8-R1/R2, T9-R1 and T16-R1, the added public and internal surface and the process notes are in section 16 and applied inline in sections 2.6, 7, 9, 10.4, 12 and 13. If a section plan disagrees with this file, this file wins. If this file disagrees with the spec, section 13 records why.
 - **Audience:** section authors (Opus) and implementers (Sonnet/Haiku) who see their own task text, the global constraints (section 2.8) and this contract.
 
 Every type, file, asset, constant, event, RPC and test that two or more tasks use is defined here once, with an owner task in brackets. A task may add private or internal helpers freely. It must not add, rename or remove anything public listed here, and it must not edit a file owned by another task, except for the shared edits in section 2.6.
@@ -27,6 +27,7 @@ Every type, file, asset, constant, event, RPC and test that two or more tasks us
 13. Resolved ambiguities and spec deviations (M2)
 14. Drift adopted (M1 code vs M1 contract)
 15. Amendments after section planning (2026-10-11)
+16. Implementation deltas (T1-T19, 2026-10-12)
 
 ---
 
@@ -84,7 +85,7 @@ Per task in the skeleton. Haiku implements only when the section plan's task bod
 | `Networking/UgsNetworkSession.cs`, `UgsNetworkSession.Teardown.cs` | T1 (`EventIsolation`, comment fix at :78). |
 | `Networking/CompositeNetworkSession.cs` | T1 (`EventIsolation` in both forwarders). |
 | `UI/UiFlowController.cs` | T2 (split), T25 (one hook: create `FishingHudPresenter`), T26 (one hook: create `DevOverlayPresenter`). |
-| `Tests/PlayMode/{PlayModeHarness,SoloSessionTests,PlayerMovementTests}.cs` | T3 (hardening). T19 adds new PlayMode files only. |
+| `Tests/PlayMode/{PlayModeHarness,SoloSessionTests,PlayerMovementTests}.cs` | T3 (hardening; follow-up `1c3b423`). T19 adds new PlayMode files, and under the integration-fix rule edited `PlayModeHarness.cs` once (`0c070a0`: the original leak or problem message is written with `TestContext.WriteLine` before `RecoverFromLeakedScenes`, and the reset-scene creation and unload-list building moved into the try/catching helper `PrepareResetScene`, so a recovery exception never replaces the original failure; carry-over from the T3 follow-up re-review). |
 | `Editor/Builders/SceneBuilder.cs` | T4 (load after `NewScene`). |
 | `Editor/Builders/LakeDockBuilder.cs` | T4 (load after `NewScene`), T19 (hook `FishingSceneObjects.AddTo(scene)`), T22 (hook `PresentationSceneObjects.AddTo(scene)`), T28 (owner of the M2 rebuild; keeps both hooks). |
 | `Editor/Builders/LakeDockLayout.cs`, `LakeDockMeshes.cs` | T28 only. |
@@ -108,10 +109,18 @@ Per task in the skeleton. Haiku implements only when the section plan's task bod
 | `Data/ContentRegistry.cs` | T13 (fishing categories, singleton refs, `Fishing` database). |
 | `App/AppBootstrap.cs` | T14 (one hook after the registry build: `audioBus.ApplyCueTable(registry.SfxCueTable?.ToRecipes())`). |
 | `Core/Versioning/BuildInfo.cs` | T17 (`ProtocolVersion = 2`). |
-| `Tests/EditMode/BuildInfoTests.cs` | T17 (expectation 1 -> 2; ruling E-Q1). |
-| `Fishing/AssemblyInfo.cs` | T17 (the file exists with an `AssemblyMarker` class: keep it and add `[assembly: InternalsVisibleTo("FishGame.Tests.EditMode")]`; ruling E-Q2). |
+| `Tests/EditMode/BuildInfoTests.cs` | T17 (expectation 1 -> 2; ruling E-Q1). Done in `b9f31ac`. |
+| `Fishing/AssemblyInfo.cs` | T17 (the file exists with an `AssemblyMarker` class: keep it and add `[assembly: InternalsVisibleTo("FishGame.Tests.EditMode")]`; ruling E-Q2). Done in `b9f31ac` (reaches `CatchAnnouncement.FromWire` and the other internal wire and controller seams). The mini-fix batch after T19 adds `[assembly: InternalsVisibleTo("FishGame.Tests.PlayMode")]` (the takeover PlayMode test drives `FishingHost.HandleSelectRod/HandleSelectBait`). |
+| `Core/AssemblyInfo.cs` | T7: `[assembly: InternalsVisibleTo("FishGame.Tests.EditMode")]` (the `FightSim` seams `ForcePhase`, `ForceState`, `DrawCount`, `BurstLateralMult`, `TimeEps`; ruling B-Q2). |
+| `Editor/AssemblyInfo.cs` | T14: `[assembly: InternalsVisibleTo("FishGame.Tests.EditMode")]` (the internal `FishingSeedData` members, `FishingContentBuilder.BuildAt`, `FishingValidators.CheckRegistry/CheckSeedAssets/CheckSpeciesModel/Prefixed`). Recorded here per the T14 review. |
+| `Gameplay/AssemblyInfo.cs` | T16 follow-up (`d40534a`): `[assembly: InternalsVisibleTo("FishGame.Tests.PlayMode")]` (PlayMode tests reach `PlayerNetState.HandleToolChanged` and `SessionState.Upsert`). |
+| `.gitignore` | T14 follow-up (`03bb4a9`): `/Assets/_Project/Tests/__Temp*` (EditMode scratch content that `FishingContentBuilderTests` builds and deletes; never committed). |
+| `Core/Fishing/CreelLedger.cs` (T9 file) | T16 follow-up (`d40534a`, ruling T16-R1): `ClearSlot(byte slot)`. |
+| `Core/Fishing/{CatchValidator,FishingRollValidation}.cs` (T9, T6 files) | T17 follow-up (`071dc2d`): `CatchValidator.IsOriginFinite`; `FishingRollValidation.IsSaneCatch` made the shared catch check (used by `FishingRodNetwork` for announcements). |
+| `Core/Net/PlayerKey.cs` | Mini-fix batch after T19 (C 16.3): `MaxIdLength` 64 -> 61 to match the connect-payload truncation. |
+| `Core/Fishing/{FishingHostLedger,CatchValidator}.cs` | Mini-fix batch after T19 (C 16.3): `ResetSlot`, `OriginWithinSlack`. |
 | `Tools/unity.ps1` | T20 only, and only if the `-nographics` shader-validation check fails: a minimal change running `Validation_Shaders_Pass` in a graphics-capable batchmode (ruling F-Q4). |
-| `Gameplay/Player/{PlayerNetState,PlayerLocomotion,PlayerCamera,PlayerInteractor,PlayerRigPaths}.cs`, `Gameplay/Session/SessionState.cs`, `Gameplay/Interaction/DockBell.cs` | T16 only. |
+| `Gameplay/Player/{PlayerNetState,PlayerLocomotion,PlayerCamera,PlayerInteractor,PlayerRigPaths}.cs`, `Gameplay/Session/SessionState.cs`, `Gameplay/Interaction/DockBell.cs` | T16 only (done `37f6723`, fix `d40534a`). The mini-fix batch after T19 edits `SessionState.cs` once more (`SlotTakenOver` event, C 16.3) and `PlayerCreel.cs` (a comment). |
 | `UI/UiStrings.cs`, `UI/Uxml/AppRoot.uxml`, `UI/Uss/App.uss`, `UI/SettingsPresenter.cs` | T25 (fishing HUD, toasts, captions, settings rows), T26 (dev overlay keys and element). Order T25, T26. |
 | Generated output (`Scenes/*.unity`, `Prefabs/*.prefab`, `Content/**`, `ProjectSettings/*`) | Any task may regenerate by running `build`. Scene churn without a real change is restored with `git restore Assets/_Project/Scenes/*.unity`. |
 | Data assets under `Content/Fishing/**`, `Content/Art/**`, `Content/Audio/**` | Created by T14 (create-if-missing). T15 may retune values **in the `.asset` files** (and must then update the seed in `FishingSeedData` to match, so a fresh build reproduces the tuned values, and the `TunedDeviations` entry below). |
@@ -236,7 +245,7 @@ public static class FishingConstants
     public const float HostOriginSlack = 3.0f;           // cast origin vs host view, horizontal metres
     public const float HostWaitSlackSeconds = 30f;       // stuck-Waiting refund after tFlight + biteWait + 30
     public const float LandedFloorFactor = 0.8f, LandedFloorSlackSeconds = 0.5f;
-    public const float HookedLineSlack = 1.5f;           // lineLength0 = hostDistance - 1.5, floor landDistance
+    public const float HookedLineSlack = 1.5f;           // lineLength0 = hostDistance - 1.5, floor landDistance. T19-R1: the T19-fix re-derives this from the rod's measured forward reach (max horizontal TipAnchor reach over camera pitch -60..+60 at the owner pose, + 0.5 m, rounded up to 0.1); new value TBD, then C 7.9, spec 9.9 and the ledger tests follow it. It also feeds WalkBoundedLineLength0 (T9-R1)
     public const float JunkWeightLowRating = 0.6f;       // effRating 1-2
     public const float JunkWeightMidRating = 0.2f;       // effRating 3-5
     public const float JunkWeightHighRating = 0.05f;     // effRating 6+
@@ -521,8 +530,9 @@ public struct WaterProbe { public bool FirstHitIsWater; public float WaterY; pub
 public static class CastMath
 {
     public static float ChargeNorm(float heldSeconds, float castChargeTime, bool pingPong);
-        // u = held / chargeTime; pingPong ? 1 - |(u mod 2) - 1| : clamp01(u). held <= 0 -> 0.
-    public static float Distance(float chargeNorm, float castMinDist, float castMaxDist);   // lerp, chargeNorm clamped 0..1
+        // u = held / chargeTime; pingPong ? 1 - |(u mod 2) - 1| : clamp01(u). held <= 0, NaN held, chargeTime <= 0 or NaN -> 0;
+        // infinite u -> 0 (ping-pong) or 1 (T5 review fix `339742f`).
+    public static float Distance(float chargeNorm, float castMinDist, float castMaxDist);   // lerp, chargeNorm clamped 0..1; NaN chargeNorm counts as 0
     public static float FlightTime(float distance);                                         // 0.45 + 0.012 * distance
     public static float PitchApexMult(float pitchDeg);                                      // 0.7..1.3, linear over -30..45 deg, clamped
     public static float Apex(float distance, float pitchApexMult);                          // max(0.6, 0.12 * distance) * mult
@@ -531,7 +541,7 @@ public static class CastMath
     public static void ArcPoint(float t01, float startX, float startY, float startZ, float endX, float endY, float endZ,
                                 float apex, out float x, out float y, out float z);         // parabola, apex above the higher end
     public static bool IsValidLanding(in WaterProbe probe, float minLandDepth);             // FirstHitIsWater && HasBed && Depth >= minLandDepth
-    public static CastRejectReason ProbeReason(in WaterProbe probe, float minLandDepth);    // None | NotWater | TooShallow
+    public static CastRejectReason ProbeReason(in WaterProbe probe, float minLandDepth);    // None | NotWater | TooShallow; written as !(Depth >= minLandDepth), so a NaN depth is TooShallow
 }
 
 // Fish point during a fight (spec 9.1 glossary): angle off the cast line = lateral * lateralMaxDeg.
@@ -614,6 +624,7 @@ public static class PlaceholderRoller   // M2 only; replaced by M3 FishingResolv
     public static FishingRoll Roll(FishingDatabase db, in RollRequest req, ref Pcg32 rng);
         // Order: item draw (species weight 1 each eligible, junk JunkWeight * JunkMult; nothing eligible -> junk; junk item uniform),
         // then CatchMath, then BitePlanner (species biteWaitMod; junk uses 1.0), then FightSeed = rng.NextUInt() (0 -> 1).
+        // A ForcedItemIndex >= the species count THROWS (T6/T7 review; tested): the debug force must name a real species.
 }
 
 // Client-side sanity check of a received roll (spec 9.9). Pure; used by FishingRollNet.TryToCore.
@@ -621,7 +632,13 @@ public static class FishingRollValidation
 {
     public static bool IsSane(in FishingRoll roll, FishingDatabase db);
         // index in range for the junk/species flag; species weight within [min, max]; junk weight 0; quality 0..2;
-        // BiteWait finite and >= 0; NibbleCount <= 3; FightSeed != 0; SizeClass <= 2; HookWindow finite and >= 0
+        // BiteWait finite and >= 0; NibbleCount <= 3; FightSeed != 0; SizeClass <= 2; HookWindow finite and >= 0;
+        // WeightT finite and in [0, 1]; Nibble0..2 finite (T6/T7 review)
+    public static bool IsSaneCatch(in CatchResult c, FishingDatabase db);
+        // The catch part of IsSane (public since the T17 follow-up `071dc2d`): quality 0..2; item inside the database; species weight within
+        // [min, max]; junk weight 0; a null database returns false. `FishingRodNetwork.IsPlausible(in CatchAnnouncement, FishingDatabase)` (internal static)
+        // vets crew announcements with it for kinds 1..3 (kind 4 PityCast carries a default catch and is not checked; when no database exists the
+        // announcement is let through, because a client without content cannot judge it).
 }
 ```
 
@@ -737,7 +754,10 @@ Contract rules (the T8 plan carries the full transition code, since it is a tric
 - Edge triggers per spec 9.2 rules. A Primary held through a catch never starts a cast: Charging needs a `PrimaryPressed` seen while `State == Ready`.
 - Any `castId` that differs from `CastId` is ignored. Illegal events (wrong state) are ignored and counted in the public `IgnoredEventCount` (no Unity logging in Core). The controller (T18) compares the counter after each machine call and, when it grew and `Debug.isDebugBuild`, `Debug.Log`s once per state (not a warning). The reply (commit or late result) to the owner's own cancel is consumed silently and never counted, so ordinary cancels stay warning-free.
 - `Casting -> Waiting` when flight time (`CastMath.FlightTime(CastDistance)`) has elapsed **and** `HasResult`; the bite timer starts at `max(landing, resultReceived)`.
-- Unsolicited commit in Waiting/Bite/Hooked: no `SendResult`; `Cancelled` -> `Escaped` with `Recalling = true` and cue `Recall`; otherwise `Escaped(finalReason)` with cue `Escaped`; 1.5 s beat then Idle. Commit in Landed/Snapped/Escaped: sets the commit flag; Idle once the 1.5 s beat is done and (commit or `CommitTimeout` since entering the terminal state; the latter emits `CommitTimedOut`).
+- Unsolicited commit in Casting/Waiting/Bite/Hooked: no `SendResult`; `Cancelled` -> `Escaped` with `Recalling = true` and cue `Recall`; otherwise `Escaped(finalReason)` with cue `Escaped`; 1.5 s beat then Idle. **T8-R1:** the beat applies in Casting too, and a commit while Casting is no longer an illegal event (spec 9.13 "LastCast" intent wins over the 9.2 row list; the spec carries a 9.2 note). A duplicate commit in a terminal state is ignored and counted; an unsolicited `Cancelled` commit emits no `Escaped` event; `finalReason None` on a non-cancel commit is treated as `Invalid`.
+- **T8-R2:** ANY invalid cast result (`OnCastResult(valid:false)`, Casting or Waiting) sets `_cancelledCastId = castId`, so the host's `Cancelled` commit for that cast is consumed silently (no `IgnoredEventCount`, no beat). `_cancelledCastId` is never cleared by `ResetCast`. Late replies to the owner's own cancel are consumed the same way.
+- While `RodFrame.Paused`: `Tick` and `TickFight` do not advance anything (a paused `TickFight` with no fight is not an illegal event); `OnCastResult` and `OnCommit` are still accepted (they carry no frame) but the flight, bite and beat clocks do not move until unpaused. `ForceEnd` in a terminal state or Idle is a no-op. The sequence for a cast is "cue first, then `SendCastRequest`" (cue effect, then the send effect; decision 9 of the T8 plan).
+- Telemetry note (T18, done as `FightRecorder`): `ResetCast` wipes `Roll`, `Outcome` and `Fight` on entering Idle and a recall goes Waiting/Bite -> Idle in one call, so the owner must capture the roll on entering Waiting and the outcome on entering a terminal state; a cast that reaches Idle with no captured terminal state is recorded as `Cancelled`. Commit in Landed/Snapped/Escaped: sets the commit flag; Idle once the 1.5 s beat is done and (commit or `CommitTimeout` since entering the terminal state; the latter emits `CommitTimedOut`).
 - `ForceEnd`: Readying/Ready/Charging -> Idle; Casting/Waiting/Bite -> Idle + `SendCancel` + cue `Recall`; Hooked -> Escaped(Dropped) + `SendResult(Escaped, Dropped)`; Idle and terminal states: no-op.
 - Effects for every transition: `SendRodEvent` for Nibble, Bite, HookSet, Snapped (with `SizeClass`; only Snapped carries the size class, ruling B-Q13), Escaped. `Cue` for every `RodCue` the state change implies; the Snapped `Cue` effect carries `SizeClass = Roll.SizeClass` too (ruling BF-1: the owner's local snap cue reads it), every other cue effect carries 0. A host-rejected or insane cast result never makes the machine emit `SendCancel`; the single `CancelRpc` after an insane roll comes from `FishingRodNetwork` (ruling BF-5).
 - Bad-luck nudge (R65): on Bite, a real hook window (`Roll.HookWindow > 0`) is extended by `PityHookWindowBonus` when `Roll.Pity`; an auto-hook (window 0) is unchanged. The fight is built with `new FightSim(..., Roll.Pity)`.
@@ -751,6 +771,7 @@ public struct ActiveCast   // spec 9.9 plus host bookkeeping
     public uint CastId; public FishingRoll Roll; public CastPhase Phase; public double TAccepted, THooked;
     public float LineLength0, TFlight; public bool Assist; public ushort RodIndex; public byte BaitIndex;
     public float LandingX, LandingZ;
+    public float CastDistance;     // horizontal origin -> landing, host-derived at accept (anti-teleport bound; T9-R1)
 }
 public struct CastRequestData { public uint CastId; public float OriginX, OriginY, OriginZ, YawDeg, ChargeNorm; public byte BaitIndex; public bool Assist; }
 public struct HostCastView    // host-side facts the Fishing adapter supplies
@@ -791,7 +812,9 @@ public sealed class CreelLedger
     public CreelSnapshot Snapshot(byte slot, int maxEntries, int maxWeightG);
     public CreelItem Add(byte slot, CreelItem item);      // assigns EntryId (per slot, monotonic, starts 1); returns stored item
     public int SellAll(byte slot);                         // sum of ValueCoins; clears the slot
+    public void ClearSlot(byte slot);                      // T16-R1 slot takeover: empties the creel AND the debug wallet; the EntryId counter keeps counting
     public int DebugCoins(byte slot);                      // M2 debug wallet (sum of sales)
+    // ctor(0) throws ArgumentOutOfRangeException; any slot >= slotCount throws ArgumentOutOfRangeException (the last slot, 3 of 4, works).
 }
 
 public static class CatchValidator   // pure host checks (spec 9.9)
@@ -799,13 +822,20 @@ public static class CatchValidator   // pure host checks (spec 9.9)
     public static CastRejectReason ValidateCast(in CastRequestData req, uint lastAcceptedCastId, bool hasActive,
                                                 in HostCastView view, bool baitAvailable, float minLandDepth);
         // order: CastingAllowed, ActiveCast, StaleCastId (castId <= last), BadCharge (outside [0,1] or NaN),
-        // OriginTooFar (> 3 m horizontal), NoBait, then CastMath.ProbeReason
+        // OriginTooFar (> 3 m horizontal; a NaN origin counts as too far), OriginTooFar again for a non-finite YawDeg (I-1; NaN and +Inf tested),
+        // NoBait, then CastMath.ProbeReason
+    public static bool OriginWithinSlack(float originX, float originZ, float playerX, float playerZ);   // <= HostOriginSlack (3 m) inclusive; NaN/Inf fail
+    public static bool IsFinite(float v);                                   // not NaN, not +/-Inf
+    public static bool IsOriginFinite(in CastRequestData req);              // OriginX/Y/Z and YawDeg finite; FishingHost checks it BEFORE the physics probe (T17 follow-up)
+    public static float WalkBoundedLineLength0(float hostLineLength0, float castDistance, double elapsedSeconds, float landDistance);
+        // T9-R1: max(hostLineLength0, castDistance - MovementMath.SprintSpeed * elapsed - 1.5), floored at landDistance; a NaN bound is ignored.
+        // No new tuning: MaxWalkSpeed is the Core sprint speed. A teleport-adjacent player still gets a real floor (tested).
     public static bool HookTooEarly(double now, in ActiveCast cast, float hookTolerance);
         // now - TAccepted < TFlight + Roll.BiteWait - hookTolerance
     public static float LandedFloorSeconds(float lineLength0, float landDistance, float speed);
         // max(0, 0.8 * (lineLength0 - landDistance) / speed - 0.5)
     public static bool LandedTooFast(double now, in ActiveCast cast, float landDistance, float speed);
-    public static float HostLineLength0(float hostDistance, float landDistance);  // max(landDistance, hostDistance - 1.5)
+    public static float HostLineLength0(float hostDistance, float landDistance);  // max(landDistance, hostDistance - 1.5); a NaN distance gives landDistance (safe default only: Hooked fails closed on NaN, I-2)
     public static AnnounceKind AnnounceFor(FightOutcome outcome, EscapeReason reason, bool wasHooked);
         // Landed -> Landed; Snapped -> Lost; Escaped after hook with Pinned/ThrewHook/Dropped/Timeout -> Lost; everything else None
     public static bool CleanClaimAccepted(in FightReport report, double now, in ActiveCast cast, float landDistance, float reelSpeed,
@@ -831,7 +861,7 @@ public sealed class FishingHostLedger
     public PlayerLoadout GetLoadout(byte slot);
     public bool SelectBait(ulong clientId, byte slot, byte baitIndex);  // refused while that client has an ActiveCast or index invalid
     public bool SelectRod(ulong clientId, byte slot, ushort rodIndex);
-    public bool TryComputeLanding(byte slot, in CastRequestData req, out float x, out float z); // host rod castMaxDist; false if charge invalid
+    public bool TryComputeLanding(byte slot, in CastRequestData req, out float x, out float z); // host rod castMaxDist; false for an unknown slot, an invalid charge (NaN or outside [0,1]) or a non-finite YawDeg (I-1)
     public CastVerdict RequestCast(ulong clientId, byte slot, in CastRequestData req, in HostCastView view, in RollOverrides overrides);
         // accept: consume bait (not unlimited), HostCastCounter++, rng = Rng.Stream(RunSeed, FishingConstants.CatchStreamId, HostCastCounter),
         // PlaceholderRoller.Roll, then Roll.Pity = (PityAfterFailures > 0 && slot FailStreak >= PityAfterFailures) (R65, no RNG),
@@ -840,14 +870,15 @@ public sealed class FishingHostLedger
         // Waiting + match -> Cancelled, refund (CancelRefundsBait), cleared. Hooked + match -> Escaped(Dropped), announced Lost, no refund
         // (B-Q9; the owner never sends Cancel while Hooked). Orphan -> Accepted = false, repeat stored resolution.
     public bool Hooked(ulong clientId, uint castId, float hostDistanceToLanding, out CommitDecision commit);
-        // true = a commit must be sent (too early -> Escaped(Invalid); orphan). false = accepted (Phase Hooked, THooked = Now, LineLength0 set).
+        // true = a commit must be sent (too early -> Escaped(Invalid); a NON-FINITE hostDistanceToLanding -> Escaped(Invalid), fail closed (I-2); orphan).
+        // false = accepted (Phase Hooked, THooked = Now, LineLength0 = WalkBoundedLineLength0(HostLineLength0(hostDistance, landDistance), CastDistance, Now - TAccepted, landDistance); T9-R1).
     public CommitDecision Result(ulong clientId, uint castId, FightOutcome outcome, EscapeReason reason, in FightReport report,
                                  in CreelSnapshot creel);
         // validation per spec 9.9; Landed: if CatchValidator.CleanClaimAccepted -> Roll.Catch = CatchMath.WithCleanBonus(...), CleanBonus = true;
         // then CanAccept -> AddToCreel, Announce Landed; full -> ReleasedCreelFull; failure -> Escaped(Invalid).
         // Always cleared afterwards; resolution stored for orphans.
     public void Tick(double dt, bool paused, List<CommitDecision> unsolicited);
-        // advances Now unless paused; stuck Waiting (Now - TAccepted > TFlight + BiteWait + 30) -> refunded Cancelled;
+        // advances Now unless paused; a NaN, negative, zero or infinite dt is ignored; stuck Waiting (Now - TAccepted > TFlight + BiteWait + 30) -> refunded Cancelled;
         // Hooked past MaxFightTime -> Escaped(Timeout), Announce Lost
     public bool Disconnect(ulong clientId);                     // clears that client's ActiveCast and cast-id state, no commit, no refund of a Waiting cast's bait (B-Q11)
     public bool TryGetActive(ulong clientId, out ActiveCast cast);
@@ -857,6 +888,8 @@ public sealed class FishingHostLedger
 Bad-luck nudge (R65 / M2-D23, ledger side; all host, deterministic, no RNG): per slot a `FailStreak` (survives rejoin like bait stock). When a FIRST resolution is stored: `Landed` -> 0; `Snapped` or `Escaped` (any reason, including Missed, Invalid and Timeout) -> +1; if the resolved cast was a Pity cast the streak becomes 0 whatever the outcome; `Cancelled` (owner cancel, stuck-Waiting refund, recall) neither counts nor resets, so a cancelled Pity cast leaves the next accepted cast Pity again; `Disconnect` changes nothing. Orphans never count.
 
 Keys: bait stock, rod and selected bait by **slot** (survive rejoin); `lastAcceptedCastId`, `ActiveCast` and the stored resolution by **clientId** (reset on disconnect, since castIds restart per connection).
+
+Added after the T9 review (C 16): the fail-streak counts `Escaped(Timeout)` and `Escaped(Dropped)` like any other Escaped (pity rows tested); the landing floor holds for a non-Handmade rod (host rod stats, never owner values). **Mini-fix batch after T19 (C 16.3; in the working tree at the time of writing, committed by the controller):** `public bool ResetSlot(int slot)` on `FishingHostLedger` (Core; tested) puts that slot's rod, selected bait, bait stock and pity `FailStreak` back to the fresh-slot loadout that `EnsureSlot` gives (a slot never ensured is left alone; returns true when a slot was reset; client state - cast ids, `ActiveCast`, stored resolutions - is untouched). `SessionState` raises `public static event Action<int> SlotTakenOver` (host only, after a DIFFERENT persistent identity takes the slot over, JoinRules takeover rule c; never for the same identity rejoining, R46, nor for a brand-new slot; raised through `EventIsolation`), and `FishingHost` subscribes and calls `ResetSlot`, re-mirroring the loadout NetVars, next to the `CreelLedger.ClearSlot` of T16-R1. `CatchValidator.OriginWithinSlack` (7.9 above) is the shared 3 m rule the adapter runs before the probe. `Fishing/AssemblyInfo.cs` also gains `InternalsVisibleTo("FishGame.Tests.PlayMode")` for the takeover PlayMode test.
 
 ### 7.10 T10 - Input rows, context arbiter, dev input, settings
 
@@ -920,14 +953,15 @@ Cue map (T11 implements exactly): Equip/Stow -> `Rod_Thunk`; Ready -> `Reel_Clic
 
 Runtime (`Runtime/Audio/AudioBus.cs`, edit):
 ```csharp
-public void PlayAt(string sfxId, Vector3 position, float pitchMult);     // pitch multiplier on top of jitter; rate limit keyed by id + 2 m cell (floor(x/2), floor(z/2)); Play2D keyed by id (rulings C-Q6, C-Q8)
-public AudioLoop StartLoop(string sfxId, Transform follow, bool spatial); // looped source; null when the clip is missing
+public void PlayAt(string sfxId, Vector3 position, float pitchMult);     // pitch multiplier on top of jitter (clamped 0.1..3, NaN = 1); rate limit keyed by id + 2 m cell (floor(x/2), floor(z/2)); Play2D keyed by id (rulings C-Q6, C-Q8)
+public bool Play2D(string sfxId, AudioCategory category);                 // returns TRUE when the cue started, FALSE when dropped (rate limit, unknown id, missing clip, bus not ready); T11 follow-up `2296e1a`: the audition menu counts only real plays
+public AudioLoop StartLoop(string sfxId, Transform follow, bool spatial); // looped source on its own child AudioSource; null when the bus is not ready, the recipe or clip is missing, or 16 loops already run (each warns once). `follow` is tracked in LateUpdate and the loop stops when it is destroyed; follow == null keeps the loop at the bus. Callers that start 2D (owner) loops still pass a `follow` so the loop dies with its owner (T23, C 16.2)
 public void SetLoop(AudioLoop loop, float volume01, float pitchMult);
 public void StopLoop(AudioLoop loop);                                     // idempotent; null-safe
 public void Duck(float seconds);       // Ambience and Music to 50% over 0.3 s, held `seconds`, then back over 0.3 s
-public void ApplyCueTable(IReadOnlyList<SfxRecipe> overrides);           // mixing fields by id (category, base, spatial, min/max distance, minInterval); null = Core defaults
+public void ApplyCueTable(IReadOnlyList<SfxRecipe> overrides);           // mixing fields by id (category, base, spatial, min/max distance, minInterval); a non-null call REPLACES the previous table (it does not merge); null = Core defaults; unknown ids are ignored with a warn-once. Sanitising (T11 follow-up): a non-finite BaseVolume falls back to the Core value, non-finite or non-positive MinDistance -> 1, MaxDistance -> 30 (default) and never below MinDistance, a non-finite or negative MinInterval -> 0; takes effect from the next play, running loops keep their values
 // Runtime/Audio/AudioLoop.cs
-public sealed class AudioLoop { public string SfxId { get; } public bool IsPlaying { get; } }
+public sealed class AudioLoop { public string SfxId { get; } public bool IsPlaying { get; } }   // IsPlaying = !Stopped && Source != null && Source.isPlaying (a destroyed source is false, no exception); Source/Follow/Category/BaseVolume/Volume01/Stopped are internal (only AudioBus creates loops)
 ```
 `SfxGenerator.GenerateAll` iterates `SfxRecipes.All`. `PlayAt` uses the recipe's `MinDistance`.
 
@@ -945,7 +979,9 @@ public struct WaveSet { public Wave W0, W1, W2; public static readonly WaveSet F
 // Core/World/WaveMath.cs
 public static class WaveMath
 {
-    // sum over 3: A * sin(k * (dot(dir, (x, z)) - Speed * t)), k = 2*pi / Wavelength; Wavelength <= 0 or A == 0 -> term 0
+    // sum over 3: A * sin(k * (dot(dir, (x, z)) - Speed * t)), k = 2*pi / Wavelength; Wavelength <= 0 or A == 0 -> term 0.
+    // Any NON-FINITE field (NaN or +/-Inf in Amplitude, Speed, DirectionDeg or Wavelength) is also a 0 term, in HeightAt and in AmplitudeSum
+    // (T12 follow-up `4385084`). The T21 Water shader must match this exactly or CPU and GPU heights diverge (C 16.2).
     public static float HeightAt(in WaveSet waves, float x, float z, double t);
     public static float AmplitudeSum(in WaveSet waves);
 }
@@ -959,7 +995,8 @@ public static class RippleMath
 }
 // Core/Render/FaceJitter.cs
 public static class FaceJitter { public static float Grey(uint meshSeed, int faceIndex, float jitter); }  // 1 +- jitter from FNV/SplitMix hash; deterministic. MeshBuilder STORES 0.5 * Grey (BF-7)
-// Core/Render/ShaderGlobals.cs - property name constants (5.3)
+// Core/Render/ShaderGlobals.cs - property name constants (5.3) plus the full array lengths of C 2.8 #18:
+//   public const int PaletteLength = 16, WavesLength = 4;   (the ripple array length is RippleMath.Slots = 8)
 ```
 Runtime:
 ```csharp
@@ -967,7 +1004,7 @@ Runtime:
 public static void Configure(in WaveSet waves);         // default WaveSet.Flat
 public static void SetTimeSource(Func<double> now);     // null -> Time.timeSinceLevelLoad; WaterTimeDriver's source returns (double)(float)time so C# and HLSL use one float value (parity rule, C-Q4)
 public static double Now { get; }
-public static float HeightAt(float x, float z);         // HeightAt(x, z, Now)  (M1 signature, now wave-aware)
+public static float HeightAt(float x, float z);         // HeightAt(x, z, Now)  (M1 signature, now wave-aware). Main-thread only unless a time source is set (the default clock reads Time.timeSinceLevelLoad); class comment says so
 public static float HeightAt(float x, float z, double t);
 public static void ResetToFlat();                       // also on SubsystemRegistration
 // Runtime/World/MeshBuilder.cs - flat-shaded primitives (spec 10.2)
@@ -985,6 +1022,9 @@ public sealed class MeshBuilder
     public Mesh ToMesh(string name);  // unshared verts (3 per tri), face normal, uv1.x = slot (UV channel 1 = TEXCOORD1), vertex colour = HALF-scale grey 0.5 * FaceJitter.Grey = 0.5 * (1 +/- faceJitter) so it fits UNorm8 storage (BF-7); deterministic bytes
     public static Mesh Grid(int cellsX, int cellsZ, float cellSize, string name); // shared vertices, centred, y 0 (water)
 }
+// Winding (T12 follow-up `4385084`): every primitive is wound outward. MeshBuilderTests asserts, per triangle, dot(faceNormal, centroid - centre) > 0
+// for box, prism and frustum sides, cone (top radius 0 and bottom radius 0), capsule (body and no-body) hemispheres and the icosphere, and
+// caps against +/-(rotation * up), including a rotated cylinder; the Grid test asserts upward normals.
 ```
 
 ### 7.13 T13 - Data defs and registry (asm FishGame.Data)
@@ -1040,16 +1080,28 @@ public static class FishingSeedData
 }
 public static class FishingContentBuilder   // Editor/Builders/Fishing/FishingContentBuilder.cs; called from ContentBuilder.Build (hook)
 {
-    public static void Build();   // create-if-missing every 6.2 Def asset; registry lists + singleton refs; fill null species models (6.2 rule)
+    public static void Build();   // create-if-missing every 6.2 Def asset; registry lists + singleton refs; fill null species models (6.2 rule). Calls BuildAt(RealContentRoot, loaded registry)
+    internal static void BuildAt(string contentRoot, ContentRegistry registry);
+        // T14 follow-up `03bb4a9` (review F1): the same build rooted at `contentRoot` (must start with "Assets/") and wired into the GIVEN registry;
+        // every AssetPaths constant is re-rooted from "Assets/_Project/Content". Builder tests run it under `Assets/_Project/Tests/__Temp/<Fixture>`
+        // (OneTimeSetUp deletes a stale folder, creates the folder and a fresh registry asset, calls BuildAt; OneTimeTearDown deletes the folder;
+        // `.gitignore` has `/Assets/_Project/Tests/__Temp*`). No test may write to committed Content assets.
+        // F2: the private Ensure<T> THROWS InvalidOperationException("asset exists but is not a T: <path>") when the file or GUID exists but
+        // LoadAssetAtPath returns null (an unloadable asset is never overwritten); tested.
 }
 public static class FishingValidators       // Editor/Validation/FishingValidators.cs; ValidationRunner hook
 {
-    public static List<string> All();
+    public static List<string> All();               // Prefixed(FishingContent(), SpeciesModels()): "FishingContent: ..." and "SpeciesModels: ..."
+    internal static List<string> Prefixed(List<string> contentErrors, List<string> modelErrors);   // prefixing seam; tests feed in-memory lists
+    internal static List<string> CheckRegistry(ContentRegistry registry);                          // in-memory registry checks (tests build bad registries)
+    internal static List<string> CheckSpeciesModel(string speciesId, Mesh model, string assetPath);
+    internal static List<string> CheckSeedAssets(ContentRegistry registry, Func<string, UnityEngine.Object> load);
     public static List<string> FishingContent();   // ids unique, ranges valid (9.7/9.6/9.12 ranges), each species reachable with some bait and depth <= 6 m;
                                                    // motion ranges: burstRamp 0..2, calmDrift 0..0.5, calmDriftRamp 0..5, flipMinGap 0.2..2, lateralJitter 0..0.5;
                                                    // thrasher calmMin >= 1.0; cleanCatchMaxTension 0.5..0.95;
                                                    // pity: pityAfterFailures 0..10 (0 = off), pityStrainMult 0.5..1, pityGraceMult 1..3, pityHookWindowBonus 0..1;
-                                                   // cue rows: the EFFECTIVE max distance (0 -> 30) > minDistance (ruling C-Q1)
+                                                   // cue rows: the EFFECTIVE max distance (0 -> 30) > minDistance (ruling C-Q1); cue rows reject non-finite values;
+                                                   // bait maxNibbles 0..FishingConstants.MaxNibbleSlots (3); water/palette colours and wave direction finite
     public static List<string> SpeciesModels();    // a non-null model must come from Content/Models/*.fbx, have vertex colours AND subMeshCount == 1
                                                    // ("species <id>: model <path> has <n> submeshes, expected 1"; ruling G-Q6); null is allowed (fallback mesh)
 }
@@ -1057,6 +1109,8 @@ public static class FishingValidators       // Editor/Validation/FishingValidato
 
 ### 7.15 T15 - Tuning bots (asm FishGame.Tests.EditMode, `[Category("Tuning")]`)
 `Tests/EditMode/Tuning/FishingBots.cs`: Greedy (always reels, never steers), CounterReel (always reels, steers against side runs), Rhythm (counters side runs, stops reeling in dives and when tension >= 0.8, resumes below 0.5). Bots load the **real assets** through `AssetDatabase.LoadAssetAtPath` and the Defs' `ToCore()` (never the seeds), run 200 seeds per profile per rod (Twig, Handmade) at weightT 0.5 and 0.9 from an 18 m line (Twig: 14 m), and print fight-length, snap-rate, near-snap-recovery and clean-catch-rate distributions (`TestContext.WriteLine`). They also print each profile's signature-motion stats (flips per second, line crept out per Calm second, time to full burst force, per-burst lateral-speed spread), so the five profiles are told apart in numbers before the blind playtest. A failing target is fixed by retuning data (2.6 data-asset row), never by changing `FightSim`. Rulings (section 15): the bots' counter-steer holds until the fish is `CounterHold = 0.1` (= `CenterDeadzone`) past centre (D-Q3); targets assert at weightT 0.5, and the Twig check at 0.5 and 0.9 (D-Q5); a target that cannot be met may be listed in a `TuningItems` map (`Assert.Ignore` with the numbers; each entry needs the controller's approval and is carried into T30; D-Q6); T14 creates the `TunedDeviations` map in `FishingContentTests.cs` and T15 may edit only that map (D-Q2). The bots never use Pity.
+
+Delivered (T15, `5a652bd`; test follow-up `f1476c3`; spec tables `4a4028f`): `TunedDeviations` key format is `tuning.<field>` (creel `tuning.creelMaxWeightG` in grams) or `<category>.<id>.<field>`. Retuned: `tuning.relaxWhileReeling` 0.10 -> 0.20, `profile.thrasher.staminaDrain` 0.09 -> 0.035, `profile.runner.staminaDrain` 0.05 -> 0.035 (seeds, assets and the map agree). Near-snap recovery >= 40% (spec 17.2) is a HUMAN fun-gate metric, not a bot gate: the bots print it for information only (Rhythm bulldog 3%, thrasher 6%, runner 57.5%); T30 watches it in the playtest fight logs (C 16.2). A unit test `FishingBots_RhythmDecide_PinsDiveEasingAndSteerRules` pins `Decide` over hand-built `FightState`s (dive: no reel and no steer; burst counter-steer; past-centre hold; calm reel; easing hysteresis 0.8/0.5; Greedy (0, true); CounterReel in a dive (0, true); `CounterHold == FishingConstants.CenterDeadzone`), and the bots clear their static caches in `[OneTimeSetUp]`. The Creep gate uses `exhaustedBefore` (accepted, informational).
 
 ### 7.16 T16 - Gameplay hooks (asm FishGame.Gameplay)
 
@@ -1120,7 +1174,9 @@ public CreelLedger ServerCreels { get; }   // host only (null on clients); creat
 
 // Gameplay/Interaction/DockBell.cs (edit): ServerInteract also calls the interacting player's PlayerCreel.ServerSellAll()
 //   when Debug.isDebugBuild (M2 debug "sell creel"); the ring is unchanged.
+//   Follow-up (`d40534a`, M-4): a missing SessionState or ServerCreels is a silent no-op (no exception).
 ```
+Follow-up deltas from the T16 review (`d40534a`; C 16.1): `PlayerLocomotion` resets the jump buffer while the movement lock is on (`_jump = JumpAssist.Create()`, as swimming does) so a jump pressed airborne never fires on landing while locked (I-1), and refreshes its context-source cache in `OnEnable` as well as `Awake` (M-5); `PlayerNetState.HandleToolChanged(byte previous, byte current)` is `internal` and returns when `previous == current`, so `ToolChanged` fires once per real change (M-2); `PlayerCreel.Snapshot/ServerTryAdd/ServerSellAll` throw when `!IsSpawned || !IsServer` and return false/0 while `!_player.IsServerInitialized` (M-3); `SessionState.Upsert` is `internal` (PlayMode tests) and **slot takeover (ruling T16-R1)**: when a slot passes to a DIFFERENT persistent identity (JoinRules takeover rule c) `Upsert` calls `ServerCreels.ClearSlot(slot)` (creel and debug coins); the same identity rejoining keeps both (R46). A subscriber of `PlayerNetState.ServerInitialized` already sees `Slot` written (M-7, tested by `PlayerNetState_ServerInit_SlotIsAlreadyWrittenInsideTheEvent`). `Gameplay/AssemblyInfo.cs` has `InternalsVisibleTo("FishGame.Tests.PlayMode")` (2.6). Notes carried to later tasks: `FishingRodController` must sit on the PlayerFP root (T19, done); the creel HUD (T25) reads `PlayerCreel.Count` at spawn because the initial NetworkList sync raises no `Changed`.
 
 ### 7.17 T17 - Fishing networking and host (asm FishGame.Fishing)
 
@@ -1218,6 +1274,18 @@ public static class CastProbe
         // first hit (RaycastNonAlloc sorted by distance) must be layer Water; ray 2 down from that hit, mask Ground, 50 m
     public static int CastMask { get; } public static int BedMask { get; }
 }
+// T17 follow-up (`071dc2d`, C 16.1) - behaviour, no new public names:
+//  - FishingHost.HandleCastRequest checks CatchValidator.IsOriginFinite BEFORE any physics probe and replies CastResultRpc(castId, false, OriginTooFar, Vector3.zero, default).
+//  - FishingHost resolves the NetworkManager lazily (the scene object can enable before the singleton exists); a failing ledger construction of ANY kind
+//    (missing default id, bad database) leaves Ledger null, logs once ("ledger-create-failed") and the handlers use their fallback replies.
+//  - FishingHost.Commit with no SessionState.ServerCreels: skips the creel add, still announces, publishes FishCaught and mirrors the loadout, logs once
+//    ("no-creel-ledger"). M4 NOTE: FishCaught is therefore published even when the creel store was missing (the fish was NOT stored): quota consumers must
+//    count creel data, never FishCaught events.
+//  - FishingRodNetwork.IsPlausible(in CatchAnnouncement, FishingDatabase) is internal static (7.6): kinds 1..4 only; kinds 1..3 vetted with FishingRollValidation.IsSaneCatch.
+//  - Tests: FishingHostGuardTests.cs (EditMode: the finite-origin guard and the plausibility vetting), FishingWireTests.cs (wire structs and RPC payload mirrors).
+//  - Mini-fix batch after T19 (C 16.3): the UnknownPlayer reply sends Vector3.zero as landing (never the raw client origin); `CatchValidator.OriginWithinSlack`
+//    (the ledger's 3 m rule) runs against the host's seen position BEFORE any CastProbe raycast; FishingHost subscribes to `SessionState.SlotTakenOver` and calls
+//    `FishingHostLedger.ResetSlot` (7.9).
 
 // Fishing/Debug/FishingDebugSettings.cs - host-side dev overrides; honoured only when Debug.isDebugBuild; reset on SubsystemRegistration
 public static class FishingDebugSettings
@@ -1272,6 +1340,9 @@ Behaviour the other tasks rely on:
 - Assist from `settings.fishingAssist`, captured at release by the machine.
 - Rumble (ruling BF-2): the continuous rumble is off on every terminal state, the terminal one-shot pulses (Snapped, Escaped, Landed double pulse) play to completion first, and everything is 0 at Idle, on focus loss and on disable. `FishingFeedback` (T23) owns the pulses; the controller itself calls `IInputService.SetRumble(0, 0)` only on entering Idle and in `OnDisable`.
 - Ignored events: after each machine call the controller compares `Machine.IgnoredEventCount` and, in debug builds, `Debug.Log`s once per state when it grew (ruling E-Q5).
+- Internal helpers (all `internal`, namespace `FishGame.Fishing`, reached by EditMode through the `Fishing/AssemblyInfo.cs` InternalsVisibleTo; tests in `RodControllerHelperTests.cs`): `Fishing/Owner/RodControllerRules.cs` (static: `ContextFor(RodState, rodOut)`, `LocksMovement`, `EquipAllowed(InputContext)`, `IsFinite(Vector3)`, `FiniteOr(candidate, fallback)` - the owner never writes a non-finite `BobberPos`, because `RodStateData.Equals` compares floats with `==` and a NaN would resend every frame); `Fishing/Owner/FightRecorder.cs` (plain C#, per-cast telemetry: `OnCastRequested(clock, assist)`, `OnWaiting(roll, castDistance)` captured BEFORE `ResetCast` wipes the roll, `OnBite`, `OnTerminal(outcome, reason, maxTension, fightSeconds, nearSnap)`, `TryFinish(...)` -> `FightEnded`; a cast that reached Idle with no terminal state is recorded as `Cancelled`; a cast that never reached Waiting produces no `FightEnded`); `Fishing/Owner/FishPointSampler.cs` (`Begin(landing)`, `Tick(...)`: the candidate from `FishPointMath` each frame, a water probe every `FishingConstants.FishPointSampleSeconds`, a non-water candidate holds the last water point, a non-finite candidate returns the last point; the tip is the STATIC `TipAnchor`).
+- Despawn: while the controller is being disabled or despawned (`_suppressSends`) it sends nothing and raises no local Recall/Escaped cue (mini-fix batch after T19, C 16.3).
+- `FightEnded` is published on the App `EventBus` and as the C# event; `Roll`, `Outcome` and `Pity` of each cast come from `FightRecorder`, not from the machine after Idle (T8 note, 7.8).
 
 ### 7.19 T19 - Integration (asm FishGame.Editor + PlayMode tests)
 ```csharp
@@ -1285,7 +1356,9 @@ public static class PlayerFishingRigBuilder
 // Editor/Builders/Fishing/FishingSceneObjects.cs - called from LakeDockBuilder (hook)
 public static class FishingSceneObjects { public static void AddTo(Scene scene); }  // root "Fishing" with FishingHost (T27 adds FightTelemetry)
 ```
-PlayMode (`Tests/PlayMode/FishingSoloTests.cs`): fixture per G9. Solo start; `FishingDebugSettings.ForcedBiteWait = 0.1f`, `ForcedSpeciesId = "bluegill"`; owner `ApplyTeleport((0, 0.65, -41), 0)`; `FakeInputService` frames (Equip, hold Secondary 0.3 s, Primary press, hold about 0.15 s, release, then `Reel = true` with counter-steer until Landed). Teardown resets `FishingDebugSettings`. The two movement tests `RodOut_MoveInput_StillWalks` and `RodFighting_MoveInput_DoesNotMovePlayer` also live in `FishingSoloTests.cs`; `PlayerMovementTests.cs` stays T3-only (ruling E-Q3). The `FishingPlayModeDriver` member names (`InstallFakeInput`, `Step`, `Arrange`, `EquipAndReady`, `ChargeAndRelease`, `FightRhythm`, `LogWatch`, `ResetDebugSettings`) are frozen after T19; T23/T24 tests reuse them (ruling F-Q7). Rig materials: prefer the new `M_Toon_Base` / `M_Line`, else the M1 fallback; palette slots WoodDark 4, Accent 10, Snow 11 (rulings E-Q4, F-Q8).
+PlayMode (`Tests/PlayMode/FishingSoloTests.cs`): fixture per G9. Solo start; `FishingDebugSettings.ForcedBiteWait = 0.1f`, `ForcedSpeciesId = "bluegill"`; owner `ApplyTeleport((0, 0.65, -41), 0)`; `FakeInputService` frames (Equip, hold Secondary 0.3 s, Primary press, hold about 0.15 s, release, then `Reel = true` with counter-steer until Landed). Teardown resets `FishingDebugSettings`. The two movement tests `RodOut_MoveInput_StillWalks` and `RodFighting_MoveInput_DoesNotMovePlayer` also live in `FishingSoloTests.cs`; `PlayerMovementTests.cs` stays T3-only (ruling E-Q3). The `FishingPlayModeDriver` member names are frozen after T19 and T23/T24 tests reuse them (ruling F-Q7). Real surface (internal types in `FishingSoloTests.cs`, assembly `FishGame.Tests.PlayMode`; amended by ruling T19-R1): `internal sealed class FishingRig : IDisposable` holds `Fake, Player, Net, Controller, Locomotion, Creel, Registry, Log, Announced, Order, Machine` and `Subscribe()`; `LogWatch` is a TOP-LEVEL internal type (not a driver member) reached through `rig.Log` (`AssertEmpty(context)`); every driver method takes the rig first: `static class FishingPlayModeDriver { const float DeckTeleportZ = -41f; FakeInputService InstallFakeInput(); IEnumerator Step(FakeInputService fake, PlayerInputFrame frame); void ResetDebugSettings(); IEnumerator Arrange(FishingRig rig, bool teleport = true); IEnumerator EquipAndReady(FishingRig rig); IEnumerator Charge(FishingRig rig, float min = 0.15f); IEnumerator Release(FishingRig rig); IEnumerator ChargeAndRelease(FishingRig rig, float min = 0.15f); IEnumerator WaitForState(FishingRig rig, RodState state, float timeoutSeconds); IEnumerator FightRhythm(FishingRig rig, float timeoutSeconds); float Flat(Vector3 a, Vector3 b); }`. The T19-fix adds a shared `TearDown(FishingRig rig)` helper (disposes the rig, resets `FishingDebugSettings`, then `PlayModeHarness.TearDownApp`) so later fixtures do not copy the teardown order; briefs for T23/T24 must call these signatures as written so they compile. T19-fix also: `PrepareResetScene` reuses an existing `FG_TestReset` via `GetSceneByName` and scans in its own try; optional internal `SpawnPlayerIfMissing` plus an `InternalsVisibleTo` instead of reflection. Rig materials: prefer the new `M_Toon_Base` / `M_Line`, else the M1 fallback; palette slots WoodDark 4, Accent 10, Snow 11 (rulings E-Q4, F-Q8).
+**T19-R1 (T19 review, CHANGES REQUIRED; executor: T19-fix after the mini-fix batch, Sonnet impl + Opus re-review):** the rod geometry must make the owner's start line honest against the host slack. (1) The rod local rotation is chosen so that in the OWNER arm pose (`PlayerBody.LateUpdate`: `ArmR = camera * Euler(-90)`) the rod points camera-forward pitched UP about 35 deg; the remote pose (`Euler(-70 - pitch)`) must give a plausible forward-up rod too (derive from the real transforms; test both). (2) `FishingConstants.HookedLineSlack` (5.2) is re-derived by the fix as the measured maximum horizontal forward reach of `TipAnchor` from the player root over camera pitch -60..+60 at that pose, plus 0.5 m, rounded up to 0.1 (value TBD until measured). The host stays conservative: the owner's start line is >= the host's `LineLength0` for every honest cast (proved at the G9 spot and at max cast). (3) `SoloHost_CastBiteFight_Lands` gains the tip assertion `Dot((RodTipPosition - cam.position).normalized, cam.forward) > 0.8` and `tip.y < cam.y + 1.0`. (4) Presentation (T24) must not move `TipAnchor` (7.24). Spec 9.9 carries a note: the slack is derived from the rig's reach.
+Delivered (T19, `0c070a0`, test tweak `d2d119a`): `FishingSoloTests.cs` has EIGHT tests: the five above plus the three T16 review carry-overs `PlayerCreel_ServerTryAdd_RefusedWhenFull`, `PlayerCreel_DebugBellSell_EmptiesCreelAndAddsCoins`, `PlayerCreel_MirrorsLedger_AfterRespawn`. The file also holds the internal test helpers `LogWatch`, `FishingRig` and `FishingPlayModeDriver` (member names frozen, F-Q7); `RodFighting_MoveInput_DoesNotMovePlayer` asserts the log watch is empty. `PlayerFishingRigBuilder.cs` (148 lines) and `FishingSceneObjects.cs` (21 lines) are the two new Editor files; generated `Content/Meshes/{Rod_Seg0..5,Bobber}.asset`. One integration fix was made (`PlayModeHarness.cs`, 2.6); no other integration fixes were needed in T1-T18 files. Manual carry-overs: the swimming interact gate check (T16 note) goes to the T28 playtest; the F3 overlay checks (editor and non-development build) go to T26/T30 (C 16.2).
 
 ### 7.20 T20 - Toon shading, fish import (asm FishGame.Editor; `Shaders/`)
 - `Shaders/FishGameCommon.hlsl`: the 5.3 globals; shared fog and wave helpers (the HLSL wave function mirrors `WaveMath.HeightAt` term for term).
@@ -1327,6 +1400,8 @@ public static class RenderingSetupBuilder  // Editor/Builders/Render/RenderingSe
 ```
 - `PrefabBuilder`: the PlayerFP camera gets `UniversalAdditionalCameraData.renderPostProcessing = true`.
 
+Carry-forward (C 16.2): the Water shader must treat ANY non-finite wave field (NaN or +/-Inf in direction, amplitude, wavelength or speed) as a zero term, exactly like `WaveMath`, or the CPU and GPU heights diverge. `ArtPaletteDef.PaletteVectors(season)` allocates a `Vector4[16]`: the palette push happens on enable and validate only, never per frame (T22 `PaletteGlobals` reuses one cached array).
+
 ### 7.22 T22 - World presentation (asm FishGame.Presentation, `Presentation/World/`)
 ```csharp
 // Authority: local only (every peer); never writes gameplay state.
@@ -1367,6 +1442,8 @@ public static class FishFallbackMesh       // MeshBuilder fish from BodyShape + 
 ```
 `PlayerFishingRigBuilder.AddPresentation` gets a block of up to 12 lines from T23: GetOrAdd of both components plus their serialized material references (ruling F-Q5, 2.6).
 
+Carry-forward (C 16.2): every loop `FishingFeedback` starts passes a `follow` transform, 2D (owner) loops included, and all loops are stopped in `OnDisable` (a 2D loop with no follow would play forever after a scene change); no cues are played while the rod is despawning or disabled (the controller already suppresses its own local Recall/Escaped cues, 7.18).
+
 ### 7.24 T24 - Rod presentation (asm FishGame.Presentation, `Presentation/Rod/`)
 All read `FishingRodNetwork.ViewState` (and `FishingRodController.Local` for the owner's marker); none write gameplay state.
 ```csharp
@@ -1383,6 +1460,8 @@ public sealed class CastMarkerView : MonoBehaviour // owner only, in world at Ma
 { }                                                //   + cross (shape, not hue only); slides with the charge; flashes on InvalidRelease
 ```
 
+Carry-forward (C 16.2, ruling T19-R1): `RodPresenter` never moves or re-parents `TipAnchor` (only `TipVisual` and the `Seg*` bend); the rod rest pose comes from the T19-fix in `PlayerFishingRigBuilder`, and T24 adds bend on top of it. T24 PlayMode tests use the driver exactly as in 7.19.
+
 ### 7.25 T25 - Fishing HUD (asm FishGame.UI, `UI/Fishing/`)
 ```csharp
 internal sealed class FishingHudPresenter : IHudExtension   // created by the UiFlowController hook (2.6)
@@ -1396,6 +1475,8 @@ internal sealed class FishingHudPresenter : IHudExtension   // created by the Ui
 - `UiStrings` (edit): `Format(string key, params string[] args)` overload; keys `cap.bite` "Bite!", `cap.straining` "Line straining", `cap.snapped` "Snapped", `cap.escaped` "Got away", `hud.click` "Click!", `hud.creel` "{0}/{1}  {2} kg", `hud.creel_full` "Full - sell!", `toast.catch` "{0} caught {1} kg {2} (${3})", `toast.lost` "It got away!" (generic: covers snap and escape; ruling G-Q3), `toast.creel_full` "Creel full! {0} released", `toast.clean` "Clean catch!", settings labels `settings.line_gauge`, `settings.captions`, `settings.assist` (M1 `settings.*` prefix, not `set.*`; ruling G-Q2). Additive keys: `toast.raw` "{0}" (passthrough), `toast.junk` "{0} fished up {1} (${2})", `toast.pity` "{0} has a lucky line!" (R65), `settings.gauge_off` "Off", `settings.gauge_arc` "Arc", `settings.gauge_bar` "Bar". T25 formats toast text itself and publishes `ToastRequested("toast.raw", text, 4f)` (ruling G-Q1). An `AnnounceKind.PityCast` announcement shows `toast.pity` (name) for everyone. ASCII only.
 - `SettingsPresenter` rows: Line gauge (Off/Arc/Bar), Captions, Fishing assist (turning assist on while the gauge is Off sets the gauge to Arc, every time; ruling G-Q4).
 
+Carry-forward (C 16.2): extract the pure helper `OnAssistChanged(data, old, new)` (the G-Q4 rule: assist turned on while the gauge is Off sets Arc, every time) with an EditMode test; the creel HUD reads `PlayerCreel.Count` at spawn (the initial NetworkList sync raises no `Changed`) and must not show a species ahead of `CatchAnnounced` (host-side creel `Changed` and `FishCaught` fire one frame BEFORE `CatchAnnounced`: show count and weight only, or wait for the announce); `IHudExtension.Bind` implementations must never throw (the bind loop has no try/catch: a throw blocks the whole UI) and extension-created buttons play their own `Ui_Click` (the click-sound loop runs before the bind loop).
+
 ### 7.26 T26 - Dev overlay (asm FishGame.UI)
 ```csharp
 internal sealed class DevOverlayPresenter : IHudExtension   // only when Debug.isDebugBuild; F3 toggles
@@ -1406,6 +1487,8 @@ internal sealed class DevOverlayPresenter : IHudExtension   // only when Debug.i
     // F7 TwitchyHook (host), F9 RippleField.Spawn at the crosshair water point (local).
 }
 ```
+
+Carry-forward (C 16.2): F4/F5 rod and bait selection (`SelectRodRpc`/`SelectBaitRpc`) can race the owner's Readying/Charging: on a valid `CastResult` the controller adopts the host's landing x/z (keeping `FlatHeight`) or at least `LogOnce`s when they differ by more than 0.05 m. Manual check: F3 in the editor shows the overlay; in a non-development player build it is a no-op.
 
 ### 7.27 T27 - Fight telemetry
 ```csharp
@@ -1421,14 +1504,21 @@ public static class FightLogCsv { public const string Header = "..."; /* 5.3 */ 
 public sealed class FightTelemetry : MonoBehaviour { public string FilePath { get; } }
 ```
 
+Carry-forward (C 16.2): `FightEnded` arrives from `FightRecorder` (7.18), which already captures the roll on entering Waiting and records `Cancelled` when a cast drains to Idle with no terminal state; T27 only formats and appends. `FishCaught` is NOT the source of any row.
+
 ### 7.28 T28 - Lake dock rebuild (asm FishGame.Editor)
 `LakeDockBuilder`, `LakeDockLayout` and `LakeDockMeshes` are rebuilt per 6.4: MeshBuilder props (dock planks, posts, ladders, rocks, trees, reeds) on `M_Toon_Base` with palette slots; water grid on `M_Water_Surface`; M1 colliders, exits, spawns, bell anchor, lakebed and shore numbers unchanged (M1 contract 6.5, D34); `RenderingSetupBuilder.ApplySceneLighting()`; both volumes; both hooks kept. Seeded and byte-identical across rebuilds. Frame time, SRP batch count and the water pass GPU time go in the acceptance doc (spec 10.7).
+
+Carry-forward (C 16.2): any M1 swim or water-height test broken by the waves is fixed here under the integration-fix rule (T22 reports it, ruling F-Q12). Playtest line: check the swimming interact gate (T16 added the `InteractLive` gate to `PlayerInteractor`; confirm what a swimming player can and cannot interact with, and with the rod out).
 
 ### 7.29 T29 - Species models: import and verify the staged Blender fish (controller)
 Controller work, not a subagent task. The five models already exist in the repo (commit `8f327e5`): `Art/Export/Fish_{Bluegill,Perch,Carp,Trout,Catfish}.fbx`, source `Art/Blender/fishgame_m2_species.blend`; each has ONE submesh, one material slot, per-face LINEAR vertex colours (`colors_type='LINEAR'`), 222-262 triangles, exported -Z forward / Y up / apply transform (nose +Z in Unity). T29 copies them to `Content/Models/` (the new perch replaces the spike `Fish_Perch.fbx`, keeping its `.meta`), lets `FishModelPostprocessor` import them, and verifies subMeshCount 1, vertex colours, triangle count below 400 and the nose direction; it does not model from scratch (Blender MCP only for a fix). Then `build`: `FishingContentBuilder` fills the null `model` refs (rule in 6.2); `FishingValidators.SpeciesModels` (incl. `subMeshCount == 1`) and `RenderValidators` pass. A Sonnet reviewer checks import settings, LFS and validators; the user judges the look. The Toon shader and `FishFallbackMesh` treat vertex colours as LINEAR, so the side-by-side render only confirms the one rule (ruling F-Q3).
 
+Carry-forward (C 16.2): T29 also lands the T14 follow-up minors (small commit, exercised by the model fill): `FishingContentBuilder.Rooted()` throws when a path is not under `RealContentRoot`; a test covers the `ModelsFolder` re-root; the `Build_` tests are renamed `BuildAt_`; the fixture `OneTimeSetUp` runs `DeleteTempFolders` on failure (try/catch); the `ValidationTests` temp prefab moves under `Tests/__Temp/`. The staged models in `Art/Export/` are imported, not rebuilt.
+
 ### 7.30 T30 - Acceptance
 `docs/superpowers/plans/2026-10-11-m2-acceptance.md`: 17.2 acceptance criteria 1-11 as a manual checklist; the 17.2 MPPM list; the 9.13 edge-case walk (criterion 5); the fun-gate log template (30+ fights, CSV columns, the 17.2 thresholds, clean-catch rate, a per-profile blind tell-apart sheet); perf numbers; open tuning items. `README.md` gains "Fishing dev keys" and "Fight log". Final `check` green. The checklist carries T15's `TuningItems` (ruling D-Q6), the M2 perf numbers as the first baseline (G-Q8), and a USER line: "User playtests the bad-luck nudge and decides keep / tune / remove" (R65).
+Added 2026-10-12 (C 16.2): **criterion 7 wording** - "the host rejects forged and out-of-order messages (stale/duplicate castIds, impossible hook or landing timing, non-finite or far origins, bait it does not have, creel add over the cap); position checks are bounded by the owner-written transform (friends-only trust, spec 1.2); a bare-hook reroll by cancelling is accepted design". **Fun gate:** near-snap recovery >= 40% (spec 17.2) is a HUMAN metric read from the fight logs (bots only print it; bulldog and thrasher Rhythm recovery were 3% and 6% in `5a652bd`); tuning hints if low: lower `tuning.relaxWhileReeling` toward 0.15 (it sits at 0.20, the TOP of the 9.12 range, so there is no headroom upward), or raise bulldog/thrasher `pullStrength` or lower their calm minimum rather than touching relax; note the Twig thrasher trophy (weightT 0.9) median of about 93 s and bulldog Rhythm median 37.4 s (floor 35 s). **Manual list:** F3 in the editor shows the overlay; in a non-development player build F3 is a no-op. **M4 handoff:** `FishCaught` is published even when the creel store was missing (the fish was not stored): quota consumers use creel data, not `FishCaught` counts. **M5 handoff:** knockback (`PlayerLocomotion.AddKnockback`) must end the cast, or the host walk bound (`WalkBoundedLineLength0`, sprint speed) must add the maximum knockback; the Staggered router row must zero Move.
 
 ---
 
@@ -1489,7 +1579,7 @@ Server handlers forward to `FishingHost`. The owner drops a `CastResultRpc` whos
 **Equip and ready.** Free: `1` -> controller `OwnerSetTool(Rod)` -> `NetTool` -> the rod shows everywhere; requested context RodReady. Hold RMB 0.25 s -> Ready (marker; RodAiming: x0.6 speed, no sprint).
 
 **Cast (owner, then host; solo is identical with the deferred reply).**
-1. Owner: Primary released in Charging with `chargeNorm >= 0.1` and a valid marker -> `SendCastRequest(++CastId)` + cue CastRelease -> `CastRequestRpc(castId, rootPos, cameraYaw, chargeNorm, NetSelectedBait, assist)`; `NetRodState {Casting, BobberPos = landing}`; the bobber flies at once.
+1. Owner: Primary released in Charging with `chargeNorm >= 0.1` and a valid marker -> `++CastId`, cue CastRelease FIRST, then the `SendCastRequest` effect (the machine queues them in that order; T8 decision 9) -> `CastRequestRpc(castId, rootPos, cameraYaw, chargeNorm, NetSelectedBait, assist)`; `NetRodState {Casting, BobberPos = landing}`; the bobber flies at once.
 2. Host (`FishingHost.HandleCastRequest`): `Ledger.TryComputeLanding` (host rod) -> `CastProbe.Probe(landing)` -> `Ledger.RequestCast(clientId, slot, req, view, FishingDebugSettings.ToOverrides(registry))`. Valid: bait consumed, `HostCastCounter++`, roll from `Rng.Stream(runSeed, "catch", counter)`, ActiveCast; mirror `NetSelectedBaitCount`. Reply `CastResultRpc` (DeferLocal: in solo it runs on the next tick, never inside `CastRequestRpc`'s stack). A Pity accept (R65) also sends `CatchAnnouncedRpc(slot, default, PityCast, 0)` so every peer shows the lucky-line toast.
 3. Owner: `CastResultReceived` -> `TryToCore` -> `Machine.OnCastResult`. Invalid -> recall to Idle, no bait used. Valid -> Waiting once the flight is over; the bite timer starts at `max(landing, result)`.
 
@@ -1611,9 +1701,29 @@ Rules: `RodStateMachine_IllegalEvents_IgnoredInEveryState` (TestCaseSource over 
 | Owner | File | Tests |
 |---|---|---|
 | T3 | `SoloSessionTests.cs` | (add) `Solo_LeaveRightAfterConnected_EndsOnMenu` |
-| T19 | `FishingSoloTests.cs` | (5 tests) `SoloHost_CastBiteFight_Lands` (forced 0.1 s bite, forced bluegill, scripted input; asserts a creel entry and the CatchAnnounced on the bus, rod back to Idle, rumble 0); `SoloHost_CastResult_ArrivesAfterCastRequestReturns` (machine still Casting with no result right after `CastRequestRpc` returns; the result lands on a later frame, V11); `SoloHost_CancelInWaiting_RefundsBait` (count back to 20); `RodOut_MoveInput_StillWalks`; `RodFighting_MoveInput_DoesNotMovePlayer` (both movement tests live here, ruling E-Q3; `PlayerMovementTests.cs` stays T3-only) |
+| T19 | `FishingSoloTests.cs` | (8 tests: the 5 planned below + the 3 `PlayerCreel_*` T16 carry-overs listed after them; ruling T19-R1 adds a rod-tip assertion to the first) `SoloHost_CastBiteFight_Lands` (forced 0.1 s bite, forced bluegill, scripted input; asserts a creel entry and the CatchAnnounced on the bus, rod back to Idle, rumble 0); `SoloHost_CastResult_ArrivesAfterCastRequestReturns` (machine still Casting with no result right after `CastRequestRpc` returns; the result lands on a later frame, V11); `SoloHost_CancelInWaiting_RefundsBait` (count back to 20); `RodOut_MoveInput_StillWalks`; `RodFighting_MoveInput_DoesNotMovePlayer` (both movement tests live here, ruling E-Q3; `PlayerMovementTests.cs` stays T3-only). Delivered with three more: `PlayerCreel_ServerTryAdd_RefusedWhenFull`, `PlayerCreel_DebugBellSell_EmptiesCreelAndAddsCoins`, `PlayerCreel_MirrorsLedger_AfterRespawn` (T16 carry-overs); 8 tests in all |
+| T16 (added) | `PlayerHooksTests.cs` | `Locomotion_LockingSource_BlocksWalkAndJump_ButGravityAndYawContinue`, `Locomotion_JumpBufferedBeforeLock_DoesNotFireOnLandingWhileLocked`, `Locomotion_RodFightingRequest_IsWrittenAndLocksMovement`, `Locomotion_RodAimingRequest_WalksAtSixtyPercent`, `Locomotion_FirstEnabledNonFreeSourceWins_DisabledIgnored`, `Locomotion_ApplyTeleport_RaisesTeleportedAfterThePositionIsApplied`, `Camera_AddFovKick_AddsDecaysScalesWithCameraMotionAndClamps`, `PlayerNetState_ServerInitialized_RaisedOnceAfterInit_AndThrowingSubscriberIsIsolated`, `PlayerNetState_ServerInit_SlotIsAlreadyWrittenInsideTheEvent`, `PlayerNetState_ToolChangedHandler_IgnoresEqualValues`, `SessionState_SlotTakeover_ClearsCreelForNewIdentity_KeepsItForSameIdentity`, `PlayerNetState_OwnerSetTool_RaisesToolChangedOncePerChange` (the file is not in the original C 12; it carries the T16 hook tests, reaching internals through `Gameplay/AssemblyInfo.cs`) |
+| T11 (added) | `AudioBusPlayModeTests.cs` | `AudioBus_Duck_RampsOnUnscaledTimeAndReleases`, `AudioBus_RateLimit_ExpiresAfterMinInterval`, `AudioBus_Loop_FollowsTransformAndStopsWhenItIsDestroyed`, `AudioLoop_IsPlaying_FalseWithoutThrowingWhenSourceObjectIsDestroyed` (real audio sources; added by T11 and its follow-up) |
 
 ---
+
+### 10.5 Test files added beyond the lists above (T1-T19; 2026-10-12)
+
+Owners keep them; the required names in 10.1-10.4 are unchanged. Mutation rule for every later brief: for each test added, name the plausible wrong implementation it catches; for key formulas and orders, break the code once and show the test fails; tests that only assert no-exception or run the same code twice do not count.
+
+| Owner | File | Covers |
+|---|---|---|
+| T9 | `CatchValidatorTests.cs` (13 tests) | cast-rule order, stale/origin boundaries, non-finite yaw, hook-too-early boundary, landed floor, `HostLineLength0`, `WalkBoundedLineLength0` (T9-R1), `AnnounceFor`, every clean-claim bound |
+| T9 | `FishingHostLedgerTests.cs` (extended after review) | NaN host distance, yaw rule, dt guard, pity rows for Escaped(Timeout) and Escaped(Dropped), landing floor with a non-Handmade rod, `ResetSlot` (mini-fix batch) |
+| T9 | `CreelRulesTests.cs` (extended) | `(8, 0, 10, 15000)` warns, last slot (3 of 4), `ctor(0)` throws, `ClearSlot` (T16-R1) |
+| T12 | `MeshBuilderTests.cs`: `MeshBuilder_AllPrimitives_FaceOutward`, `MeshBuilder_InvalidArguments_ThrowAndLeaveBuilderUnchanged`, `FaceJitter_Grey_DeterministicAndWithinJitter`; `WaveMathTests.cs`: non-finite fields are zero terms | winding for every primitive, argument guards |
+| T14 | `FishingValidatorTests.cs` (44 tests), `FishingContentBuilderTests.cs` (5 tests, temp folder `Tests/__Temp/`), `FishingContentTests.cs` (`TunedDeviations`) | validator messages and ranges, `Prefixed` seam, `BuildAt` re-rooting, create-if-missing, wrong-type refusal |
+| T15 | `Tuning/FishingBots.cs`: `FishingBots_RhythmDecide_PinsDiveEasingAndSteerRules` | pins bot `Decide` rules (7.15) |
+| T16 | `PlayerHooksTests.cs` (PlayMode, 12 tests, 10.4), `CreelEntryTests.cs` | context arbitration, movement lock, jump buffer, `Teleported`, FOV kick, `ServerInitialized`, tool-change dedupe, slot takeover |
+| T17 | `FishingHostGuardTests.cs` (4 tests), `FishingWireTests.cs` | `IsOriginFinite`, `OriginWithinSlack`, `IsSaneCatch`, `FishingRodNetwork.IsPlausible`; wire struct round trips |
+| T18 | `RodControllerHelperTests.cs` (10 tests) | `FightRecorder` (captured roll, cancelled cast, no-Waiting, clean claim, first bite only), `FishPointSampler` (cadence, hold, non-finite), `RodControllerRules` (context table, equip, `FiniteOr`) |
+| T19 | `FishingSoloTests.cs` (8 tests, 10.4) | cast to land, V11 ordering, cancel refund, movement, creel runtime |
+| T11 | `AudioBusPlayModeTests.cs` (4 tests, 10.4) | duck, rate limit, loop follow, `AudioLoop.IsPlaying` |
 
 ## 11. Commands reference
 
@@ -1643,7 +1753,7 @@ Unchanged: M1 contract section 11 (`Tools/unity.ps1 compile | build | test-edit 
 | T16 | `Gameplay/Player/{PlayerNetState,PlayerLocomotion,PlayerCamera,PlayerInteractor,PlayerRigPaths,IPlayerContextSource}.cs`, `Gameplay/Fishing/{CreelEntry,PlayerCreel}.cs`, `Gameplay/Session/SessionState.cs`, `Gameplay/Interaction/DockBell.cs` |
 | T17 | `Fishing/Net/{RodStateData,CatchResultNet,FishingRollNet,CatchAnnouncement,CatchAnnounced,FishCaught,RodViewState,FishingRodNetwork}.cs`, `Fishing/Host/{FishingHost,CastProbe}.cs`, `Fishing/Debug/FishingDebugSettings.cs`, `Core/Versioning/BuildInfo.cs`, `Fishing/AssemblyInfo.cs` (edit), `Tests/EditMode/BuildInfoTests.cs` (edit) |
 | T18 | `Fishing/Owner/{FishingRodController,FightEnded}.cs` (+ internal helpers such as `FishPointSampler`) |
-| T19 | `Editor/Builders/Fishing/{PlayerFishingRigBuilder,FishingSceneObjects}.cs`, hooks in `PrefabBuilder.cs`, `LakeDockBuilder.cs`; `Tests/PlayMode/FishingSoloTests.cs` (5 tests incl. the two movement tests); generated prefab, scene, meshes |
+| T19 | `Editor/Builders/Fishing/{PlayerFishingRigBuilder,FishingSceneObjects}.cs`, hooks in `PrefabBuilder.cs`, `LakeDockBuilder.cs`; `Tests/PlayMode/FishingSoloTests.cs` (8 tests: 5 planned incl. the two movement tests + 3 `PlayerCreel_*`); generated prefab, scene, meshes |
 | T20 | `Shaders/{FishGameCommon.hlsl,Toon.shader}`, `Editor/Validation/{ShaderValidator,RenderValidators}.cs`, `Editor/Builders/RenderMaterialLibrary.cs`, `Editor/Builders/Render/FishModelPostprocessor.cs`, edits in `MaterialLibrary.cs`, `PrefabBuilder.cs`, `ValidationRunner.cs`, `AssetPaths.cs`; reimported `Content/Models/Fish_Perch.fbx.meta`, `Tests/EditMode/ToonMaterialTests.cs`, conditionally `Tools/unity.ps1` (ruling F-Q4) |
 | T21 | `Shaders/{Water,Line,GradientSky}.shader`, `Editor/Builders/Render/RenderingSetupBuilder.cs`, edits in `RenderMaterialLibrary.cs`, `ContentBuilder.cs`, `PrefabBuilder.cs`, `AssetPaths.cs`; `Tests/EditMode/RenderingSetupTests.cs`; generated `Content/Rendering/**`, materials |
 | T22 | `Presentation/World/{PaletteGlobals,WaterTimeDriver,RippleField}.cs`, `Editor/Builders/Render/PresentationSceneObjects.cs`, hook in `LakeDockBuilder.cs`, `Tests/PlayMode/PresentationWorldTests.cs` |
@@ -1655,6 +1765,23 @@ Unchanged: M1 contract section 11 (`Tools/unity.ps1 compile | build | test-edit 
 | T28 | `Editor/Builders/{LakeDockBuilder,LakeDockLayout,LakeDockMeshes}.cs`; generated `Scenes/Spot_LakeDock.unity`, `Content/Meshes/LakeDock_*.asset` |
 | T29 | `Content/Models/Fish_{Bluegill,Perch,Carp,Trout,Catfish}.fbx` (+ `.meta`; copied from the staged `Art/Export/`; the perch file is replaced, its `.meta` kept); regenerated species assets (model refs) |
 | T30 | `docs/superpowers/plans/2026-10-11-m2-acceptance.md`, `README.md` |
+
+**Files added or edited beyond the plan (T1-T19, 2026-10-12; paths under `Assets/_Project/`, all committed unless marked mini-fix):**
+
+| Task | Extra files |
+|---|---|
+| T7 | `Core/AssemblyInfo.cs` (InternalsVisibleTo `FishGame.Tests.EditMode`; was already listed above) |
+| T9 | `Tests/EditMode/{CatchValidatorTests,FishingHostLedgerTests}.cs`; `Core/Fishing/CatchValidator.cs` gains `OriginWithinSlack`, `IsFinite`, `IsOriginFinite`, `WalkBoundedLineLength0` (T17 follow-up and mini-fix: `IsOriginFinite`, `OriginWithinSlack`); `ActiveCast.CastDistance` |
+| T11 | `Tests/PlayMode/AudioBusPlayModeTests.cs` (+`.meta`), `Runtime/Audio/AudioLoop.cs` (listed above) |
+| T12 | `Tests/EditMode/{MeshBuilderTests,RippleMathTests,WaveMathTests,WaterSurfaceTests}.cs` |
+| T13 | `Tests/EditMode/{FishingDefsTests,ContentRegistryTests}.cs` (registry tests extended) |
+| T14 | `Editor/AssemblyInfo.cs` (InternalsVisibleTo), `.gitignore` (`/Assets/_Project/Tests/__Temp*`), `Tests/EditMode/{FishingContentBuilderTests,FishingValidatorTests,FishingContentTests}.cs`; `FishingContentBuilder.BuildAt` (internal), `FishingValidators.Prefixed/CheckRegistry/CheckSeedAssets/CheckSpeciesModel` (internal) |
+| T15 | `Tests/EditMode/FishingContentTests.cs` (`TunedDeviations` map), spec 9.6/9.7/9.12 tables |
+| T16 | `Gameplay/AssemblyInfo.cs` (InternalsVisibleTo `FishGame.Tests.PlayMode`), `Tests/PlayMode/PlayerHooksTests.cs`, `Tests/EditMode/CreelEntryTests.cs`, `Core/Fishing/CreelLedger.cs` (`ClearSlot`, T9 file) |
+| T17 | `Tests/EditMode/{FishingWireTests,FishingHostGuardTests}.cs`; `Fishing/AssemblyInfo.cs`; `Core/Fishing/FishingRollValidation.cs` (`IsSaneCatch`, T6 file) |
+| T18 | `Fishing/Owner/{FightRecorder,FishPointSampler,RodControllerRules}.cs` (internal helpers), `Tests/EditMode/RodControllerHelperTests.cs`; small edit in `Fishing/Net/FishingRodNetwork.cs` (29 lines in `dea35f8`) |
+| T19 | `Tests/PlayMode/FishingSoloTests.cs` (8 tests), `Tests/PlayMode/PlayModeHarness.cs` (integration fix); `Content/Meshes/{Rod_Seg0..5,Bobber}.asset`; regenerated `Prefabs/PlayerFP.prefab` and `Scenes/Spot_LakeDock.unity` |
+| mini-fix (after T19) | `Core/Net/PlayerKey.cs` + `Tests/EditMode/PlayerKeyTests.cs` (`MaxIdLength` 61), `Core/Fishing/{FishingHostLedger,CatchValidator}.cs`, `Gameplay/Session/SessionState.cs`, `Gameplay/Fishing/PlayerCreel.cs`, `Fishing/Host/FishingHost.cs`, `Fishing/Owner/FishingRodController.cs`, `Fishing/AssemblyInfo.cs`, `Tests/EditMode/{FishingHostGuardTests,FishingHostLedgerTests}.cs`, `Tests/PlayMode/PlayerHooksTests.cs` (working tree; the controller commits) |
 
 ---
 
@@ -1685,6 +1812,11 @@ Unchanged: M1 contract section 11 (`Tools/unity.ps1 compile | build | test-edit 
 | M2-D21 | EditMode reach | EditMode tests reference Gameplay and Fishing (wire structs). | G1: wire structs can't live in Core. |
 | M2-D22 | Pitch to apex | Linear map -30..45 deg -> x0.7..x1.3, clamped. | Spec 9.3 gives the range, not the mapping. |
 | M2-D23 | Bad-luck nudge (R65, user-approved 2026-10-11) | The host counts consecutive failed casts per slot (Snapped, or Escaped with any reason; a Landed resets; cancels and recalls neither count nor reset; kept in the slot data, survives rejoin). At `pityAfterFailures` (seed 3, 0 = off) the next accepted cast gets `FishingRoll.Pity = true`, set by the ledger at accept with no extra RNG draw. A Pity cast resolving (other than Cancelled) resets the count. Owner-side effects, deterministic: `FightSim` strain scale x `pityStrainMult` (0.85) and snap grace x `pityGraceMult` (1.5), a real bite hook window plus `pityHookWindowBonus` (0.3 s). No change to species, weight or quality odds; the host's Landed-floor validation is unchanged. Visible to the crew: the host sends `CatchAnnouncedRpc` with the new `AnnounceKind.PityCast = 4` (smallest contract change: no new RPC; the wire roll carries the bit in `FishingRollNet.Flags`) and every peer shows `toast.pity` "{0} has a lucky line!" through `toast.raw`; the fight log gets a `pity` column. All numbers are `FishingTuningDef` seeds; Core holds none. | Fishing should not punish a streak of snaps without the user noticing why; the user decides keep / tune / remove at playtest (T30). The spec section 3.2 is amended by the controller. |
+| M2-D24 | Unsolicited commit while Casting (T8-R1, T8 review, 2026-10-12) | `RodStateMachine.OnCommit` while `Casting` is a legal event: it takes the same path as Waiting/Bite/Hooked (a `Cancelled` commit -> `Escaped` with `Recalling = true` and cue `Recall`, the 1.5 s cancel beat per M2-D5, then Idle; any other commit -> `Escaped(finalReason)`, `None` -> `Invalid`). Casting is removed from the IllegalEvents expectation for commits. | Spec 9.13 "LastCast" intent (a host cancel/timeout during the flight must recall the line) wins over the 9.2 row list. Spec 9.2 carries a note. |
+| M2-D25 | Invalid cast result remembers the cast (T8-R2, T8 review) | Any invalid `OnCastResult` (Casting or Waiting) sets `_cancelledCastId = castId` before the recall, so the host's `Cancelled` commit for it is consumed silently (no `IgnoredEventCount`, no beat). Only the owner-side `CastResultRpc` handler sends the one `CancelRpc` (BF-5). | The host always answers a rejected cast with a cancel commit; without the flag it would be counted as an illegal event or replay a beat. |
+| M2-D26 | Walk-bounded hook line (T9-R1, T9 review; hardening) | At accept the ledger stores `ActiveCast.CastDistance` (horizontal origin -> landing); at `Hooked`, `LineLength0 = max(HostLineLength0(hostDistance), CastDistance - SprintSpeed * (THooked - TAccepted) - 1.5)`, floored at `landDistance` (`CatchValidator.WalkBoundedLineLength0`). No new tuning: `SprintSpeed` is the Core `MovementMath` constant. Non-finite `hostDistanceToLanding` -> `Escaped(Invalid)` (I-2); non-finite `YawDeg` -> `OriginTooFar` and `TryComputeLanding` false (I-1). | A client teleported next to the landing could shrink the Landed floor to zero; the player cannot have walked faster than sprint since the cast was accepted. Knockback is an M5 concern (C 16.2). |
+| M2-D27 | Slot takeover resets the creel (T16-R1, T16 review) | `CreelLedger.ClearSlot(slot)` (Core, T9 file, allowed in the T16 fix). `SessionState.Upsert` clears that slot's creel and debug coins when the slot is assigned to a DIFFERENT persistent identity (JoinRules takeover rule c); the same identity rejoining keeps both (R46). The mini-fix batch after T19 extends the same trigger (`SessionState.SlotTakenOver`) to the host ledger slot (`FishingHostLedger.ResetSlot`). | A new player must not inherit the previous holder's fish or coins; a returning player must (R46). |
+| M2-D28 | Rod geometry vs host slack (T19-R1, T19 review) | The rod's local rotation makes it point camera-forward pitched up about 35 deg in the owner arm pose (and plausibly in the remote pose); `FishingConstants.HookedLineSlack` is re-derived from the measured maximum forward reach of `TipAnchor` over pitch -60..+60 plus 0.5 m (rounded up to 0.1; value TBD, set by the T19-fix); the host stays conservative (owner start line >= host `LineLength0` for every honest cast). `SoloHost_CastBiteFight_Lands` asserts the tip is in front of the camera and below head height + 1 m. The T19-fix also amends the PlayMode driver surface (C 7.19) and the harness `PrepareResetScene`. | The T19 review found the host slack was not tied to the real rod reach, so an honest cast could start with a line shorter than the host's floor. |
 
 ---
 
@@ -1817,3 +1949,76 @@ Controller rulings on the section authors' contract questions, the consistency-c
 - **Telemetry:** `FightEnded.Pity`, `FightLogRow.Pity`, CSV column `pity` (last).
 - **Interpretation to confirm:** the rulings say both that a Pity cast resets the count "whatever its outcome" and that cancels "neither count nor reset". The plans let the cancel win: a cancelled (refunded) Pity cast does not consume the pity.
 - **Spec:** the controller adds the line to spec section 3.2 (not part of this amendment).
+
+---
+
+## 16. Implementation deltas (T1-T19, 2026-10-12)
+
+What changed between the plan and the code after T1-T19 were implemented and reviewed. Sections 2.6, 5.2, 7, 9, 10.4-10.5, 12 and 13 already carry the inline edits; this section is the index. "Applied" names the task, the commit and the file. Review verdicts: APPROVE unless stated. Commit hashes are on branch `m2-fishing-core`.
+
+### 16.1 Findings and rulings applied
+
+| Id | Summary | Applied (task, commit, file) |
+|---|---|---|
+| T1 review carry-over | `AudioBus` tests for the `unknown|` and `missing|` warn-once gates (unknown id twice -> one warning) | T11 `AudioBusTests.cs` (`AudioBus_UnknownId_WarnsOncePerId`, `AudioBus_MissingClip_WarnsOncePerId`) |
+| T2 review | `UiFlowController` limit < 400 (A-Q2); `IHudExtension.Bind` must never throw (no try/catch in the bind loop) and extension buttons play their own `Ui_Click`; manual smoke list gains steps 3b, 5b, 6b, 7, 8 | C 7.2; carried to T25 (16.2); carry plan T2.7 note |
+| T3 follow-up (`1c3b423`) | Harness: reset dev-autostart in `finally`, recover from leaked scenes, capture warnings. Carry to T19: log the original problem BEFORE recovery; recovery scene setup in a catching helper | T19 `0c070a0` `PlayModeHarness.cs` (`PrepareResetScene`; C 2.6). T19-R1 minor: `PrepareResetScene` reuses an existing `FG_TestReset` via `GetSceneByName` (T19-fix) |
+| T4 review (`4eb9edc`) | Validators loop all `MeshCollider`s, dispose the `SerializedObject`, keep unloaded scenes via `wasValid` / `removeScene`, check skinned meshes for null meshes | T4 `Validators.cs` |
+| T5 review (`339742f`) | `CastMath` NaN/infinity guards (`ChargeNorm`, `Distance`), `ProbeReason` as `!(Depth >= minLandDepth)`; stronger `FishPointMath`, `RodWireQuant` (exact values) and `CastMath` (apex 0.42) tests | T5 `CastMath.cs`, `CastMathTests.cs`, `FishPointMathTests.cs`, `RodWireQuantTests.cs`; C 7.5 |
+| T6/T7 review (`96a5f89`) | Test strength: nibble clamp, hand-replayed `Pcg32` draw order, nibble histogram, `CatchMath` skew values, `ForcedItemIndex` throw, side-run direction stats, same-tick ending priority, `TensionCues` exact values. Production: `FishingRollValidation` rejects non-finite or out-of-[0,1] `WeightT` and non-finite nibbles; T14 validator `MaxNibbles <= 3` | T6/T7 tests; C 7.6, C 7.14 |
+| T8-R1 | Unsolicited commit while Casting plays the cancel beat (recall), no longer illegal; spec 9.13 LastCast intent wins over the 9.2 row list | T8 `RodStateMachine.cs` (`95e31ee`); C 7.8, C 13 M2-D24; spec 9.2 note (controller) |
+| T8-R2 | Any invalid cast result sets `_cancelledCastId = castId` so the host's Cancelled commit is consumed silently | T8 `RodStateMachine.cs` (`95e31ee`); C 7.8, C 13 M2-D25 |
+| T8 review tests (`95e31ee`) | Flight-time lower bound, `SendResult` before `SendRodEvent(Escaped)`, `FightReport` echo, pity window at 1.3 s, duplicate commit in a terminal state, unsolicited Cancelled commit emits no Escaped event, `finalReason None` -> Invalid, paused `TickFight`/`OnCastResult`, `ForceEnd` no-op in terminal states | T8 `RodStateMachineTests.cs` (BF-8's counts of 45 methods and 55 NUnit results were written before these tests: T30 recounts from the file) |
+| T8 telemetry note | The machine's `ResetCast` wipes Roll/Outcome on Idle: telemetry captures the roll on entering Waiting and records Cancelled when SendCancel/Recall drains to Idle | T18 `FightRecorder.cs`; C 7.8, C 7.18 |
+| T8 docs wording | Effect order is "cue first, then SendCastRequest" (decision 9) | C 9 flow 1; core-fishing status note |
+| T9 review I-1 | `ValidateCast` rejects a non-finite `YawDeg` as `OriginTooFar`; `TryComputeLanding` false for non-finite yaw; NaN and +Inf tested | T9 `abecb40` `CatchValidator.cs`, `FishingHostLedger.cs`; C 7.9 |
+| T9 review I-2 | Fail closed on a non-finite `hostDistanceToLanding`: `Hooked` resolves `Escaped(Invalid)` | T9 `abecb40` `FishingHostLedger.cs`; C 7.9 |
+| T9-R1 | Walk-bounded hook line: `ActiveCast.CastDistance`, `CatchValidator.WalkBoundedLineLength0` (sprint speed, no new tuning) | T9 `abecb40`; C 7.9, C 13 M2-D26 |
+| T9 review minors | `Tick` ignores NaN/negative/infinite dt; `CreelRules` (8, 0, 10, 15000) warns; `CreelLedger` last slot and `ctor(0)` throws; pity rows for Escaped(Timeout)/(Dropped); landing floor with a non-Handmade rod | T9 `abecb40` tests; C 7.9 |
+| T9 notes for T30 | Criterion 7 holds against forged messages; owner-written transform limits position checks (friends-only, spec 1.2); a bare-hook reroll by cancelling is accepted design | T30 text (16.2) |
+| T8-fix / T10 review | Press F3 in the editor (overlay) and in a non-development build (no-op); `OnAssistChanged` pure helper with an EditMode test (G-Q4); M5: Staggered row must zero Move; optional comment wording at `RodStateMachine.cs:20` | T25, T26, T30 (16.2) |
+| T9-fix / T11 review | Docs: ActiveCast.CastDistance, `IsFinite`/`WalkBoundedLineLength0`, yaw rule order, Hooked NaN, dt guard, `ApplyCueTable` replaces. M5: knockback must end the cast or the walk bound must add max knockback. T23 brief MUST pass `follow` for 2D loops and `StopLoop` in `OnDisable`. T14 validator rejects non-finite cue values | C 7.9, C 7.11; T23, T30 (16.2); `FishingValidators` |
+| T11 follow-up (`2296e1a`) | `AudioBus` rejects non-finite cue values (`BaseVolume`, `MinDistance`, `MaxDistance`, `MinInterval`); `AudioLoop.IsPlaying` uses `Source != null`; `AuditionCuesMenu` counts only real plays (`Play2D` returns bool); optional PlayMode duck test widening; the optional walk-bound latency allowance (SprintSpeed * 0.25) was REJECTED | T11 `AudioBus.cs`, `AudioLoop.cs`, `AuditionCuesMenu.cs`, `AudioBusPlayModeTests.cs`; C 7.11 |
+| T12 review (`4385084`) | Winding test for every primitive; `WaveMath` non-finite fields are zero terms (Term and AmplitudeSum); `ShaderGlobals.PaletteLength = 16`, `WavesLength = 4`; `WaterSurface` class comment (HeightAt main-thread only unless a time source is set) | T12 `MeshBuilder`/`WaveMath`/`ShaderGlobals`/`WaterSurface` and tests; C 7.12; T21 (16.2) |
+| T14 implementer notes | T21 Water shader must treat ANY non-finite wave field as a zero term; `Editor/AssemblyInfo.cs` InternalsVisibleTo added; `TunedDeviations` key format `tuning.<field>` (creel `tuning.creelMaxWeightG` in grams), `<category>.<id>.<field>` | C 2.6, C 7.15; T21 (16.2) |
+| T14 review F1 (`03bb4a9`) | `FishingContentBuilder.BuildAt(contentRoot, registry)` internal; builder tests under `Tests/__Temp/<Fixture>`; `.gitignore`; validator `All()` prefix test uses in-memory sets; no test writes committed Content | T14 `FishingContentBuilder.cs`, `FishingContentBuilderTests.cs`, `FishingValidatorTests.cs`; C 2.6, C 7.14 |
+| T14 review F2 (`03bb4a9`) | `Ensure<T>` throws `InvalidOperationException("asset exists but is not a T: path")` when the file or GUID exists but cannot be loaded; tested. Optional: `CheckWater` direction and colour finiteness (done) | same |
+| T14-fix re-review minors | `Rooted()` guard; `ModelsFolder` re-root test; rename `Build_` tests to `BuildAt_`; `OneTimeSetUp` cleanup on failure; `ValidationTests` temp prefab under `Tests/__Temp/` | NOT done yet: carried to T29 (16.2) |
+| T15 rulings (`5a652bd`, `4a4028f`) | Retuned `tuning.relaxWhileReeling` 0.10 -> 0.20, `profile.thrasher.staminaDrain` 0.09 -> 0.035, `profile.runner.staminaDrain` 0.05 -> 0.035; near-snap recovery >= 40% is a HUMAN fun-gate metric (bots informational: Rhythm bulldog 3%, thrasher 6%, runner 57.5%); T30 fun-gate watches bulldog/thrasher recovery and the hints below | T15 assets, `FishingSeedData`, `TunedDeviations`; spec tables; C 7.15; T30 (16.2) |
+| T15 review (`f1476c3`) | `FishingBots_RhythmDecide_PinsDiveEasingAndSteerRules` over `Decide`; `CounterHold == CenterDeadzone`; clear static caches in `[OneTimeSetUp]`; creep gate on `exhaustedBefore` accepted. Fun-gate: relax 0.20 is the TOP of the 9.12 range; bulldog Rhythm median 37.4 s (floor 35 s); prefer raising bulldog/thrasher `pullStrength` or lowering calm min over relax | `Tuning/FishingBots.cs`; C 7.15; T30 (16.2) |
+| T16 review I-1 (`d40534a`) | `PlayerLocomotion` resets the jump buffer while locked; PlayMode test (press jump airborne, lock, land: no jump) | T16 `PlayerLocomotion.cs`, `PlayerHooksTests.cs`; C 7.16 |
+| T16 review M-2..M-7 (`d40534a`) | `HandleToolChanged` returns on `previous == current`; `PlayerCreel` throws when `!IsSpawned || !IsServer`, returns false/0 when `!_player.IsServerInitialized`; `DockBell.DebugSellCreel` guards a missing ledger; `PlayerLocomotion` refreshes the context-source cache in `OnEnable`; PlayMode test that `ServerInitialized` subscribers see `Slot` | same; C 7.16 |
+| T16-R1 | Slot takeover: `CreelLedger.ClearSlot(slot)`; `SessionState` clears the slot's creel and debug coins when the slot goes to a DIFFERENT persistent identity; the same identity keeps it (R46); both tested | T16 `d40534a` `CreelLedger.cs`, `SessionState.cs`, `PlayerHooksTests.cs`, `CreelRulesTests.cs`; C 7.9, C 13 M2-D27 |
+| T16 notes | T19: `FishingRodController` on the PlayerFP root; PlayerCreel runtime tests (mirror after respawn, `ServerTryAdd` refused when full, bell sell); T25: HUD reads `Count` at spawn; swimming interact gate checked in T19/T28 playtest | T19 `FishingSoloTests.cs` (3 tests); T25, T28 (16.2) |
+| T17 review (APPROVE) | T25: host-side creel `Changed` and `FishCaught` fire one frame BEFORE `CatchAnnounced`, so the creel HUD must not show species ahead of the announce. T17 minors went to the T18 agent as Job 3 | T25 (16.2) |
+| Review of `d40534a`, `dea35f8`, `071dc2d` (all APPROVE) | Mini-fix batch (Sonnet + Sonnet re-review): slot takeover also resets the host ledger slot (`FishingHostLedger.ResetSlot`); `PlayerKey.MaxIdLength` 61; `PlayerCreel.cs:91` comment; `PlayerHooksTests` brace formatting; `FishingHost` UnknownPlayer reply sends `Vector3.zero`; cheap origin-vs-seen distance check before `CastProbe`; controller raises no local Recall/Escaped cue during despawn. T26 brief MUST adopt the host landing x/z after F4/F5. M4 note: `FishCaught` is published even when the creel store was missing | 16.3 (in the working tree); T26, M4 (16.2) |
+| T17 follow-up (`071dc2d`) | `CatchValidator.IsOriginFinite` before the probe; `FishingRollValidation.IsSaneCatch` public and used to vet announcements; lazy NetworkManager; ledger-creation failure handling; no-creel-ledger path still announces | T17 `FishingHost.cs`, `FishingRodNetwork.cs`; C 7.6, C 7.17 |
+| T18 (`dea35f8`) | Internal helpers `FightRecorder`, `FishPointSampler`, `RodControllerRules` and `RodControllerHelperTests.cs`; `FightEnded` carries `Pity` | C 7.18, C 12 |
+| T19-R1 (T19 review, CHANGES REQUIRED) | Rod geometry vs host slack: rod rest rotation points camera-forward pitched up ~35 deg in the owner pose; `HookedLineSlack` re-derived from the measured forward reach of `TipAnchor` (pitch -60..+60) + 0.5 m, rounded up to 0.1 (value TBD); PlayMode tip assertion (`Dot > 0.8`, `tip.y < cam.y + 1.0`); minors: `PrepareResetScene` reuse of `FG_TestReset`; driver surface amended in C 7.19; C 10.4 is 8 tests; dry run walks to the deck end first; optional internal `SpawnPlayerIfMissing` + `InternalsVisibleTo` instead of reflection | T19-fix (after the mini-fix batch; Sonnet + Opus re-review); C 5.2, C 7.19, C 10.4, C 13 M2-D28; net T19 text; T24 (16.2); spec 9.9 note (controller) |
+
+### 16.2 Carry-forward into the not-yet-implemented tasks (also written into the task texts)
+
+| Task | Carry-forward | Where |
+|---|---|---|
+| T21 | The Water shader treats ANY non-finite wave field as a zero term (the guard lives in `FG_WaveTerm`, T20.3); `PaletteVectors(season)` allocates, never called per frame | presentation T20.3, T21 block, T22.1 |
+| T23 | Every loop passes `follow` (2D loops too) and all loops `StopLoop` in `OnDisable`; no cues while despawning or disabled | presentation T23 block |
+| T24 | `RodPresenter` never moves `TipAnchor`; the rod rest pose is the T19-fix's | presentation T24 block, C 7.24 |
+| T25 | `OnAssistChanged(data, old, new)` pure helper + EditMode test; HUD reads creel `Count` at spawn; creel HUD shows no species before `CatchAnnounced`; `IHudExtension.Bind` never throws; extension buttons play their own `Ui_Click` | ui-world T25 block, C 7.25 |
+| T26 | F4/F5 rod/bait switch: the controller adopts the host landing x/z on a valid result (or `LogOnce` when > 0.05 m); F3 manual check in the editor and a non-development build | ui-world T26 block, C 7.26 |
+| T27 | Consume `FightEnded` from `FightRecorder`; never derive rows from `FishCaught` | net T27 block, C 7.27 |
+| T28 | Fix any M1 swim/water-height test broken by waves (integration-fix rule, F-Q12); swimming interact gate playtest | ui-world T28 block, C 7.28 |
+| T29 | T14-fix minors (`Rooted()` guard, `ModelsFolder` re-root test, `BuildAt_` renames, `OneTimeSetUp` cleanup, `ValidationTests` temp prefab under `Tests/__Temp/`); import the staged `Art/Export/` models | ui-world T29 block, C 7.29 |
+| T30 | Criterion 7 wording; bad-luck nudge USER playtest line; near-snap recovery >= 40% is a human fun-gate metric with tuning hints; Twig thrasher trophy median about 93 s; F3 manual check; M4 note (`FishCaught` without a stored fish); M5 notes (knockback vs walk bound; Staggered row must zero Move) | ui-world T30 (criterion 7 row, fun-gate steps 6-7, H, section J), C 7.30 |
+
+### 16.3 Pending work that changes code the contract describes
+
+- **Mini-fix batch after T19 (before T20; in the working tree at the time of writing, the controller commits):** `FishingHostLedger.ResetSlot(int) -> bool`, `SessionState.SlotTakenOver`, `FishingHost` subscription and re-mirror, `CatchValidator.OriginWithinSlack` before the probe, UnknownPlayer reply with `Vector3.zero`, `PlayerKey.MaxIdLength = 61`, no local Recall/Escaped cues in the controller's despawn path, `PlayerCreel` comment, `PlayerHooksTests` formatting, `Fishing/AssemblyInfo.cs` PlayMode InternalsVisibleTo. Documented inline in C 2.6, 7.9, 7.17, 7.18.
+- **T19-fix (after the mini-fix batch; ruling T19-R1, C 13 M2-D28):** rod rest rotation, `HookedLineSlack` re-derivation (value TBD), tip assertion, shared `TearDown(rig)` driver helper, `PrepareResetScene` reuse. C 5.2 and C 7.9 follow the new constant.
+- **Contract changes that need the user:** none. CLAUDE.md "Before any batchmode run" line (held, not merely present; `unity.ps1` exit 2 = LOCKED) needs the user's OK because it is their file.
+
+### 16.4 Process notes (for the handoff and CLAUDE.md update)
+
+- **Lockfile:** Unity leaves `Temp/UnityLockfile` behind after a batch run (for example a compile-error abort). Locked means HELD (an exclusive open fails), not merely present. `Tools/unity.ps1` already tests held-ness (exit 2 = LOCKED). Implementer briefs say "stop only if `unity.ps1` reports LOCKED". The CLAUDE.md line needs updating (user's file: ask first).
+- **Mutation rule (every future implementer brief):** for each test added, name the plausible wrong implementation it catches; for key formulas and orders, temporarily break the code once and show the test fails. Tests that only assert no exception or compare the same code run twice do not count.
+- **Tool discipline (every future implementer brief):** run `Tools/unity.ps1` ONLY through the PowerShell tool (foreground, timeout 600000 ms), never through Bash; create and edit files ONLY with the Write/Edit tools, never heredocs or Python splicing; a red run that is expected says "expected red" in the description.
+- **Review follow-up cadence:** small fixes (50 lines or less in one area) get a Sonnet re-review; fixes touching ordering or networking (the T8-fix, T9-fix, T16-fix, T19-fix) get Opus. Follow-ups are separate `fix(<file>): <what>` commits (skeleton section 2).
