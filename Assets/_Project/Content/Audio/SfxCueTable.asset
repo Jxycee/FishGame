@@ -1,0 +1,141 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8813de427e8c554488d698f8a5f8235b, type: 3}
+  m_Name: SfxCueTable
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.SfxCueTableDef
+  rows:
+  - id: Ui_Click
+    category: 3
+    baseVolume: 0.6
+    minDistance: 1
+    maxDistance: 0
+    minInterval: 0.03
+    spatial: 0
+  - id: Ui_Confirm
+    category: 3
+    baseVolume: 0.6
+    minDistance: 1
+    maxDistance: 0
+    minInterval: 0.03
+    spatial: 0
+  - id: Ui_Error
+    category: 3
+    baseVolume: 0.6
+    minDistance: 1
+    maxDistance: 0
+    minInterval: 0.03
+    spatial: 0
+  - id: Wind_Ambient
+    category: 1
+    baseVolume: 0.5
+    minDistance: 1
+    maxDistance: 0
+    minInterval: 0
+    spatial: 0
+  - id: Water_Lap
+    category: 1
+    baseVolume: 0.5
+    minDistance: 1
+    maxDistance: 0
+    minInterval: 0.3
+    spatial: 0
+  - id: Bell_Ring
+    category: 0
+    baseVolume: 0.9
+    minDistance: 1
+    maxDistance: 30
+    minInterval: 0.25
+    spatial: 1
+  - id: Cast_Whoosh
+    category: 0
+    baseVolume: 0.7
+    minDistance: 1
+    maxDistance: 30
+    minInterval: 0.1
+    spatial: 1
+  - id: Splash_Small
+    category: 0
+    baseVolume: 0.7
+    minDistance: 1
+    maxDistance: 30
+    minInterval: 0.08
+    spatial: 1
+  - id: Splash_Big
+    category: 0
+    baseVolume: 1
+    minDistance: 8
+    maxDistance: 45
+    minInterval: 0.2
+    spatial: 1
+  - id: Bite_Plop
+    category: 0
+    baseVolume: 0.7
+    minDistance: 1
+    maxDistance: 30
+    minInterval: 0.1
+    spatial: 1
+  - id: Nibble_Tick
+    category: 0
+    baseVolume: 0.5
+    minDistance: 1
+    maxDistance: 20
+    minInterval: 0.3
+    spatial: 1
+  - id: Reel_Click
+    category: 0
+    baseVolume: 0.45
+    minDistance: 1
+    maxDistance: 20
+    minInterval: 0.05
+    spatial: 1
+  - id: Line_Creak
+    category: 0
+    baseVolume: 0.6
+    minDistance: 1
+    maxDistance: 25
+    minInterval: 0
+    spatial: 1
+  - id: Dive_Thrum
+    category: 0
+    baseVolume: 0.7
+    minDistance: 1
+    maxDistance: 30
+    minInterval: 0
+    spatial: 1
+  - id: Snap
+    category: 0
+    baseVolume: 1
+    minDistance: 4
+    maxDistance: 45
+    minInterval: 0.2
+    spatial: 1
+  - id: Catch_Flop
+    category: 0
+    baseVolume: 0.8
+    minDistance: 1
+    maxDistance: 30
+    minInterval: 0.2
+    spatial: 1
+  - id: Catch_Cheer
+    category: 0
+    baseVolume: 0.8
+    minDistance: 6
+    maxDistance: 60
+    minInterval: 0.3
+    spatial: 1
+  - id: Rod_Thunk
+    category: 0
+    baseVolume: 0.6
+    minDistance: 1
+    maxDistance: 20
+    minInterval: 0.1
+    spatial: 1

@@ -48,5 +48,7 @@ namespace FishGame.Tests.EditMode
 
         [Test] public void Validation_MissingScripts_Pass() => AssertNoErrors(Validators.MissingScripts());
         [Test] public void Validation_BootstrapReferences_Pass() => AssertNoErrors(Validators.BootstrapReferences());
+        [Test] public void Validation_FishingContent_Pass() => AssertNoErrors(FishingValidators.FishingContent());
+        [Test] public void Validation_SpeciesModels_Pass() => AssertNoErrors(FishingValidators.SpeciesModels());
     }
 }

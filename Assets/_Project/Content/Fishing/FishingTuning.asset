@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78e42415cefb2584895a7ced6da2ae7d, type: 3}
+  m_Name: FishingTuning
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FishingTuningDef
+  castChargeTime: 1
+  chargePingPong: 1
+  castMinDist: 2.5
+  minLandDepth: 0.8
+  biteWaitMin: 4
+  biteWaitMax: 18
+  minBiteWait: 1
+  hookBeat: 0.25
+  landDistance: 2
+  reelStrainBurst: 0.3
+  counterRelief: 0.5
+  steerStrain: 0.03
+  outOfWindowStrain: 0.2
+  spoolStrain: 0.5
+  spoolExtra: 12
+  relaxRate: 0.45
+  relaxWhileReeling: 0.1
+  reelBurstPenalty: 1
+  diveRunMult: 1.5
+  snapGrace: 0.25
+  snapGraceAssist: 0.75
+  strainScale: 1
+  strainScaleAssist: 0.6
+  pinEscapeTime: 5
+  slackEscapeTime: 12
+  fishStaminaRegen: 0.04
+  calmCenterPull: 0.15
+  lateralMaxDeg: 75
+  hookedLeash: 3
+  junkDragSpeed: 3
+  resultTimeout: 3
+  commitTimeout: 3
+  hookTolerance: 0.75
+  maxFightTime: 240
+  rodStateHz: 15
+  cancelRefundsBait: 1
+  creelMaxEntries: 12
+  creelMaxKg: 15
+  cleanCatchMaxTension: 0.8
+  pityAfterFailures: 3
+  pityStrainMult: 0.85
+  pityGraceMult: 1.5
+  pityHookWindowBonus: 0.3

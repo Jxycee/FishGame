@@ -135,6 +135,7 @@ namespace FishGame.App
 
             contentRegistry.Build();
             ContentHashValue = contentRegistry.ComputeContentHash();
+            audio.ApplyCueTable(contentRegistry.SfxCueTable != null ? contentRegistry.SfxCueTable.ToRecipes() : null);
             services.Register(contentRegistry);
 
             var bridge = new JoinApprovalBridge();

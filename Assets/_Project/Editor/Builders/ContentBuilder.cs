@@ -19,6 +19,7 @@ namespace FishGame.EditorTools
             SpotDef lakeDock = EnsureLakeDockSpot();
             EnsureRegistry(lakeDock);
             EnsurePanelSettings();
+            FishingContentBuilder.Build();
             AssetDatabase.SaveAssets();
         }
 

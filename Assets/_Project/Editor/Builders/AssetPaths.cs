@@ -40,5 +40,20 @@ namespace FishGame.EditorTools
         public const string ProjectSettingsFile = "ProjectSettings/ProjectSettings.asset";
         public const string EditorBuildSettingsFile = "ProjectSettings/EditorBuildSettings.asset";
         public const string NetcodeSettingsFile = "ProjectSettings/NetcodeForGameObjects.asset";
+
+        // T14 additions (fishing, art and audio data; C 6.2). T20/T21 reuse ModelsFolder; do not redeclare it.
+        public const string FishingFolder = "Assets/_Project/Content/Fishing";
+        public const string RodsFolder = FishingFolder + "/Rods";
+        public const string BaitsFolder = FishingFolder + "/Baits";
+        public const string FightProfilesFolder = FishingFolder + "/FightProfiles";
+        public const string SpeciesFolder = FishingFolder + "/Species";
+        public const string JunkFolder = FishingFolder + "/Junk";
+        public const string FishingTuningAsset = FishingFolder + "/FishingTuning.asset";
+        public const string ArtFolder = "Assets/_Project/Content/Art";
+        public const string ArtPaletteAsset = ArtFolder + "/ArtPalette.asset";
+        public const string WaterSettingsAsset = ArtFolder + "/WaterSettings.asset";
+        public const string AudioFolder = "Assets/_Project/Content/Audio";
+        public const string SfxCueTableAsset = AudioFolder + "/SfxCueTable.asset";
+        public const string ModelsFolder = "Assets/_Project/Content/Models";
     }
 }

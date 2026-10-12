@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06f4b886c87d6eb48a057224d0ecdc0f, type: 3}
+  m_Name: rod_deepsea
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.RodDef
+  id: rod_deepsea
+  displayName: Deep-Sea Rod
+  tier: 3
+  castMaxDist: 30
+  reelSpeed: 1.3
+  lineStrength: 1.6
+  angleWindow: 0.75
+  steerRate: 0.8
+  relaxMult: 1.2
+  shopCost: 600
+  firstCamp: 4

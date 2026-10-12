@@ -20,6 +20,7 @@ namespace FishGame.EditorTools
             Add(all, "MeshReferences", Validators.MeshReferences());
             Add(all, "MissingScripts", Validators.MissingScripts());
             Add(all, "BootstrapReferences", Validators.BootstrapReferences());
+            all.AddRange(FishingValidators.All());
             return all;
         }
 
