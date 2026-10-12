@@ -1454,6 +1454,8 @@ GameObject:
   - component: {fileID: 9140371821737631412}
   - component: {fileID: 7890688828823594990}
   - component: {fileID: 6178570190806390823}
+  - component: {fileID: 6881403379347928022}
+  - component: {fileID: 2089593112304426105}
   m_Layer: 0
   m_Name: PlayerFP
   m_TagString: Untagged
@@ -1724,6 +1726,34 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4fb6202fe0aa59e4c956652600622034, type: 3}
   m_Name: 
   m_EditorClassIdentifier: FishGame.Fishing::FishGame.Fishing.FishingRodController
+--- !u!114 &6881403379347928022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5380018705443704889}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d3d5a8de8b11694189b9592b8660f96, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FishGame.Presentation::FishGame.Presentation.FishingFeedback
+  silhouetteMaterial: {fileID: 2100000, guid: b838fa9c80a438b4d90ef9e8135313a2, type: 2}
+--- !u!114 &2089593112304426105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5380018705443704889}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e228836e36fb2f845b2d07e61b3004b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FishGame.Presentation::FishGame.Presentation.CatchRevealView
+  fishMaterial: {fileID: 2100000, guid: 2d8bf334b14684d42b031be1c6c0bcaf, type: 2}
+  fallbackMaterial: {fileID: 2100000, guid: b838fa9c80a438b4d90ef9e8135313a2, type: 2}
+  sparkleMaterial: {fileID: 2100000, guid: 05fc343ceacf59949822b4fa9369413f, type: 2}
 --- !u!1 &5838632184402113631
 GameObject:
   m_ObjectHideFlags: 0

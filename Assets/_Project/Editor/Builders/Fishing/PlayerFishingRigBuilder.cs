@@ -5,6 +5,7 @@
 // No "using UnityEditor.SessionState" clash here: this file never names SessionState.
 using FishGame.Fishing;
 using FishGame.Gameplay;
+using FishGame.Presentation;
 using FishGame.Runtime;
 using UnityEditor;
 using UnityEngine;
@@ -90,9 +91,22 @@ namespace FishGame.EditorTools
             BuilderUtil.GetOrAdd<FishingRodController>(playerRoot).enabled = false;   // every build, not only the first
         }
 
-        // T23 adds one line; T24 owns the body (C 2.6).
+        // T23's block (ruling F-Q5: at most 12 lines, helper included); T24 owns the rest of this body (C 2.6).
         public static void AddPresentation(GameObject playerRoot)
         {
+            FishingFeedback feedback = BuilderUtil.GetOrAdd<FishingFeedback>(playerRoot);
+            CatchRevealView reveal = BuilderUtil.GetOrAdd<CatchRevealView>(playerRoot);
+            SetObjectRef(feedback, "silhouetteMaterial", RenderMaterialLibrary.Get("M_Toon_FishFallback"));
+            SetObjectRef(reveal, "fallbackMaterial", RenderMaterialLibrary.Get("M_Toon_FishFallback"));
+            SetObjectRef(reveal, "fishMaterial", RenderMaterialLibrary.Get("M_Toon_Fish"));
+            SetObjectRef(reveal, "sparkleMaterial", RenderMaterialLibrary.Get("M_Particle"));
+        }
+
+        static void SetObjectRef(Component target, string field, Object value)
+        {
+            var so = new SerializedObject(target);
+            so.FindProperty(field).objectReferenceValue = value;   // a missing field throws: loud on purpose
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // Cylinder along local +Z from z 0 to 0.3, tapering from the base radius to the tip radius over the six segments.
