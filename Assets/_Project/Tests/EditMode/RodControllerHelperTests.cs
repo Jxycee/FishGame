@@ -206,6 +206,36 @@ namespace FishGame.Tests.EditMode
             Assert.That(RodControllerRules.FiniteOr(new Vector3(float.NaN, 0f, 0f), new Vector3(float.NaN, 0f, 0f)), Is.EqualTo(Vector3.zero));
         }
 
+        // Catches (T26 carry-forward, F4/F5 select race): the owner keeping its own landing when the host rolled a different one
+        // (not adopting), the y taken from the host instead of the flat water height, and the delta measured in 3D or not reported.
+        [Test]
+        public void RodControllerRules_AdoptHostLanding_TakesHostXz_KeepsFlatHeight_ReportsFlatDelta()
+        {
+            var owner = new Vector3(10f, WaterSurface.FlatHeight, 20f);
+            var host = new Vector3(13f, 7.5f, 24f);   // the host's y is the probe's water y: never copied
+
+            Vector3 adopted = RodControllerRules.AdoptHostLanding(owner, host, WaterSurface.FlatHeight, out float delta);
+
+            Assert.That(adopted.x, Is.EqualTo(13f));
+            Assert.That(adopted.z, Is.EqualTo(24f));
+            Assert.That(adopted.y, Is.EqualTo(WaterSurface.FlatHeight), "FlatHeight kept");
+            Assert.That(delta, Is.EqualTo(5f).Within(1e-4f), "3-4-5 flat delta, y ignored");
+        }
+
+        // Catches: a NaN/Infinity host landing leaking into the owner's published bobber point, and a nonzero delta for an identical spot.
+        [Test]
+        public void RodControllerRules_AdoptHostLanding_IgnoresNonFinite_AndSameSpotHasZeroDelta()
+        {
+            var owner = new Vector3(1f, WaterSurface.FlatHeight, 2f);
+            Assert.That(RodControllerRules.AdoptHostLanding(owner, new Vector3(float.NaN, 0f, 5f), WaterSurface.FlatHeight, out float d1), Is.EqualTo(owner));
+            Assert.That(d1, Is.EqualTo(0f));
+            Assert.That(RodControllerRules.AdoptHostLanding(owner, new Vector3(3f, 0f, float.PositiveInfinity), WaterSurface.FlatHeight, out _), Is.EqualTo(owner));
+
+            Vector3 same = RodControllerRules.AdoptHostLanding(owner, new Vector3(1f, 9f, 2f), WaterSurface.FlatHeight, out float d2);
+            Assert.That(same, Is.EqualTo(owner));
+            Assert.That(d2, Is.LessThanOrEqualTo(RodControllerRules.LandingMismatchLogMeters), "same spot: below the log threshold");
+        }
+
         // Catches (T23 review): FlagGrace not set while the snap timer runs (remotes would never hear the crack: their Tension is smoothed),
         // set while it does not, or a flag bit moved/merged (dive without burst, reel/exhausted dropped).
         [Test]

@@ -68,6 +68,22 @@ namespace FishGame.Fishing
             return flags;
         }
 
+        // Host/owner landing disagreement worth a log line (metres on the water plane). Below it the two are the same spot (float noise).
+        public const float LandingMismatchLogMeters = 0.05f;
+
+        // F4/F5 select race: the host answers SelectRodRpc/SelectBaitRpc and derives the landing from ITS rod's castMaxDist, while the owner
+        // may have charged with the old rod. The host wins (spec 9.3): the owner adopts the host's x/z and keeps the flat water height, so
+        // the published bobber point, the distance gauges and the fish-point sampler all use the spot the host rolled for.
+        // A non-finite host landing is ignored (the owner's own landing stays). flatDelta = flat distance between the two landings.
+        public static Vector3 AdoptHostLanding(Vector3 ownerLanding, Vector3 hostLanding, float flatHeight, out float flatDelta)
+        {
+            flatDelta = 0f;
+            if (!IsFinite(hostLanding.x) || !IsFinite(hostLanding.z)) return ownerLanding;
+            float dx = hostLanding.x - ownerLanding.x, dz = hostLanding.z - ownerLanding.z;
+            flatDelta = Mathf.Sqrt(dx * dx + dz * dz);
+            return new Vector3(hostLanding.x, flatHeight, hostLanding.z);
+        }
+
         private static bool IsFinite(float f)
         {
             return !float.IsNaN(f) && !float.IsInfinity(f);

@@ -282,6 +282,14 @@ namespace FishGame.Fishing
                 profile = _db.Profiles[_db.Species[roll.Catch.ItemIndex].FightProfileIndex];
             }
 
+            // F4/F5 select race: the host landing wins. Only the result the machine will accept (current cast, still Casting, no result yet).
+            if (valid && _hasLanding && castId == Machine.CastId && Machine.State == RodState.Casting && !Machine.HasResult)
+            {
+                _landing = RodControllerRules.AdoptHostLanding(_landing, landing, WaterSurface.FlatHeight, out float landingDelta);
+                if (landingDelta > RodControllerRules.LandingMismatchLogMeters && Debug.isDebugBuild && _log.ShouldLog("landing-adopted"))
+                    Debug.Log($"[Rod] cast {castId}: adopted the host landing ({landingDelta:0.00} m from the owner's; rod or bait switched mid-charge?)");
+            }
+
             // Never sends CancelRpc (BF-5): a host-rejected result has nothing to refund, and for an insane roll the CastResultRpc handler
             // has already sent the single CancelRpc.
             if (!valid && Debug.isDebugBuild) Debug.Log($"[Rod] cast {castId} rejected by the host: {reason}");
