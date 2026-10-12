@@ -111,10 +111,21 @@ namespace FishGame.Tests.PlayMode
             yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { SecondaryPressed = true, SecondaryHeld = true });
             rig.Fake.Frame = default;
             yield return FishingPlayModeDriver.WaitForState(rig, RodState.Idle, 1f);
-            yield return PlayModeHarness.WaitFrames(2, 0f);
-            Assert.That(bobber.GetComponent<MeshRenderer>().enabled, Is.True, "the recall arc still shows the bobber right after Idle");
-            Assert.That(line.enabled, Is.True, "and the line");
-            yield return PlayModeHarness.WaitUntil(() => !bobber.GetComponent<MeshRenderer>().enabled, 1.5f, "the bobber never hid after the recall arc");
+            // The 0.4 s arc runs on Time.time and the waits on real time, so "still shown" is sampled over the window instead of at one instant:
+            // shown on at least one frame after the view saw Idle (a recall that hid at once is never shown on any of them).
+            MeshRenderer bobberRenderer = bobber.GetComponent<MeshRenderer>();
+            yield return null;   // the LateUpdate of the frame that saw Idle has run
+            bool bobberSeen = false, lineSeen = false;
+            double recallUntil = Time.realtimeSinceStartupAsDouble + 1.5;
+            while (bobberRenderer.enabled && Time.realtimeSinceStartupAsDouble < recallUntil)
+            {
+                bobberSeen = true;
+                lineSeen |= line.enabled;
+                yield return null;
+            }
+            Assert.That(bobberSeen, Is.True, "the recall arc still shows the bobber after Idle");
+            Assert.That(lineSeen, Is.True, "and the line");
+            yield return PlayModeHarness.WaitUntil(() => !bobberRenderer.enabled, 1.5f, "the bobber never hid after the recall arc");
             Assert.That(line.enabled, Is.False, "the line hides with the bobber");
             Assert.That(Vector3.Distance(bobber.position, tipVisual.position), Is.LessThan(0.6f), "the recall arc ended at the rod tip");
 
@@ -176,6 +187,23 @@ namespace FishGame.Tests.PlayMode
                 settings.NotifyChanged();
                 yield return PlayModeHarness.WaitFrames(3, 0.05f);
                 Assert.That(Vector3.Distance(visual.localPosition, restLocal), Is.GreaterThan(bend05 + 0.05f), "the bend survives camera motion 0");
+                // ... and with it the shake: once the bend has settled, the pose at tension 0.9 does not move at all. Sampled over 0.15 s of simulated
+                // time (frames can be well under a millisecond, so two neighbouring frames differ by less than a shake would show).
+                yield return PlayModeHarness.WaitFrames(3, 0.5f);
+                Vector3 settledPos = visual.localPosition;
+                Quaternion settledRot = seg5.localRotation;
+                float maxMove = 0f, maxTurn = 0f;
+                float shakeStart = Time.time;
+                double shakeUntil = Time.realtimeSinceStartupAsDouble + 3.0;
+                while (Time.time - shakeStart < 0.15f && Time.realtimeSinceStartupAsDouble < shakeUntil)
+                {
+                    yield return null;
+                    maxMove = Mathf.Max(maxMove, Vector3.Distance(visual.localPosition, settledPos));
+                    maxTurn = Mathf.Max(maxTurn, Quaternion.Angle(seg5.localRotation, settledRot));
+                }
+                Assert.That(Time.time - shakeStart, Is.GreaterThanOrEqualTo(0.15f), "the shake window elapsed");
+                Assert.That(maxMove, Is.LessThan(1e-4f), "camera motion 0: no shake, TipVisual holds its pose");
+                Assert.That(maxTurn, Is.LessThan(0.01f), "camera motion 0: no shake, Seg5 holds its pose");
 
                 // Not hooked any more: the rod relaxes to its rest pose.
                 SetView(rig, RodState.Waiting, 0, 0.9f, bobber, 3);
@@ -372,12 +400,20 @@ namespace FishGame.Tests.PlayMode
                 SetView(rig, RodState.Waiting, 0, 0f, spot, 9);
                 yield return PlayModeHarness.WaitFrames(3, 0.1f);
                 SetView(rig, RodState.Casting, 0, 0f, spot, 10);
+                float castTime = Time.time;   // the view runs on Time.time, the waits on real time: the bound below is derived from the former
                 yield return null;
+                float startGap = FishingPlayModeDriver.Flat(bobber.position, spot);   // the arc has just started at the rod tip
                 SetView(rig, RodState.Waiting, 0, 0f, spot, 10);
-                // Mid-flight (the flight is about 0.5 s): the bobber is still well short of the spot. An arc that was cut short would have eased
-                // onto the spot within 0.2 s, and its peak alone would not show it because the arc starts at the rod tip, high above the water.
+                // Mid-flight: the bobber is still well short of the spot. An arc that was cut short would have eased onto the spot within 0.2 s
+                // (about 5 % of the gap left after 0.15 s), and its peak alone would not show it because the arc starts at the rod tip, high above
+                // the water. The horizontal travel is linear in the elapsed fraction of the flight, so the bound follows the simulated time that
+                // has really passed (a hitch in real time only lowers it); half of the expected remainder keeps clear of the wobble.
                 yield return PlayModeHarness.WaitFrames(1, 0.15f);
-                Assert.That(FishingPlayModeDriver.Flat(bobber.position, spot), Is.GreaterThan(1.5f), "0.15 s into the flight the bobber is still on its way");
+                float elapsed = Time.time - castTime;
+                float expectedLeft = startGap * (1f - elapsed / CastMath.FlightTime(startGap));
+                Assert.That(startGap, Is.GreaterThan(1.5f), "the test spot is far enough from the rod for the bound to mean something (gap " + startGap.ToString("0.00") + " m)");
+                Assert.That(FishingPlayModeDriver.Flat(bobber.position, spot), Is.GreaterThan(Mathf.Max(0.1f, 0.5f * expectedLeft)),
+                    "mid-flight (" + elapsed.ToString("0.000") + " s of simulated time) the bobber is still on its way");
                 peak = float.MinValue;
                 yield return Sample(() => bobber.position.y, 1.2, (v) => peak = Mathf.Max(peak, v));
                 Assert.That(peak, Is.GreaterThanOrEqualTo(water + 0.4f), "the arc is not cut short when the state moves on");
@@ -447,11 +483,21 @@ namespace FishGame.Tests.PlayMode
                 float startGap = Vector3.Distance(line.GetPosition(23), tipVisual.position);
                 SetView(rig, RodState.Snapped, 0, 1f, spot, 11);
                 rig.Net.RaiseLocalCue(RodCue.Snapped, 1);
-                yield return PlayModeHarness.WaitFrames(2, 0.03f);
+                yield return null;   // the LateUpdate of the frame that saw Snapped has run
                 Assert.That(bobberRenderer.enabled, Is.False, "Snapped hides the bobber at once");
-                Assert.That(line.enabled, Is.True, "the line is still drawn for the whip");
-                yield return PlayModeHarness.WaitFrames(2, 0.1f);
-                Assert.That(Vector3.Distance(line.GetPosition(23), tipVisual.position), Is.LessThan(startGap * 0.7f), "the whip pulls the line end toward the tip");
+                // The 0.2 s whip runs on Time.time and the waits on real time: sampled over the window, the line must be drawn on at least one frame
+                // and its end must come well toward the tip on at least one drawn frame.
+                bool whipDrawn = false;
+                float closest = float.MaxValue;
+                double whipUntil = Time.realtimeSinceStartupAsDouble + 1.0;
+                while (line.enabled && Time.realtimeSinceStartupAsDouble < whipUntil)
+                {
+                    whipDrawn = true;
+                    closest = Mathf.Min(closest, Vector3.Distance(line.GetPosition(23), tipVisual.position));
+                    yield return null;
+                }
+                Assert.That(whipDrawn, Is.True, "the line is still drawn for the whip");
+                Assert.That(closest, Is.LessThan(startGap * 0.7f), "the whip pulls the line end toward the tip");
                 yield return PlayModeHarness.WaitUntil(() => !line.enabled, 1.0f, "the line never hid after the whip");
 
                 // Recall: back to the tip along an arc, then hide.
@@ -463,9 +509,20 @@ namespace FishGame.Tests.PlayMode
                 float startDistance = Vector3.Distance(bobber.position, tipVisual.position);
                 SetView(rig, RodState.Idle, 0, 0f, spot, 0);
                 rig.Net.RaiseLocalCue(RodCue.Recall, 0);
-                yield return PlayModeHarness.WaitFrames(2, 0.15f);
-                Assert.That(bobberRenderer.enabled, Is.True, "mid-recall the bobber is still shown");
-                Assert.That(Vector3.Distance(bobber.position, tipVisual.position), Is.LessThan(startDistance * 0.8f), "and flying back to the tip");
+                yield return null;   // the LateUpdate of the frame that saw the recall has run
+                // The 0.4 s recall runs on Time.time and the waits on real time: sampled over the window, the bobber is shown on at least one frame
+                // and, on a frame where it is shown, it has come well back toward the tip.
+                bool recallShown = false;
+                float nearest = float.MaxValue;
+                double recallUntil = Time.realtimeSinceStartupAsDouble + 1.0;
+                while (bobberRenderer.enabled && Time.realtimeSinceStartupAsDouble < recallUntil)
+                {
+                    recallShown = true;
+                    nearest = Mathf.Min(nearest, Vector3.Distance(bobber.position, tipVisual.position));
+                    yield return null;
+                }
+                Assert.That(recallShown, Is.True, "mid-recall the bobber is still shown");
+                Assert.That(nearest, Is.LessThan(startDistance * 0.8f), "and flying back to the tip");
                 yield return PlayModeHarness.WaitUntil(() => !bobberRenderer.enabled, 1.0f, "the bobber never hid after the recall");
                 Assert.That(line.enabled, Is.False, "the line hides with the bobber");
             }

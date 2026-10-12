@@ -82,12 +82,12 @@ namespace FishGame.UI
         {
             if (root == null || app == null) return;
             if (!app.TryGet(out EventBus bus) || !app.TryGet(out ISettings settings)) return;
-            var ring = root.Q<VisualElement>("FishingChargeRing");
-            var gauge = root.Q<VisualElement>("FishingLineGauge");
-            var hook = root.Q<Label>("FishingHookPrompt");
-            var caption = root.Q<Label>("FishingCaption");
-            var creel = root.Q<Label>("FishingCreel");
-            if (ring == null || gauge == null || hook == null || caption == null || creel == null) return;
+            // Required elements: UiQuery.Req throws on a renamed or missing one; Bind's try/catch logs it (PlayMode fails) and the UI still comes up.
+            var ring = UiQuery.Req<VisualElement>(root, "FishingChargeRing");
+            var gauge = UiQuery.Req<VisualElement>(root, "FishingLineGauge");
+            var hook = UiQuery.Req<Label>(root, "FishingHookPrompt");
+            var caption = UiQuery.Req<Label>(root, "FishingCaption");
+            var creel = UiQuery.Req<Label>(root, "FishingCreel");
 
             _bus = bus;
             _settings = settings;
@@ -131,6 +131,7 @@ namespace FishGame.UI
             if (_settings != null) _settings.Changed -= OnSettingsChanged;
             FishingRodController.LocalChanged -= OnLocalChanged;
             SetCreel(null, null);
+            _creelClass = string.Empty;
             if (_ring != null) _ring.generateVisualContent -= DrawRing;
             if (_gauge != null) _gauge.generateVisualContent -= DrawGauge;
             if (_bound) HideAll();
@@ -196,15 +197,27 @@ namespace FishGame.UI
 
         // ---- local references ----
 
-        private void OnLocalChanged(FishingRodController controller) => _controller = controller;
+        private void OnLocalChanged(FishingRodController controller) => SetController(controller);
+
+        // Leaving the game (the controller goes from set to null) must not leave a caption on screen for the rest of its timer.
+        private void SetController(FishingRodController controller)
+        {
+            bool left = !ReferenceEquals(_controller, null) && controller == null;
+            _controller = controller;
+            if (left)
+            {
+                _captionTimer = 0f;
+                SetShown(_caption, ref _captionShown, false);
+            }
+        }
 
         private void ResolveLocals()
         {
             var controller = FishingRodController.Local;
-            if (_controller != controller) _controller = controller;
+            if (!ReferenceEquals(_controller, controller)) SetController(controller);
 
             var owner = PlayerNetState.Local;
-            if (_creelOwner != owner || (_creel == null && owner != null))
+            if (!ReferenceEquals(_creelOwner, owner) || (_creel == null && owner != null))
             {
                 PlayerCreel creel = owner != null ? owner.GetComponent<PlayerCreel>() : null;
                 SetCreel(owner, creel);

@@ -107,7 +107,7 @@ namespace FishGame.Presentation
                     Drops(at, 12, 1.5f, 3f);
                     break;
                 case RodCue.Nibble:
-                    Drops(at, 4, 0.8f, 1.5f);
+                    Drops(at, 4, 0.8f, 1.5f, 0.025f);   // 4 small drops
                     break;
                 case RodCue.Bite:
                     Drops(at, 30, 1.5f, 3.2f);
@@ -196,12 +196,12 @@ namespace FishGame.Presentation
 
         // ------------------------------------------------------------------ emit helpers
 
-        private void Drops(Vector3 at, int count, float speedMin, float speedMax)
+        private void Drops(Vector3 at, int count, float speedMin, float speedMax, float startSize = 0f)
         {
             for (int i = 0; i < count; i++)
             {
                 Vector3 v = ConeUp(25f) * Random.Range(speedMin, speedMax);
-                Emit(_drops, at, v);
+                Emit(_drops, at, v, startSize);
             }
         }
 
@@ -215,10 +215,11 @@ namespace FishGame.Presentation
             }
         }
 
-        private static void Emit(ParticleSystem ps, Vector3 position, Vector3 velocity)
+        private static void Emit(ParticleSystem ps, Vector3 position, Vector3 velocity, float startSize = 0f)
         {
             if (!ps.isPlaying) ps.Play();
             var p = new ParticleSystem.EmitParams { position = position, velocity = velocity };
+            if (startSize > 0f) p.startSize = startSize;   // 0 = the system's own size
             ps.Emit(p, 1);
         }
 
