@@ -18,7 +18,6 @@ namespace FishGame.Fishing
 {
     public sealed class FishingRodNetwork : NetworkBehaviour
     {
-        private const string ControllerTypeName = "FishingRodController";   // T18 class; resolved by name so T17 compiles before it exists
         private const int DefaultRodStateHz = 15;
         private const float SnapJumpMeters = 5f;
         private const float RemoteSmoothingRate = 12f;
@@ -64,7 +63,7 @@ namespace FishGame.Fishing
         private readonly LogOnce _log = new LogOnce();
         private PlayerNetState _player;
         private PlayerCreel _creel;
-        private Behaviour _controller;
+        private FishingRodController _controller;
         private FishingDatabase _db;
         private RodViewState _view;
         private RodStateData _target;
@@ -85,7 +84,7 @@ namespace FishGame.Fishing
         {
             _player = GetComponent<PlayerNetState>();
             _creel = GetComponent<PlayerCreel>();
-            _controller = FindController();
+            _controller = GetComponent<FishingRodController>();
 
             int hz = DefaultRodStateHz;
             ContentRegistry registry = ResolveRegistry();
@@ -119,10 +118,17 @@ namespace FishGame.Fishing
                 CastId = _target.CastId,
             };
 
-            if (IsOwner && _controller != null)
+            if (IsOwner)
             {
-                _controller.enabled = true;
-                _controllerEnabledByUs = true;
+                if (_controller != null)
+                {
+                    _controller.enabled = true;
+                    _controllerEnabledByUs = true;
+                }
+                else if (_log.ShouldLog("no-controller"))
+                {
+                    Debug.LogError("FishingRodNetwork: the owner's rod has no FishingRodController on the player root.", this);
+                }
             }
 
             if (IsServer && _player != null)
@@ -477,17 +483,6 @@ namespace FishGame.Fishing
         {
             ServiceRegistry app = ServiceRoots.App;
             if (app != null && app.TryGet(out EventBus bus)) return bus;
-            return null;
-        }
-
-        // T18's FishingRodController is a sibling MonoBehaviour on the player root, disabled in the prefab; the owner enables it.
-        private Behaviour FindController()
-        {
-            Behaviour[] all = GetComponents<Behaviour>();
-            for (int i = 0; i < all.Length; i++)
-            {
-                if (all[i] != null && all[i].GetType().Name == ControllerTypeName) return all[i];
-            }
             return null;
         }
     }
