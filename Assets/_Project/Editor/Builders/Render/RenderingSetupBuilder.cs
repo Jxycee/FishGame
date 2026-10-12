@@ -6,7 +6,7 @@
 // This builder owns the PC_RPAsset / PC_Renderer / Mobile_RPAsset settings that the render look depends on (C 16 shared edit):
 //   - the ScreenSpaceAmbientOcclusion renderer feature on PC_Renderer is DISABLED (kept as a sub-asset, m_Active 0): not in the spec, Toon never samples AO;
 //   - both pipeline assets keep m_RequireDepthTexture 1, so URP copies depth after the opaques and FishGame/Water's SampleSceneDepth depth fade and
-//     foam keep working without SSAO's DepthNormals prepass (PC_Renderer m_CopyDepthMode 0 = after opaques; ProjectSettingsBuilder also sets the PC flag).
+//     foam keep working without SSAO's DepthNormals prepass (PC_Renderer m_CopyDepthMode 0 = after opaques); this builder is the single owner of the flag.
 //
 // Shadow acne (T20 look render): FishGame/Toon samples the shadow map at the raw world position (no receiver bias, the same as URP Lit), so the bias
 // comes from the light/pipeline: PC_RPAsset had depth bias 0.1 and normal bias 0.5, which left diagonal hatching on grazing flat faces (the white

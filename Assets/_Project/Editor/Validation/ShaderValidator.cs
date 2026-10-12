@@ -50,6 +50,10 @@ namespace FishGame.EditorTools
         const string AllowedFallback = "Hidden/Universal Render Pipeline/FallbackError";
         static readonly Regex FallbackLine = new Regex("^\\s*Fallback\\s+(?<name>\"[^\"]*\"|\\S+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
+        static readonly Regex BlockComment = new Regex("/\\*.*?\\*/", RegexOptions.Singleline);
+        static readonly Regex LineComment = new Regex("//[^\\r\\n]*");
+        static readonly Regex SubShaderKeyword = new Regex("(?<![A-Za-z0-9_])SubShader\\s*\\{", RegexOptions.IgnoreCase);
+
         static readonly string[][] KeywordSets =
         {
             new string[0],
@@ -108,6 +112,7 @@ namespace FishGame.EditorTools
                         errors.Add(path + ": shader name '" + shader.name + "' does not start with FishGame/");
                     CheckShader(shader, errors, counters);
                     CheckFallback(path, shader.name, errors);
+                    CheckSingleSubShader(path, shader.name, errors);
                 }
 
                 timer.Stop();
@@ -166,6 +171,25 @@ namespace FishGame.EditorTools
                 if (name.Equals("Off", System.StringComparison.OrdinalIgnoreCase) || name == AllowedFallback) continue;
                 errors.Add(shaderName + ": FallBack \"" + name + "\" is not allowed (only Off or " + AllowedFallback + ")");
             }
+        }
+
+        // Exactly one SubShader block per project shader (source text, comments stripped). CheckShader gives only subshader 0 every keyword set and
+        // requires it to compile; a second own SubShader would silently get the empty keyword set only (it would be treated like a fallback).
+        static void CheckSingleSubShader(string assetPath, string shaderName, List<string> errors)
+        {
+            string text;
+            try { text = System.IO.File.ReadAllText(BuilderUtil.Abs(assetPath)); }
+            catch (System.Exception e) { errors.Add(shaderName + ": cannot read " + assetPath + " (" + e.Message + ")"); return; }
+            int count = CountSubShaders(text);
+            if (count != 1)
+                errors.Add(shaderName + ": " + assetPath + " has " + count + " SubShader blocks (exactly 1 is required: only subshader 0 is compiled with every keyword set)");
+        }
+
+        internal static int CountSubShaders(string source)
+        {
+            string stripped = BlockComment.Replace(source, " ");
+            stripped = LineComment.Replace(stripped, string.Empty);
+            return SubShaderKeyword.Matches(stripped).Count;
         }
 
         // The same message at the same file and line is reported once per shader (the keyword sets and stages repeat it); the first label wins.
