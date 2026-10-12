@@ -111,7 +111,7 @@ namespace FishGame.Tests.EditMode
         static void ToCasting(RodStateMachine m)
         {
             if (m.State < RodState.Charging) ToCharging(m);
-            m.Tick(0.4f, Fr(ph: true));
+            m.Tick(0.5f, Fr(ph: true));   // M-4: the release frame does not advance the charge, so the 0.5 s are held before it
             m.Tick(0.1f, Fr(pr: true));
             Assert.That(m.State, Is.EqualTo(RodState.Casting));
             Drain(m);
@@ -265,6 +265,41 @@ namespace FishGame.Tests.EditMode
             RodEffect req = First(e, RodEffectKind.SendCastRequest);
             Assert.That(req.CastId, Is.EqualTo(1u));
             Assert.That(req.ChargeNorm, Is.EqualTo(0.5f).Within(0.01f));
+        }
+
+        // Catches (final review M-4): the release frame adding its own dt to the charge. The controller probes the marker at LAST frame's
+        // ChargeNorm, so a release that advanced the charge cast at a distance the marker never validated (marker validity lagged one frame).
+        // A long release frame (0.3 s) makes the old behaviour visible: charge 0.5 -> 0.8.
+        [Test]
+        public void RodStateMachine_Charging_ReleaseFrame_DoesNotAdvanceTheCharge()
+        {
+            RodStateMachine m = New();
+            ToCharging(m);
+            m.Tick(0.5f, Fr(ph: true));
+            float probed = m.ChargeNorm;   // what the controller's marker used for this release frame
+            Assert.That(probed, Is.EqualTo(0.5f).Within(Eps));
+            m.Tick(0.3f, Fr(pr: true));
+            Assert.That(m.State, Is.EqualTo(RodState.Casting));
+            Assert.That(m.ChargeNorm, Is.EqualTo(probed), "the charge stays the probed one");
+            Assert.That(m.CastDistance, Is.EqualTo(CastMath.Distance(probed, Tun().CastMinDist, Handmade().CastMaxDist)), "the distance is the probed charge's");
+            Assert.That(First(Drain(m), RodEffectKind.SendCastRequest).ChargeNorm, Is.EqualTo(probed), "the request carries the probed charge");
+        }
+
+        // Catches (M-4): a release frame lifting a sub-minimum charge over MinChargeNorm: the marker was probed at the low charge, so the
+        // release is a thunk, not a cast the marker never validated.
+        [Test]
+        public void RodStateMachine_Charging_ReleaseFrame_CannotLiftASubMinimumChargeOverTheMinimum()
+        {
+            RodStateMachine m = New();
+            ToCharging(m);
+            m.Tick(0.05f, Fr(ph: true));
+            Assert.That(m.ChargeNorm, Is.LessThan(FishingConstants.MinChargeNorm));
+            m.Tick(0.9f, Fr(pr: true));
+            Assert.That(m.State, Is.EqualTo(RodState.Ready));
+            Assert.That(m.CastId, Is.EqualTo(0u));
+            List<RodEffect> e = Drain(m);
+            Assert.That(HasCue(e, RodCue.InvalidRelease), Is.True);
+            Assert.That(Count(e, RodEffectKind.SendCastRequest), Is.EqualTo(0));
         }
 
         [Test]

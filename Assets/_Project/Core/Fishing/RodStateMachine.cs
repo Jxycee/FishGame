@@ -77,9 +77,16 @@ namespace FishGame.Core
         private void TickCharging(float dt, in RodFrame f)
         {
             if (!f.SecondaryHeld) { Enter(RodState.Idle); ChargeNorm = 0f; return; }  // row: Charging / Secondary released
-            _chargeHeld += dt;
-            ChargeNorm = CastMath.ChargeNorm(_chargeHeld, _t.CastChargeTime, _t.ChargePingPong);
-            if (f.PrimaryHeld && !f.PrimaryReleased) return;
+            if (f.PrimaryHeld && !f.PrimaryReleased)
+            {
+                _chargeHeld += dt;
+                ChargeNorm = CastMath.ChargeNorm(_chargeHeld, _t.CastChargeTime, _t.ChargePingPong);
+                return;
+            }
+
+            // The release frame does NOT advance the charge (final review M-4): the controller probed the cast marker at LAST frame's
+            // ChargeNorm, so casting at that same charge keeps the validated marker, the cast distance and the host landing in step. Adding this
+            // frame's dt here let a release validate a marker that was one frame stale (a short cast near the shore edge could differ).
             if (ChargeNorm >= FishingConstants.MinChargeNorm && f.MarkerValid)        // row: Charging / valid release
             {
                 CastId++;

@@ -90,8 +90,8 @@ namespace FishGame.Tests.EditMode
             m.Tick(0.02f, Fr(pp: true, ph: true));
             Assert.That(m.State, Is.EqualTo(RodState.Charging));
             float held = charge * t.CastChargeTime;
-            m.Tick(held - 0.02f, Fr(ph: true));
-            m.Tick(0.02f, Fr(pr: true));
+            m.Tick(held, Fr(ph: true));
+            m.Tick(0.02f, Fr(pr: true));   // M-4: the release frame does not advance the charge
             Assert.That(m.State, Is.EqualTo(RodState.Casting), "the release at charge " + charge + " must cast (ChargeNorm " + m.ChargeNorm + ")");
             return m;
         }
