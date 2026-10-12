@@ -10,6 +10,56 @@ namespace FishGame.EditorTools
         public const string RockStream = "lake_dock.rocks";
         public const string TreeStream = "lake_dock.trees";
 
+        // T28 additions. New randomness uses NEW streams only: a draw added to the M1 rock or tree streams would move every later prop.
+        public const string PlankStream = "lake_dock.planks";
+        public const string CanopyStream = "lake_dock.canopy";
+        public const string ReedStream = "lake_dock.reeds";
+
+        // T28 mesh asset paths (C 2.6: no AssetPaths edit; LakebedMesh, ShoreMesh and MeshesFolder stay in AssetPaths).
+        public const string WaterMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Water.asset";
+        public const string DockMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Dock.asset";
+        public const string RockMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Rock.asset";
+        public const string TrunkMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Trunk.asset";
+        public const string CanopyRoundMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyRound.asset";
+        public const string CanopyPineMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyPine.asset";
+        public const string ReedsMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Reeds.asset";
+
+        // FaceJitter mesh seeds, one per mesh (fixed: an Inspector edit must never change a generated mesh).
+        public const uint LakebedMeshSeed = 0x1A4E0B01u, ShoreMeshSeed = 0x1A4E0B02u, DockMeshSeed = 0x1A4E0B03u, RockMeshSeed = 0x1A4E0B04u;
+        public const uint TrunkMeshSeed = 0x1A4E0B05u, CanopyRoundMeshSeed = 0x1A4E0B06u, CanopyPineMeshSeed = 0x1A4E0B07u, ReedsMeshSeed = 0x1A4E0B08u;
+
+        // Water grid: 96 cells x 1.25 m = 120 m (the M1 visual plane). Spec 10.4 wants wavelengths >= 4 cells; T14 seeds at least 6 m.
+        public const int WaterGridCells = 96;
+        public const float WaterCellSize = 1.25f;
+
+        // Palette slot indices (spec 10.2 slotNames order). No shared constant set exists in Core or Data, so they live here.
+        public const byte SlotGrass = 0, SlotFoliage = 1, SlotFoliageDark = 2, SlotWood = 3, SlotWoodDark = 4, SlotSand = 5;
+        public const byte SlotRock = 6, SlotReed = 7, SlotDock = 8, SlotRoof = 9, SlotAccent = 10;
+
+        // Shore faces whose centre is below this height are Sand, above it Grass.
+        public const float ShoreSandMaxY = 0.3f;
+
+        // Dock visual (planks lie across the deck: 3.0 m in x, 0.26 m in z, 0.1 m thick, 0.04 m gap; 40 planks fill z -52..-40).
+        public const int PlankCount = 40;
+        public const float PlankLength = 3f, PlankWidth = 0.26f, PlankThickness = 0.1f, PlankGap = 0.04f, PlankYawDegrees = 0.8f;
+        public const float StringerX = 1.2f, StringerSize = 0.12f;
+        public const float PostRadius = 0.08f;
+        public const int PostSides = 6;
+        public const float RailSize = 0.05f, RungSpacing = 0.3f, RungThickness = 0.03f, RungDepth = 0.04f, RailInset = 0.2f;
+
+        // Prop mesh shape (unit sizes match the Unity primitives the M1 transforms were authored for).
+        public const float TrunkRadiusBottom = 0.5f, TrunkRadiusTop = 0.42f, TrunkHeight = 2f;
+        public const int TrunkSides = 7;
+        public const float PineChance = 0.6f;
+
+        // Reeds: 24 clusters of 4-6 blades in the shallows (bed about -0.5 to -0.08 m).
+        public const int ReedClusterCount = 24, ReedMinBlades = 4, ReedMaxBlades = 6;
+        public const float ReedMinRadius = 46.5f, ReedMaxRadius = 49.5f, ReedClusterSpread = 0.35f, ReedClearance = 4f;
+        public const float ReedMinHeight = 0.9f, ReedMaxHeight = 1.6f, ReedBladeRadius = 0.025f, ReedMaxLeanDegrees = 8f;
+
+        // Index safety for a combined mesh (16-bit indices).
+        public const int MaxCombinedTriangles = 21000;
+
         // Bowl: 0 m at the shoreline (r 50), -6 m at 40 m inward, flat -6 m inside r 10.
         public const float ShoreRadius = 50f, BowlRun = 40f, BowlDepth = 6f;
         public static readonly float[] LakebedRadii = { 0f, 4f, 8f, 10f, 14f, 18f, 22f, 26f, 30f, 34f, 38f, 42f, 46f, 50f };
