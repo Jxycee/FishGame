@@ -2,6 +2,7 @@
 // The only reader of InputActions (spec 8.1). Single owner of the cursor lock policy (contract D28) and of binding overrides.
 // Works on a runtime Instantiate copy of the serialized asset, so rebinding never dirties the asset (contract D15).
 // Journal is bound in the asset but not routed in M1 (no PlayerInputFrame field and no journal UI yet).
+// Dev keys F3-F7, F9 are read directly from Keyboard.current (not part of the rebindable asset); dev builds only.
 using System;
 using FishGame.Core;
 using UnityEngine;
@@ -10,7 +11,7 @@ using UnityEngine.InputSystem;
 namespace FishGame.Runtime
 {
     [DefaultExecutionOrder(-1000)]
-    public sealed class PlayerInputAdapter : MonoBehaviour, IInputService, IInputBindings
+    public sealed class PlayerInputAdapter : MonoBehaviour, IInputService, IInputBindings, IDevInput
     {
         private InputActionAsset _actions;
         private ISettings _settings;
@@ -314,6 +315,26 @@ namespace FishGame.Runtime
             bool menu = ctx == InputContext.Menu;
             Cursor.lockState = menu ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = menu;
+        }
+
+        // Stateless on purpose: no caching, so every reader in the frame sees the same edge.
+        public bool WasPressed(DevKey key)
+        {
+            if (!Debug.isDebugBuild || !_hasFocus || Context == InputContext.Menu) return false;
+            Keyboard kb = Keyboard.current;
+            if (kb == null) return false;
+            Key k;
+            switch (key)
+            {
+                case DevKey.ToggleOverlay: k = Key.F3; break;
+                case DevKey.NextRod: k = Key.F4; break;
+                case DevKey.NextBait: k = Key.F5; break;
+                case DevKey.ToggleForcedBite: k = Key.F6; break;
+                case DevKey.ToggleTwitchy: k = Key.F7; break;
+                case DevKey.RippleAtCrosshair: k = Key.F9; break;
+                default: return false;
+            }
+            return kb[k].wasPressedThisFrame;
         }
 
         public void SetRumble(float low, float high)

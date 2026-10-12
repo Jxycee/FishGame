@@ -233,5 +233,56 @@ namespace FishGame.Tests.EditMode
             reloaded.Load();
             Assert.AreEqual(first, reloaded.EnsureLocalPlayerId());
         }
+
+        [Test]
+        public void SettingsStore_FishingFields_RoundTripAndClamp()
+        {
+            string path = Path.Combine(_dir, "settings.json");
+
+            // 1. defaults on a missing file
+            var store = new SettingsStore(path);
+            store.Load();
+            Assert.AreEqual(0, store.Current.lineGauge);
+            Assert.IsTrue(store.Current.captions);
+            Assert.IsFalse(store.Current.fishingAssist);
+
+            // 2. round trip
+            store.Current.lineGauge = 2;
+            store.Current.captions = false;
+            store.Current.fishingAssist = true;
+            store.Save();
+            var reloaded = new SettingsStore(path);
+            reloaded.Load();
+            Assert.AreEqual(2, reloaded.Current.lineGauge);
+            Assert.IsFalse(reloaded.Current.captions);
+            Assert.IsTrue(reloaded.Current.fishingAssist);
+            Assert.AreEqual(1, reloaded.Current.version, "C-Q10: version stays 1");
+
+            // 3. clamp
+            store.Current.lineGauge = 7;
+            store.NotifyChanged();
+            Assert.AreEqual(2, store.Current.lineGauge);
+            store.Current.lineGauge = -3;
+            store.NotifyChanged();
+            Assert.AreEqual(0, store.Current.lineGauge);
+
+            // 4. an M1-era file keeps the new defaults
+            string oldPath = Path.Combine(_dir, "m1.json");
+            File.WriteAllText(oldPath, "{\"version\":1,\"masterVolume\":50}");
+            var old = new SettingsStore(oldPath);
+            old.Load();
+            Assert.AreEqual(50, old.Current.masterVolume);
+            Assert.IsTrue(old.Current.captions);
+            Assert.AreEqual(0, old.Current.lineGauge);
+            Assert.IsFalse(old.Current.fishingAssist);
+
+            // 5. Clamp does not couple assist to the gauge (that rule is the settings UI's, T25 / G-Q4)
+            var plain = new SettingsStore(Path.Combine(_dir, "plain.json"));
+            plain.Load();
+            plain.Current.fishingAssist = true;
+            plain.NotifyChanged();
+            Assert.AreEqual(0, plain.Current.lineGauge);
+            Assert.IsTrue(plain.Current.fishingAssist);
+        }
     }
 }

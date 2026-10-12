@@ -1,4 +1,5 @@
-// Authority: none (pure EditMode tests). FishGame.Core.InputContextRouter, spec 8.2 M1 rows + contract D18.
+// Authority: none (pure EditMode tests). FishGame.Core.InputContextRouter, spec 8.2 M1 rows + M2 rod rows + contract D18.
+using System;
 using FishGame.Core;
 using NUnit.Framework;
 
@@ -155,6 +156,126 @@ namespace FishGame.Tests.EditMode
             }
         }
 
+        // Checks all 17 intent fields against AllActive(): "true" = equals the AllActive value, "false" = 0f / false.
+        // primary covers the three Primary fields, secondary the three Secondary fields.
+        private static void AssertRow(PlayerIntent i, string ctx, bool move, bool look, bool jump, bool sprint, bool primary,
+                                      bool secondary, bool interact, bool shove, bool drop, bool equip, bool pause)
+        {
+            PlayerInputFrame a = AllActive();
+            Assert.AreEqual(move ? a.MoveX : 0f, i.MoveX, 0f, ctx + " MoveX");
+            Assert.AreEqual(move ? a.MoveY : 0f, i.MoveY, 0f, ctx + " MoveY");
+            Assert.AreEqual(look ? a.LookYawDeg : 0f, i.LookYawDeg, 0f, ctx + " LookYawDeg");
+            Assert.AreEqual(look ? a.LookPitchDeg : 0f, i.LookPitchDeg, 0f, ctx + " LookPitchDeg");
+            Assert.AreEqual(jump, i.JumpPressed, ctx + " Jump");
+            Assert.AreEqual(sprint, i.SprintHeld, ctx + " Sprint");
+            Assert.AreEqual(primary, i.PrimaryHeld, ctx + " PrimaryHeld");
+            Assert.AreEqual(primary, i.PrimaryPressed, ctx + " PrimaryPressed");
+            Assert.AreEqual(primary, i.PrimaryReleased, ctx + " PrimaryReleased");
+            Assert.AreEqual(secondary, i.SecondaryHeld, ctx + " SecondaryHeld");
+            Assert.AreEqual(secondary, i.SecondaryPressed, ctx + " SecondaryPressed");
+            Assert.AreEqual(secondary, i.SecondaryReleased, ctx + " SecondaryReleased");
+            Assert.AreEqual(interact, i.InteractPressed, ctx + " Interact");
+            Assert.AreEqual(shove, i.ShovePressed, ctx + " Shove");
+            Assert.AreEqual(drop, i.DropPressed, ctx + " Drop");
+            Assert.AreEqual(equip, i.EquipPressed, ctx + " Equip");
+            Assert.AreEqual(pause, i.PausePressed, ctx + " Pause");
+        }
+
+        [Test]
+        public void InputContextRouter_RodReady_PassesSecondaryAndMovement()
+        {
+            PlayerIntent i = InputContextRouter.Route(InputContext.RodReady, AllActive());
+            AssertRow(i, "RodReady", move: true, look: true, jump: true, sprint: true, primary: false, secondary: true,
+                      interact: true, shove: true, drop: false, equip: true, pause: true);
+        }
+
+        [Test]
+        public void InputContextRouter_RodAiming_PassesChargeBlocksSprintAndInteract()
+        {
+            PlayerIntent i = InputContextRouter.Route(InputContext.RodAiming, AllActive());
+            AssertRow(i, "RodAiming", move: true, look: true, jump: true, sprint: false, primary: true, secondary: true,
+                      interact: false, shove: false, drop: false, equip: true, pause: true);
+        }
+
+        [Test]
+        public void InputContextRouter_RodWaiting_PassesCancelAndMovementBlocksPrimary()
+        {
+            PlayerIntent i = InputContextRouter.Route(InputContext.RodWaiting, AllActive());
+            AssertRow(i, "RodWaiting", move: true, look: true, jump: true, sprint: true, primary: false, secondary: true,
+                      interact: true, shove: true, drop: false, equip: false, pause: true);
+        }
+
+        [Test]
+        public void InputContextRouter_RodFighting_BlocksMovementPassesLookAndPrimary()
+        {
+            PlayerInputFrame f = AllActive();
+            PlayerIntent i = InputContextRouter.Route(InputContext.RodFighting, in f);
+            AssertRow(i, "RodFighting", move: false, look: true, jump: false, sprint: false, primary: true, secondary: false,
+                      interact: false, shove: false, drop: false, equip: false, pause: true);
+            Assert.AreEqual(0f, i.MoveX, 0f, "MoveX exactly 0");
+            Assert.AreEqual(0f, i.MoveY, 0f, "MoveY exactly 0");
+
+            FightInput fight = InputContextRouter.RouteFight(InputContext.RodFighting, in f);
+            Assert.AreEqual(0.3f, fight.Steer, 1e-6f);
+            Assert.IsTrue(fight.Reel);
+
+            // Reel is "Reel || PrimaryHeld": either alone reels, neither does not.
+            var reelOnly = new PlayerInputFrame { Reel = true };
+            var primaryOnly = new PlayerInputFrame { PrimaryHeld = true };
+            var neither = new PlayerInputFrame { Steer = 0.5f };
+            Assert.IsTrue(InputContextRouter.RouteFight(InputContext.RodFighting, in reelOnly).Reel, "Reel alone");
+            Assert.IsTrue(InputContextRouter.RouteFight(InputContext.RodFighting, in primaryOnly).Reel, "Primary alone");
+            Assert.IsFalse(InputContextRouter.RouteFight(InputContext.RodFighting, in neither).Reel, "neither");
+        }
+
+        // Frame "S held + D held + stick": the same physical key is Move.Down and Reel, D is Move.Right and Steer.
+        // In no rod context may it both move the player and drive the fight.
+        [Test]
+        public void InputContextRouter_RodContexts_SameKeyNeverMovesAndReels()
+        {
+            var f = new PlayerInputFrame { MoveX = 1f, MoveY = -1f, Reel = true, Steer = 1f, PrimaryHeld = false };
+            InputContext[] contexts =
+            {
+                InputContext.RodReady, InputContext.RodAiming, InputContext.RodWaiting, InputContext.RodFighting, InputContext.Free
+            };
+            foreach (InputContext ctx in contexts)
+            {
+                PlayerIntent intent = InputContextRouter.Route(ctx, in f);
+                FightInput fight = InputContextRouter.RouteFight(ctx, in f);
+                bool moving = intent.MoveX != 0f || intent.MoveY != 0f;
+                bool fighting = fight.Reel || fight.Steer != 0f;
+                Assert.IsFalse(moving && fighting, ctx + " must not move and reel from the same frame");
+                if (ctx == InputContext.RodFighting)
+                {
+                    Assert.IsTrue(fighting, "RodFighting reels / steers");
+                    Assert.IsFalse(moving, "RodFighting does not move");
+                }
+                else
+                {
+                    Assert.IsTrue(moving, ctx + " still walks");
+                    Assert.IsFalse(fighting, ctx + " does not reel or steer");
+                }
+            }
+        }
+
+        [Test]
+        public void InputContextRouter_InteractLive_MatchesSpecRows()
+        {
+            int live = 0, dead = 0;
+            foreach (InputContext ctx in (InputContext[])Enum.GetValues(typeof(InputContext)))
+            {
+                bool expected = ctx == InputContext.Free || ctx == InputContext.RodReady
+                                || ctx == InputContext.RodWaiting || ctx == InputContext.Swimming;
+                Assert.AreEqual(expected, InputContextRouter.InteractLive(ctx), ctx.ToString());
+                if (expected) live++; else dead++;
+                if (InputContextRouter.InteractLive(ctx))
+                    Assert.IsTrue(InputContextRouter.Route(ctx, AllActive()).InteractPressed, ctx + ": live implies the router passes Interact");
+            }
+            Assert.AreEqual(4, live);
+            Assert.AreEqual(9, dead);
+            Assert.IsFalse(InputContextRouter.InteractLive(InputContext.Carrying), "C-Q2: Carrying is false in M2");
+        }
+
         [Test]
         public void InputContextRouter_NonM1Contexts_RouteLikeFree()
         {
@@ -162,11 +283,10 @@ namespace FishGame.Tests.EditMode
             PlayerIntent free = InputContextRouter.Route(InputContext.Free, in f);
             InputContext[] notYetRouted =
             {
-                InputContext.RodReady, InputContext.RodAiming, InputContext.RodWaiting, InputContext.RodFighting,
                 InputContext.Carrying, InputContext.Staggered, InputContext.Downed, InputContext.Carried, InputContext.Seated
             };
             foreach (InputContext ctx in notYetRouted)
-                Assert.AreEqual(free, InputContextRouter.Route(ctx, in f), ctx + " must route like Free in M1 (contract D18)");
+                Assert.AreEqual(free, InputContextRouter.Route(ctx, in f), ctx + " must still route like Free (contract D18, until M5/M6)");
         }
     }
 }

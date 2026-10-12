@@ -173,5 +173,44 @@ namespace FishGame.Tests.EditMode
                 Object.DestroyImmediate(asset);
             }
         }
+
+        // M2-D2: Fishing/Reel keeps its single S binding; reel-by-Primary is the router's Reel || PrimaryHeld, never a duplicate binding.
+        [Test]
+        public void InputActions_FishingReelAndSteer_Exist()
+        {
+            InputActionAsset asset = LoadFromJson();
+            try
+            {
+                InputAction reel = asset.FindAction(InputActionNames.Reel);
+                Assert.IsNotNull(reel, "Fishing/Reel");
+                Assert.AreEqual(InputActionType.Button, reel.type, "Reel type");
+                int bindings = 0;
+                foreach (InputBinding b in reel.bindings)
+                {
+                    Assert.IsFalse(b.isComposite, "Reel has no composite");
+                    bindings++;
+                }
+                Assert.AreEqual(1, bindings, "Reel has exactly one binding");
+                Assert.IsTrue(HasBinding(reel, "<Keyboard>/s", "Keyboard&Mouse"), "Reel = S");
+                Assert.IsFalse(HasBinding(reel, "<Mouse>/leftButton", "Keyboard&Mouse"), "no duplicate Reel on left mouse");
+                Assert.IsFalse(HasBinding(reel, "<Gamepad>/rightTrigger", "Gamepad"), "no duplicate Reel on right trigger");
+
+                InputAction steer = asset.FindAction(InputActionNames.Steer);
+                Assert.IsNotNull(steer, "Fishing/Steer");
+                Assert.AreEqual(InputActionType.Value, steer.type, "Steer type");
+                Assert.AreEqual("Axis", steer.expectedControlType, "Steer control type");
+                bool axisComposite = false;
+                foreach (InputBinding b in steer.bindings)
+                    if (b.isComposite && b.path == "1DAxis") axisComposite = true;
+                Assert.IsTrue(axisComposite, "Steer has a 1DAxis composite");
+                Assert.IsTrue(HasCompositePart(steer, "negative", "<Keyboard>/a", "Keyboard&Mouse"), "Steer negative = A");
+                Assert.IsTrue(HasCompositePart(steer, "positive", "<Keyboard>/d", "Keyboard&Mouse"), "Steer positive = D");
+                Assert.IsTrue(HasBinding(steer, "<Gamepad>/leftStick/x", "Gamepad"), "Steer = left stick X");
+            }
+            finally
+            {
+                Object.DestroyImmediate(asset);
+            }
+        }
     }
 }
