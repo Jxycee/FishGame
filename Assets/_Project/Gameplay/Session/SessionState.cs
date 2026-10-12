@@ -1,5 +1,7 @@
 // Authority: host writes Roster and NetJoinsOpen; every peer reads. Spawned by AppBootstrap on OnServerStarted with destroyWithScene: false.
 // Roster entries are never removed in M1: a disconnected entry keeps its slot (Connected = false) so the same identity can reclaim it.
+// M2 (T16): ServerCreels is the host-only, slot-keyed creel store (R46: a creel survives a disconnect and rejoin). It is a plain C# object,
+// never networked: created in OnNetworkSpawn when IsServer, null on clients and after despawn. PlayerCreel (server) mirrors it to NetCreel.
 using System;
 using System.Collections.Generic;
 using FishGame.Core;
@@ -24,6 +26,9 @@ namespace FishGame.Gameplay
             true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         public event Action RosterChanged;
+
+        // Host only (null on clients). Created on server spawn with NetworkConstants.MaxPlayers slots.
+        public CreelLedger ServerCreels { get; private set; }
 
         public bool JoinsOpen => NetJoinsOpen.Value;
 
@@ -62,6 +67,8 @@ namespace FishGame.Gameplay
 
             if (IsServer)
             {
+                ServerCreels = new CreelLedger(NetworkConstants.MaxPlayers);
+
                 var app = ServiceRoots.App;
                 if (app != null && app.TryGet<JoinApprovalBridge>(out var found))
                 {
@@ -90,6 +97,7 @@ namespace FishGame.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            ServerCreels = null;
             if (subscribedManager != null)
             {
                 subscribedManager.OnConnectionEvent -= OnConnectionEvent;

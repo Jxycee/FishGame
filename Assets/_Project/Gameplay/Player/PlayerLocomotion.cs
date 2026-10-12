@@ -1,3 +1,4 @@
+using System;
 using FishGame.Core;
 using FishGame.Runtime;
 using Unity.Netcode.Components;
@@ -9,6 +10,10 @@ namespace FishGame.Gameplay
     // Moves the owner's CharacterController from the routed PlayerIntent; NetworkTransform (AuthorityMode Owner) replicates
     // the result to everyone. The host never moves players. Rules: spec 7.3; contract 7.12, D25, D26, D36.
     // No RequireComponent on purpose: PrefabBuilder (T15) adds the CharacterController itself (contract 6.3).
+    // M2 (T16, M2-D1/D2): this stays the ONLY writer of IInputService.GameplayContext. Other components request a context through
+    // IPlayerContextSource (fishing now, carry in M5); the first ENABLED source with a non-Free request wins, then
+    // GameplayContextArbiter applies Climbing > Swimming > request > Free. While RodFighting (or a source reports LocksMovement) the wish
+    // velocity is zero, there is no sprint, jump or climb start; gravity, swim buoyancy and yaw keep running. RodAiming: x0.6 speed, no sprint.
     public sealed class PlayerLocomotion : MonoBehaviour
     {
         public Vector3 Velocity { get; private set; }
@@ -16,6 +21,9 @@ namespace FishGame.Gameplay
         public bool IsSwimming { get; private set; }
         public bool IsClimbing { get; private set; }
         public float SecondsInWater { get; private set; }
+
+        // Owner only. Raised as the last statement of ApplyTeleport (TeleportRpc, out-of-bounds and water-timeout recovery).
+        public event Action Teleported;
 
         // Internal: PlayerCamera reads this for the sprint FOV kick.
         internal bool IsSprinting { get; private set; }
@@ -32,12 +40,14 @@ namespace FishGame.Gameplay
         private Vector3 _climbFrom;
         private Vector3 _climbTo;
         private bool _warnedNoSpawn;
+        private IPlayerContextSource[] _contextSources = Array.Empty<IPlayerContextSource>();
 
         private void Awake()
         {
             _cc = GetComponent<CharacterController>();
             _nt = GetComponent<NetworkTransform>();
             _net = GetComponent<PlayerNetState>();
+            _contextSources = GetComponents<IPlayerContextSource>();   // includes disabled components; enabled-ness is checked per frame
             _jump = JumpAssist.Create();
         }
 
@@ -123,13 +133,18 @@ namespace FishGame.Gameplay
                 return;
             }
 
+            // Resolved once per frame: the effective context (aiming speed) and whether movement is locked (no walk, jump or climb start).
+            InputContext ctx = ResolveContext();
+            bool locked = MovementLocked(ctx);
+            bool aiming = GameplayContextArbiter.IsAiming(ctx);
+
             Vector3 pos = transform.position;
             float surfaceY = WaterSurface.HeightAt(pos.x, pos.z);
             bool inVolume = WaterVolume.FindContaining(pos) != null;
             bool inWater = inVolume && MovementMath.IsInWater(pos.y, surfaceY);
             bool swimming = inVolume && MovementMath.IsSwimmingDepth(pos.y, surfaceY);
 
-            if (inWater && TryBeginClimb(pos, intent))
+            if (inWater && !locked && TryBeginClimb(pos, intent))
             {
                 SetContext();
                 return;
@@ -147,12 +162,13 @@ namespace FishGame.Gameplay
             bool grounded = _cc.isGrounded;
             IsGrounded = grounded;
 
-            // No sprint in the air or in water (spec 7.3 step 2). Aiming (M2) and carry (M5) are not in M1: false and 0 kg.
-            bool sprint = !swimming && grounded && intent.SprintHeld;
-            float wish = MovementMath.WishSpeed(sprint, false, swimming, 0f);
+            // No sprint in the air or in water (spec 7.3 step 2). Aiming (M2): x0.6 speed and no sprint. Carry (M5) is 0 kg.
+            // Locked (RodFighting, M2-D2): no walking, sprint or jump; gravity, buoyancy and yaw still run.
+            bool sprint = !swimming && grounded && intent.SprintHeld && !locked && !aiming;
+            float wish = MovementMath.WishSpeed(sprint, aiming, swimming, 0f);
             IsSprinting = sprint && (intent.MoveX != 0f || intent.MoveY != 0f);
 
-            Vector3 dir = transform.right * intent.MoveX + transform.forward * intent.MoveY;
+            Vector3 dir = locked ? Vector3.zero : transform.right * intent.MoveX + transform.forward * intent.MoveY;
             dir.y = 0f;
             if (dir.sqrMagnitude > 1f)
             {
@@ -179,7 +195,7 @@ namespace FishGame.Gameplay
                     _vy = MovementMath.GroundedStickVelocity;
                 }
 
-                if (_jump.Tick(dt, grounded, intent.JumpPressed))
+                if (_jump.Tick(dt, grounded, intent.JumpPressed && !locked))
                 {
                     _vy = MovementMath.JumpVelocity(MovementMath.JumpHeight, MovementMath.Gravity);
                 }
@@ -231,6 +247,7 @@ namespace FishGame.Gameplay
             IsGrounded = false;
             SecondsInWater = 0f;
             _cc.enabled = restoreController;
+            EventIsolation.Invoke(Teleported);
         }
 
         // M5 hook. Horizontal only in M1.
@@ -336,13 +353,55 @@ namespace FishGame.Gameplay
                 return;
             }
 
-            InputContext target = IsClimbing ? InputContext.Climbing
-                : IsSwimming ? InputContext.Swimming
-                : InputContext.Free;
+            InputContext target = ResolveContext();
             if (_input.GameplayContext != target)
             {
                 _input.GameplayContext = target;
             }
+        }
+
+        // The first enabled source with a non-Free request, passed through the arbiter (Climbing > Swimming > request > Free).
+        private InputContext ResolveContext()
+        {
+            InputContext requested = InputContext.Free;
+            for (int i = 0; i < _contextSources.Length; i++)
+            {
+                IPlayerContextSource source = _contextSources[i];
+                if (!(source is Behaviour behaviour) || !behaviour.isActiveAndEnabled)
+                {
+                    continue;
+                }
+
+                InputContext request = source.RequestedContext;
+                if (request != InputContext.Free)
+                {
+                    requested = request;
+                    break;
+                }
+            }
+
+            return GameplayContextArbiter.Resolve(IsClimbing, IsSwimming, requested);
+        }
+
+        // Belt and braces: the context row (RodFighting) OR any enabled source reporting LocksMovement (true on the first Bite frame,
+        // before the router has seen RodFighting).
+        private bool MovementLocked(InputContext resolved)
+        {
+            if (GameplayContextArbiter.LocksMovement(resolved))
+            {
+                return true;
+            }
+
+            for (int i = 0; i < _contextSources.Length; i++)
+            {
+                IPlayerContextSource source = _contextSources[i];
+                if (source is Behaviour behaviour && behaviour.isActiveAndEnabled && source.LocksMovement)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static IInputService ResolveInput()

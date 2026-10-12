@@ -43,9 +43,10 @@ namespace FishGame.Gameplay
             IInputService input = ResolveInput();
             UnityEngine.Camera view = _playerCamera != null ? _playerCamera.Camera : null;
 
-            // Interactables are live only in Free with no menu open (contract 7.12).
+            // Interactables are live in Free, RodReady, RodWaiting and Swimming with no menu open (spec 8.2, InputContextRouter.InteractLive;
+            // M2 G5 replaces the M1 "Free only" gate so the rod being out does not block the bell).
             bool eligible = input != null && _net != null && view != null
-                && input.GameplayContext == InputContext.Free && !input.MenuOpen;
+                && InputContextRouter.InteractLive(input.GameplayContext) && !input.MenuOpen;
 
             NetworkInteractable found = null;
             if (eligible)
