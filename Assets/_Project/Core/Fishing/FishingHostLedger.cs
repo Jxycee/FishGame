@@ -98,13 +98,14 @@ namespace FishGame.Core
             return true;
         }
 
-        // Host rod castMaxDist. False for an unknown slot or a charge that is NaN or outside [0, 1].
+        // Host rod castMaxDist. False for an unknown slot, a charge that is NaN or outside [0, 1], or a non-finite yaw.
         public bool TryComputeLanding(byte slot, in CastRequestData req, out float x, out float z)
         {
             x = 0f; z = 0f;
             if (!_slots.TryGetValue(slot, out SlotState s)) return false;
             float charge = req.ChargeNorm;
             if (!(charge >= 0f && charge <= 1f)) return false;
+            if (!CatchValidator.IsFinite(req.YawDeg)) return false;
             float distance = CastMath.Distance(charge, _db.Tuning.CastMinDist, _db.Rods[s.RodIndex].CastMaxDist);
             CastMath.Landing(req.OriginX, req.OriginZ, req.YawDeg, distance, out x, out z);
             return true;
@@ -148,7 +149,7 @@ namespace FishGame.Core
             c.Active = new ActiveCast
             {
                 CastId = req.CastId, Roll = roll, Phase = CastPhase.Waiting, TAccepted = Now, THooked = 0.0,
-                LineLength0 = 0f, TFlight = CastMath.FlightTime(distance), Assist = req.Assist,
+                LineLength0 = 0f, TFlight = CastMath.FlightTime(distance), CastDistance = distance, Assist = req.Assist,
                 RodIndex = s.RodIndex, BaitIndex = req.BaitIndex, LandingX = lx, LandingZ = lz,
             };
             return new CastVerdict { Valid = true, Reason = CastRejectReason.None, Roll = roll, LandingX = lx, LandingZ = lz };
@@ -172,7 +173,7 @@ namespace FishGame.Core
             return d;
         }
 
-        // true = a commit must be sent (too early -> Escaped(Invalid); orphan). false = accepted (Phase Hooked, THooked = Now,
+        // true = a commit must be sent (too early or a non-finite host distance -> Escaped(Invalid); orphan). false = accepted (Phase Hooked, THooked = Now,
         // LineLength0 set) or an already-hooked duplicate (no change). commit is default when false is returned.
         public bool Hooked(ulong clientId, uint castId, float hostDistanceToLanding, out CommitDecision commit)
         {
@@ -184,7 +185,9 @@ namespace FishGame.Core
             commit = default;
             if (c.Active.Phase == CastPhase.Hooked) return false;
             ActiveCast a = c.Active;
-            if (CatchValidator.HookTooEarly(Now, in a, _db.Tuning.HookTolerance))
+            // Fail closed on a non-finite host distance (the early-hook invalid path): HostLineLength0 would map NaN to the landing
+            // distance, a zero landing floor.
+            if (!CatchValidator.IsFinite(hostDistanceToLanding) || CatchValidator.HookTooEarly(Now, in a, _db.Tuning.HookTolerance))
             {
                 commit = new CommitDecision
                 {
@@ -196,7 +199,9 @@ namespace FishGame.Core
             }
             a.Phase = CastPhase.Hooked;
             a.THooked = Now;
-            a.LineLength0 = CatchValidator.HostLineLength0(hostDistanceToLanding, _db.Tuning.LandDistance);
+            float landDistance = _db.Tuning.LandDistance;
+            float hostLine = CatchValidator.HostLineLength0(hostDistanceToLanding, landDistance);
+            a.LineLength0 = CatchValidator.WalkBoundedLineLength0(hostLine, a.CastDistance, Now - a.TAccepted, landDistance);
             c.Active = a;
             return false;
         }
@@ -257,7 +262,7 @@ namespace FishGame.Core
         public void Tick(double dt, bool paused, List<CommitDecision> unsolicited)
         {
             if (unsolicited == null) throw new ArgumentNullException(nameof(unsolicited));
-            if (!paused) Now += dt;
+            if (!paused && dt > 0 && !double.IsInfinity(dt)) Now += dt;   // NaN, negative, zero and infinite dt are ignored
             foreach (KeyValuePair<ulong, ClientState> kv in _clients)
             {
                 ClientState c = kv.Value;

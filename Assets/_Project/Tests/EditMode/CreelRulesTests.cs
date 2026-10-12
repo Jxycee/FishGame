@@ -45,6 +45,35 @@ namespace FishGame.Tests.EditMode
             Assert.That(CreelRules.IsWarn(in empty), Is.False);
         }
 
+        // Catches: the entries comparison written with > instead of >= when the entry count is exactly on the 80 percent line
+        // (8 of 10 is 8.0: 0.8 * 10 must not land a hair above 8 in float or double maths).
+        [Test]
+        public void CreelRules_Warn_EntriesExactlyOnTheEightyPercentLine()
+        {
+            var on = new CreelSnapshot(8, 0, 10, 15000);
+            var under = new CreelSnapshot(7, 0, 10, 15000);
+            Assert.That(CreelRules.IsWarn(in on), Is.True, "8 of 10 is exactly 80 percent");
+            Assert.That(CreelRules.IsWarn(in under), Is.False, "7 of 10 is 70 percent");
+        }
+
+        // Catches: an off-by-one in the slot bounds check (last valid slot rejected), a constructor that accepts zero slots.
+        [Test]
+        public void CreelLedger_LastValidSlot_Works_AndZeroSlotsThrows()
+        {
+            var ledger = new CreelLedger(4);
+            CreelItem stored = ledger.Add(3, Item(700, 9));
+            Assert.That(stored.EntryId, Is.EqualTo((ushort)1));
+            Assert.That(ledger.Items(3).Count, Is.EqualTo(1));
+            Assert.That(ledger.Snapshot(3, 12, 15000).TotalWeightG, Is.EqualTo(700));
+            Assert.That(ledger.SellAll(3), Is.EqualTo(9));
+            Assert.That(ledger.DebugCoins(3), Is.EqualTo(9));
+            Assert.That(ledger.Items(2), Is.Empty, "the neighbour slot is untouched");
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CreelLedger(0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CreelLedger(-1));
+            Assert.DoesNotThrow(() => new CreelLedger(1));
+        }
+
         [Test]
         public void CreelLedger_SellAll_ClearsSlotAndAddsCoins()
         {

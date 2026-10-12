@@ -62,6 +62,31 @@ namespace FishGame.Tests.EditMode
             Assert.That(CatchValidator.ValidateCast(in req, 4, false, in view, true, 0.8f), Is.EqualTo(CastRejectReason.None), "charge 0");
         }
 
+        // Catches: ValidateCast letting a NaN / infinite yaw through (CastMath.Landing would then place the bobber at NaN), or
+        // rejecting it with a different reason than the NaN-origin rule, or checking it after the bait and water rules.
+        [Test]
+        public void CatchValidator_ValidateCast_NonFiniteYaw_IsOriginTooFar()
+        {
+            HostCastView view = GoodView();
+            foreach (float yaw in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity })
+            {
+                CastRequestData req = GoodReq();
+                req.YawDeg = yaw;
+                Assert.That(CatchValidator.ValidateCast(in req, 4, false, in view, true, 0.8f), Is.EqualTo(CastRejectReason.OriginTooFar), "yaw " + yaw);
+                Assert.That(CatchValidator.ValidateCast(in req, 4, false, in view, false, 0.8f), Is.EqualTo(CastRejectReason.OriginTooFar),
+                            "the yaw rule sits before NoBait, yaw " + yaw);
+            }
+            CastRequestData stale = GoodReq();
+            stale.YawDeg = float.NaN;
+            Assert.That(CatchValidator.ValidateCast(in stale, 5, false, in view, true, 0.8f), Is.EqualTo(CastRejectReason.StaleCastId),
+                        "StaleCastId still outranks the yaw rule");
+            CastRequestData finite = GoodReq();
+            finite.YawDeg = -720f;
+            Assert.That(CatchValidator.ValidateCast(in finite, 4, false, in view, true, 0.8f), Is.EqualTo(CastRejectReason.None), "any finite yaw is fine");
+            finite.YawDeg = 1e30f;
+            Assert.That(CatchValidator.ValidateCast(in finite, 4, false, in view, true, 0.8f), Is.EqualTo(CastRejectReason.None), "large but finite");
+        }
+
         [Test]
         public void CatchValidator_HookTooEarly_BoundaryAtBiteMinusTolerance()
         {
@@ -101,7 +126,34 @@ namespace FishGame.Tests.EditMode
             Assert.That(CatchValidator.HostLineLength0(3f, 2f), Is.EqualTo(2f), "never below the landing distance");
             Assert.That(CatchValidator.HostLineLength0(3.4f, 2f), Is.EqualTo(2f));
             Assert.That(CatchValidator.HostLineLength0(3.6f, 2f), Is.EqualTo(2.1f).Within(1e-5f));
-            Assert.That(CatchValidator.HostLineLength0(float.NaN, 2f), Is.EqualTo(2f), "a NaN distance falls back to the landing distance");
+            Assert.That(CatchValidator.HostLineLength0(float.NaN, 2f), Is.EqualTo(2f), "a NaN distance maps to the landing distance here; the ledger never feeds it in (Hooked fails closed on a non-finite distance)");
+        }
+
+        // Catches: a bound that replaces instead of raising the host line (max written as min), a sign slip on the walk term,
+        // a missing 1.5 slack, a missing floor at the landing distance, using the wrong speed constant, and a NaN elapsed time
+        // poisoning the result.
+        [Test]
+        public void CatchValidator_WalkBoundedLineLength0_RaisesTheHostLineOnly()
+        {
+            const float sprint = MovementMath.SprintSpeed;
+            // host line 2 ("standing at the bobber"), cast 24 m, 1 s since accept: 24 - sprint - 1.5
+            Assert.That(CatchValidator.WalkBoundedLineLength0(2f, 24f, 1.0, 2f), Is.EqualTo(24f - sprint - 1.5f).Within(1e-4f), "uses the Core sprint speed");
+            // elapsed 0: cast - 1.5
+            Assert.That(CatchValidator.WalkBoundedLineLength0(2f, 24f, 0.0, 2f), Is.EqualTo(22.5f).Within(1e-4f));
+            // an honest longer host line wins
+            Assert.That(CatchValidator.WalkBoundedLineLength0(30f, 24f, 1.0, 2f), Is.EqualTo(30f));
+            // bound below host line and below the landing distance: host line (already floored by HostLineLength0)
+            Assert.That(CatchValidator.WalkBoundedLineLength0(2f, 24f, 10.0, 2f), Is.EqualTo(2f), "negative bound: floor at landDistance");
+            Assert.That(CatchValidator.WalkBoundedLineLength0(5f, 24f, 10.0, 2f), Is.EqualTo(5f), "negative bound: host line");
+            // exact crossover: 24 - 6.6 * t - 1.5 == 5  ->  t = 17.5 / 6.6
+            double tCross = 17.5 / sprint;
+            Assert.That(CatchValidator.WalkBoundedLineLength0(5f, 24f, tCross - 0.1, 2f), Is.EqualTo(5f + sprint * 0.1f).Within(1e-3f));
+            Assert.That(CatchValidator.WalkBoundedLineLength0(5f, 24f, tCross + 0.1, 2f), Is.EqualTo(5f));
+            // the landing-distance floor applies even when the host line is below it (defensive)
+            Assert.That(CatchValidator.WalkBoundedLineLength0(0.5f, 1f, 5.0, 2f), Is.EqualTo(2f));
+            // non-finite elapsed time must not poison the result
+            Assert.That(CatchValidator.WalkBoundedLineLength0(7f, 24f, double.NaN, 2f), Is.EqualTo(7f));
+            Assert.That(CatchValidator.WalkBoundedLineLength0(7f, 24f, double.PositiveInfinity, 2f), Is.EqualTo(7f));
         }
 
         [Test]

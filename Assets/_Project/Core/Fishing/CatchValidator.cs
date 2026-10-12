@@ -5,7 +5,7 @@ namespace FishGame.Core
     public static class CatchValidator
     {
         // Order: CastingAllowed, ActiveCast, StaleCastId (castId <= last), BadCharge (outside [0,1] or NaN),
-        // OriginTooFar (> 3 m horizontal; a NaN origin counts as too far), NoBait, then CastMath.ProbeReason.
+        // OriginTooFar (> 3 m horizontal; a NaN origin or a non-finite yaw counts as too far), NoBait, then CastMath.ProbeReason.
         public static CastRejectReason ValidateCast(in CastRequestData req, uint lastAcceptedCastId, bool hasActive,
                                                     in HostCastView view, bool baitAvailable, float minLandDepth)
         {
@@ -18,6 +18,7 @@ namespace FishGame.Core
             float dz = req.OriginZ - view.PlayerZ;
             float slack = FishingConstants.HostOriginSlack;
             if (!(dx * dx + dz * dz <= slack * slack)) return CastRejectReason.OriginTooFar;
+            if (!IsFinite(req.YawDeg)) return CastRejectReason.OriginTooFar;
             if (!baitAvailable) return CastRejectReason.NoBait;
             return CastMath.ProbeReason(in view.Probe, minLandDepth);
         }
@@ -42,10 +43,27 @@ namespace FishGame.Core
             return now - cast.THooked < LandedFloorSeconds(cast.LineLength0, landDistance, speed);
         }
 
-        // max(landDistance, hostDistance - 1.5); a NaN distance gives landDistance.
+        public static bool IsFinite(float v)
+        {
+            return !float.IsNaN(v) && !float.IsInfinity(v);
+        }
+
+        // max(landDistance, hostDistance - 1.5); a NaN distance gives landDistance. The ledger never feeds a non-finite distance in
+        // (Hooked fails closed on one), so this fallback is only a safe default for other callers.
         public static float HostLineLength0(float hostDistance, float landDistance)
         {
             float v = hostDistance - FishingConstants.HookedLineSlack;
+            return v > landDistance ? v : landDistance;
+        }
+
+        // Anti-teleport bound (T9-R1): a player cannot be nearer the landing than the cast distance minus what the fastest walk
+        // covers since the cast was accepted. max(hostLineLength0, castDistance - MaxWalkSpeed * elapsed - 1.5), floored at landDistance.
+        // MaxWalkSpeed is the sprint speed. A NaN bound (non-finite elapsed) is ignored.
+        public static float WalkBoundedLineLength0(float hostLineLength0, float castDistance, double elapsedSeconds, float landDistance)
+        {
+            float v = hostLineLength0;
+            float bound = (float)(castDistance - MovementMath.SprintSpeed * elapsedSeconds - FishingConstants.HookedLineSlack);
+            if (bound > v) v = bound;
             return v > landDistance ? v : landDistance;
         }
 

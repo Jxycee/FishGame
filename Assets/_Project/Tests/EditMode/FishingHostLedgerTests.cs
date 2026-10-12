@@ -1063,6 +1063,230 @@ namespace FishGame.Tests.EditMode
             Assert.That(Accept(l, 4, Ov).Roll.Pity, Is.True, "streak 3 from two snaps plus the early-hook failure; orphans added nothing");
         }
 
+        // ---- T9 review follow-up: non-finite input, walk-bounded line, dt guard, pity rows, other rods ---------------------
+
+        // Catches: ValidateCast / TryComputeLanding trusting a NaN or infinite yaw (CastMath.Landing would give a NaN landing and
+        // the host would store an unreachable bobber); a yaw check placed after the bait is spent; a reject that still consumes bait.
+        [Test]
+        public void FishingHostLedger_NonFiniteYaw_RejectedOriginTooFarAndNoStateChange()
+        {
+            foreach (float yaw in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity })
+            {
+                FishingHostLedger l = NewLedger();
+                CastRequestData bad = Req(1);
+                bad.YawDeg = yaw;
+                RollOverrides ov = Ov;
+                CastVerdict v = l.RequestCast(Client, 0, bad, View(), in ov);
+                Assert.That(v.Valid, Is.False, "yaw " + yaw);
+                Assert.That(v.Reason, Is.EqualTo(CastRejectReason.OriginTooFar), "yaw " + yaw);
+                Assert.That(Stock(l), Is.EqualTo(20), "a rejected cast spends no bait, yaw " + yaw);
+                Assert.That(l.HostCastCounter, Is.EqualTo(0u));
+                Assert.That(l.TryGetActive(Client, out _), Is.False);
+                Assert.That(Accept(l, 1, Ov).Valid, Is.True, "the same cast id is still usable after the reject");
+            }
+        }
+
+        // Catches: TryComputeLanding returning true (and a NaN landing) for a non-finite yaw.
+        [Test]
+        public void FishingHostLedger_TryComputeLanding_NonFiniteYaw_ReturnsFalse()
+        {
+            FishingHostLedger l = NewLedger();
+            foreach (float yaw in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity })
+            {
+                CastRequestData r = Req(1);
+                r.YawDeg = yaw;
+                Assert.That(l.TryComputeLanding(0, r, out float x, out float z), Is.False, "yaw " + yaw);
+                Assert.That(x, Is.EqualTo(0f));
+                Assert.That(z, Is.EqualTo(0f));
+            }
+            CastRequestData ok = Req(1);
+            ok.YawDeg = 90f;
+            Assert.That(l.TryComputeLanding(0, ok, out float ox, out _), Is.True, "a finite yaw still works");
+            Assert.That(ox, Is.EqualTo(10.25f).Within(1e-3f));
+        }
+
+        // Catches: Hooked feeding a non-finite host distance to HostLineLength0 (NaN -> landDistance gives a zero landing floor,
+        // an anti-cheat hole), or accepting the hook. On-time hook, so the early-hook rule cannot be what rejects it.
+        [Test]
+        public void FishingHostLedger_HookedWithNonFiniteHostDistance_FailsClosedEscapedInvalid()
+        {
+            foreach (float dist in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity })
+            {
+                FishingHostLedger l = NewLedger();
+                CastVerdict v = Accept(l, 1, Ov);
+                Assert.That(Tick(l, Tf + 2.0), Is.Empty);
+                bool commit = l.Hooked(Client, 1, dist, out CommitDecision d);
+                Assert.That(commit, Is.True, "distance " + dist);
+                Assert.That(d.Accepted, Is.True);
+                Assert.That(d.Outcome, Is.EqualTo(FightOutcome.Escaped));
+                Assert.That(d.Reason, Is.EqualTo(EscapeReason.Invalid));
+                Assert.That(d.Announce, Is.EqualTo(AnnounceKind.None), "same announce as the early-hook invalid path");
+                AssertSameRoll(in v.Roll, in d.Roll, true, "decision carries the cast roll");
+                Assert.That(l.TryGetActive(Client, out _), Is.False, "the cast is resolved");
+                Assert.That(Stock(l), Is.EqualTo(19), "no refund");
+                CommitDecision again = Result(l, 1, FightOutcome.Landed, EscapeReason.None, Clean(10f));
+                Assert.That(again.Accepted, Is.False, "an orphan now");
+                Assert.That(again.Outcome, Is.EqualTo(FightOutcome.Escaped));
+                Assert.That(again.Reason, Is.EqualTo(EscapeReason.Invalid), "the stored resolution is repeated");
+            }
+        }
+
+        static void AcceptFullCharge(FishingHostLedger l, uint id)
+        {
+            RollOverrides ov = Ov;
+            CastVerdict v = l.RequestCast(Client, 0, Req(id, 1f), View(), in ov);
+            Assert.That(v.Valid, Is.True, "cast " + id + " rejected: " + v.Reason);
+        }
+
+        // The anti-teleport bound (T9-R1). Carbon rod (cast 24 m, reel 1.2), full charge, 2 s bite: the player hooks at the earliest
+        // allowed instant (bite - tolerance) claiming to stand beside the bobber. Without the bound the line is 2.0 and the landing
+        // floor is 0 s; with it the line is cast - sprint * (hooked - accepted) - 1.5.
+        // Catches: LineLength0 = HostLineLength0 only (no walk bound); the bound using the wrong elapsed time (e.g. Now alone);
+        // a sign slip; the bound not floored; the floor not following the bounded length.
+        [Test]
+        public void FishingHostLedger_TeleportToBobberAfterCast_LandingFloorUsesWalkBoundedLine()
+        {
+            FishingHostLedger l = NewLedger();
+            Assert.That(l.SelectRod(Client, 0, FishingTestData.RodCarbon), Is.True);
+            AcceptFullCharge(l, 1);
+            Assert.That(l.TryGetActive(Client, out ActiveCast fresh), Is.True);
+            float cast = 24f;
+            float tf = CastMath.FlightTime(cast);
+            Assert.That(fresh.TFlight, Is.EqualTo(tf).Within(1e-5f));
+            Assert.That(fresh.CastDistance, Is.EqualTo(cast).Within(1e-4f), "the cast distance is stored at accept");
+            double elapsed = tf + 1.3;                       // bite is at tf + 2.0, tolerance 0.75: tf + 1.25 is the earliest hook
+            Tick(l, tf + 1.3);
+            Assert.That(l.Hooked(Client, 1, 2f, out CommitDecision early), Is.False, "hook accepted: " + early.Reason);   // host measured 2 m: "teleported"
+            Assert.That(l.TryGetActive(Client, out ActiveCast a), Is.True);
+            float expected = cast - MovementMath.SprintSpeed * (float)elapsed - FishingConstants.HookedLineSlack;
+            Assert.That(expected, Is.GreaterThan(5f), "test sanity: the bound must matter here");
+            Assert.That(a.LineLength0, Is.EqualTo(expected).Within(1e-3f));
+
+            float floor = 0.8f * (expected - 2f) / 1.2f - 0.5f;
+            Assert.That(floor, Is.GreaterThan(1.5f), "test sanity: a real landing floor");
+            Tick(l, floor - 0.05);
+            CommitDecision tooFast = Result(l, 1, FightOutcome.Landed, EscapeReason.None, NotClean((float)floor - 0.05f));
+            Assert.That(tooFast.Outcome, Is.EqualTo(FightOutcome.Escaped));
+            Assert.That(tooFast.Reason, Is.EqualTo(EscapeReason.Invalid), "landing at the teleport-short floor is refused");
+
+            FishingHostLedger m = NewLedger();
+            m.SelectRod(Client, 0, FishingTestData.RodCarbon);
+            AcceptFullCharge(m, 1);
+            Tick(m, tf + 1.3);
+            m.Hooked(Client, 1, 2f, out _);
+            Tick(m, floor + 0.05);
+            CommitDecision ok = Result(m, 1, FightOutcome.Landed, EscapeReason.None, NotClean((float)floor + 0.05f));
+            Assert.That(ok.Outcome, Is.EqualTo(FightOutcome.Landed), "just past the bounded floor lands");
+        }
+
+        // Catches: the walk bound overriding a LONGER honest host line (it must only raise the length).
+        [Test]
+        public void FishingHostLedger_HonestFarPlayer_KeepsHostLineLength()
+        {
+            FishingHostLedger l = NewLedger();
+            l.SelectRod(Client, 0, FishingTestData.RodCarbon);
+            AcceptFullCharge(l, 1);
+            Tick(l, CastMath.FlightTime(24f) + 1.3);
+            l.Hooked(Client, 1, 40f, out _);   // host says 40 m from the landing: longer than any walk bound
+            l.TryGetActive(Client, out ActiveCast a);
+            Assert.That(a.LineLength0, Is.EqualTo(38.5f).Within(1e-4f));
+        }
+
+        // Catches: the walk bound lowering the line when it is negative (late hook), or the line dipping below the landing distance.
+        [Test]
+        public void FishingHostLedger_LateHook_WalkBoundIsInactiveAndLineFloorsAtLandDistance()
+        {
+            FishingHostLedger l = NewLedger();
+            Accept(l, 1, Ov);                       // 10.25 m cast, hook at tf + 2.0: the bound is negative
+            HookAt(l, 1);                           // host distance 10 -> 8.5
+            l.TryGetActive(Client, out ActiveCast a);
+            Assert.That(a.LineLength0, Is.EqualTo(8.5f).Within(1e-5f), "walk bound below the host line changes nothing");
+
+            FishingHostLedger m = NewLedger();
+            Accept(m, 1, Ov);
+            Tick(m, Tf + 2.0);
+            m.Hooked(Client, 1, 0f, out _);         // standing on the bobber, bound negative: floors at the landing distance
+            m.TryGetActive(Client, out ActiveCast b);
+            Assert.That(b.LineLength0, Is.EqualTo(2f), "floored at landDistance");
+        }
+
+        // Catches: a ledger that ignores the selected rod's reel speed in the landing floor (default rod, rod 0, or the cast's
+        // first rod). Twig rod: reel 0.9, cast 14 m (8.25 m at 0.5 charge), so the floor is 0.8 x 6.5 / 0.9 - 0.5 = 5.278 s;
+        // the Handmade floor (4.7 s) and the Carbon floor (3.83 s) would both accept 5.2 s.
+        [Test]
+        public void FishingHostLedger_LandedFloor_UsesTheSelectedRodReelSpeed()
+        {
+            float floor = CatchValidator.LandedFloorSeconds(8.5f, 2f, 0.9f);
+            Assert.That(floor, Is.EqualTo(5.2778f).Within(1e-3f));
+            FishingHostLedger l = NewLedger();
+            Assert.That(l.SelectRod(Client, 0, FishingTestData.RodTwig), Is.True);
+            Accept(l, 1, Ov);
+            HookAt(l, 1);
+            l.TryGetActive(Client, out ActiveCast a);
+            Assert.That(a.LineLength0, Is.EqualTo(8.5f).Within(1e-5f));
+            Tick(l, floor - 0.08);
+            CommitDecision early = Result(l, 1, FightOutcome.Landed, EscapeReason.None, NotClean(5.2f));
+            Assert.That(early.Outcome, Is.EqualTo(FightOutcome.Escaped));
+            Assert.That(early.Reason, Is.EqualTo(EscapeReason.Invalid), "5.2 s is under the twig floor");
+
+            Accept(l, 2, Ov);
+            HookAt(l, 2);
+            Tick(l, floor + 0.05);
+            CommitDecision ok = Result(l, 2, FightOutcome.Landed, EscapeReason.None, NotClean(5.33f));
+            Assert.That(ok.Outcome, Is.EqualTo(FightOutcome.Landed), "just over the twig floor");
+        }
+
+        // Catches: a Tick that accepts NaN / negative / infinite dt (the clock goes NaN, backwards, or jumps to infinity and
+        // every active cast times out at once).
+        [Test]
+        public void FishingHostLedger_Tick_IgnoresNanNegativeAndInfiniteDt()
+        {
+            FishingHostLedger l = NewLedger();
+            Accept(l, 1, Ov);
+            Tick(l, 1.0);
+            foreach (double bad in new[] { double.NaN, -0.5, double.PositiveInfinity, double.NegativeInfinity, 0.0 })
+            {
+                List<CommitDecision> sink = Tick(l, bad);
+                Assert.That(l.Now, Is.EqualTo(1.0), "dt " + bad);
+                Assert.That(sink, Is.Empty, "dt " + bad);
+                Assert.That(l.TryGetActive(Client, out _), Is.True, "dt " + bad);
+            }
+            Tick(l, 0.25);
+            Assert.That(l.Now, Is.EqualTo(1.25), "a normal dt still advances the clock");
+        }
+
+        // Catches: pity accounting that only sees Snapped / Result escapes: the host-resolved Timeout (Tick) and Hooked-Cancel
+        // (Dropped) paths must count as failures too (R65).
+        [Test]
+        public void FishingHostLedger_TimeoutAndDroppedResolutions_CountTowardPity()
+        {
+            FishingHostLedger l = NewLedger();
+            Accept(l, 1, Ov);
+            HookAt(l, 1);
+            List<CommitDecision> timeout = Tick(l, 240.1);
+            Assert.That(timeout.Count, Is.EqualTo(1));
+            Assert.That(timeout[0].Reason, Is.EqualTo(EscapeReason.Timeout));
+
+            Accept(l, 2, Ov);
+            HookAt(l, 2);
+            CommitDecision dropped = CancelCast(l, 2);
+            Assert.That(dropped.Outcome, Is.EqualTo(FightOutcome.Escaped));
+            Assert.That(dropped.Reason, Is.EqualTo(EscapeReason.Dropped));
+
+            CastVerdict three = Accept(l, 3, Ov);
+            Assert.That(three.Roll.Pity, Is.False, "two failures so far");
+            HookAt(l, 3);
+            Assert.That(Tick(l, 240.1).Count, Is.EqualTo(1));       // third failure, again through Tick
+
+            Assert.That(Accept(l, 4, Ov).Roll.Pity, Is.True, "Timeout + Dropped + Timeout = three failures");
+
+            FishingHostLedger m = NewLedger();
+            Accept(m, 1, Ov); HookAt(m, 1); CancelCast(m, 1);
+            Accept(m, 2, Ov); HookAt(m, 2); CancelCast(m, 2);
+            Accept(m, 3, Ov); HookAt(m, 3); CancelCast(m, 3);
+            Assert.That(Accept(m, 4, Ov).Roll.Pity, Is.True, "three Dropped resolutions alone make the next cast Pity");
+        }
+
         // ---- pause-aware clock extras ------------------------------------------------------------------------------
 
         [Test]

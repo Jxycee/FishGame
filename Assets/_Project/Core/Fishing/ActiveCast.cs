@@ -8,7 +8,8 @@ namespace FishGame.Core
         public FishingRoll Roll;
         public CastPhase Phase;
         public double TAccepted, THooked;      // ledger clock (Now) at accept / at the accepted Hooked message
-        public float LineLength0, TFlight;     // LineLength0 is set on Hooked (HostLineLength0); TFlight from the cast distance
+        public float LineLength0, TFlight;     // LineLength0 is set on Hooked (WalkBoundedLineLength0); TFlight from the cast distance
+        public float CastDistance;             // horizontal origin -> landing, host-derived at accept (anti-teleport bound)
         public bool Assist;
         public ushort RodIndex;
         public byte BaitIndex;
