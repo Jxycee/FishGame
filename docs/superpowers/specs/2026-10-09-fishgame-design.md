@@ -958,7 +958,7 @@ strainPos += steerStrain * abs(input.steer)                                     
 if abs(lateral) > rod.angleWindow: strainPos += outOfWindowStrain                                    // 0.20
 if spooled:                        strainPos += spoolStrain * P                                      // 0.50
 relax = !input.reel ? relaxRate * rod.relaxMult                      // 0.45 /s
-      : phase == Calm ? relaxWhileReeling * rod.relaxMult            // 0.10 /s
+      : phase == Calm ? relaxWhileReeling * rod.relaxMult            // 0.20 /s (tuned from 0.10 by the M2 bots)
       : 0
 tension = clamp01(tension + (strainPos * strainScale / rod.lineStrength - relax) * dt)   // strainScale 1.0 (assist 0.6)
 ```
@@ -983,8 +983,8 @@ Five shared `FightProfileDef` assets (R3). M2 has one placeholder species per pr
 | Steady | Bluegill | 0.30 | 0.60 | 0.30 | 0.08 | 1.0–2.5 | 1.5–2.5 | 0 | 0 | Tutorial: plain side runs, forgiving |
 | Darter | Perch | 0.45 | 0.70 | 0.40 | 0.07 | 1.0–2.5 | 1.5–3.0 | 0.2 | 0 | Occasional flips: watch which way it runs |
 | Bulldog | Carp | 0.60 | 0.60 | 0.50 | 0.06 | 1.0–3.0 | 2.0–4.0 | 0 | 0.35 | Heavy dives: "let it run" |
-| Thrasher | Trout | 0.70 | 1.00 | 0.60 | 0.09 | 1.0–2.5 | 1.5–3.0 | 0.5 | 0 | Fast, frequent flips; outruns a weak rod's steer, so you chase |
-| Runner | Catfish | 0.85 | 0.80 | 0.80 | 0.05 | 1.0–2.0 | 2.5–4.0 | 0.1 | 0.25 | Long strong runs that take line; needs the tire-then-reel rhythm |
+| Thrasher | Trout | 0.70 | 1.00 | 0.60 | 0.035 (bot-tuned; was 0.09) | 1.0–2.5 | 1.5–3.0 | 0.5 | 0 | Fast, frequent flips; outruns a weak rod's steer, so you chase |
+| Runner | Catfish | 0.85 | 0.80 | 0.80 | 0.035 (bot-tuned; was 0.05) | 1.0–2.0 | 2.5–4.0 | 0.1 | 0.25 | Long strong runs that take line; needs the tire-then-reel rhythm |
 
 **Motion parameters (R63).** `FightProfileDef` also has `burstRamp` s, `calmDrift` m/s, `calmDriftRamp` s, `flipMinGap` s and `lateralJitter` (all 0, gap 0.5, reproduce 9.5 exactly). Seeds: Steady `burstRamp` 0.6; Darter micro-bursts (calm 0.3–0.8 s, burst 0.4–0.9 s, `flipRate` 1.0, `flipMinGap` 0.3); Bulldog `calmDrift` 0.12, `calmDriftRamp` 2.5; Thrasher `lateralJitter` 0.3 with calm kept ≥ 1.0 s; Runner `burstRamp` 0.8. Rules are in the M2 contract 7.7; the tuning bots judge them against the target fight lengths.
 
@@ -1182,7 +1182,7 @@ lengthMm = round(400 * cbrt(weightG / 1000.0) * fish.lengthShapeK)
 | `spoolStrain` | 0.50 /s | 0.3–0.8 |
 | `spoolExtra` | 12 m | 6–20 |
 | `relaxRate` | 0.45 /s | 0.3–0.7 |
-| `relaxWhileReeling` | 0.10 /s | 0.05–0.2 |
+| `relaxWhileReeling` | 0.20 /s (bot-tuned 2026-10-12; was 0.10) | 0.05–0.2 |
 | `reelBurstPenalty` | 1.0 | 0.6–1.2 |
 | `diveRunMult` | 1.5 | 1.2–2 |
 | `snapGrace` | 0.25 s (assist 0.75) | 0.2–0.75 |
