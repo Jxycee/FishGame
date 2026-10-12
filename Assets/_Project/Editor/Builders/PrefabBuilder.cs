@@ -3,6 +3,7 @@
 // This file deliberately has no "using UnityEditor;": UnityEditor.SessionState would clash with FishGame.Gameplay.SessionState.
 using FishGame.Core;
 using FishGame.Gameplay;
+using FishGame.Runtime;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
@@ -102,19 +103,24 @@ namespace FishGame.EditorTools
             camera.enabled = false;
             BuilderUtil.GetOrAdd<AudioListener>(cameraTransform.gameObject).enabled = false;
 
-            Prim(t, PlayerRigPaths.Head, PrimitiveType.Sphere, Vector3.zero, new Vector3(0.28f, 0.28f, 0.28f), skin);
-            Prim(t, PlayerRigPaths.Nose, PrimitiveType.Cube, new Vector3(0f, 0f, 0.5f), new Vector3(0.18f, 0.18f, 0.3f), skin);
+            // T20: the body parts draw MeshBuilder unit meshes (vertex colours for FishGame/Toon) instead of Unity's primitives. Transforms are the M1 ones.
+            Mesh unitSphere = SaveMesh(AssetPaths.BodyUnitSphereMesh, BuildUnitSphere());
+            Mesh unitBox = SaveMesh(AssetPaths.BodyUnitBoxMesh, BuildUnitBox());
+            Mesh unitCapsule = SaveMesh(AssetPaths.BodyUnitCapsuleMesh, BuildUnitCapsule());
+
+            UseMesh(Prim(t, PlayerRigPaths.Head, PrimitiveType.Sphere, Vector3.zero, new Vector3(0.28f, 0.28f, 0.28f), skin), unitSphere);
+            UseMesh(Prim(t, PlayerRigPaths.Nose, PrimitiveType.Cube, new Vector3(0f, 0f, 0.5f), new Vector3(0.18f, 0.18f, 0.3f), skin), unitBox);
 
             Empty(t, PlayerRigPaths.Body, Vector3.zero);
-            Prim(t, PlayerRigPaths.Torso, PrimitiveType.Cube, new Vector3(0f, 1.2f, 0f), new Vector3(0.42f, 0.55f, 0.24f), body);
+            UseMesh(Prim(t, PlayerRigPaths.Torso, PrimitiveType.Cube, new Vector3(0f, 1.2f, 0f), new Vector3(0.42f, 0.55f, 0.24f), body), unitBox);
             Empty(t, PlayerRigPaths.ArmL, new Vector3(-0.27f, 1.42f, 0f));
             Empty(t, PlayerRigPaths.ArmR, new Vector3(0.27f, 1.42f, 0f));
-            Prim(t, PlayerRigPaths.ArmLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.25f, 0f), new Vector3(0.12f, 0.25f, 0.12f), body);
-            Prim(t, PlayerRigPaths.ArmRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.25f, 0f), new Vector3(0.12f, 0.25f, 0.12f), body);
+            UseMesh(Prim(t, PlayerRigPaths.ArmLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.25f, 0f), new Vector3(0.12f, 0.25f, 0.12f), body), unitCapsule);
+            UseMesh(Prim(t, PlayerRigPaths.ArmRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.25f, 0f), new Vector3(0.12f, 0.25f, 0.12f), body), unitCapsule);
             Empty(t, PlayerRigPaths.LegL, new Vector3(-0.11f, 0.8f, 0f));
             Empty(t, PlayerRigPaths.LegR, new Vector3(0.11f, 0.8f, 0f));
-            Prim(t, PlayerRigPaths.LegLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.4f, 0f), new Vector3(0.16f, 0.4f, 0.16f), body);
-            Prim(t, PlayerRigPaths.LegRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.4f, 0f), new Vector3(0.16f, 0.4f, 0.16f), body);
+            UseMesh(Prim(t, PlayerRigPaths.LegLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.4f, 0f), new Vector3(0.16f, 0.4f, 0.16f), body), unitCapsule);
+            UseMesh(Prim(t, PlayerRigPaths.LegRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.4f, 0f), new Vector3(0.16f, 0.4f, 0.16f), body), unitCapsule);
             Empty(t, PlayerRigPaths.NameplateAnchor, new Vector3(0f, 2.05f, 0f));
 
             // T19 hook (C 2.6): the fishing rig, its components after the M1 list, then the presentation hook. RefreshNetworkObjectHash follows in BuildPlayer.
@@ -146,6 +152,52 @@ namespace FishGame.EditorTools
             t.localRotation = Quaternion.identity;
             t.localScale = Vector3.one;
             return t;
+        }
+
+        // T20 unit body meshes (plan T20.6). Default face jitter, slot 0 (unused in vertex-colour mode). No colour pass: the half-scale grey
+        // stays as built and the body materials set _JitterEncoded 1 (BF-7). Sizes equal Unity's primitives: sphere diameter 1, cube 1, capsule height 2.
+        static Mesh BuildUnitSphere()
+        {
+            var builder = new MeshBuilder(0xB0D10001u);
+            builder.Icosphere(Vector3.zero, 0.5f, 1, 0);
+            return builder.ToMesh("Body_UnitSphere");
+        }
+
+        static Mesh BuildUnitBox()
+        {
+            var builder = new MeshBuilder(0xB0D10002u);
+            builder.Box(Vector3.zero, Vector3.one, Quaternion.identity, 0);
+            return builder.ToMesh("Body_UnitBox");
+        }
+
+        static Mesh BuildUnitCapsule()
+        {
+            var builder = new MeshBuilder(0xB0D10003u);
+            builder.Capsule(Vector3.zero, 0.5f, 2f, 8, 2, Quaternion.identity, 0);
+            return builder.ToMesh("Body_UnitCapsule");
+        }
+
+        static void UseMesh(GameObject part, Mesh mesh)
+        {
+            part.GetComponent<MeshFilter>().sharedMesh = mesh;
+        }
+
+        // Existing asset: copy the built data into it (GUID and fileID stay, rebuilds are byte-identical) and return the asset.
+        // (Same pattern as PlayerFishingRigBuilder.SaveMesh, which is private to T19's file.)
+        static Mesh SaveMesh(string assetPath, Mesh built)
+        {
+            BuilderUtil.EnsureFolder(BuilderUtil.Folder(assetPath));
+            Mesh existing = UnityEditor.AssetDatabase.LoadAssetAtPath<Mesh>(assetPath);
+            if (existing != null)
+            {
+                UnityEditor.EditorUtility.CopySerialized(built, existing);
+                UnityEditor.EditorUtility.SetDirty(existing);
+                Object.DestroyImmediate(built);
+                return existing;
+            }
+
+            UnityEditor.AssetDatabase.CreateAsset(built, assetPath);
+            return built;
         }
 
         static GameObject Prim(Transform root, string path, PrimitiveType type, Vector3 localPosition, Vector3 localScale, Material material)

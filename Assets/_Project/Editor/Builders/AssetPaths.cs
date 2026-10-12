@@ -55,5 +55,11 @@ namespace FishGame.EditorTools
         public const string AudioFolder = "Assets/_Project/Content/Audio";
         public const string SfxCueTableAsset = AudioFolder + "/SfxCueTable.asset";
         public const string ModelsFolder = "Assets/_Project/Content/Models";
+
+        // T20 additions (shaders, Toon materials, body meshes). ModelsFolder is T14's; do not redeclare it.
+        public const string ShadersFolder = "Assets/_Project/Shaders";
+        public const string BodyUnitSphereMesh = MeshesFolder + "/Body_UnitSphere.asset";
+        public const string BodyUnitBoxMesh = MeshesFolder + "/Body_UnitBox.asset";
+        public const string BodyUnitCapsuleMesh = MeshesFolder + "/Body_UnitCapsule.asset";
     }
 }

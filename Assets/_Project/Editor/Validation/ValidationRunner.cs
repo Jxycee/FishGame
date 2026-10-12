@@ -21,6 +21,7 @@ namespace FishGame.EditorTools
             Add(all, "MissingScripts", Validators.MissingScripts());
             Add(all, "BootstrapReferences", Validators.BootstrapReferences());
             all.AddRange(FishingValidators.All());
+            Add(all, "Render", RenderValidators.All());
             return all;
         }
 
