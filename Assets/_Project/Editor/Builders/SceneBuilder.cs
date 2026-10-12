@@ -28,6 +28,9 @@ namespace FishGame.EditorTools
 
         public static void BuildBootstrap()
         {
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            // Load after NewScene: NewScene(Single) unloads unused assets and would leave destroyed references (C 2.8 #14).
             NetworkObject sessionStatePrefab = BuilderUtil.LoadNetworkPrefab(AssetPaths.SessionStatePrefab);
             var inputActions = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputActionNames.AssetPath);
             if (inputActions == null) throw new System.IO.FileNotFoundException("Missing " + InputActionNames.AssetPath);
@@ -39,10 +42,6 @@ namespace FishGame.EditorTools
             if (panelSettings == null) throw new System.IO.FileNotFoundException("Missing " + AssetPaths.PanelSettingsAsset);
             var appRoot = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(AssetPaths.AppRootUxml);
             if (appRoot == null) throw new System.IO.FileNotFoundException("Missing " + AssetPaths.AppRootUxml + " (T14)");
-
-            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            // NewScene(Single) unloads unused assets, which leaves a destroyed reference in panelSettings. Load it again.
-            panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(AssetPaths.PanelSettingsAsset);
 
             // App: AppBootstrap, NetworkManager, UnityTransport, PlayerInputAdapter, AudioBus (contract 6.5 order).
             var app = new GameObject("App");

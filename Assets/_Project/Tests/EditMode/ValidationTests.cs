@@ -19,5 +19,8 @@ namespace FishGame.Tests.EditMode
         [Test] public void Validation_Manifest_HasPinsAndNoForbidden() => AssertNoErrors(Validators.Manifest());
         [Test] public void Validation_ProjectSettings_Pass() => AssertNoErrors(Validators.ProjectSettingsInvariants());
         [Test] public void Validation_AssetsLayout_OnlyProjectAndSettings() => AssertNoErrors(Validators.AssetsLayout());
+        [Test] public void Validation_MeshReferences_Pass() => AssertNoErrors(Validators.MeshReferences());
+        [Test] public void Validation_MissingScripts_Pass() => AssertNoErrors(Validators.MissingScripts());
+        [Test] public void Validation_BootstrapReferences_Pass() => AssertNoErrors(Validators.BootstrapReferences());
     }
 }

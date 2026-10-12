@@ -17,13 +17,17 @@ namespace FishGame.EditorTools
     {
         public static void Build()
         {
-            NetworkObject playerPrefab = BuilderUtil.LoadNetworkPrefab(AssetPaths.PlayerPrefab);
-            NetworkObject bellPrefab = BuilderUtil.LoadNetworkPrefab(AssetPaths.DockBellPrefab);
-            Mesh lakebedMesh = LakeDockMeshes.BuildAsset(AssetPaths.LakebedMesh, LakeDockLayout.LakebedRadii, LakeDockLayout.BedY);
-            Mesh shoreMesh = LakeDockMeshes.BuildAsset(AssetPaths.ShoreMesh, LakeDockLayout.ShoreRadii, LakeDockLayout.ShoreY);
+            LakeDockMeshes.BuildAsset(AssetPaths.LakebedMesh, LakeDockLayout.LakebedRadii, LakeDockLayout.BedY);
+            LakeDockMeshes.BuildAsset(AssetPaths.ShoreMesh, LakeDockLayout.ShoreRadii, LakeDockLayout.ShoreY);
             AssetDatabase.SaveAssets(); // meshes are on disk before the scene references them
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            // Load after NewScene: NewScene(Single) unloads unused assets and would leave destroyed references (C 2.8 #14).
+            NetworkObject playerPrefab = BuilderUtil.LoadNetworkPrefab(AssetPaths.PlayerPrefab);
+            NetworkObject bellPrefab = BuilderUtil.LoadNetworkPrefab(AssetPaths.DockBellPrefab);
+            Mesh lakebedMesh = LoadMesh(AssetPaths.LakebedMesh);
+            Mesh shoreMesh = LoadMesh(AssetPaths.ShoreMesh);
 
             Root("GameScope", Layers.Default).AddComponent<GameScope>();
             AddSpawner(playerPrefab);
@@ -40,6 +44,13 @@ namespace FishGame.EditorTools
             AddBellAnchor(bellPrefab);
 
             BuilderUtil.SaveScene(scene, AssetPaths.LakeDockScene);
+        }
+
+        static Mesh LoadMesh(string path)
+        {
+            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (mesh == null) throw new System.IO.FileNotFoundException("Missing mesh " + path);
+            return mesh;
         }
 
         static GameObject Root(string name, int layer)
