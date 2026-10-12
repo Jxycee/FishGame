@@ -219,8 +219,10 @@ namespace FishGame.Presentation
                     break;
 
                 case RodCue.Dive:
+                    break;   // Dive's sfx id is the Dive_Thrum LOOP id: the loop starts by polling, never as a one-shot
+
                 case RodCue.Exhausted:
-                    PlayAtPoint(bus, sfx, bobberPos);   // the Dive_Thrum loop itself starts by polling
+                    PlayAtPoint(bus, sfx, bobberPos);
                     break;
 
                 case RodCue.Escaped:
@@ -233,7 +235,7 @@ namespace FishGame.Presentation
                     break;
 
                 case RodCue.Snapped:
-                    if (bus != null && sfx != null) bus.PlayAt(sfx, rodPos);
+                    PlayRod(bus, sfx, rodPos, owner);
                     if (bus != null && RodCueAudio.IsStinger(cue)) bus.Duck(1f);
                     SpawnRipple(bobberPos, RippleMath.Snap);
                     StartSnapJump(bobberPos, arg);
@@ -246,7 +248,7 @@ namespace FishGame.Presentation
                     break;
 
                 case RodCue.LineLanded:
-                    if (bus != null && sfx != null) bus.PlayAt(sfx, rodPos);
+                    PlayRod(bus, sfx, rodPos, owner);
                     SpawnRipple(bobberPos, RippleMath.Landed);
                     break;
 

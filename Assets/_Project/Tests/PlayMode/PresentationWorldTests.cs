@@ -163,10 +163,11 @@ namespace FishGame.Tests.PlayMode
             Assert.That((int)applyCount.GetValue(globals), Is.EqualTo(before), "Apply (which allocates via PaletteVectors) must not run per frame");
         }
 
-        // Measured in this Linear project (T23 step 0): Shader.GetGlobalColor and RenderSettings.fogColor read back the AUTHORED (gamma) colour
-        // that was set; Unity converts it for the GPU at upload, so the read-back is never the linear form. Asserting only that form catches a
-        // double conversion (pushing .linear through SetGlobalColor reads back linear). Pushing the gamma colour through SetGlobalVector reads
-        // back identically, so that mutation is not observable from the CPU (the GPU value needs a graphics run).
+        // Measured in this Linear project (T23 step 0): Shader.GetGlobalColor, Shader.GetGlobalVector and RenderSettings.fogColor all read back
+        // the AUTHORED (gamma) colour that was set, so the linear form is never what the CPU sees. This check therefore catches a double
+        // conversion (pushing .linear through SetGlobalColor reads back linear: observed FAIL) but NOT a gamma push through SetGlobalVector
+        // (reads back identically: observed PASS). Whether the GPU receives a converted value for SetGlobalColor is Unity behaviour assumed
+        // here, not measured; it needs a graphics run (the T21 GPU tests are skipped under -nographics).
         private static void AssertColor(Color actual, Color expected, string what)
         {
             Color lin = expected.linear;
