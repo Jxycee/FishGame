@@ -212,6 +212,7 @@ namespace FishGame.UI
 
             _hudPresenter = new HudPresenter(_hud, _bus, _input);
             AttachHudExtension(new FishingHudPresenter());
+            if (Debug.isDebugBuild) AttachHudExtension(new DevOverlayPresenter());
             _toasts = new ToastPresenter(_root, _bus, _settings);
             _nameplates = new NameplateOverlay(nameplateLayer);
 

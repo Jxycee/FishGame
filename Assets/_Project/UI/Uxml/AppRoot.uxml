@@ -11,6 +11,7 @@
             <ui:Label name="FishingHookPrompt" class="fishing-hook" picking-mode="Ignore" focusable="false" />
             <ui:Label name="FishingCaption" class="fishing-caption" picking-mode="Ignore" focusable="false" />
             <ui:Label name="FishingCreel" class="fishing-creel" picking-mode="Ignore" focusable="false" />
+            <ui:Label name="DevOverlay" class="dev-overlay hidden" picking-mode="Ignore" focusable="false" />
         </ui:VisualElement>
 
         <ui:VisualElement name="ScreenMainMenu" class="screen hidden">

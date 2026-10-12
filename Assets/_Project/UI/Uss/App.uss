@@ -38,3 +38,4 @@
 .fishing-creel { position: absolute; right: 16px; bottom: 16px; font-size: 18px; color: rgb(235, 240, 245); -unity-text-outline-width: 1px; -unity-text-outline-color: rgb(0, 0, 0); }
 .fishing-creel.warn { -unity-font-style: bold; color: rgb(255, 200, 70); border-left-width: 3px; border-left-color: rgb(255, 200, 70); padding-left: 6px; }
 .fishing-creel.full { -unity-font-style: bold; color: rgb(255, 110, 90); }
+.dev-overlay { position: absolute; left: 16px; top: 16px; max-width: 46%; padding: 8px; font-size: 13px; white-space: normal; color: rgb(220, 235, 245); background-color: rgba(10, 18, 28, 0.75); -unity-text-align: upper-left; }
