@@ -15,7 +15,7 @@
 - [ ] `FishGame > Dev > Auto Solo` is **off** for every multiplayer item (section B and the multiplayer rows of criteria 3, 5, 6). Turn it on for criterion 1.
 - [ ] The MPPM scenario `Direct 4P` exists (README, "Set up a scenario"), and the `NetSim_150ms_2pct` preset exists (README, "Latency with the Network Simulator").
 - [ ] A gamepad is connected for criterion 1, criterion 5 (rumble) and criterion 10 (skeleton risk 8).
-- [ ] The M1 checklist's multiplayer criteria (3-9, 11, 12 in `docs/superpowers/plans/2026-10-09-m1-acceptance.md`) are run or scheduled: they were still open on 2026-10-11 (handoff). M2 co-op rests on them.
+- [ ] The M1 checklist's multiplayer criteria (3-9, 12 in `docs/superpowers/plans/2026-10-09-m1-acceptance.md`) are run or scheduled: they were still open on 2026-10-11 (handoff). M2 co-op rests on them.
 - [ ] You have read section F.1 (the cast-distance decision). It blocks the fun gate (section D).
 
 ## A. Criteria 1-11 (spec 17.2)
@@ -399,7 +399,7 @@ Add rows as needed. **Proposed bar (you confirm it):** 70% or more correct overa
   - **C:** accept it as is (tell testers not to count short casts).
 - **Also consider (can combine with A or B):** a minimum fight time or lead-in gate before a fish can be landed, and a minimum fight duration before the clean bonus can be earned.
 - **Until decided:** the fun-gate stats print an "instant landings" count; testers should cast at least half charge.
-- **Decision and date:** ______
+- **Decision and date:** A, 2026-10-12 (user). Spec R67: the cast distance is measured from the rod tip (`castTipReach` constant on owner and host). Note: at minimum charge the owner line start becomes about `castMinDist` (2.5 m) against `landDistance` 2.0 m, so the very shortest casts are still short fights; the implementation report records the measured minimum-cast fight time per rod and whether a lead-in gate is still wanted.
 
 ### F.2 Bot report (criterion 8): T15 `FishingBots`, 200 seeds per cell
 Command: `Tools\unity.ps1 test-edit -Filter "FishGame.Tests.EditMode.FishingBots"`. Result: 9 of 9 passed, matrix time 2.4 s. Columns: `land` = landed share, `snap` = snapped share, `len` = fight length of landed fights (p10 / median / p90, seconds), `snapT` = median time to the snap, `near-snap rec>=1` = share of fights with at least one near-snap recovery, `clean` = the printed clean pair (claimed share / landed-and-clean share).
@@ -531,7 +531,7 @@ No asserted bot target failed. These are the marginal or informational numbers t
 
 - [ ] **Decide the cast-distance origin (F.1): A, B or C.** This blocks the fun gate.
 - [ ] Run this checklist (sections A-E, H) and record the results.
-- [ ] Run the M1 multiplayer criteria (3-9, 11, 12) that are still open.
+- [ ] Run the M1 multiplayer criteria (3-9, 12) that are still open.
 - [ ] Run the fun gate with a friend (development build, section D).
 - [ ] Decide the bad-luck nudge: keep / tune / remove (section H).
 - [ ] Approve the T29 look: the five fish models and the catch reveal per species (bluegill, perch, carp, trout, catfish), and your opinion on the fallback fish shape (T23).
