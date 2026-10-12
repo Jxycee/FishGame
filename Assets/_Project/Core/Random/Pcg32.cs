@@ -51,9 +51,30 @@ namespace FishGame.Core
             return ((hi << 26) | lo) * (1.0 / 9007199254740992.0);
         }
 
+        // Throws ArgumentException (before drawing) unless maxExclusive > minInclusive. Never returns maxExclusive.
         public float Range(float minInclusive, float maxExclusive)
         {
-            return minInclusive + NextFloat() * (maxExclusive - minInclusive);
+            if (!(maxExclusive > minInclusive))
+                throw new ArgumentException("maxExclusive must be greater than minInclusive.");
+            return MapUnitToRange(NextFloat(), minInclusive, maxExclusive); // exactly one NextUInt, as in M1
+        }
+
+        // Pure. Maps unit01 in [0, 1) onto [min, max). Never returns max; never below min. No argument checks
+        // (Range checks); bounds whose difference overflows or is infinite are unsupported.
+        public static float MapUnitToRange(float unit01, float minInclusive, float maxExclusive)
+        {
+            float r = minInclusive + unit01 * (maxExclusive - minInclusive);
+            if (r >= maxExclusive) r = NextBelow(maxExclusive);
+            if (r < minInclusive) r = minInclusive;
+            return r;
+        }
+
+        // Largest float strictly below x (x finite). Bit step toward -infinity.
+        private static float NextBelow(float x)
+        {
+            if (x == 0f) return -float.Epsilon;                       // +0 and -0: the step must go negative
+            int bits = BitConverter.SingleToInt32Bits(x);
+            return BitConverter.Int32BitsToSingle(x > 0f ? bits - 1 : bits + 1);
         }
 
         // Unbiased (rejection sampling). Throws ArgumentException when maxExclusive <= minInclusive.

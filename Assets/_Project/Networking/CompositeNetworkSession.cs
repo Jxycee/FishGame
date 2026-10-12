@@ -105,12 +105,12 @@ namespace FishGame.Networking
         // is the same as forwarding from the active one, and an Ended raised just after a backend switch is never lost.
         private void OnBackendStateChanged(ConnState from, ConnState to)
         {
-            StateChanged?.Invoke(from, to);
+            EventIsolation.Invoke(StateChanged, from, to);
         }
 
         private void OnBackendEnded(EndReason reason)
         {
-            Ended?.Invoke(reason);
+            EventIsolation.Invoke(Ended, reason);
         }
     }
 }

@@ -9,7 +9,10 @@
         "FishGame.Runtime",
         "FishGame.Editor",
         "Unity.InputSystem",
-        "Unity.Netcode.Runtime"
+        "Unity.Netcode.Runtime",
+        "FishGame.Gameplay",
+        "FishGame.Fishing",
+        "Unity.Collections"
     ],
     "includePlatforms": [
         "Editor"

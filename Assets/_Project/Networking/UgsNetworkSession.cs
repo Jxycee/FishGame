@@ -75,17 +75,10 @@ namespace FishGame.Networking
             _sm.Changed += OnStateMachineChanged;
         }
 
-        // Subscribers are isolated: a throwing StateChanged handler must not abort the state machine mid-transition.
+        // Each subscriber is isolated (EventIsolation): a throwing StateChanged handler is logged, the others still run, and the state machine never sees the exception.
         private void OnStateMachineChanged(ConnState prev, ConnState next)
         {
-            try
-            {
-                StateChanged?.Invoke(prev, next);
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
+            EventIsolation.Invoke(StateChanged, prev, next);
         }
 
         public ConnState State => _sm.State;

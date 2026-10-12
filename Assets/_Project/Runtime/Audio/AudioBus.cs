@@ -7,7 +7,7 @@ namespace FishGame.Runtime
 {
     // Authority: none. Client-side presentation audio only; never networked. Lives on the App root (Bootstrap, DontDestroyOnLoad).
     // Volume = cueBase * category^2 * master^2 (AudioMath.EffectiveVolume, settings 0..100); re-applied on ISettings.Changed.
-    // Per play: pitch +/-7 %, volume +/-1.5 dB (Pcg32); rate limit per id by the recipe MinInterval; missing clip -> warning, silent.
+    // Per play: pitch +/-7 %, volume +/-1.5 dB (Pcg32); rate limit per id by the recipe MinInterval; missing clip -> warning once per (reason, id), silent.
     // Ducking and SfxCueTableDef (spec 11.7) are later milestones; M1 cue data comes from SfxRecipes.M1.
     [DisallowMultipleComponent]
     public sealed class AudioBus : MonoBehaviour
@@ -24,6 +24,7 @@ namespace FishGame.Runtime
         private readonly Dictionary<AudioSource, Entry> _entries = new Dictionary<AudioSource, Entry>();
         private readonly List<AudioSource> _dead = new List<AudioSource>();
         private readonly Dictionary<string, float> _lastPlayed = new Dictionary<string, float>(StringComparer.Ordinal);
+        private readonly LogOnce _warned = new LogOnce(); // per AudioBus lifetime; never reset
         private SfxGenerator _generator;
         private ISettings _settings;
         private AudioSource[] _pool;
@@ -153,17 +154,17 @@ namespace FishGame.Runtime
             clip = null;
             if (!IsReady)
             {
-                Debug.LogWarning($"AudioBus not initialized; '{sfxId}' stays silent.");
+                if (_warned.ShouldLog("not-ready|" + (sfxId ?? ""))) Debug.LogWarning($"AudioBus not initialized; '{sfxId}' stays silent.");
                 return false;
             }
             if (!SfxRecipes.TryGet(sfxId, out recipe))
             {
-                Debug.LogWarning($"Unknown SFX id '{sfxId}'; staying silent.");
+                if (_warned.ShouldLog("unknown|" + (sfxId ?? ""))) Debug.LogWarning($"Unknown SFX id '{sfxId}'; staying silent.");
                 return false;
             }
             if (!TryGetClip(sfxId, out clip))
             {
-                Debug.LogWarning($"SFX clip '{sfxId}' is missing; staying silent.");
+                if (_warned.ShouldLog("missing|" + (sfxId ?? ""))) Debug.LogWarning($"SFX clip '{sfxId}' is missing; staying silent.");
                 return false;
             }
             return AllowPlay(recipe);

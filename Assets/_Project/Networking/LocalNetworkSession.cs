@@ -436,26 +436,12 @@ namespace FishGame.Networking
 
         private void OnStateMachineChanged(ConnState from, ConnState to)
         {
-            try
-            {
-                StateChanged?.Invoke(from, to);
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
+            EventIsolation.Invoke(StateChanged, from, to);
         }
 
         private void RaiseEnded(EndReason reason)
         {
-            try
-            {
-                Ended?.Invoke(reason);
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
+            EventIsolation.Invoke(Ended, reason);
         }
 
         private void UninstallApprover()

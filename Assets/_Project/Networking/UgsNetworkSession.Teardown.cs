@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FishGame.Core;
+using FishGame.Runtime;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
@@ -74,7 +75,7 @@ namespace FishGame.Networking
                     _sm.Fire(ConnEvent.ShutdownComplete, reason);
                 }
 
-                Ended?.Invoke(reason); // exactly once per attempt; SceneFlow turns it into a toast (D8)
+                EventIsolation.Invoke(Ended, reason); // exactly once per attempt; SceneFlow turns it into a toast (D8)
             }
             catch (Exception e)
             {
