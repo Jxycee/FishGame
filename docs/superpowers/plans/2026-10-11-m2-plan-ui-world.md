@@ -334,7 +334,7 @@ git -C C:\Dev\FishGame add Assets/_Project/UI/Fishing/DevOverlayPresenter.cs Ass
 - **Save in place.** Each built mesh is copied into the existing asset when one exists (`EditorUtility.CopySerialized(built, existing)`, or clear and refill), then the temporary mesh is destroyed. Never delete and recreate the asset: the GUIDs referenced by the scene must stay.
 - **Lakebed and shore (`Fill`).**
   - Keep the vertex and triangle order and `RecalculateNormals`.
-  - Add a per-face colour `FaceJitter.Grey(meshSeed, faceIndex, 0.04f)` (grey, alpha 1; the same value on all 3 vertices of a face).
+  - Add a per-face colour `0.5f * FaceJitter.Grey(meshSeed, faceIndex, 0.04f)` (HALF-scale grey, alpha 1, matching `MeshBuilder`; `M_Toon_Base` has `_JitterEncoded` 1 and the shader doubles it; ruling BF-7; the same value on all 3 vertices of a face).
   - Add uv1 with `x = slot`. Lakebed: Sand. Shore: Sand for faces whose centre y is below 0.3 m, Grass above.
   - Both then render with `M_Toon_Base` (palette mode) and pass `ToonMeshesHaveVertexColours` (C 2.8 #19).
 - **Water.** `MeshBuilder.Grid(96, 96, 1.25f, "LakeDock_Water")`: shared vertices, centred, y 0 (C 7.12). No colours needed (Water shader).
@@ -478,7 +478,7 @@ git -C C:\Dev\FishGame add Assets/_Project/Editor/Builders/LakeDockBuilder.cs As
    - push the Toon globals the way `PaletteGlobals.Apply` does (add the component and call `Apply`, or set `_FGPalette`, `_ToonShade` and `_ToonAmbient` from the registry palette's Day phase);
    - add a directional light at (50, -30, 0);
    - add an orthographic camera with a side view, and a second pass with a top view;
-   - for each species, place the model with `M_Toon_Fish` in a row, with the same species' `FishFallbackMesh.Get` mesh (rendered with `M_Toon_Fish`) under it for colour comparison, and a small marker cube at +Z of each fish (it shows the nose direction);
+   - for each species, place the model with `M_Toon_Fish` in a row, with the same species' `FishFallbackMesh.Get` mesh (rendered with `M_Toon_FishFallback`) under it for colour comparison, and a small marker cube at +Z of each fish (it shows the nose direction);
    - log `subMeshCount`, `HasVertexAttribute(VertexAttribute.Color)`, the triangle count and the bounds size per model;
    - render to a `RenderTexture`: `camera.Render()`, or `RenderPipeline.SubmitRenderRequest` with a `RenderPipeline.StandardRequest` if URP ignores `Render()` in batchmode;
    - read the pixels and write `$env:FG_OUT\t29\lineup_side.png` and `lineup_top.png`;
@@ -551,7 +551,7 @@ Follow the M1 doc's style (`2026-10-09-m1-acceptance.md`): checkbox per item, St
 | # | Criterion (17.2) | Owner | How to check |
 |---|---|---|---|
 | 1 | Solo: Idle to landed fish, no errors, only the 8.3 bindings, keyboard/mouse **and** gamepad | User | Solo with Auto Solo on and the Console cleared. Keyboard/mouse: 1 (equip), hold RMB, hold and release LMB, wait, S/A/D during the fight, land. Then the same on gamepad only (North, LT, RT, left stick). Expected: the fish lands, the creel goes +1, the toast and reveal show, the rod returns to Idle, and the Console shows 0 errors. Record both devices. |
-| 2 | Every 9.2 transition has a passing EditMode test | Claude (T30) | `test-edit -Filter RodStateMachine`: 44 test methods (38 row tests from C 10.2 + 6 rule tests). `RodStateMachine_IllegalEvents_IgnoredInEveryState` is a TestCaseSource over 11 states, so NUnit reports **54 results** (38 + 5 + 11), all passing. Paste the count line. |
+| 2 | Every 9.2 transition has a passing EditMode test | Claude (T30) | `test-edit -Filter RodStateMachine`: 45 test methods (38 row tests from C 10.2 + 6 rule tests + the extra `RodStateMachine_Assist_CapturedAtRelease`; BF-8). `RodStateMachine_IllegalEvents_IgnoredInEveryState` is a TestCaseSource over 11 states, so NUnit reports **55 results** (38 + 5 + 11 + 1), all passing. Paste the count line. |
 | 3 | Co-op: cues on both peers; reveal for everyone after the host commits | User | MPPM 2-4 instances: the MPPM list items MP1 and MP4 below. |
 | 4 | Tension and phase readable with no HUD and with sound off | User | Gauge Off, captions off, master volume 0. Fight 3 fish (one Bulldog). Name aloud: side run vs dive (splash column vs plunge and line down), creak band (rod bend), warn (shake plus the line dash and width pulse). A second person watches the screen and confirms. Then repeat with sound on and eyes on the rod only. |
 | 5 | Rod back to Idle within 3 s in every 9.13 case; no stuck states; no rumble left | User + Claude | Section C below (the 9.13 walk). Gamepad connected, so rumble is observable. |

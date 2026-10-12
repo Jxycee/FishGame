@@ -141,7 +141,7 @@ Section plans reference M1 contract sections by number instead of restating them
 16. Core never uses `UnityEngine.Random` or `System.Random`. `FightSim`, rolls and bite plans use their own seeded `Pcg32`.
 17. Presentation never writes gameplay state (spec 10.1). UI and Presentation read rod state through `FishingRodNetwork.ViewState`, `FishingRodController` read-only members and events.
 18. Global shader arrays are always pushed full length: `_FGPalette` 16, `_Ripples` 8, `_Waves` 4.
-19. Every mesh rendered with a `FishGame/Toon` material has vertex colours (MeshBuilder meshes and the fish FBX models do). `RenderValidators` enforces it. Vertex colours are never colour-space converted, so the Toon shader treats them as LINEAR (ruling F-Q3): the fish FBX models are exported with `colors_type='LINEAR'` and `FishFallbackMesh` writes `colorA.linear` / `colorB.linear`; `PaletteGlobals` linearises `_FGPalette` for the same reason. Fish models are ONE submesh drawn with the single `M_Toon_Fish` (ruling G-Q6).
+19. Every mesh rendered with a `FishGame/Toon` material has vertex colours (MeshBuilder meshes and the fish FBX models do). `RenderValidators` enforces it. Vertex colours are never colour-space converted, so the Toon shader treats them as LINEAR (ruling F-Q3): the fish FBX models are exported with `colors_type='LINEAR'` and `FishFallbackMesh` writes `colorA.linear` / `colorB.linear`; `PaletteGlobals` linearises `_FGPalette` for the same reason. Fish models are ONE submesh drawn with the single `M_Toon_Fish` (ruling G-Q6). Vertex-colour scale (ruling BF-7): `MeshBuilder` stores a HALF-scale grey `0.5 * (1 +/- faceJitter)` (a new Mesh stores colours as UNorm8, which clamps to 0..1); the Toon material float `_JitterEncoded` decides how the vertex colour is read: 1 for every MeshBuilder-built mesh (props, lakebed/shore, rod, bobber, body slots, skin, `FishFallbackMesh`, the silhouette), where the shader uses `2 * vc.rgb` (grey meshes have r == g == b); 0 for the Blender fish models on `M_Toon_Fish`, where the vertex colour is the linear albedo as stored. No colour is clamped or rewritten after `ToMesh`. Only `M_Toon_Fish` has 0, and `RenderValidators` and `ToonMaterialTests` check it. T20 builds one extra asset material `M_Toon_FishFallback` (white `_BaseColor`, no palette, `_JitterEncoded` 1) for MeshBuilder-built fish: `CatchRevealView` uses it for `FishFallbackMesh` meshes and `FishingFeedback` for the snap silhouette. There are no runtime material instances for this; the silhouette tint is baked into its vertex colours.
 20. Commits: explicit paths; trailer per 2.1; never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`, `*.csproj`, `*.slnx`.
 21. Logs and test results go in the session scratchpad (`$env:FG_OUT`), never in the repo.
 
@@ -306,7 +306,7 @@ Assets/_Project/
 | Fish models | `Content/Models/Fish_Bluegill.fbx`, `Fish_Perch.fbx` (the spike file is replaced), `Fish_Carp.fbx`, `Fish_Trout.fbx`, `Fish_Catfish.fbx` | T29 (controller imports the staged `Art/Export/Fish_*.fbx`, source `Art/Blender/fishgame_m2_species.blend`) | ONE submesh, one material slot (no materials imported), per-face LINEAR vertex colours, 222-262 triangles, exported -Z forward / Y up / apply transform (identity transform, scale 1, nose +Z in Unity), flat normals |
 | Shaders | `Shaders/FishGameCommon.hlsl`, `Shaders/Toon.shader` | T20 | |
 | Shaders | `Shaders/Water.shader`, `Shaders/Line.shader`, `Shaders/GradientSky.shader` | T21 | |
-| Toon materials | `Content/Materials/M_Toon_Base.mat` (palette mode), `M_Toon_Fish.mat` (vertex-colour mode, white `_BaseColor`), `M_Body_Slot0..3.mat` and `M_Skin.mat` re-pointed to `FishGame/Toon` in place (GUIDs kept) | T20 | |
+| Toon materials | `Content/Materials/M_Toon_Base.mat` (palette mode), `M_Toon_Fish.mat` (vertex-colour mode for the Blender fish models, white `_BaseColor`, `_JitterEncoded` 0), `M_Toon_FishFallback.mat` (ruling BF-7: vertex-colour mode for MeshBuilder-built fish and the snap silhouette, white `_BaseColor`, no palette, `_JitterEncoded` 1), `M_Body_Slot0..3.mat` and `M_Skin.mat` re-pointed to `FishGame/Toon` in place (GUIDs kept) | T20 | |
 | Other materials | `Content/Materials/M_Water_Surface.mat` (`FishGame/Water`), `M_Line.mat` (`FishGame/Line`), `M_Sky.mat` (`FishGame/GradientSky`), `M_Particle.mat` (URP `Particles/Unlit`), `M_Marker.mat` (URP `Unlit`) | T21 | M1 `M_Water.mat` stays (unused after T28) |
 | Volume profiles | `Content/Rendering/VP_WarmSunset.asset`, `VP_CoolNight.asset` | T21 | `ColorAdjustments` + `WhiteBalance` only |
 | Generated meshes | `Content/Meshes/Body_*.asset` (T20), `Rod_*.asset`, `Bobber.asset` (T19), `Marker_*.asset` (T24), `LakeDock_*.asset` (T28, M1 lakebed/shore kept) | builders | rebuilt in place (GUIDs kept) |
@@ -335,7 +335,8 @@ Children (paths are `PlayerRigPaths` constants, T16):
 | `Body/ArmR/Hand` | empty at the right-hand end of the arm (local (0, -0.5, 0) under `ArmR`) | M5 turns it into the `HoldNode` |
 | `Body/ArmR/Hand/Rod` | empty, rotated so +Z points forward-up 35 degrees | shown when `NetTool == Rod` |
 | `Body/ArmR/Hand/Rod/Seg0..Seg5` | 6 MeshBuilder cylinder segments, `M_Toon_Base` (palette WoodDark) | `RodPresenter` bends them |
-| `Body/ArmR/Hand/Rod/Tip` | empty at the end of Seg5 | line start; `FishingRodController` reads it |
+| `Body/ArmR/Hand/Rod/TipAnchor` | empty at the end of Seg5 (local (0, 0, 1.8) under `Rod`); STATIC, never moved by presentation | gameplay tip: `FishingRodController` reads it for `RodTipPosition`, the fish point and `TipToBobber` (ruling BF-3) |
+| `Body/ArmR/Hand/Rod/TipVisual` | empty, same rest pose as `TipAnchor`; `RodPresenter` bends it with the segments | visual tip: `LineView` draws the line from it; `RodPresenter.Tip` returns it (ruling BF-3) |
 | `Body/ArmR/Hand/CatchHold` | empty | `CatchRevealView` parents the fish here |
 | `Line` | `LineRenderer` (world space, `M_Line`), 24 points | `LineView` |
 | `Bobber` | MeshFilter + MeshRenderer (`Bobber.asset`, palette Accent + white) | world-positioned every frame by `BobberView` |
@@ -738,7 +739,7 @@ Contract rules (the T8 plan carries the full transition code, since it is a tric
 - `Casting -> Waiting` when flight time (`CastMath.FlightTime(CastDistance)`) has elapsed **and** `HasResult`; the bite timer starts at `max(landing, resultReceived)`.
 - Unsolicited commit in Waiting/Bite/Hooked: no `SendResult`; `Cancelled` -> `Escaped` with `Recalling = true` and cue `Recall`; otherwise `Escaped(finalReason)` with cue `Escaped`; 1.5 s beat then Idle. Commit in Landed/Snapped/Escaped: sets the commit flag; Idle once the 1.5 s beat is done and (commit or `CommitTimeout` since entering the terminal state; the latter emits `CommitTimedOut`).
 - `ForceEnd`: Readying/Ready/Charging -> Idle; Casting/Waiting/Bite -> Idle + `SendCancel` + cue `Recall`; Hooked -> Escaped(Dropped) + `SendResult(Escaped, Dropped)`; Idle and terminal states: no-op.
-- Effects for every transition: `SendRodEvent` for Nibble, Bite, HookSet, Snapped (with `SizeClass`; only Snapped carries the size class, ruling B-Q13), Escaped. `Cue` for every `RodCue` the state change implies.
+- Effects for every transition: `SendRodEvent` for Nibble, Bite, HookSet, Snapped (with `SizeClass`; only Snapped carries the size class, ruling B-Q13), Escaped. `Cue` for every `RodCue` the state change implies; the Snapped `Cue` effect carries `SizeClass = Roll.SizeClass` too (ruling BF-1: the owner's local snap cue reads it), every other cue effect carries 0. A host-rejected or insane cast result never makes the machine emit `SendCancel`; the single `CancelRpc` after an insane roll comes from `FishingRodNetwork` (ruling BF-5).
 - Bad-luck nudge (R65): on Bite, a real hook window (`Roll.HookWindow > 0`) is extended by `PityHookWindowBonus` when `Roll.Pity`; an auto-hook (window 0) is unchanged. The fight is built with `new FightSim(..., Roll.Pity)`.
 
 ### 7.9 T9 - Host ledger (asm FishGame.Core, `Core/Fishing/`)
@@ -764,7 +765,7 @@ public struct CommitDecision
     public ulong ClientId; public byte Slot; public uint CastId;
     public bool Accepted;      // false ONLY for orphan repeats (a stored resolution replayed); every FIRST resolution has Accepted = true (ruling E-Q6). Consumers act on Announce / AddToCreel / Outcome.
     public FightOutcome Outcome; public EscapeReason Reason;
-    public bool Refunded; public AnnounceKind Announce; public FishingRoll Roll; public bool AddToCreel;
+    public bool Refunded; public AnnounceKind Announce; public FishingRoll Roll; public bool AddToCreel;   // Roll = the cast's roll on EVERY non-orphan decision, incl. Cancel and Tick timeouts; default on orphans (BF-4)
     public bool CleanBonus;    // Roll.Catch already carries the upgraded quality and value
 }
 public struct PlayerLoadout { public ushort RodIndex; public byte BaitIndex; public ushort BaitCount; }  // BaitCount 0xFFFF = unlimited
@@ -957,7 +958,7 @@ public static class RippleMath
     public static int NextSlot(int lastSlot);                          // round robin, oldest recycled
 }
 // Core/Render/FaceJitter.cs
-public static class FaceJitter { public static float Grey(uint meshSeed, int faceIndex, float jitter); }  // 1 +- jitter from FNV/SplitMix hash; deterministic
+public static class FaceJitter { public static float Grey(uint meshSeed, int faceIndex, float jitter); }  // 1 +- jitter from FNV/SplitMix hash; deterministic. MeshBuilder STORES 0.5 * Grey (BF-7)
 // Core/Render/ShaderGlobals.cs - property name constants (5.3)
 ```
 Runtime:
@@ -981,7 +982,7 @@ public sealed class MeshBuilder
     public void Cylinder(Vector3 center, float radiusBottom, float radiusTop, float height, int sides, Quaternion rotation, byte slot);
     public void Capsule(Vector3 center, float radius, float height, int sides, int rings, Quaternion rotation, byte slot);
     public void Icosphere(Vector3 center, float radius, int subdivisions, byte slot);
-    public Mesh ToMesh(string name);  // unshared verts (3 per tri), face normal, uv1.x = slot (UV channel 1 = TEXCOORD1), float colour = FaceJitter grey; deterministic bytes
+    public Mesh ToMesh(string name);  // unshared verts (3 per tri), face normal, uv1.x = slot (UV channel 1 = TEXCOORD1), vertex colour = HALF-scale grey 0.5 * FaceJitter.Grey = 0.5 * (1 +/- faceJitter) so it fits UNorm8 storage (BF-7); deterministic bytes
     public static Mesh Grid(int cellsX, int cellsZ, float cellSize, string name); // shared vertices, centred, y 0 (water)
 }
 ```
@@ -1069,7 +1070,7 @@ public bool IsServerInitialized { get; }                   // true after ServerI
 public event Action<PlayerNetState> ServerInitialized;     // server only; raised at the end of ServerInit (G2)
 
 // Gameplay/Player/PlayerRigPaths.cs (edit)
-public const string Hand = "Body/ArmR/Hand", Rod = "Body/ArmR/Hand/Rod", RodTip = "Body/ArmR/Hand/Rod/Tip",
+public const string Hand = "Body/ArmR/Hand", Rod = "Body/ArmR/Hand/Rod", RodTipAnchor = "Body/ArmR/Hand/Rod/TipAnchor", RodTipVisual = "Body/ArmR/Hand/Rod/TipVisual",
     RodSegmentPrefix = "Body/ArmR/Hand/Rod/Seg", CatchHold = "Body/ArmR/Hand/CatchHold", Line = "Line", Bobber = "Bobber",
     CastMarker = "CastMarker";
 public const int RodSegmentCount = 6;
@@ -1246,7 +1247,7 @@ public sealed class FishingRodController : MonoBehaviour, IPlayerContextSource
     public bool MarkerVisible { get; } public bool MarkerValid { get; } public Vector3 MarkerPosition { get; }
     public float ChargeNorm { get; }
     public RodStats Rod { get; }
-    public Vector3 RodTipPosition { get; }
+    public Vector3 RodTipPosition { get; }        // world position of the STATIC TipAnchor (BF-3), never the bent TipVisual
     public InputContext RequestedContext { get; } // Free (stowed), RodReady (Idle), RodAiming (Readying..Charging), RodWaiting (Casting, Waiting, terminal beats), RodFighting (Bite, Hooked)
     public bool LocksMovement { get; }            // State is Bite or Hooked
     public event Action<FightEnded> FightEnded;   // owner; one per cast that reached Waiting (telemetry)
@@ -1269,7 +1270,7 @@ Behaviour the other tasks rely on:
 - `NetRodState`: written every frame through `OwnerWriteState` (quantized; the NetworkVariable throttles to 15 Hz). `BobberPos` = landing target while Casting, then the bobber / fish point (`FishPointMath` + water sampling every 0.2 s, holding the last valid water point).
 - Pause (`IPauseState.Paused`, solo): `RodFrame.Paused = true`; the fight accumulator does not advance.
 - Assist from `settings.fishingAssist`, captured at release by the machine.
-- Rumble off on every terminal state and on disable (via `FishingRodNetwork.Cue` consumers; the controller itself calls `IInputService.SetRumble(0, 0)` in `OnDisable`).
+- Rumble (ruling BF-2): the continuous rumble is off on every terminal state, the terminal one-shot pulses (Snapped, Escaped, Landed double pulse) play to completion first, and everything is 0 at Idle, on focus loss and on disable. `FishingFeedback` (T23) owns the pulses; the controller itself calls `IInputService.SetRumble(0, 0)` only on entering Idle and in `OnDisable`.
 - Ignored events: after each machine call the controller compares `Machine.IgnoredEventCount` and, in debug builds, `Debug.Log`s once per state when it grew (ruling E-Q5).
 
 ### 7.19 T19 - Integration (asm FishGame.Editor + PlayMode tests)
@@ -1277,7 +1278,7 @@ Behaviour the other tasks rely on:
 // Editor/Builders/Fishing/PlayerFishingRigBuilder.cs - called from PrefabBuilder.BuildPlayer (hook); reuses existing children/components
 public static class PlayerFishingRigBuilder
 {
-    public static void Build(GameObject playerRoot);           // 6.3 rig (Hand, Rod, Seg0..5, Tip, CatchHold, Line, Bobber) + PlayerCreel,
+    public static void Build(GameObject playerRoot);           // 6.3 rig (Hand, Rod, Seg0..5, TipAnchor, TipVisual, CatchHold, Line, Bobber) + PlayerCreel,
                                                                // FishingRodNetwork, FishingRodController (disabled); meshes Rod_*.asset, Bobber.asset
     public static void AddPresentation(GameObject playerRoot); // T24 owns the body; T23 adds its line (2.6)
 }
@@ -1288,7 +1289,7 @@ PlayMode (`Tests/PlayMode/FishingSoloTests.cs`): fixture per G9. Solo start; `Fi
 
 ### 7.20 T20 - Toon shading, fish import (asm FishGame.Editor; `Shaders/`)
 - `Shaders/FishGameCommon.hlsl`: the 5.3 globals; shared fog and wave helpers (the HLSL wave function mirrors `WaveMath.HeightAt` term for term).
-- `Shaders/Toon.shader` (`FishGame/Toon`): spec 10.3 exactly (UnityPerMaterial `_BaseColor, _RampMid, _RampSoft, _UsePalette, _Desaturate, _RimPow, _RimStrength`; passes UniversalForward with the SimpleLit 17.6 keyword set incl. `_CLUSTER_LIGHT_LOOP` and `_ADDITIONAL_LIGHTS`, ShadowCaster, DepthOnly). Albedo `_UsePalette > 0.5 ? _FGPalette[round(uv1.x)] * vertexColor * _BaseColor : vertexColor * _BaseColor`. Vertex colour is treated as LINEAR and never converted (one rule for MeshBuilder meshes and the fish models; ruling F-Q3). If the `-nographics` shader-validation check fails, T20 owns a minimal `Tools/unity.ps1` change (graphics-capable mode for the validation run; ruling F-Q4).
+- `Shaders/Toon.shader` (`FishGame/Toon`): spec 10.3 exactly (UnityPerMaterial `_BaseColor, _RampMid, _RampSoft, _UsePalette, _JitterEncoded, _Desaturate, _RimPow, _RimStrength`; passes UniversalForward with the SimpleLit 17.6 keyword set incl. `_CLUSTER_LIGHT_LOOP` and `_ADDITIONAL_LIGHTS`, ShadowCaster, DepthOnly). UnityPerMaterial also holds `_JitterEncoded` (ToggleUI float, default 1; SRP Batcher compatible). Albedo `vertexFactor = lerp(vertexColor.rgb, 2 * vertexColor.rgb, _JitterEncoded)`, then `albedo = (_UsePalette > 0.5 ? _FGPalette[round(uv1.x)] : 1) * vertexFactor * _BaseColor` (BF-7: MeshBuilder stores a half-scale grey so its materials set `_JitterEncoded` 1; `M_Toon_Fish` sets 0 and reads the Blender linear albedo as stored). Material values: `M_Toon_Base`, `M_Body_Slot0..3`, `M_Skin`, `M_Toon_FishFallback` `_JitterEncoded` 1; `M_Toon_Fish` 0. Vertex colour is treated as LINEAR and never converted (one rule for MeshBuilder meshes and the fish models; ruling F-Q3). If the `-nographics` shader-validation check fails, T20 owns a minimal `Tools/unity.ps1` change (graphics-capable mode for the validation run; ruling F-Q4).
 ```csharp
 public static class ShaderValidator       // Editor/Validation/ShaderValidator.cs
 {
@@ -1302,7 +1303,7 @@ public static class RenderValidators      // Editor/Validation/RenderValidators.
 }
 public static class RenderMaterialLibrary  // Editor/Builders/RenderMaterialLibrary.cs; MaterialLibrary.BuildAll hook
 {
-    public static void BuildAll();         // T20: M_Toon_Base, M_Toon_Fish; re-points M_Body_Slot0..3 (_BaseColor = SlotPalette) and M_Skin to Toon
+    public static void BuildAll();         // T20: M_Toon_Base, M_Toon_Fish, M_Toon_FishFallback; re-points M_Body_Slot0..3 (_BaseColor = SlotPalette) and M_Skin to Toon
     public static Material Get(string name);
 }
 public sealed class FishModelPostprocessor : AssetPostprocessor   // Editor/Builders/Render/FishModelPostprocessor.cs
@@ -1350,17 +1351,18 @@ public sealed class FishingFeedback : MonoBehaviour
     // Every peer: RodCueAudio sounds at the bobber (spatial; the owner also hears Bite 2D), ripples, duck on stingers, loops
     //   (Line_Creak pitch/volume from TensionCues while Hooked, Dive_Thrum during dives, Reel_Click at ReelClickRate while reeling).
     // Owner only: camera trauma (PlayerCamera.AddTrauma), FOV kicks (AddFovKick: cast +2 deg over 0.15 s, catch -3 deg),
-    //   rumble (IInputService.SetRumble from TensionCues and cue pulses; 0 on every terminal state, focus loss and disable),
+    //   rumble (IInputService.SetRumble from TensionCues and cue pulses; continuous part 0 on every terminal state, the terminal pulses play out first; all 0 at Idle, focus loss and disable; BF-2),
     //   captions (EventBus CaptionRequested "cap.bite", "cap.straining", "cap.snapped", "cap.escaped" when settings.captions).
-    // Snap: a grey silhouette jump at BobberPos scaled by sizeClass, every peer. All motion x settings.cameraMotion.
+    // Snap: a grey silhouette jump at BobberPos scaled by sizeClass, every peer, drawn with the asset material M_Toon_FishFallback (grey tint baked
+    //   into FishFallbackMesh.Silhouette() vertex colours; no material instance; BF-7). All motion x settings.cameraMotion.
 }
 public sealed class CatchRevealView : MonoBehaviour
 {
     // Announced (every peer): Landed or ReleasedCreelFull -> fish held up at CatchHold for 1.5 s: the species model with M_Toon_Fish,
-    //   scaled so its +Z bounds length = LengthMm / 1000 m; junk or a null model -> FishFallbackMesh. Trophy: bigger burst.
+    //   scaled so its +Z bounds length = LengthMm / 1000 m; junk or a null model -> FishFallbackMesh with M_Toon_FishFallback (BF-7). Trophy: bigger burst.
     //   ReleasedCreelFull then drops it with a splash. Lost and PityCast: no reveal (the HUD toast covers them). Clean bonus: sparkle.
 }
-public static class FishFallbackMesh       // MeshBuilder fish from BodyShape + colorA/colorB written LINEAR (cached per item; the same vertex-colour rule as the fish models, F-Q3); junk: box boot or cylinder can
+public static class FishFallbackMesh       // MeshBuilder fish from BodyShape + colorA/colorB written LINEAR (cached per item; the same vertex-colour rule as the fish models, F-Q3; drawn with M_Toon_FishFallback, `_JitterEncoded` 1, BF-7); junk: box boot or cylinder can
 { public static Mesh Get(ContentRegistry registry, bool isJunk, ushort itemIndex); }
 ```
 `PlayerFishingRigBuilder.AddPresentation` gets a block of up to 12 lines from T23: GetOrAdd of both components plus their serialized material references (ruling F-Q5, 2.6).
@@ -1369,8 +1371,9 @@ public static class FishFallbackMesh       // MeshBuilder fish from BodyShape + 
 All read `FishingRodNetwork.ViewState` (and `FishingRodController.Local` for the owner's marker); none write gameplay state.
 ```csharp
 public sealed class RodPresenter : MonoBehaviour   // rod shown iff Player.Tool == Rod; 6 segments bend toward the line by bend * weight[i],
-{ public Transform Tip { get; } }                  //   bend = TensionCues.RodBend01; nibble wobble 4 deg; shake in Warn
-public sealed class LineView : MonoBehaviour       // quadratic Bezier Tip -> bobber, sag (1 - tension) * 0.15 * length, 24 points, M_Line _Tension;
+{ public Transform Tip { get; } }                  //   bend = TensionCues.RodBend01; nibble wobble 4 deg; shake in Warn. Tip = the BENT TipVisual (BF-3);
+                                                   //   RodPresenter bends TipVisual only and never touches TipAnchor (gameplay reads TipAnchor)
+public sealed class LineView : MonoBehaviour       // quadratic Bezier TipVisual (RodPresenter.Tip) -> bobber, sag (1 - tension) * 0.15 * length, 24 points, M_Line _Tension;
 { }                                                //   width pulse in Warn; hidden while no line is out
 public sealed class BobberView : MonoBehaviour     // cast arc on a CHANGE into Casting (CastMath.ArcPoint, FlightTime, PitchApexMult; remotes use NetPitchQ);
 { public Vector3 Position { get; } }               //   wave bob WaterSurface.HeightAt; nibble dip, bite plunge, recall bounce; the first value after spawn snaps
@@ -1465,7 +1468,7 @@ Controller work, not a subagent task. The five models already exist in the repo 
 | `SelectBaitRpc` | Server / Owner | `byte baitIndex, RpcParams p = default` | Debug bait selection (refused while a cast is active) |
 | `SelectRodRpc` | Server / Owner | `ushort rodIndex, RpcParams p = default` | Debug rod selection (refused while a cast is active) |
 
-Server handlers forward to `FishingHost`. The owner drops a `CastResultRpc` whose roll fails `FishingRollNet.TryToCore` with one warning, raises `CastResultReceived(valid: false)` immediately and sends `CancelRpc` once (ruling E-Q7). Because `CommitRpc` and `CatchAnnouncedRpc` both defer local invocation (host-owned rod) and are sent in that order, commit-then-announce holds on every peer, the host included.
+Server handlers forward to `FishingHost`. The owner drops a `CastResultRpc` whose roll fails `FishingRollNet.TryToCore` with one warning, raises `CastResultReceived(valid: false)` immediately and sends `CancelRpc` once (ruling E-Q7; this handler is the sole sender, ruling BF-5). Because `CommitRpc` and `CatchAnnouncedRpc` both defer local invocation (host-owned rod) and are sent in that order, commit-then-announce holds on every peer, the host included.
 
 ### 8.3 NetworkVariables
 
@@ -1799,6 +1802,14 @@ Controller rulings on the section authors' contract questions, the consistency-c
 | Process (lockfile) | Locked means HELD; stop only if `unity.ps1` reports LOCKED; a leftover `Temp/UnityLockfile` is not a lock (CLAUDE.md update needs the user's OK) | C 2.8 #11; every section plan's lock note |
 | Fish models staged | `Art/Export/Fish_*.fbx` (source `Art/Blender/fishgame_m2_species.blend`): T29 imports and verifies; the new perch replaces the spike perch | C 6.2, C 7.29, C 12; ui-world T29; data-tuning T14; presentation T20.7 |
 | R65 / M2-D23 | Bad-luck nudge (section 13) | C 5.3, C 7.5, C 7.6, C 7.7, C 7.8, C 7.9, C 7.17, C 7.18, C 7.25, C 7.27, C 8.2, C 9, C 10.1, C 13; core-fishing T5-T9; data-tuning 1.1; net T17, T18, T27; ui-world T25, T26, T30; presentation T23 |
+| BF-1 | The machine's `Cue()` helper sets `SizeClass` on the Snapped cue from `Roll.SizeClass` (only Snapped, consistent with B-Q13), so the owner's local snap silhouette scales like the remotes' | C 7.8; core-fishing T8 (code, decisions 7 and 13, test); net T18 (comment); presentation T23 |
+| BF-2 | Terminal states (Snapped, Escaped, Landed) play their one-shot rumble pulse; continuous rumble is 0 on terminal states and the output is forced to 0 only after the pulse ends; Idle, focus loss and disable zero at once. The controller no longer calls `SetRumble(0, 0)` on terminal states | C 7.18, C 7.23; net T18; presentation T23 |
+| BF-3 | The rod rig has two tip transforms: static `TipAnchor` (read by `FishingRodController` for `RodTipPosition`, the fish point, `TipToBobber`) and `TipVisual` (bent by `RodPresenter`, `RodPresenter.Tip`, the line start of `LineView`). `PlayerRigPaths.RodTip` is replaced by `RodTipAnchor` and `RodTipVisual` | C 6.3, C 7.16, C 7.18, C 7.19, C 7.24; net T16, T18, T19; presentation T23, T24 |
+| BF-4 | Every non-orphan `CommitDecision` carries `Roll = ActiveCast.Roll` (Cancel and Tick-timeout decisions too, so T17's Lost announcement reads `d.Roll.Catch`); orphans carry default | C 7.9; core-fishing T9; net T17 |
+| BF-5 | Exactly one sender of `CancelRpc` after an insane roll: the owner-side `CastResultRpc` handler in `FishingRodNetwork` (T17), which also raises `CastResultReceived(valid:false)`. The machine and T18 only react (`OnCastResult(false)`) | C 7.8, C 8.2; core-fishing T8 decision 6; net T17, T18 |
+| BF-6 | T5 gains three extra tests (`CastMath_ArcPoint_EndpointsAndApex`, `BaitStats_EffRating_ClampsAndTreatsZeroAsOne`, `RodStats_MaxLineOut_AddsSpoolExtra`); T5 is 18 tests. Given to the T5 implementer directly | core-fishing T5 (not edited here) |
+| BF-7 | `MeshBuilder` stores a HALF-scale grey `0.5 * (1 +/- faceJitter)` so it fits UNorm8 vertex-colour storage (`FaceJitter.Grey` is unchanged); the T12 test asserts a grey > 0.5 instead of > 1. The Toon shader gets a per-material float `_JitterEncoded` (in UnityPerMaterial): 1 for every MeshBuilder-built mesh (props, lakebed/shore, rod, bobber, body slots, skin, and `FishFallbackMesh` and the snap silhouette, which use the new asset material `M_Toon_FishFallback`; no runtime material instances) gives `vertexFactor = 2 * vc.rgb`; 0 (only `M_Toon_Fish`, the Blender fish models) gives `vc.rgb` as linear albedo. No scale correction or clamping after `ToMesh` (the fallback colour pass and the silhouette tint only multiply the half-scale grey by a colour). `RenderValidators` and `ToonMaterialTests` check that every Toon material except `M_Toon_Fish` has 1 | C 2.8 #19, C 6.2, C 7.12, C 7.20, C 7.23; core-support T12; presentation T20, T20.5, T20.6, T23.1-T23.3; ui-world T28 |
+| BF-8 | T30 counts `RodStateMachineTests` as 45 test methods and 55 NUnit results (38 row + 6 rule + `RodStateMachine_Assist_CapturedAtRelease`) | ui-world T30 |
 
 ### 15.2 R65 / M2-D23 details that cross tasks
 - **Wire:** `FishingRollNet.Flags` bit 0 (`FlagPity`) carries `FishingRoll.Pity` to the owner; the crew announcement is `CatchAnnouncedRpc(slot, default, PityCast, 0)` sent by `FishingHost` when an accepted cast has `Roll.Pity` (new `AnnounceKind.PityCast = 4`; consumers other than the HUD ignore it; `CatchRevealView` does not reveal it).

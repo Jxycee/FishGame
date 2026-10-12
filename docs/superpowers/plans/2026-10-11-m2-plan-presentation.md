@@ -83,7 +83,7 @@ C 10 lists only two tests for T20-T24 (both T20). EditMode cannot reference Pres
 | | |
 |---|---|
 | Goal | The `FishGame/Toon` shader (spec 10.3) and shared HLSL; a fail-closed `ShaderValidator` that works under `-batchmode -nographics` (settled here); `RenderValidators`; Toon materials; MeshBuilder body meshes (vertex colours); the FBX import postprocessor and the perch reimport. |
-| Owned files (C 12) | `Shaders/FishGameCommon.hlsl`, `Shaders/Toon.shader`, `Editor/Validation/ShaderValidator.cs`, `Editor/Validation/RenderValidators.cs`, `Editor/Builders/RenderMaterialLibrary.cs`, `Editor/Builders/Render/FishModelPostprocessor.cs`; generated `Content/Materials/M_Toon_Base.mat`, `M_Toon_Fish.mat`, re-pointed `M_Body_Slot0..3.mat` and `M_Skin.mat` (GUIDs kept), `Content/Meshes/Body_UnitSphere.asset`, `Body_UnitBox.asset`, `Body_UnitCapsule.asset`, `Prefabs/PlayerFP.prefab`, `Content/Models/Fish_Perch.fbx.meta`. Tests: `Tests/EditMode/ValidationTests.cs` (add 2). `Tests/EditMode/ToonMaterialTests.cs` (whitelisted, ruling F-Q6). If the `-nographics` check in step 3 fails: a minimal `Tools/unity.ps1` change (ruling F-Q4). |
+| Owned files (C 12) | `Shaders/FishGameCommon.hlsl`, `Shaders/Toon.shader`, `Editor/Validation/ShaderValidator.cs`, `Editor/Validation/RenderValidators.cs`, `Editor/Builders/RenderMaterialLibrary.cs`, `Editor/Builders/Render/FishModelPostprocessor.cs`; generated `Content/Materials/M_Toon_Base.mat`, `M_Toon_Fish.mat`, `M_Toon_FishFallback.mat`, re-pointed `M_Body_Slot0..3.mat` and `M_Skin.mat` (GUIDs kept), `Content/Meshes/Body_UnitSphere.asset`, `Body_UnitBox.asset`, `Body_UnitCapsule.asset`, `Prefabs/PlayerFP.prefab`, `Content/Models/Fish_Perch.fbx.meta`. Tests: `Tests/EditMode/ValidationTests.cs` (add 2). `Tests/EditMode/ToonMaterialTests.cs` (whitelisted, ruling F-Q6). If the `-nographics` check in step 3 fails: a minimal `Tools/unity.ps1` change (ruling F-Q4). |
 | Shared edits (C 2.6) | `Editor/Builders/MaterialLibrary.cs` (body/skin move out; hook `RenderMaterialLibrary.BuildAll()`), `Editor/Builders/PrefabBuilder.cs` (body meshes), `Editor/Validation/ValidationRunner.cs` (hook), `Editor/Builders/AssetPaths.cs` (T20 constants block). |
 | Depends on | T12, T13, T19 committed (T14's `AssetPaths` block exists). |
 | Implementer | Sonnet |
@@ -106,7 +106,7 @@ Public surface exactly C 7.20: `public static List<string> Run()` and `[MenuItem
    float4 Frag() : SV_Target { return fg_canary_undeclared; }
    ENDHLSL } } }
    ```
-3. **Enumerate** `AssetDatabase.FindAssets("t:Shader", new[] { AssetPaths.ShadersFolder })`. None found -> error `no shaders under Assets/_Project/Shaders`. A name not starting with `FishGame/` -> error. There is no expected-name list, so T21's shaders are covered with no T20 edit.
+3. **Enumerate** `AssetDatabase.FindAssets("t:Shader", new[] { AssetPaths.ShadersFolder })`, but only when `AssetDatabase.IsValidFolder(AssetPaths.ShadersFolder)` (Unity logs an error for a missing search folder, which would fail the run with an unhandled log instead of this error). A missing folder or none found -> error `no shaders under Assets/_Project/Shaders`. A name not starting with `FishGame/` -> error. There is no expected-name list, so T21's shaders are covered with no T20 edit.
 4. **Per shader.**
    - (a) `ShaderUtil.ShaderHasError(shader)` -> one error per `ShaderUtil.GetShaderMessages(shader)` entry with Error severity. (b) `ShaderUtil.GetShaderData(shader).ActiveSubshader`; null -> error.
    - (c) For every pass `GetPass(i)`, each keyword set K0-K2 below, and the vertex and fragment stages: `pass.CompileVariant(<vertex|fragment>, keywords, ShaderCompilerPlatform.D3D, BuildTarget.StandaloneWindows64)`. Use the 6000.6 overload with these four arguments, or its nearest equivalent; record which one in the report.
@@ -129,6 +129,7 @@ The class comment states the authority-free editor role and the T20 spike result
 - `All()`: returns `ShaderValidator.Run()` then `ToonMeshesHaveVertexColours()`.
 - `ToonMeshesHaveVertexColours()` visits every `Renderer` (include inactive) in every prefab under `Assets/_Project/Prefabs` (read-only `AssetDatabase.LoadAssetAtPath<GameObject>`) and every enabled build scene, opened the way T4's `Validators.MeshReferences` opens them (reuse its helper if internal; restore the scene setup after).
 - For a renderer whose `sharedMaterials` contain a material with `shader.name == "FishGame/Toon"`: `MeshRenderer` -> sibling `MeshFilter.sharedMesh`; `SkinnedMeshRenderer` -> `sharedMesh`; any other renderer type -> error `unsupported renderer`. Null mesh -> error. `!mesh.HasVertexAttribute(VertexAttribute.Color)` -> error `<asset or scene>: <hierarchy path> (<mesh name>) renders FishGame/Toon without vertex colours`. Use `HasVertexAttribute`, never `mesh.colors` (FBX meshes are not readable).
+- Also (BF-7), for each such Toon material: `_JitterEncoded` must be 1 unless the material is named `M_Toon_Fish` (which must be 0; `M_Toon_FishFallback` must be 1); otherwise error `<asset or scene>: <hierarchy path> material <name> has the wrong _JitterEncoded`.
 - `ValidationRunner.Run` hook (one line, after T14's): `Add(all, "Render", RenderValidators.All());`.
 
 ### T20.3 `FishGameCommon.hlsl` (complete code; C 7.20, F1-F3)
@@ -138,8 +139,9 @@ The class comment states the authority-free editor role and the T20 spike result
 // Include AFTER "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl".
 // Colour convention (Linear project): every colour reaching these helpers is linear. _FGPalette is pushed already
 // linearised by PaletteGlobals (SetGlobalVectorArray does not convert); _ToonShade/_ToonAmbient/_Sky* come from
-// SetGlobalColor (Unity converts); vertex colours are used as stored (MeshBuilder grey, FishFallbackMesh and the
-// Blender fish write linear values).
+// SetGlobalColor (Unity converts); vertex colours are used as stored, except that a material with _JitterEncoded = 1
+// (every MeshBuilder-built mesh) doubles them: MeshBuilder stores a half-scale grey (ruling BF-7). The Blender fish
+// models (M_Toon_Fish, _JitterEncoded = 0) are full-scale linear albedo.
 #ifndef FISHGAME_COMMON_INCLUDED
 #define FISHGAME_COMMON_INCLUDED
 
@@ -213,7 +215,11 @@ Rules the code follows:
 
 ```hlsl
 // Shaders/Toon.shader - FishGame/Toon (spec 10.3, C 7.20). Owned by T20. ASCII only.
-// Albedo: _UsePalette > 0.5 ? _FGPalette[round(uv1.x)] * vertexColor * _BaseColor : vertexColor * _BaseColor.
+// Albedo: vertexFactor = lerp(vertexColor.rgb, 2 * vertexColor.rgb, _JitterEncoded);
+//         albedo = (_UsePalette > 0.5 ? _FGPalette[round(uv1.x)] : 1) * vertexFactor * _BaseColor.
+// BF-7: MeshBuilder stores a half-scale grey 0.5 * (1 +/- jitter) (UNorm8-safe), so every MeshBuilder-built mesh is drawn
+// with _JitterEncoded = 1 (props, lakebed/shore, rod, bobber, body slots, skin, FishFallbackMesh, silhouette); the Blender
+// fish models on M_Toon_Fish use _JitterEncoded = 0 (their vertex colour is the linear albedo as stored).
 // Lighting: band = smoothstep(mid - soft, mid + soft, saturate(dot(n, L)) * shadowAtten);
 //           lit = albedo * lerp(_ToonShade, mainLight.color, band) + albedo * _ToonAmbient * 0.15; additional lights banded.
 // Vertex colour is linear (F3): never converted here.
@@ -225,6 +231,7 @@ Shader "FishGame/Toon"
         _RampMid("Ramp Mid", Range(0, 1)) = 0.5
         _RampSoft("Ramp Softness", Range(0.001, 0.5)) = 0.04
         [ToggleUI] _UsePalette("Use Palette (uv1.x slot)", Float) = 1
+        [ToggleUI] _JitterEncoded("Vertex Colour Is MeshBuilder Half-Scale (x2)", Float) = 1
         _Desaturate("Desaturate", Range(0, 1)) = 0
         _RimPow("Rim Power", Range(0.5, 8)) = 4
         _RimStrength("Rim Strength", Range(0, 1)) = 0
@@ -241,6 +248,7 @@ Shader "FishGame/Toon"
             half _RampMid;
             half _RampSoft;
             half _UsePalette;
+            half _JitterEncoded;     // BF-7: in UnityPerMaterial (SRP Batcher), branch-free lerp below
             half _Desaturate;
             half _RimPow;
             half _RimStrength;
@@ -320,7 +328,8 @@ Shader "FishGame/Toon"
                 output.positionCS = pos.positionCS;
                 output.positionWS = pos.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
-                half3 baseRgb = _UsePalette > 0.5h ? FG_PaletteColor(input.uv1.x) * input.color.rgb : input.color.rgb;
+                half3 vertexFactor = lerp(input.color.rgb, 2.0h * input.color.rgb, _JitterEncoded);   // BF-7: grey meshes have r == g == b
+                half3 baseRgb = _UsePalette > 0.5h ? FG_PaletteColor(input.uv1.x) * vertexFactor : vertexFactor;
                 half3 albedo = baseRgb * _BaseColor.rgb;
                 half grey = dot(albedo, half3(0.299h, 0.587h, 0.114h));
                 output.albedo = lerp(albedo, grey.xxx, _Desaturate);
@@ -436,10 +445,11 @@ If `ShaderValidator` reports a real error in this block (for example an API that
     |---|---|---|
     | `M_Toon_Base` | 1 | white |
     | `M_Toon_Fish` | 0 | white |
+    | `M_Toon_FishFallback` | 0 | white |
     | `M_Body_Slot0..3` | 0 | `SlotPalette.GetRgb(i)` |
     | `M_Skin` | 0 | `SlotPalette.GetSkinRgb` |
 
-  - Every Toon material also gets `_RampMid` 0.5, `_RampSoft` 0.04, `_Desaturate` 0, `_RimPow` 4, `_RimStrength` 0.
+  - Every Toon material also gets `_RampMid` 0.5, `_RampSoft` 0.04, `_Desaturate` 0, `_RimPow` 4, `_RimStrength` 0, and `_JitterEncoded` (BF-7): **1** for `M_Toon_Base`, `M_Body_Slot0..3`, `M_Skin` and `M_Toon_FishFallback` (all MeshBuilder meshes; `M_Toon_FishFallback` is for `FishFallbackMesh` meshes and the snap silhouette), **0** for `M_Toon_Fish` (the Blender fish models; the vertex colour is linear albedo as stored).
   - **Ensure semantics** (same as `MaterialLibrary.Ensure`): switch the shader only when it differs, and then clear `shaderKeywords` (removes the Lit leftovers). Set each property only when it differs. `SetDirty` only on a change. GUIDs of existing `.mat` files are kept (in place). A second `build` changes nothing.
   - Last line: `FishModelPostprocessor.EnsureImportSettings();` (T20.7).
 - `Get(string name)`: same contract as `MaterialLibrary.Get` (throws `InvalidOperationException` when missing).
@@ -452,6 +462,7 @@ If `ShaderValidator` reports a real error in this block (for example an API that
   - `Body_UnitSphere.asset` = `Icosphere(Vector3.zero, 0.5f, 1, 0)`, seed `0xB0D10001`, 80 tris;
   - `Body_UnitBox.asset` = `Box(Vector3.zero, Vector3.one, Quaternion.identity, 0)`, seed `0xB0D10002`;
   - `Body_UnitCapsule.asset` = `Capsule(Vector3.zero, 0.5f, 2f, 8, 2, Quaternion.identity, 0)`, seed `0xB0D10003`. T12: Y axis, total height 2, the same as Unity's capsule primitive, 64 tris.
+- **No colour pass (BF-7).** The body meshes keep MeshBuilder's half-scale grey as built. The non-palette body materials `M_Body_Slot0..3` and `M_Skin` (`_UsePalette` 0, `_BaseColor` carries the colour) set `_JitterEncoded` 1, so the shader doubles the grey and the full +/- jitter survives.
 - Saved in `AssetPaths.MeshesFolder` in place: if the asset exists, `EditorUtility.CopySerialized(built, existing)`, `Object.DestroyImmediate(built)`, `SetDirty`; else `CreateAsset`. Reuse T19's mesh-save helper if it made one.
 - In `BuildPlayerRoot`, after each existing `Prim(...)` for Head, Nose, Torso, ArmL/ArmR Mesh and LegL/LegR Mesh, set that object's `MeshFilter.sharedMesh` to the matching unit mesh (sphere: Head; box: Nose, Torso; capsule: arms, legs).
 - The M1 transforms (positions, scales), materials and collider state are unchanged. Sizes therefore equal M1 contract 6.3. `PlayerBody` behaviour is unchanged.
@@ -482,8 +493,8 @@ public const string BodyUnitCapsuleMesh = MeshesFolder + "/Body_UnitCapsule.asse
 - `Validation_ToonMeshesHaveVertexColours_Pass`: `AssertNoErrors(RenderValidators.ToonMeshesHaveVertexColours())`.
 
 `Tests/EditMode/ToonMaterialTests.cs` (addition; class `ToonMaterialTests`):
-- `ToonMaterials_BaseAndFish_UseToonShaderAndColourModes`: `M_Toon_Base`: shader `FishGame/Toon`, `_UsePalette` 1, `_BaseColor` white. `M_Toon_Fish`: `_UsePalette` 0, white.
-- `ToonMaterials_BodySlotsAndSkin_UseToonWithSlotPaletteColours`: slots 0..3: Toon, `_UsePalette` 0, `_BaseColor` within 1e-4 of `SlotPalette.GetRgb(i)`; `M_Skin` likewise with the skin rgb.
+- `ToonMaterials_BaseAndFish_UseToonShaderAndColourModes`: `M_Toon_Base`: shader `FishGame/Toon`, `_UsePalette` 1, `_JitterEncoded` 1, `_BaseColor` white. `M_Toon_Fish`: `_UsePalette` 0, `_JitterEncoded` 0, white. `M_Toon_FishFallback`: `_UsePalette` 0, `_JitterEncoded` 1, white. Also, over every `.mat` under `AssetPaths.MaterialsFolder` whose shader is `FishGame/Toon`: `_JitterEncoded` is 1 for all except `M_Toon_Fish` (BF-7).
+- `ToonMaterials_BodySlotsAndSkin_UseToonWithSlotPaletteColours`: slots 0..3: Toon, `_UsePalette` 0, `_JitterEncoded` 1, `_BaseColor` within 1e-4 of `SlotPalette.GetRgb(i)`; `M_Skin` likewise with the skin rgb.
 - `PlayerPrefab_BodyMeshes_AreUnitMeshesWithVertexColours`:
   - In `PlayerFP`, the 7 body parts (`PlayerRigPaths.Head, Nose, Torso, ArmLMesh, ArmRMesh, LegLMesh, LegRMesh`) have meshes whose asset paths are the three `Body_Unit*` constants and have a colour channel.
   - `Head.localScale == (0.28, 0.28, 0.28)` and `Torso.localScale == (0.42, 0.55, 0.24)` (M1 sizes kept).
@@ -507,7 +518,7 @@ public const string BodyUnitCapsuleMesh = MeshesFolder + "/Body_UnitCapsule.asse
 9. Full `test-edit`, then `test-play -TimeoutMinutes 15`. Both PASS.
 10. Commit:
 ```
-git add Assets/_Project/Shaders.meta Assets/_Project/Shaders/FishGameCommon.hlsl Assets/_Project/Shaders/FishGameCommon.hlsl.meta Assets/_Project/Shaders/Toon.shader Assets/_Project/Shaders/Toon.shader.meta Assets/_Project/Editor/Validation/ShaderValidator.cs Assets/_Project/Editor/Validation/ShaderValidator.cs.meta Assets/_Project/Editor/Validation/RenderValidators.cs Assets/_Project/Editor/Validation/RenderValidators.cs.meta Assets/_Project/Editor/Validation/ValidationRunner.cs Assets/_Project/Editor/Builders/RenderMaterialLibrary.cs Assets/_Project/Editor/Builders/RenderMaterialLibrary.cs.meta Assets/_Project/Editor/Builders/Render.meta Assets/_Project/Editor/Builders/Render/FishModelPostprocessor.cs Assets/_Project/Editor/Builders/Render/FishModelPostprocessor.cs.meta Assets/_Project/Editor/Builders/MaterialLibrary.cs Assets/_Project/Editor/Builders/PrefabBuilder.cs Assets/_Project/Editor/Builders/AssetPaths.cs Assets/_Project/Content/Materials/M_Toon_Base.mat Assets/_Project/Content/Materials/M_Toon_Base.mat.meta Assets/_Project/Content/Materials/M_Toon_Fish.mat Assets/_Project/Content/Materials/M_Toon_Fish.mat.meta Assets/_Project/Content/Materials/M_Body_Slot0.mat Assets/_Project/Content/Materials/M_Body_Slot1.mat Assets/_Project/Content/Materials/M_Body_Slot2.mat Assets/_Project/Content/Materials/M_Body_Slot3.mat Assets/_Project/Content/Materials/M_Skin.mat Assets/_Project/Content/Meshes/Body_UnitSphere.asset Assets/_Project/Content/Meshes/Body_UnitSphere.asset.meta Assets/_Project/Content/Meshes/Body_UnitBox.asset Assets/_Project/Content/Meshes/Body_UnitBox.asset.meta Assets/_Project/Content/Meshes/Body_UnitCapsule.asset Assets/_Project/Content/Meshes/Body_UnitCapsule.asset.meta Assets/_Project/Prefabs/PlayerFP.prefab Assets/_Project/Content/Models/Fish_Perch.fbx.meta Assets/_Project/Tests/EditMode/ValidationTests.cs Assets/_Project/Tests/EditMode/ToonMaterialTests.cs Assets/_Project/Tests/EditMode/ToonMaterialTests.cs.meta
+git add Assets/_Project/Shaders.meta Assets/_Project/Shaders/FishGameCommon.hlsl Assets/_Project/Shaders/FishGameCommon.hlsl.meta Assets/_Project/Shaders/Toon.shader Assets/_Project/Shaders/Toon.shader.meta Assets/_Project/Editor/Validation/ShaderValidator.cs Assets/_Project/Editor/Validation/ShaderValidator.cs.meta Assets/_Project/Editor/Validation/RenderValidators.cs Assets/_Project/Editor/Validation/RenderValidators.cs.meta Assets/_Project/Editor/Validation/ValidationRunner.cs Assets/_Project/Editor/Builders/RenderMaterialLibrary.cs Assets/_Project/Editor/Builders/RenderMaterialLibrary.cs.meta Assets/_Project/Editor/Builders/Render.meta Assets/_Project/Editor/Builders/Render/FishModelPostprocessor.cs Assets/_Project/Editor/Builders/Render/FishModelPostprocessor.cs.meta Assets/_Project/Editor/Builders/MaterialLibrary.cs Assets/_Project/Editor/Builders/PrefabBuilder.cs Assets/_Project/Editor/Builders/AssetPaths.cs Assets/_Project/Content/Materials/M_Toon_Base.mat Assets/_Project/Content/Materials/M_Toon_Base.mat.meta Assets/_Project/Content/Materials/M_Toon_Fish.mat Assets/_Project/Content/Materials/M_Toon_Fish.mat.meta Assets/_Project/Content/Materials/M_Toon_FishFallback.mat Assets/_Project/Content/Materials/M_Toon_FishFallback.mat.meta Assets/_Project/Content/Materials/M_Body_Slot0.mat Assets/_Project/Content/Materials/M_Body_Slot1.mat Assets/_Project/Content/Materials/M_Body_Slot2.mat Assets/_Project/Content/Materials/M_Body_Slot3.mat Assets/_Project/Content/Materials/M_Skin.mat Assets/_Project/Content/Meshes/Body_UnitSphere.asset Assets/_Project/Content/Meshes/Body_UnitSphere.asset.meta Assets/_Project/Content/Meshes/Body_UnitBox.asset Assets/_Project/Content/Meshes/Body_UnitBox.asset.meta Assets/_Project/Content/Meshes/Body_UnitCapsule.asset Assets/_Project/Content/Meshes/Body_UnitCapsule.asset.meta Assets/_Project/Prefabs/PlayerFP.prefab Assets/_Project/Content/Models/Fish_Perch.fbx.meta Assets/_Project/Tests/EditMode/ValidationTests.cs Assets/_Project/Tests/EditMode/ToonMaterialTests.cs Assets/_Project/Tests/EditMode/ToonMaterialTests.cs.meta
 git commit -m "m2(shaders): FishGame/Toon, ShaderValidator (nographics settled), Toon materials, MeshBuilder bodies, fish import" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 ```
 Drop from the list any `.meta` that already existed (for example `Shaders.meta` or `Render.meta` if T19 created the folder). Check with `git status --short` before adding.
@@ -858,7 +869,7 @@ C 2.8 that bite: #9 (no warnings: a missing `RippleField.Current`, a missing mod
 ### T23.1 `FishingFeedback` (C 7.23, spec 9.11)
 
 **Setup.**
-- `Awake`: cache `FishingRodNetwork rod` (same root), `PlayerCamera cam` and `Transform rodTip = transform.Find(PlayerRigPaths.RodTip)`.
+- `Awake`: cache `FishingRodNetwork rod` (same root), `PlayerCamera cam` and `Transform rodTip = transform.Find(PlayerRigPaths.RodTipAnchor)` (the static anchor, ruling BF-3: audio positions do not follow the bend).
 - Create a private child `FeedbackAnchor`, placed every `LateUpdate` at `rod.ViewState.BobberPos`. It is the follow target for bobber-side loops, so this task needs no `BobberView`.
 - Services are resolved lazily through `ServiceRoots.App?.TryGet` (`AudioBus`, `EventBus`, `ISettings`, `IInputService`, `ContentRegistry`). A missing service is a silent no-op.
 - `OnEnable` subscribes `rod.Cue` and `rod.Announced`. `OnDisable` unsubscribes, stops every loop and, if owner, calls `SetRumble(0, 0)`.
@@ -912,13 +923,14 @@ Owner gating: ChargeStart and the owner pitch need `FishingRodController` (same 
 - **Rumble (owner).**
   - Target = `max(continuous, active pulse)` per motor. `continuous` = `(cue.RumbleLow, cue.RumbleHigh)` while `hooked`, plus (0.6, 0.1) while diving.
   - Everything is multiplied by `settings.cameraMotion`.
-  - Forced to 0 when: `vs.State` is Idle, Landed, Snapped or Escaped (terminal states: spec 9.11, C 7.18); `!input.HasFocus`; or on disable.
+  - Terminal states (Landed, Snapped, Escaped; ruling BF-2): `continuous` is 0 (it only exists while `hooked`), but the state's one-shot pulse still plays to completion: Snapped (1.0, 1.0, 0.30), Escaped (0.2, 0.2, 0.10), Landed double pulse (0.5, 0.5, 0.1) x 2 with a 0.1 s gap (at most 0.3 s, inside the 1.5 s beat). Only after the pulse has ended is the output forced to 0 (spec 9.2 / 9.11: off on terminal states).
+  - Forced to 0 at once, cancelling any active pulse, when: `vs.State` is Idle; `!input.HasFocus`; or on disable. `FishingFeedback` owns all of this: `FishingRodController` does not call `SetRumble` on terminal states (net T18).
   - Call `SetRumble` only when a motor changes by more than 0.01, or when it becomes 0. T19's test asserts rumble 0 at the end.
 - All loops stop when `vs.State` leaves Hooked (and on disable or despawn).
 
-**Snap silhouette (every peer; C 7.23).** On `Cue == Snapped` with `arg = sizeClass` (0..2):
+**Snap silhouette (every peer; C 7.23).** On `Cue == Snapped` with `arg = sizeClass` (0..2). The owner's local Snapped cue carries the roll's size class as well (BF-1: the machine's `Cue(Snapped)` effect sets it), so owner and remotes see the same size:
 - A private child `SnapSilhouette` with `MeshFilter = FishFallbackMesh.Silhouette()`.
-- Material: an instance of the serialized `silhouetteMaterial` (`M_Toon_Fish`) with `_BaseColor` (0.35, 0.37, 0.40). Material instances are allowed (spec 10.3). Destroy it in `OnDestroy`.
+- Material: the serialized `silhouetteMaterial` (the shared asset `M_Toon_FishFallback`, `_JitterEncoded` 1; BF-7). No material instance is created. The grey tint (0.35, 0.37, 0.40) is baked into the silhouette mesh's vertex colours (`FishFallbackMesh.Silhouette()`, T23.3).
 - Length 0.25 / 0.4 / 0.6 m for sizeClass 0/1/2.
 - It jumps from `BobberPos` at water height: up `0.6 + 0.4 * sizeClass` m over 0.7 s on a parabola, pitching nose-over.
 - On re-entry: `Splash_Small` at the point and `RippleField.Current?.Spawn(..., RippleMath.Snap)`. Then hide.
@@ -926,14 +938,14 @@ Owner gating: ChargeStart and the owner pitch need `FishingRodController` (same 
 
 ### T23.2 `CatchRevealView` (C 7.23)
 
-- Private serialized `fishMaterial` (`M_Toon_Fish`) and `sparkleMaterial` (`M_Particle`) (F8).
+- Private serialized `fishMaterial` (`M_Toon_Fish`), `fallbackMaterial` (`M_Toon_FishFallback`, BF-7) and `sparkleMaterial` (`M_Particle`) (F8).
 - A runtime child `CatchReveal` holds a MeshFilter and a MeshRenderer (shadows off, hidden). A child `ParticleSystem` is configured in code:
   - world space, emission off, sphere shape radius 0.2, speed 1.5-3, lifetime 0.4-0.8, size 0.03-0.07, gravity 0.3;
   - renderer material `sparkleMaterial`.
   - If `sparkleMaterial` is null, there are no particles (silent).
 - `Announced` (every peer), kind `Landed` or `ReleasedCreelFull`:
   - Mesh: `registry.SpeciesAt(itemIndex).Model` when `!IsJunk` and the model is non-null; else `FishFallbackMesh.Get(registry, isJunk, itemIndex)`.
-  - `sharedMaterials` = an array of `mesh.subMeshCount` copies of `fishMaterial` (the spike perch has 5 submeshes until T29 replaces it; the new species models have one; harmless either way).
+  - `sharedMaterials` = an array of `mesh.subMeshCount` copies of `fishMaterial` for a model mesh, or of the serialized asset `fallbackMaterial` (`M_Toon_FishFallback`, `_JitterEncoded` 1; BF-7) for a `FishFallbackMesh` mesh, because `M_Toon_Fish` has `_JitterEncoded` 0 for the Blender models (the spike perch has 5 submeshes until T29 replaces it; the new species models have one; harmless either way).
   - Scale: uniform, so that `mesh.bounds.size.z` = `LengthMm / 1000` m. `LengthMm == 0` (junk) -> 0.3 m.
   - Pose: world position `CatchHold.position + Vector3.up * 0.25`, rotation `Quaternion.LookRotation(rootRight, Vector3.up)` (nose to the player's right, belly down), updated every `LateUpdate` while shown. It is held at `CatchHold` on every peer (the owner's right arm is posed in camera space by `PlayerBody`, so it is in view).
   - 0.15 s scale-in, hold `FishingConstants.CatchHoldSeconds` (1.5 s), then hide.
@@ -947,7 +959,7 @@ Owner gating: ChargeStart and the owner pitch need `FishingRodController` (same 
 - `public static Mesh Get(ContentRegistry registry, bool isJunk, ushort itemIndex)`:
   - Cached per `(isJunk, itemIndex)`. The cache is cleared on `SubsystemRegistration`; the meshes are destroyed then (`Object.Destroy` if playing).
   - Built with `MeshBuilder(meshSeed = (isJunk ? 0x4A000000u : 0x46000000u) + itemIndex, 0.04f)`.
-  - Colour pass after `ToMesh`: the body uses slot 0 and the fins/tail slot 1. Read UV1 (F2): slot 0 -> `colorA.linear`, slot 1 -> `colorB.linear`, multiplied into the existing jitter grey (F3). Junk uses `JunkDef.Color`.
+  - Colour pass after `ToMesh`: the body uses slot 0 and the fins/tail slot 1. Read UV1 (F2): slot 0 -> `colorA.linear`, slot 1 -> `colorB.linear`, multiplied into the existing HALF-scale grey `c.r` (so the stored colour is `colorA.linear * 0.5 * (1 +/- j)`, at most 0.75 per channel: no clamp, UNorm8-safe; F3, BF-7). The mesh is MeshBuilder-built, so it must be drawn with a material whose `_JitterEncoded` is 1 (the shader doubles per channel): `CatchRevealView` uses the asset material `M_Toon_FishFallback` (`fallbackMaterial`) for fallback meshes (see T23.2). Junk uses `JunkDef.Color` the same way.
   - Normalised so that `bounds.size.z == 1` (nose +Z, centred).
 - Shapes (`FishSpeciesDef.BodyShape`):
   - Round: icosphere body squashed (x 0.35, y 0.8) + tail prism + dorsal fin.
@@ -957,13 +969,13 @@ Owner gating: ChargeStart and the owner pitch need `FishingRodController` (same 
   - Squid: cylinder mantle + 6 thin prisms.
   - Junk `old_boot`: two boxes (shaft + foot). Junk `tin_can`: cylinder + top ring.
   - Pick the junk shape by `JunkDef.BodyShape`: Long -> boot, Round -> can.
-- `internal static Mesh Silhouette()`: a cached grey Round fish (white vertex colours, so the material tint shows), for `FishingFeedback`.
+- `internal static Mesh Silhouette()`: a cached Round fish for `FishingFeedback`, drawn with the asset material `M_Toon_FishFallback` (BF-7). Colour pass after `ToMesh`: each vertex colour = `(0.35, 0.37, 0.40) * c.r` of MeshBuilder's half-scale grey, so the shader's doubling gives the grey tint (0.35, 0.37, 0.40) times the face jitter (no material change).
 
 ### T23.4 `AddPresentation` block (ruling F-Q5: up to 12 lines)
 
 Proposed T23 block, in C 6.3 order:
 - `GetOrAdd<FishingFeedback>` and `GetOrAdd<CatchRevealView>`;
-- set `FishingFeedback.silhouetteMaterial`, `CatchRevealView.fishMaterial` and `CatchRevealView.sparkleMaterial` from `RenderMaterialLibrary.Get("M_Toon_Fish")` / `Get("M_Particle")` via `SerializedObject` (F8). Use a private `SetObjectRef(Component, string, Object)` helper in `PlayerFishingRigBuilder` if T19 has none. At most 12 lines in total; T24 owns the rest of the body.
+- set `FishingFeedback.silhouetteMaterial` and `CatchRevealView.fallbackMaterial` from `RenderMaterialLibrary.Get("M_Toon_FishFallback")`, `CatchRevealView.fishMaterial` from `Get("M_Toon_Fish")` and `CatchRevealView.sparkleMaterial` from `Get("M_Particle")` via `SerializedObject` (F8). Use a private `SetObjectRef(Component, string, Object)` helper in `PlayerFishingRigBuilder` if T19 has none. At most 12 lines in total; T24 owns the rest of the body.
 
 ### T23 tests
 
@@ -1018,15 +1030,15 @@ C 2.8 that bite: #4 (no NetworkBehaviour added; C 6.3 order), #9, #10 (remote vi
 
 ### T24.1 `RodPresenter` (C 7.24, spec 10.5)
 
-- `public Transform Tip { get; }` = `transform.Find(PlayerRigPaths.RodTip)`.
-- `Awake` caches `Seg0..Seg5` (`PlayerRigPaths.RodSegmentPrefix + i`) and the rest pose of each segment and of `Tip` (local position and rotation under `Rod`).
-- **Visibility:** the segment renderers are enabled iff `rod.Player.Tool == ToolKind.Rod`. Apply it on `ToolChanged` and once after spawn (late joiners: `NetTool` is synced on spawn). Toggle renderers only, never `SetActive`, because `Tip` must stay valid for the controller.
+- `public Transform Tip { get; }` = `transform.Find(PlayerRigPaths.RodTipVisual)`: the BENT visual tip (ruling BF-3). `RodPresenter` also caches `Transform anchor = transform.Find(PlayerRigPaths.RodTipAnchor)` for reading only. It bends `TipVisual` and the segments, and **never writes `TipAnchor`**, which stays static: gameplay (`FishingRodController.RodTipPosition`, the fish point, `TipToBobber`) reads the anchor, so presentation cannot feed back into gameplay (C 2.8 #17).
+- `Awake` caches `Seg0..Seg5` (`PlayerRigPaths.RodSegmentPrefix + i`) and the rest pose of each segment and of `Tip` (= `TipVisual`; local position and rotation under `Rod`).
+- **Visibility:** the segment renderers are enabled iff `rod.Player.Tool == ToolKind.Rod`. Apply it on `ToolChanged` and once after spawn (late joiners: `NetTool` is synced on spawn). Toggle renderers only, never `SetActive`, because `TipAnchor` must stay valid for the controller.
 - **Bend (LateUpdate, order 250).**
-  - The chain links are the rest pivot-to-pivot offsets `d_i = restPos_{i+1} - restPos_i` (`restPos_6` = `Tip`).
-  - With accumulated angle `a_i = sum_{j<=i} bendDeg * w_j` and `R_i = AngleAxis(a_i, axis)`: `pos_0 = restPos_0`, `pos_{i+1} = pos_i + R_i * d_i`, `localRot_i = R_i * restRot_i`, and `Tip` = `pos_6`.
+  - The chain links are the rest pivot-to-pivot offsets `d_i = restPos_{i+1} - restPos_i` (`restPos_6` = the rest position of `Tip`, i.e. `TipVisual`).
+  - With accumulated angle `a_i = sum_{j<=i} bendDeg * w_j` and `R_i = AngleAxis(a_i, axis)`: `pos_0 = restPos_0`, `pos_{i+1} = pos_i + R_i * d_i`, `localRot_i = R_i * restRot_i`, and `Tip` (`TipVisual`) is set to `pos_6`.
   - Weights `w = (0.05, 0.10, 0.15, 0.20, 0.22, 0.28)` (sum 1; most bend at the tip).
   - `bendDeg = 50 * TensionCues.Evaluate(t, t >= 0.999f, reelSpeed, 1f).RodBend01` while Hooked, otherwise 0. Use motion 1 here: the bend is the no-HUD tension readout and must not vanish at camera motion 0 (spec 9.11 removes only shake, FOV kicks, bob and rumble). `Shake` below comes from a second call with the real `settings.cameraMotion`.
-  - `axis` (in `Rod` local space): `cross(rodForward, toBobber)` with `toBobber = ViewState.BobberPos - Tip.position`. Use local X when the cross product is near zero or no line is out.
+  - `axis` (in `Rod` local space): `cross(rodForward, toBobber)` with `toBobber = ViewState.BobberPos - anchor.position` (the static `TipAnchor`, so the bend does not depend on its own previous result). Use local X when the cross product is near zero or no line is out.
 - **Extras.**
   - Nibble cue: a 4 deg wobble on local X, `4 * sin(40 t) * (1 - t / 0.3)` for 0.3 s (spec 9.4).
   - HookSet cue: a 15 deg upward jerk easing back over 0.25 s.
@@ -1073,7 +1085,7 @@ C 2.8 that bite: #4 (no NetworkBehaviour added; C 6.3 order), #9, #10 (remote vi
   - a cached `Vector3[24]`.
 - Visible while `BobberView`'s renderer is shown (Casting, Waiting, Bite, Hooked, the Escaped beat, the recall arc). On Snapped: a 0.2 s whip, where the end point slides from `Position` to `Tip` with full sag, then hide. Otherwise hidden (C 7.24 "hidden while no line is out").
 - Curve (LateUpdate, order 260), a quadratic Bezier:
-  - `P0 = RodPresenter.Tip.position`, `P2 = BobberView.Position`, `L = |P2 - P0|`;
+  - `P0 = RodPresenter.Tip.position` (the bent `TipVisual`, BF-3), `P2 = BobberView.Position`, `L = |P2 - P0|`;
   - `sag = (1 - tension) * 0.15 * L`;
   - `P1 = (P0 + P2) / 2 + Vector3.down * 2 * sag`, so that the curve midpoint is `sag` below the chord midpoint;
   - point `k` at `u = k / 23`.
@@ -1138,7 +1150,7 @@ C 2.8 that bite: #4 (no NetworkBehaviour added; C 6.3 order), #9, #10 (remote vi
   - After Equip, the `Seg0` renderer is enabled. In Ready, a `CastMarker` child renderer is enabled.
   - During flight, the `Bobber` y peaks at least 0.4 m above the landing water height (the apex minimum is 0.6 m times a pitch multiplier of at least 0.7).
   - At `Waiting`, the bobber is within 0.25 m horizontally of `NetRodState.Value.BobberPos` and within 0.1 m vertically of `WaterSurface.HeightAt + 0.02`, and the `CastMarker` renderers are disabled.
-  - The `Line` `LineRenderer` is enabled with `positionCount 24`; point 0 is within 0.05 m of `Body/ArmR/Hand/Rod/Tip` and point 23 within 0.05 m of the bobber.
+  - The `Line` `LineRenderer` is enabled with `positionCount 24`; point 0 is within 0.05 m of `Body/ArmR/Hand/Rod/TipVisual` (BF-3; equal to `TipAnchor` at rest) and point 23 within 0.05 m of the bobber.
   - After the land and the return to Idle, the line renderer is disabled.
 
 The remote rules (arc once per `CastId`; snap on spawn, no arc replay for a late joiner) cannot be exercised in solo. The reviewer reads them against T24.2, and the controller checks them in MPPM (below).

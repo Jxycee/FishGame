@@ -658,8 +658,8 @@ Filter: `FishGame.Tests.EditMode.(FightSimTests|FightMotionTests|TensionCuesTest
    - `finalOutcome == Cancelled` gives Escaped with `Outcome = Cancelled`, `Recalling = true` and cue `Recall` (C M2-D5).
    - Any other outcome gives Escaped with `Outcome = Escaped`, `Reason = finalReason` (Invalid if None), `SendRodEvent(Escaped)` and cue `Escaped`.
    - Neither sends `SendResult`. `accepted` is not used by the machine.
-6. **Invalid cast results** never emit `SendCancel` (the host rejected; nothing to refund). A roll that fails `TryToCore` is handled by T18: it calls `OnCastResult(id, false, default, default)` and sends `CancelRpc` itself (C 8.2 note).
-7. **`SendRodEvent` payloads:** `SizeClass = Roll.SizeClass` for Snapped only, 0 for the others (C 7.8 wording). Nibble events carry 0.
+6. **Invalid cast results** never emit `SendCancel` (the host rejected; nothing to refund). A roll that fails `TryToCore` is handled by T17 and T18 (BF-5): T17's `CastResultRpc` handler sends the single `CancelRpc` and raises `CastResultReceived(valid:false)`; T18 only reacts by calling `OnCastResult(id, false, default, default)`. The machine itself never sends `SendCancel` for an invalid result and nothing here sends `CancelRpc` (C 8.2 note).
+7. **`SendRodEvent` payloads:** `SizeClass = Roll.SizeClass` for Snapped only, 0 for the others (C 7.8 wording). Nibble events carry 0. The `Cue(Snapped)` effect carries the same `SizeClass` (BF-1), because the owner's local snap cue reads it; every other cue carries 0.
 8. **`IgnoredEventCount`** (`public int IgnoredEventCount { get; private set; }`, ruling E-Q5 supersedes B-Q12) counts every ignored call: a mismatched `castId`, a wrong state for `OnCastResult`, `OnCommit` or `TickFight`, a duplicate commit, and `SetRod` outside Idle. The machine never logs. T18 reads the counter after each `Tick` / `TickFight` / `OnCastResult` / `OnCommit` and, in debug builds, logs (not warns) once per state when it grew; replies to the owner's own cancel never count (decision 10).
 9. **Effect order** within one transition follows the code (cue first where shown, then sends). T18 relies on `SendHooked` before `SendRodEvent(HookSet)`, and `SendResult` before `SendRodEvent(Snapped/Escaped)`.
 10. **Replies to our own cancel are not illegal.**
@@ -947,7 +947,9 @@ namespace FishGame.Core
         private float NibbleAt(int k) => k == 0 ? Roll.Nibble0 : (k == 1 ? Roll.Nibble1 : Roll.Nibble2);
         private static FightReport ReportOf(FightSim s) => new FightReport
         { MaxTension = s.State.MaxTension, FightSeconds = s.State.Elapsed, NearSnapRecoveries = s.State.NearSnapRecoveries };
-        private void Cue(RodCue c) => Add(new RodEffect { Kind = RodEffectKind.Cue, Cue = c, CastId = CastId });
+        // BF-1: only the Snapped cue carries the size class (B-Q13); the owner's local cue reads it (net ProcessEffects).
+        private void Cue(RodCue c) =>
+            Add(new RodEffect { Kind = RodEffectKind.Cue, Cue = c, CastId = CastId, SizeClass = c == RodCue.Snapped ? Roll.SizeClass : (byte)0 });
         private void RodEvent(RodEventType t, byte size) =>
             Add(new RodEffect { Kind = RodEffectKind.SendRodEvent, EventType = t, SizeClass = size, CastId = CastId });
         private void SendResult(FightOutcome o, EscapeReason r, in FightReport rep) =>
@@ -1000,7 +1002,7 @@ namespace FishGame.Core
 | `RodStateMachine_Bite_PrimaryInsideHookWindow_EntersHooked` | roll hookWindow 1.0; `ToBite`; Tick(0.5, PrimaryPressed) | Hooked |
 | `RodStateMachine_Bite_HookWindowElapsed_EscapesMissed` | hookWindow 1.0; `ToBite`; Tick(0.6) x 2 | Escaped, `Reason` Missed; `SendResult{Escaped, Missed, Report all 0}`, `SendRodEvent{Escaped}`. R65 extra case inside this test (no new test name): same with `Roll.Pity = true` and `PityHookWindowBonus 0.3`: still Bite after 1.2 s, Missed after 1.3 s; a pity roll with hookWindow 0 auto-hooks at `HookBeat` as usual |
 | `RodStateMachine_Hooked_LineAtLandDistanceWhileReeling_LandsWithFightReport` | `ToHooked` with TipToBobber 2.05; `TickFight(In(0, true))` x 3 | Landed; `SendResult{Landed, None, Report{MaxTension 0, FightSeconds 0.06 (1e-5), Recoveries 0}}`; cue LineLanded |
-| `RodStateMachine_Hooked_SnapTimerReachesGrace_Snaps` | `ToHooked`, `ToSnapped` | Snapped; `SendResult{Snapped}`, then `SendRodEvent{Snapped, SizeClass 1}` |
+| `RodStateMachine_Hooked_SnapTimerReachesGrace_Snaps` | `ToHooked`, `ToSnapped` | Snapped; `SendResult{Snapped}`, then `SendRodEvent{Snapped, SizeClass 1}`; the Snapped `Cue` effect has `SizeClass` 1 (BF-1), and every other cue effect has 0 |
 | `RodStateMachine_Hooked_PinnedTooLong_EscapesPinned` | `Fight.ForceState{Lateral 1, Calm, PhaseTimer 5, PinnedTimer 4.99, Stamina 1, Line 10}`, TickFight(In(0, false)) | Escaped / Pinned with SendResult |
 | `RodStateMachine_Hooked_SlackTooLong_EscapesThrewHook` | ForceState{Calm, PhaseTimer 5, SlackTimer 11.99, Stamina 1, Line 10}, TickFight(none) | Escaped / ThrewHook |
 | `RodStateMachine_Hooked_DisplacedBeyondLeash_EscapesDropped` | Tick(0.1, HookDisplacement 3.0), then 3.1 | Hooked; then Escaped / Dropped with SendResult |
@@ -1098,6 +1100,7 @@ Filter: `FishGame.Tests.EditMode.RodStateMachineTests`.
   - `CatchValidator.HookTooEarly(Now, a, HookTolerance)`: resolve `Escaped/Invalid`, `Accepted = true` (a first resolution), no refund, Announce None, return true.
   - Otherwise: `Phase = Hooked`, `THooked = Now`, `LineLength0 = HostLineLength0(hostDistanceToLanding, LandDistance)`, return false.
 - **`CommitDecision.Accepted` (ruling E-Q6):** `false` only for an orphan repeat (a message for a cleared cast, below). Every FIRST resolution has `Accepted = true`, including timeouts, early-hook Invalid, validation Invalid, cancels and creel-full releases. `Accepted` does not say whether a fish was kept. Consumers (T17) act on the other fields: announce iff `Announce != None`; creel add iff `AddToCreel`; `FishCaught` iff `Outcome == Landed && AddToCreel`. Invalid and cancel resolutions have `Announce == None` by design.
+- **`CommitDecision.Roll` (BF-4):** every non-orphan decision carries `Roll = ActiveCast.Roll`, including the Cancel-in-Waiting and Cancel-in-Hooked decisions and the `Tick` timeouts (stuck-Waiting refund, `MaxFightTime`). T17's Lost announcement sends `CatchResultNet.From(d.Roll.Catch)` and so needs it. The Cancel and Tick paths must build the decision from the stored `ActiveCast` before clearing it. Orphan decisions carry `default` Roll.
 - **Orphan:** `Accepted = false`, `Outcome/Reason` = the stored resolution for that castId if any, else `Cancelled/None`. No refund, no announce, no creel (`Announce` None, `AddToCreel` false).
 - **`Tick(dt, paused, unsolicited)`:**
   - `Now += dt` unless paused.
@@ -1206,18 +1209,18 @@ Every other `CatchValidator` member follows its C 7.9 comment.
 | `FishingHostLedger_InvalidWater_Rejected` | probe not water first; depth 0.5 | `NotWater`; `TooShallow`; stock unchanged |
 | `FishingHostLedger_Accept_ConsumesBaitAndRolls` | accept 1 (overrides None) | stock 19; `HostCastCounter` 1; roll field-equal to `PlaceholderRoller.Roll(db, worm/depth 3/no overrides, ref rng)` with `var rng = Rng.Stream(42, "catch", 1);`; `TryGetActive` gives `TAccepted` 0, `TFlight` tf, landing (0, 10.25) |
 | `FishingHostLedger_BareHook_NeverRunsOut` | `SelectBait(bare)`; 25 casts resolved Missed | all accepted; `BaitCount` 0xFFFF |
-| `FishingHostLedger_CancelInWaiting_RefundsBait` | accept, Cancel | `Accepted`, Cancelled, `Refunded`, stock back to 20, Announce None |
+| `FishingHostLedger_CancelInWaiting_RefundsBait` | accept, Cancel | `Accepted`, Cancelled, `Refunded`, stock back to 20, Announce None; `d.Roll` equals the accepted roll (BF-4) |
 | `FishingHostLedger_SnapEscapeMiss_DoNotRefund` | three casts resolved Snapped (hooked), Escaped/Pinned (hooked), Escaped/Missed (waiting) | stock 17, none `Refunded` |
 | `FishingHostLedger_EarlyHook_ResolvesEscapedInvalid` | Tick(tf + 2 - 0.75 - 0.05), Hooked | true; Escaped/Invalid, not refunded, Announce None. Second cast at Tick(tf + 2 - 0.75 + 0.01): false (accepted) |
 | `FishingHostLedger_LandedBelowDurationFloor_ResolvesEscapedInvalid` | `HookAt`, Tick(4.6), Result Landed | Escaped/Invalid, `AddToCreel` false, Announce None. Next cast: Tick(4.8), then Landed accepted |
 | `FishingHostLedger_JunkLanded_UsesJunkDragSpeedFloor` | `ForceJunk`, `HookAt`, Tick(1.3), Landed | Landed, `AddToCreel`, `CleanBonus` false. Fish cast with Tick(1.3): Invalid |
 | `FishingHostLedger_StuckWaiting_TimesOutAsRefundedCancel` | Tick(tf + 2 + 29.9), then Tick(0.2) | first: no unsolicited; second: one decision `Cancelled`, `Refunded`, `Accepted`; stock 20; `TryGetActive` false |
-| `FishingHostLedger_HookedPastMaxFightTime_TimesOutEscapedTimeout` | `HookAt`, Tick(239.9), Tick(0.2) | none, then one decision Escaped/Timeout, Announce Lost |
+| `FishingHostLedger_HookedPastMaxFightTime_TimesOutEscapedTimeout` | `HookAt`, Tick(239.9), Tick(0.2) | none, then one decision Escaped/Timeout, Announce Lost; `d.Roll` equals the cast's accepted `Roll` (field-equal; `Roll.Catch` is the announced catch, BF-4) |
 | `FishingHostLedger_PausedClock_DoesNotTimeOut` | accept, Tick(1000, paused: true) | `Now` unchanged, no unsolicited, still active; a later `HookAt` timing is unaffected |
 | `FishingHostLedger_Disconnect_ClearsWithoutCommit` | accept, Disconnect(100) | true; `TryGetActive` false; Tick(100) gives no unsolicited; Disconnect again gives false; stock 19 |
 | `FishingHostLedger_Rejoin_KeepsSlotBaitAndRestartsCastIds` | client 100 slot 1 casts ids 1-3 (Missed), Disconnect; client 200 slot 1, `EnsureSlot(1)` again, request id 1 | accepted; slot 1 stock 16 after it; `HostCastCounter` 4 |
 | `FishingHostLedger_FullCreel_ReleasesFishAndAnnounces` | `HookAt`, Tick(5), Landed with creel (12, 5000, 12, 15000) | Landed, `AddToCreel` false, Announce `ReleasedCreelFull`; `CatchLog` count 1 |
-| `FishingHostLedger_OrphanMessage_RepeatsStoredResolution` | cast 1 resolved Snapped; then Result(1, Landed), Hooked(1) and Cancel(1); then Cancel(99) | the three: `Accepted` false, Outcome Snapped; id 99: `Accepted` false, Cancelled; stock unchanged by the orphans |
+| `FishingHostLedger_OrphanMessage_RepeatsStoredResolution` | cast 1 resolved Snapped; then Result(1, Landed), Hooked(1) and Cancel(1); then Cancel(99) | the three: `Accepted` false, Outcome Snapped; id 99: `Accepted` false, Cancelled; stock unchanged by the orphans; every orphan decision has a default `Roll` (BF-4) |
 | `FishingHostLedger_SnapAfterHook_AnnouncedLost` | `HookAt`, Tick(3), Result Snapped | Snapped, Announce Lost, `AddToCreel` false |
 | `FishingHostLedger_Missed_NotAnnounced` | Tick(tf + 2.5), Result Escaped/Missed (Waiting) | Escaped/Missed, Announce None. `Escaped/Pinned` without a hook gives Invalid |
 | `FishingHostLedger_SelectWhileActive_Refused` | active: `SelectBait(grub)`, `SelectRod(twig)`; then index 6 and rod 4 after resolution | false, false, then false (bad index) and valid selections true |
@@ -1267,7 +1270,7 @@ Filter: `FishGame.Tests.EditMode.(FishingHostLedgerTests|CreelRulesTests)`.
 10. **`RequestCast` for a slot never ensured (closed, B-Q10).** Rejected `UnknownPlayer`; T17 calls `EnsureSlot` before any `RequestCast`.
 11. **Disconnect refund (closed, B-Q11).** Disconnect does not refund a Waiting cast's bait.
 12. **`IgnoredEventCount` (closed, E-Q5 supersedes B-Q12).** Public getter (`public int IgnoredEventCount { get; private set; }`); T18 logs ignored events in debug builds and still must not warn on the reply to its own cancel (the machine consumes that silently, T8 decision 10).
-13. **`RodEventRpc` size class (closed, B-Q13).** Only Snapped carries the size class; other events send 0.
+13. **`RodEventRpc` size class (closed, B-Q13, BF-1).** Only Snapped carries the size class; other events send 0. The local `Cue(Snapped)` effect carries it too (the owner's snap cue reads it).
 14. **`RollOverrides.None` (closed, B-Q14).** `ForcedItemIndex = -1`; T17's override builder starts from `RollOverrides.None`.
 15. **Calm drift and exhaustion (closed, B-Q15).** An exhausted fish stays Calm: no drift, no draws.
 16. **`CommitDecision.Accepted` (closed, E-Q6).** False only for orphan repeats; consumers act on `Announce`, `AddToCreel` and `Outcome` (T9 behaviour bullet).
