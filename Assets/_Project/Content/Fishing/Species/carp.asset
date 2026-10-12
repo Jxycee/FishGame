@@ -29,4 +29,4 @@ MonoBehaviour:
   isSpecial: 0
   minBaitRating: 1
   minDepth: 1.5
-  model: {fileID: 0}
+  model: {fileID: 3055110019326622345, guid: a3b0d9fd84928ab43879a87d41a9c6a9, type: 3}
