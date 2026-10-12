@@ -18,6 +18,7 @@ namespace FishGame.Core
             public byte BaitIndex;
             public readonly ushort[] Stock;      // per bait; unlimited baits are never counted
             public int FailStreak;               // consecutive failed casts (R65)
+            public bool PityAnnounced;           // the current streak's Pity cast was already announced (cleared when the streak resets)
             public SlotState(ushort rod, byte bait, ushort[] stock) { RodIndex = rod; BaitIndex = bait; Stock = stock; }
         }
 
@@ -39,7 +40,8 @@ namespace FishGame.Core
 
         private readonly FishingDatabase _db;
         private readonly Dictionary<byte, SlotState> _slots = new Dictionary<byte, SlotState>();
-        private readonly SortedDictionary<ulong, ClientState> _clients = new SortedDictionary<ulong, ClientState>();   // ascending clientId: deterministic Tick order
+        private readonly Dictionary<ulong, ClientState> _clients = new Dictionary<ulong, ClientState>();
+        private readonly List<ulong> _clientOrder = new List<ulong>();   // ascending clientId (kept sorted on add/remove): deterministic Tick order, no per-frame allocation
         private readonly List<CatchResult> _catchLog = new List<CatchResult>();
         private readonly ushort _defaultRod;
         private readonly byte _defaultBait;
@@ -114,13 +116,13 @@ namespace FishGame.Core
             return true;
         }
 
-        // Host rod castMaxDist. False for an unknown slot, a charge that is NaN or outside [0, 1], or a non-finite yaw.
+        // Host rod castMaxDist. False for an unknown slot, a charge that is NaN or outside [MinChargeNorm, 1], or a non-finite yaw.
         public bool TryComputeLanding(byte slot, in CastRequestData req, out float x, out float z)
         {
             x = 0f; z = 0f;
             if (!_slots.TryGetValue(slot, out SlotState s)) return false;
             float charge = req.ChargeNorm;
-            if (!(charge >= 0f && charge <= 1f)) return false;
+            if (!CatchValidator.IsChargeAccepted(charge)) return false;
             if (!CatchValidator.IsFinite(req.YawDeg)) return false;
             float distance = CastMath.Distance(charge, _db.Tuning.CastMinDist, _db.Rods[s.RodIndex].CastMaxDist);
             CastMath.Landing(req.OriginX, req.OriginZ, req.YawDeg, distance, out x, out z);
@@ -153,6 +155,8 @@ namespace FishGame.Core
             };
             FishingRoll roll = PlaceholderRoller.Roll(_db, in rr, ref rng);
             roll.Pity = t.PityAfterFailures > 0 && s.FailStreak >= t.PityAfterFailures;   // R65: ledger decision, no extra draw
+            bool announcePity = roll.Pity && !s.PityAnnounced;   // once per streak: a cancelled Pity cast leaves the streak, so the recast is Pity again
+            if (roll.Pity) s.PityAnnounced = true;
 
             float distance = CastMath.Distance(req.ChargeNorm, t.CastMinDist, _db.Rods[s.RodIndex].CastMaxDist);
             CastMath.Landing(req.OriginX, req.OriginZ, req.YawDeg, distance, out float lx, out float lz);
@@ -168,7 +172,7 @@ namespace FishGame.Core
                 LineLength0 = 0f, TFlight = CastMath.FlightTime(distance), CastDistance = distance, Assist = req.Assist,
                 RodIndex = s.RodIndex, BaitIndex = req.BaitIndex, LandingX = lx, LandingZ = lz,
             };
-            return new CastVerdict { Valid = true, Reason = CastRejectReason.None, Roll = roll, LandingX = lx, LandingZ = lz };
+            return new CastVerdict { Valid = true, Reason = CastRejectReason.None, Roll = roll, LandingX = lx, LandingZ = lz, AnnouncePity = announcePity };
         }
 
         // Waiting + match -> Cancelled, refund (CancelRefundsBait), cleared. Hooked + match -> Escaped(Dropped), announced Lost, no refund
@@ -281,21 +285,22 @@ namespace FishGame.Core
         {
             if (unsolicited == null) throw new ArgumentNullException(nameof(unsolicited));
             if (!paused && dt > 0 && !double.IsInfinity(dt)) Now += dt;   // NaN, negative, zero and infinite dt are ignored
-            foreach (KeyValuePair<ulong, ClientState> kv in _clients)
+            for (int i = 0; i < _clientOrder.Count; i++)   // index loop over the sorted id list: no enumerator allocation per host frame
             {
-                ClientState c = kv.Value;
+                ulong clientId = _clientOrder[i];
+                ClientState c = _clients[clientId];
                 if (!c.HasActive) continue;
                 ActiveCast a = c.Active;
                 if (a.Phase == CastPhase.Waiting)
                 {
                     if (Now - a.TAccepted > a.TFlight + a.Roll.BiteWait + FishingConstants.HostWaitSlackSeconds)
-                        unsolicited.Add(ResolveCancelledWaiting(kv.Key, c));
+                        unsolicited.Add(ResolveCancelledWaiting(clientId, c));
                 }
                 else if (Now - a.THooked > _db.Tuning.MaxFightTime)
                 {
                     unsolicited.Add(new CommitDecision
                     {
-                        ClientId = kv.Key, Slot = c.Slot, CastId = a.CastId, Accepted = true,
+                        ClientId = clientId, Slot = c.Slot, CastId = a.CastId, Accepted = true,
                         Outcome = FightOutcome.Escaped, Reason = EscapeReason.Timeout, Roll = a.Roll,
                         Announce = CatchValidator.AnnounceFor(FightOutcome.Escaped, EscapeReason.Timeout, true),
                     });
@@ -310,6 +315,8 @@ namespace FishGame.Core
         {
             if (!_clients.TryGetValue(clientId, out ClientState c)) return false;
             _clients.Remove(clientId);
+            int at = _clientOrder.BinarySearch(clientId);
+            if (at >= 0) _clientOrder.RemoveAt(at);
             return c.HasActive;
         }
 
@@ -337,6 +344,8 @@ namespace FishGame.Core
             {
                 c = new ClientState { Slot = slot };
                 _clients[clientId] = c;
+                int at = _clientOrder.BinarySearch(clientId);
+                _clientOrder.Insert(~at, clientId);   // not present: BinarySearch returns the complement of the insertion index
             }
             return c;
         }
@@ -392,7 +401,11 @@ namespace FishGame.Core
             ActiveCast a = c.Active;
             if (outcome != FightOutcome.Cancelled && _slots.TryGetValue(c.Slot, out SlotState s))
             {
-                if (a.Roll.Pity || outcome == FightOutcome.Landed) s.FailStreak = 0;
+                if (a.Roll.Pity || outcome == FightOutcome.Landed)
+                {
+                    s.FailStreak = 0;
+                    s.PityAnnounced = false;
+                }
                 else if (s.FailStreak < int.MaxValue) s.FailStreak++;
             }
             c.Resolved.Add(new Resolution { CastId = a.CastId, Outcome = outcome, Reason = reason });

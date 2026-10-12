@@ -397,7 +397,7 @@ namespace FishGame.UI
                     Toast("toast.lost");
                     break;
                 case AnnounceKind.PityCast:
-                    // Not rate limited (at most one per three failed casts). a.Catch is default: the registry is not indexed with it.
+                    // Not rate limited here: the host announces it once per bad-luck streak (first Pity cast only, not on a cancel-and-recast). a.Catch is default: the registry is not indexed with it.
                     Toast("toast.pity", CatcherName(a.CatcherSlot));
                     break;
                 case AnnounceKind.ReleasedCreelFull:

@@ -247,7 +247,7 @@ namespace FishGame.Fishing
             float y = v.Valid ? view.Probe.WaterY : WaterSurface.FlatHeight;
             rod.CastResultRpc(req.CastId, v.Valid, (byte)v.Reason, new Vector3(v.LandingX, y, v.LandingZ),
                 v.Valid ? FishingRollNet.From(in v.Roll) : default);
-            if (v.Valid && v.Roll.Pity)   // R65: the crew sees the lucky line (toast.pity, T25)
+            if (v.Valid && v.AnnouncePity)   // R65: the crew sees the lucky line (toast.pity, T25); once per streak, not per cancel-and-recast
                 rod.CatchAnnouncedRpc(slot, default, (byte)AnnounceKind.PityCast, 0);
         }
 

@@ -4,7 +4,8 @@ namespace FishGame.Core
 {
     public static class CatchValidator
     {
-        // Order: CastingAllowed, ActiveCast, StaleCastId (castId <= last), BadCharge (outside [0,1] or NaN),
+        // Order: CastingAllowed, ActiveCast, StaleCastId (castId <= last), BadCharge (outside [MinChargeNorm, 1] or NaN: the owner's machine
+        // never sends a cast below MinChargeNorm, so the host refuses one instead of computing a sub-minimum landing),
         // OriginTooFar (> 3 m horizontal; a NaN origin or a non-finite yaw counts as too far), NoBait, then CastMath.ProbeReason.
         public static CastRejectReason ValidateCast(in CastRequestData req, uint lastAcceptedCastId, bool hasActive,
                                                     in HostCastView view, bool baitAvailable, float minLandDepth)
@@ -12,12 +13,17 @@ namespace FishGame.Core
             if (!view.CastingAllowed) return CastRejectReason.NotAllowedNow;
             if (hasActive) return CastRejectReason.ActiveCast;
             if (req.CastId <= lastAcceptedCastId) return CastRejectReason.StaleCastId;
-            float charge = req.ChargeNorm;
-            if (!(charge >= 0f && charge <= 1f)) return CastRejectReason.BadCharge;
+            if (!IsChargeAccepted(req.ChargeNorm)) return CastRejectReason.BadCharge;
             if (!OriginWithinSlack(req.OriginX, req.OriginZ, view.PlayerX, view.PlayerZ)) return CastRejectReason.OriginTooFar;
             if (!IsFinite(req.YawDeg)) return CastRejectReason.OriginTooFar;
             if (!baitAvailable) return CastRejectReason.NoBait;
             return CastMath.ProbeReason(in view.Probe, minLandDepth);
+        }
+
+        // FishingConstants.MinChargeNorm <= charge <= 1 (inclusive both ends); NaN and infinities fail.
+        public static bool IsChargeAccepted(float charge)
+        {
+            return charge >= FishingConstants.MinChargeNorm && charge <= 1f;
         }
 
         // Horizontal distance from the claimed cast origin to the host's view of the player is within HostOriginSlack (3 m, inclusive).

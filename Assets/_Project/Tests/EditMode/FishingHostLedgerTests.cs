@@ -201,8 +201,16 @@ namespace FishGame.Tests.EditMode
                 Assert.That(v.Reason, Is.EqualTo(CastRejectReason.BadCharge), "charge " + bad);
             }
             Assert.That(Stock(l), Is.EqualTo(20));
-            CastVerdict zero = l.RequestCast(Client, 0, Req(1, 0f), View(), RollOverrides.None);
-            Assert.That(zero.Valid, Is.True, "charge 0 is allowed");
+            foreach (float low in new[] { 0f, 0.05f })
+            {
+                CastVerdict tooLow = l.RequestCast(Client, 0, Req(1, low), View(), RollOverrides.None);
+                Assert.That(tooLow.Valid, Is.False, "charge " + low + " is below MinChargeNorm");
+                Assert.That(tooLow.Reason, Is.EqualTo(CastRejectReason.BadCharge), "charge " + low);
+                Assert.That(l.TryComputeLanding(0, Req(1, low), out _, out _), Is.False, "no landing for charge " + low);
+            }
+            Assert.That(Stock(l), Is.EqualTo(20), "a rejected sub-minimum cast spends no bait");
+            CastVerdict zero = l.RequestCast(Client, 0, Req(1, FishingConstants.MinChargeNorm), View(), RollOverrides.None);
+            Assert.That(zero.Valid, Is.True, "MinChargeNorm itself is allowed");
             CancelCast(l, 1);
             CastVerdict one = l.RequestCast(Client, 0, Req(2, 1f), View(), RollOverrides.None);
             Assert.That(one.Valid, Is.True, "charge 1 is allowed");
@@ -887,6 +895,40 @@ namespace FishGame.Tests.EditMode
             Assert.That(late[2].Slot, Is.EqualTo((byte)2));
         }
 
+        // Catches (final review M-3): the ascending order lost when clients are added out of order, removed from the middle and re-added
+        // (the sorted id list must track add/remove), and Tick allocating every host frame (a foreach over a SortedDictionary boxes its enumerator).
+        [Test]
+        public void FishingHostLedger_Tick_OrderSurvivesDisconnectAndRejoin_AndDoesNotAllocate()
+        {
+            FishingHostLedger l = NewLedger();
+            l.EnsureSlot(1);
+            l.EnsureSlot(2);
+            Accept(l, 1, Ov, 300, 2);
+            Accept(l, 1, Ov, 100, 0);
+            Accept(l, 1, Ov, 200, 1);
+            Assert.That(l.Disconnect(200), Is.True);
+            Assert.That(l.Disconnect(200), Is.False, "a second disconnect is a no-op");
+            Accept(l, 1, Ov, 250, 1);
+            Accept(l, 1, Ov, 50, 0);   // a client id lower than every other: inserted at the front
+
+            // Warm up, then 100 Ticks with four waiting casts that do not time out: no managed allocation at all.
+            var sink = new List<CommitDecision>(8);
+            l.Tick(0.01, false, sink);
+            Assert.That(sink, Is.Empty);
+            long before = System.GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 100; i++) l.Tick(0.01, false, sink);
+            long allocated = System.GC.GetAllocatedBytesForCurrentThread() - before;
+            Assert.That(sink, Is.Empty);
+            Assert.That(allocated, Is.EqualTo(0L), "Tick must not allocate");
+
+            List<CommitDecision> late = Tick(l, Tf + 2.0 + 31.0);
+            Assert.That(late.Count, Is.EqualTo(4));
+            Assert.That(late[0].ClientId, Is.EqualTo(50UL));
+            Assert.That(late[1].ClientId, Is.EqualTo(100UL));
+            Assert.That(late[2].ClientId, Is.EqualTo(250UL));
+            Assert.That(late[3].ClientId, Is.EqualTo(300UL));
+        }
+
         // ---- clean-catch bonus (R64, M2-D16) -----------------------------------------------------------------------
 
         [Test]
@@ -1046,6 +1088,48 @@ namespace FishGame.Tests.EditMode
             Assert.That(CastAndFail(two, 1, 1).Roll.Pity, Is.False);
             Assert.That(CastAndFail(two, 2, 1).Roll.Pity, Is.False);
             Assert.That(Accept(two, 3, Ov).Roll.Pity, Is.True, "threshold 2: the third cast is Pity");
+        }
+
+        // Catches (final review M-1): PityCast announced on every cancel-and-recast of the same streak (Cancelled keeps FailStreak, so each
+        // recast is Pity again); or never announced again after the streak resets (the flag must clear on the Pity cast's resolution).
+        [Test]
+        public void FishingHostLedger_PityAnnounced_OncePerStreak()
+        {
+            FishingHostLedger l = NewLedger();
+            Assert.That(CastAndFail(l, 1, 0).AnnouncePity, Is.False, "not Pity, nothing to announce");
+            CastAndFail(l, 2, 1);
+            CastAndFail(l, 3, 2);
+
+            CastVerdict four = Accept(l, 4, Ov);
+            Assert.That(four.Roll.Pity, Is.True);
+            Assert.That(four.AnnouncePity, Is.True, "the first Pity cast of the streak is announced");
+            CancelCast(l, 4);
+
+            for (uint id = 5; id <= 7; id++)
+            {
+                CastVerdict again = Accept(l, id, Ov);
+                Assert.That(again.Roll.Pity, Is.True, "cast " + id + ": a cancelled Pity cast leaves the streak, so it is still Pity");
+                Assert.That(again.AnnouncePity, Is.False, "cast " + id + ": the same streak is not announced again");
+                if (id < 7) CancelCast(l, id);
+            }
+
+            HookAt(l, 7);
+            Result(l, 7, FightOutcome.Snapped, EscapeReason.None, NotClean(3f));   // the Pity cast resolves: streak 0, flag cleared
+            Assert.That(Accept(l, 8, Ov).AnnouncePity, Is.False, "streak 0: a normal cast");
+            CancelCast(l, 8);
+            CastAndFail(l, 9, 0);
+            CastAndFail(l, 10, 1);
+            CastAndFail(l, 11, 2);   // 8 was cancelled: 9, 10, 11 are the three failures of the next streak
+            CastVerdict next = Accept(l, 12, Ov);
+            Assert.That(next.Roll.Pity, Is.True);
+            Assert.That(next.AnnouncePity, Is.True, "a new streak announces its first Pity cast again");
+            CancelCast(l, 12);
+
+            // A rejoin keeps the slot streak AND the announced flag (slot state).
+            Assert.That(l.Disconnect(Client), Is.False);
+            CastVerdict rejoin = Accept(l, 1, Ov, 200);
+            Assert.That(rejoin.Roll.Pity, Is.True);
+            Assert.That(rejoin.AnnouncePity, Is.False, "the streak was already announced before the reconnect");
         }
 
         [Test]

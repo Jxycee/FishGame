@@ -58,8 +58,27 @@ namespace FishGame.Tests.EditMode
             Assert.That(CatchValidator.ValidateCast(in req, 4, false, in view, true, 0.8f), Is.EqualTo(CastRejectReason.OriginTooFar), "3.01 m");
             req.OriginX = 1f; req.OriginZ = 1f; req.ChargeNorm = 1f;
             Assert.That(CatchValidator.ValidateCast(in req, 4, false, in view, true, 0.8f), Is.EqualTo(CastRejectReason.None), "charge 1");
-            req.ChargeNorm = 0f;
-            Assert.That(CatchValidator.ValidateCast(in req, 4, false, in view, true, 0.8f), Is.EqualTo(CastRejectReason.None), "charge 0");
+        }
+
+        // Catches (final review R67 follow-up): the host accepting a charge below FishingConstants.MinChargeNorm (the owner's machine never
+        // sends one, so a client that does is lying), or rejecting the minimum itself. Same reason as the range check, and the same slot in the order.
+        [Test]
+        public void CatchValidator_ValidateCast_ChargeBelowMinChargeNorm_IsBadCharge()
+        {
+            HostCastView view = GoodView();
+            CastRequestData req = GoodReq();
+            foreach (float bad in new[] { 0f, 0.05f, 0.0999f, -0.01f, 1.01f, float.NaN })
+            {
+                req.ChargeNorm = bad;
+                Assert.That(CatchValidator.ValidateCast(in req, 4, false, in view, true, 0.8f), Is.EqualTo(CastRejectReason.BadCharge), "charge " + bad);
+            }
+            foreach (float good in new[] { FishingConstants.MinChargeNorm, 0.1f, 0.11f, 1f })
+            {
+                req.ChargeNorm = good;
+                Assert.That(CatchValidator.ValidateCast(in req, 4, false, in view, true, 0.8f), Is.EqualTo(CastRejectReason.None), "charge " + good);
+            }
+            Assert.That(CatchValidator.IsChargeAccepted(0.05f), Is.False);
+            Assert.That(CatchValidator.IsChargeAccepted(0.1f), Is.True);
         }
 
         // Catches: ValidateCast letting a NaN / infinite yaw through (CastMath.Landing would then place the bobber at NaN), or
