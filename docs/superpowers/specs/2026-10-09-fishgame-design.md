@@ -160,8 +160,9 @@ The user decided these at spec review. They override every earlier row and secti
 | R62 | Blender fish models | The Blender MCP spike passed (`Content/Models/Fish_Perch.fbx`), so the M2 species get Blender FBX models with per-face vertex colours on the Toon shader; the procedural fish mesh is only a fallback. | 9.6, 17.2 |
 | R63 | Distinct fight motions | Each fight profile also differs in motion, not only in strength: runs that ramp up (Steady, Runner), a slow creep during calm (Bulldog), rapid flips (Darter), per-run speed jitter (Thrasher). The fight stays Rust-style. A single "fight intensity" knob, tackle-style assist levers and a Stardew-style bite wait were considered and not adopted. | 9.5, 9.6 |
 | R64 | Clean-catch bonus | A fish landed without the line ever reaching the clean threshold (seed 0.8 tension) gets +1 quality tier. The owner reports its fight stats; the host bound-checks the claim and only ever withholds the upgrade, never the catch. | 9.8, 9.9 |
+| R65 | Bad-luck nudge | After 3 failed casts in a row (snap, escape or missed bite; cancels don't count) the host gives that player's next cast a "lucky line": the fight strains the line less (x0.85), the snap grace lasts longer (x1.5) and the hook window is 0.3 s longer. Odds of species, weight and quality are unchanged. The crew sees a "lucky line" toast. All numbers are tuning seeds; the user playtests it and decides keep, tune or remove. | 9.5, 9.8, 9.9, 9.12 |
 
-Contract details for R61-R64: `docs/superpowers/plans/2026-10-11-m2-interfaces.md` (M2-D3, D15, D16 and section 7.7).
+Contract details for R61-R65: `docs/superpowers/plans/2026-10-11-m2-interfaces.md` (M2-D3, D15, D16 and section 7.7).
 
 ---
 

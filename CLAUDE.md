@@ -5,7 +5,7 @@ Co-op (1–4) friend-slop rogue-lite fishing game. Unity 6000.6.5f1 (URP), Netco
 ## Unity CLI
 - Editor: `C:\Program Files\Unity\Hub\Editor\6000.6.5f1\Editor\Unity.exe`
 - Project root = repo root `C:\Dev\FishGame`.
-- Before any batchmode run, check `Temp/UnityLockfile`. If present, the user has the editor open — ask them to close it; never kill Unity processes.
+- Before any batchmode run, check whether `Temp/UnityLockfile` is **held** (an exclusive open fails), not merely present: Unity often leaves the file behind after a batch run. `Tools/unity.ps1` tests this itself and reports `LOCKED` (exit 2) only when it is held. If held, the user has the editor open — ask them to close it; never kill Unity processes and never delete the lockfile.
 - Compile/import check:
   `Unity.exe -batchmode -nographics -quit -projectPath C:/Dev/FishGame -logFile <scratchpad>/unity.log`
   then grep the log for `error CS` and `Exiting batchmode successfully`. Exit 0 alone is not proof — read the log.
