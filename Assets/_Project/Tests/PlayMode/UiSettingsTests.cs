@@ -80,5 +80,42 @@ namespace FishGame.Tests.PlayMode
             Assert.That(row.yMax, Is.LessThanOrEqualTo(viewport.yMax + 0.5f), "UiScale row bottom is inside the viewport (viewport " + viewport + ", row " + row + ")");
             Assert.That(scroll.verticalScrollerVisibility, Is.EqualTo(ScrollerVisibility.AlwaysVisible), "the scroller must always be visible");
         }
+
+        // Wiring test (ruling G-Q4): the Settings toggle, not just FishingHudRules, turns the gauge to Arc when assist goes false -> true while the gauge is Off,
+        // writes ISettings.Current, and refreshes the LineGauge slider; the rule re-applies every time, not once.
+        [UnityTest]
+        public IEnumerator Settings_AssistOn_WithGaugeOff_SetsGaugeToArc_EveryTime()
+        {
+            yield return OpenSettings(100, (int)LineGaugeMode.Off, false);
+
+            var toggle = _root.Q<Toggle>("FishingAssist");
+            var gauge = _root.Q<SliderInt>("LineGauge");
+            Assert.That(toggle, Is.Not.Null, "FishingAssist toggle");
+            Assert.That(gauge, Is.Not.Null, "LineGauge slider");
+            Assert.That(toggle.panel, Is.Not.Null, "the toggle must be attached to a panel for ChangeEvent to fire");
+            Assert.That(toggle.value, Is.False, "assist starts off");
+            Assert.That(gauge.value, Is.EqualTo((int)LineGaugeMode.Off), "gauge starts Off");
+
+            toggle.value = true;
+            Assert.That(_settings.Current.fishingAssist, Is.True, "fishingAssist");
+            Assert.That(_settings.Current.lineGauge, Is.EqualTo((int)LineGaugeMode.Arc), "assist on with the gauge Off sets the gauge to Arc");
+            Assert.That(gauge.value, Is.EqualTo((int)LineGaugeMode.Arc), "the LineGauge slider shows Arc");
+            Assert.That(gauge.label, Does.EndWith(UiStrings.Get("settings.gauge_arc")), "the LineGauge label shows Arc");
+
+            // Gauge back to Off by hand, assist off, assist on again: Arc again.
+            gauge.value = (int)LineGaugeMode.Off;
+            Assert.That(_settings.Current.lineGauge, Is.EqualTo((int)LineGaugeMode.Off), "gauge set back to Off");
+            toggle.value = false;
+            Assert.That(_settings.Current.lineGauge, Is.EqualTo((int)LineGaugeMode.Off), "assist off leaves the gauge alone");
+            toggle.value = true;
+            Assert.That(_settings.Current.lineGauge, Is.EqualTo((int)LineGaugeMode.Arc), "assist on again re-applies Arc");
+            Assert.That(gauge.value, Is.EqualTo((int)LineGaugeMode.Arc), "the LineGauge slider shows Arc again");
+
+            // A gauge the player chose (Bar) is never overwritten.
+            gauge.value = (int)LineGaugeMode.Bar;
+            toggle.value = false;
+            toggle.value = true;
+            Assert.That(_settings.Current.lineGauge, Is.EqualTo((int)LineGaugeMode.Bar), "a chosen gauge is left alone");
+        }
     }
 }
