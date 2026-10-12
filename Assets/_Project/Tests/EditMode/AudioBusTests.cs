@@ -321,8 +321,8 @@ namespace FishGame.Tests.EditMode
             Assert.That(plops, Is.EqualTo(1), "Core MinInterval is back");
         }
 
-        // Catches: a sanitize rule dropped: NaN BaseVolume, MinDistance <= 0 / NaN, MaxDistance <= 0 (means 30) or below MinDistance,
-        // negative / NaN MinInterval, BaseVolume above 1.
+        // Catches: a sanitize rule dropped: NaN BaseVolume, MinDistance <= 0 / NaN / +Inf, MaxDistance <= 0 (means 30) / +Inf or below
+        // MinDistance, negative / NaN / +Inf MinInterval (never plays again), BaseVolume above 1.
         [Test]
         public void AudioBus_CueTable_SanitizesMergedValues()
         {
@@ -332,7 +332,23 @@ namespace FishGame.Tests.EditMode
                 new SfxRecipe(SfxIds.SplashBig, 1f, false, AudioCategory.Sfx, float.NaN, true, 0f, float.NaN, -2f),
                 new SfxRecipe(SfxIds.Snap, 1f, false, AudioCategory.Sfx, 5f, true, 2f, -1f, 5f),
                 new SfxRecipe(SfxIds.CatchCheer, 1f, false, AudioCategory.Sfx, 0.8f, true, 40f, 0.3f, float.NaN),
+                new SfxRecipe(SfxIds.CastWhoosh, 1f, false, AudioCategory.Sfx, 0.8f, true, 40f, 0.3f, float.PositiveInfinity),
+                new SfxRecipe(SfxIds.SplashSmall, 1f, false, AudioCategory.Sfx, 0.8f, true, float.PositiveInfinity, 0.3f, 2f),
+                new SfxRecipe(SfxIds.NibbleTick, 1f, false, AudioCategory.Sfx, 0.8f, true, 40f, float.PositiveInfinity, 2f),
             });
+            bus.PlayAt(SfxIds.CastWhoosh, new Vector3(30f, 0f, 0f));
+            bus.PlayAt(SfxIds.SplashSmall, new Vector3(40f, 0f, 0f));
+            bus.PlayAt(SfxIds.NibbleTick, new Vector3(50f, 0f, 0f));
+            bus.PlayAt(SfxIds.NibbleTick, new Vector3(50f, 0f, 0f));
+            AudioSource whoosh = LastPlayedWith(bus, SfxIds.CastWhoosh);
+            Assert.That(whoosh.minDistance, Is.EqualTo(1f), "MinDistance +Inf -> 1, not infinite");
+            Assert.That(whoosh.maxDistance, Is.EqualTo(40f));
+            AudioSource small = LastPlayedWith(bus, SfxIds.SplashSmall);
+            Assert.That(small.maxDistance, Is.EqualTo(30f), "MaxDistance +Inf -> default 30, not infinite");
+            Assert.That(small.minDistance, Is.EqualTo(2f));
+            int tickCount = 0;
+            foreach (AudioSource s in PoolSources(bus)) if (s.clip != null && s.clip.name == SfxIds.NibbleTick) tickCount++;
+            Assert.That(tickCount, Is.EqualTo(2), "MinInterval +Inf -> 0: the repeat is not dropped forever");
             bus.PlayAt(SfxIds.SplashBig, new Vector3(0f, 0f, 0f));
             bus.PlayAt(SfxIds.SplashBig, new Vector3(0f, 0f, 0f));
             bus.PlayAt(SfxIds.Snap, new Vector3(10f, 0f, 0f));
@@ -353,6 +369,25 @@ namespace FishGame.Tests.EditMode
             AudioSource cheer = LastPlayedWith(bus, SfxIds.CatchCheer);
             Assert.That(cheer.minDistance, Is.EqualTo(1f), "NaN MinDistance -> 1");
             Assert.That(cheer.maxDistance, Is.EqualTo(40f));
+        }
+
+        // Catches: Play2D reporting true for a cue that was dropped (rate limit, unknown id, bus not ready), which made the audition
+        // menu count silent cues as played; or reporting false for a cue that did play.
+        [Test]
+        public void AudioBus_Play2D_ReturnsWhetherTheCuePlayed()
+        {
+            AudioBus bus = NewBus(out _);
+            Assert.That(bus.Play2D(SfxIds.UiClick, AudioCategory.Ui), Is.True, "first play");
+            Assert.That(bus.Play2D(SfxIds.UiClick, AudioCategory.Ui), Is.False, "inside MinInterval: dropped");
+            using (new WarningCounter())
+            {
+                Assert.That(bus.Play2D("Nope_Cue", AudioCategory.Sfx), Is.False, "unknown id");
+            }
+            AudioBus unready = NewBus(out _, initialize: false);
+            using (new WarningCounter())
+            {
+                Assert.That(unready.Play2D(SfxIds.UiClick, AudioCategory.Ui), Is.False, "bus not initialized");
+            }
         }
 
         // Catches: an unknown override id throwing or warning every call; a bad id aborting the rest of the table; overrides set

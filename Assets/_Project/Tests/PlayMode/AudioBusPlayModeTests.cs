@@ -135,5 +135,24 @@ namespace FishGame.Tests.PlayMode
             Assert.That(bus.transform.Find("Loop_" + SfxIds.LineCreak), Is.Null, "and its source is released");
             Assert.DoesNotThrow(() => bus.StopLoop(loop));
         }
+
+        // Catches: IsPlaying using (object)Source != null, which skips Unity's destroyed-object check and then throws
+        // MissingReferenceException on Source.isPlaying. DestroyImmediate with no frame in between, so the bus LateUpdate cannot
+        // mark the loop Stopped first.
+        [UnityTest]
+        public IEnumerator AudioLoop_IsPlaying_FalseWithoutThrowingWhenSourceObjectIsDestroyed()
+        {
+            AudioBus bus = NewBus();
+            AudioLoop loop = bus.StartLoop(SfxIds.LineCreak, null, false);
+            Assert.That(loop, Is.Not.Null);
+            yield return null;
+            Assert.That(loop.IsPlaying, Is.True);
+            Transform child = bus.transform.Find("Loop_" + SfxIds.LineCreak);
+            Assert.That(child, Is.Not.Null);
+            Object.DestroyImmediate(child.gameObject);
+            bool playing = true;
+            Assert.DoesNotThrow(() => playing = loop.IsPlaying);
+            Assert.That(playing, Is.False);
+        }
     }
 }

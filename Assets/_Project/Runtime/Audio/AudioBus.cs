@@ -72,10 +72,12 @@ namespace FishGame.Runtime
             Play2D(sfxId, AudioCategory.Ui);
         }
 
-        public void Play2D(string sfxId, AudioCategory category)
+        // Returns true when the cue started; false when it was dropped (rate limit, unknown id, missing clip, bus not ready).
+        public bool Play2D(string sfxId, AudioCategory category)
         {
-            if (!TryPrepare(sfxId, false, Vector3.zero, out SfxRecipe recipe, out AudioClip clip)) return;
+            if (!TryPrepare(sfxId, false, Vector3.zero, out SfxRecipe recipe, out AudioClip clip)) return false;
             Play(clip, recipe, category, false, Vector3.zero, 1f);
+            return true;
         }
 
         public void PlayAt(string sfxId, Vector3 position)
@@ -133,10 +135,10 @@ namespace FishGame.Runtime
                     continue;
                 }
                 float baseVolume = float.IsNaN(o.BaseVolume) ? core.BaseVolume : Mathf.Clamp01(o.BaseVolume);
-                float minDistance = o.MinDistance > 0f ? o.MinDistance : 1f;
-                float maxDistance = o.MaxDistance > 0f ? o.MaxDistance : DefaultMaxDistance;
+                float minDistance = float.IsInfinity(o.MinDistance) || !(o.MinDistance > 0f) ? 1f : o.MinDistance;
+                float maxDistance = float.IsInfinity(o.MaxDistance) || !(o.MaxDistance > 0f) ? DefaultMaxDistance : o.MaxDistance;
                 if (maxDistance < minDistance) maxDistance = minDistance;
-                float minInterval = o.MinInterval >= 0f ? o.MinInterval : 0f;
+                float minInterval = float.IsInfinity(o.MinInterval) || !(o.MinInterval >= 0f) ? 0f : o.MinInterval;
                 _cueTable[core.Id] = new SfxRecipe(core.Id, core.LengthSeconds, core.Loop, o.Category, baseVolume, o.Spatial,
                     maxDistance, minInterval, minDistance);
             }

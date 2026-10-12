@@ -24,6 +24,6 @@ namespace FishGame.Runtime
 
         public string SfxId { get; }
 
-        public bool IsPlaying => !Stopped && (object)Source != null && Source.isPlaying;
+        public bool IsPlaying => !Stopped && Source != null && Source.isPlaying;
     }
 }

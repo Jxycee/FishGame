@@ -134,14 +134,23 @@ namespace FishGame.EditorTools
                 if (recipe.Loop)
                 {
                     _loop = _bus.StartLoop(recipe.Id, null, false);
+                    if (_loop == null)
+                    {
+                        Debug.LogError("FG AUDITION " + recipe.Id + ": StartLoop returned null (not counted as played).");
+                        return;
+                    }
                     _loopStopAt = now + LoopSeconds;
                     _nextAt = now + LoopSeconds + 0.1;   // the next cue waits for the loop to stop
+                    _played++;
+                }
+                else if (_bus.Play2D(recipe.Id, recipe.Category))
+                {
+                    _played++;
                 }
                 else
                 {
-                    _bus.Play2D(recipe.Id, recipe.Category);
+                    Debug.LogError("FG AUDITION " + recipe.Id + ": Play2D did not play (not counted as played).");
                 }
-                _played++;
             }
             catch (Exception ex)
             {
