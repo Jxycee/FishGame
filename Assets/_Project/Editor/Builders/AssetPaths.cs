@@ -61,5 +61,10 @@ namespace FishGame.EditorTools
         public const string BodyUnitSphereMesh = MeshesFolder + "/Body_UnitSphere.asset";
         public const string BodyUnitBoxMesh = MeshesFolder + "/Body_UnitBox.asset";
         public const string BodyUnitCapsuleMesh = MeshesFolder + "/Body_UnitCapsule.asset";
+
+        // T21 additions (rendering setup: volume profiles).
+        public const string RenderingFolder = "Assets/_Project/Content/Rendering";
+        public const string WarmVolumeProfile = RenderingFolder + "/VP_WarmSunset.asset";
+        public const string CoolVolumeProfile = RenderingFolder + "/VP_CoolNight.asset";
     }
 }

@@ -7,6 +7,7 @@ using FishGame.Runtime;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace FishGame.EditorTools
 {
@@ -101,6 +102,7 @@ namespace FishGame.EditorTools
             camera.nearClipPlane = MovementMath.NearClip;
             camera.farClipPlane = MovementMath.FarClip;
             camera.enabled = false;
+            BuilderUtil.GetOrAdd<UniversalAdditionalCameraData>(cameraTransform.gameObject).renderPostProcessing = true;   // T21: the volume profiles take effect
             BuilderUtil.GetOrAdd<AudioListener>(cameraTransform.gameObject).enabled = false;
 
             // T20: the body parts draw MeshBuilder unit meshes (vertex colours for FishGame/Toon) instead of Unity's primitives. Transforms are the M1 ones.

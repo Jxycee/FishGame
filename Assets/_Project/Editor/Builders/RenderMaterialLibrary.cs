@@ -38,9 +38,129 @@ namespace FishGame.EditorTools
             SlotPalette.GetSkinRgb(out float sr, out float sg, out float sb);
             EnsureToon(toon, "M_Skin", false, true, new Color(sr, sg, sb));
 
-            // T21 adds RenderMaterialLibrary.BuildWorldMaterials(WaterSettingsDef) here (called from RenderingSetupBuilder.Build, ruling F5).
+            // BuildWorldMaterials(WaterSettingsDef) (T21) is called from RenderingSetupBuilder.Build, after T14's WaterSettings asset exists (ruling F5).
 
             FishModelPostprocessor.EnsureImportSettings();
+        }
+
+        // T21 (ruling F5): water, line, sky, particle and marker materials. Same ensure semantics as BuildAll.
+        // M_Water_Surface copies colours and ranges from the WaterSettingsDef asset (a designer retune needs a build).
+        internal static void BuildWorldMaterials(FishGame.Data.WaterSettingsDef water)
+        {
+            if (water == null) throw new System.ArgumentNullException(nameof(water));
+            BuilderUtil.EnsureFolder(AssetPaths.MaterialsFolder);
+
+            Material surface = EnsureMaterial("M_Water_Surface", RequireShader("FishGame/Water"), out bool surfaceChanged);
+            surfaceChanged |= SetColor(surface, Shader.PropertyToID("_ShallowColor"), water.ShallowColor);
+            surfaceChanged |= SetColor(surface, Shader.PropertyToID("_DeepColor"), water.DeepColor);
+            surfaceChanged |= SetFloat(surface, Shader.PropertyToID("_DepthRange"), water.DepthRange);
+            surfaceChanged |= SetFloat(surface, Shader.PropertyToID("_FoamWidth"), water.FoamWidth);
+            if (surfaceChanged) EditorUtility.SetDirty(surface);
+
+            Material line = EnsureMaterial("M_Line", RequireShader("FishGame/Line"), out bool lineChanged);   // shader defaults
+            if (lineChanged) EditorUtility.SetDirty(line);
+            Material sky = EnsureMaterial("M_Sky", RequireShader("FishGame/GradientSky"), out bool skyChanged);   // shader defaults
+            if (skyChanged) EditorUtility.SetDirty(sky);
+
+            Material particle = EnsureMaterial("M_Particle", RequireShader("Universal Render Pipeline/Particles/Unlit"), out bool particleChanged);
+            particleChanged |= SetTransparentAlphaBlend(particle, 3000);
+            particleChanged |= SetColor(particle, BaseColorId, Color.white);
+            // The URP importer writes (0, +Infinity, 0, 0) here while camera fading is off; match it so the build and the import agree.
+            particleChanged |= SetVector(particle, Shader.PropertyToID("_CameraFadeParams"), new Vector4(0f, float.PositiveInfinity, 0f, 0f));
+            if (particleChanged) EditorUtility.SetDirty(particle);
+
+            // Queue 3100 draws after the transparent water (ZWrite Off), so the marker is never tinted or hidden by it. Cull Off: marker winding never matters.
+            // URP's material importer recomputes the queue of every URP/Unlit material (opaque = 2000 + _QueueOffset, transparent = 3000 + _QueueOffset) and
+            // there is no queue override on this shader, so an opaque marker would be reset to 2000 on the next import. The marker is therefore an alpha-blend
+            // transparent surface with _QueueOffset 100, which URP itself resolves to 3100 (a stable fixed point; _BaseColor alpha 1 keeps it solid).
+            Material marker = EnsureMaterial("M_Marker", RequireShader("Universal Render Pipeline/Unlit"), out bool markerChanged);
+            markerChanged |= SetColor(marker, BaseColorId, Color.white);
+            markerChanged |= SetFloat(marker, Shader.PropertyToID("_Cull"), 0f);
+            markerChanged |= SetFloat(marker, Shader.PropertyToID("_QueueOffset"), 100f);
+            markerChanged |= SetTransparentAlphaBlend(marker, 3100);
+            markerChanged |= SetPassEnabled(marker, "MotionVectors", false);   // what the URP importer settles on for a double-sided (Cull Off) Unlit material
+            if (!marker.doubleSidedGI) { marker.doubleSidedGI = true; markerChanged = true; }
+            if (markerChanged) EditorUtility.SetDirty(marker);
+        }
+
+        // URP transparent surface, alpha blend, ZWrite off: exactly what BaseShaderGUI.SetupMaterialBlendMode would write (so an import changes nothing).
+        static bool SetTransparentAlphaBlend(Material material, int queue)
+        {
+            bool changed = false;
+            changed |= SetFloat(material, Shader.PropertyToID("_Surface"), 1f);
+            changed |= SetFloat(material, Shader.PropertyToID("_Blend"), 0f);
+            changed |= SetFloat(material, Shader.PropertyToID("_SrcBlend"), 5f);          // SrcAlpha
+            changed |= SetFloat(material, Shader.PropertyToID("_DstBlend"), 10f);         // OneMinusSrcAlpha
+            changed |= SetFloat(material, Shader.PropertyToID("_SrcBlendAlpha"), 1f);
+            changed |= SetFloat(material, Shader.PropertyToID("_DstBlendAlpha"), 10f);
+            changed |= SetFloat(material, Shader.PropertyToID("_ZWrite"), 0f);
+            changed |= SetKeyword(material, "_SURFACE_TYPE_TRANSPARENT", true);
+            if (material.GetTag("RenderType", false) != "Transparent") { material.SetOverrideTag("RenderType", "Transparent"); changed = true; }
+            changed |= SetQueue(material, queue);
+            changed |= SetPassEnabled(material, "DepthOnly", false);       // a transparent surface does not write depth or cast shadows (URP importer does the same)
+            changed |= SetPassEnabled(material, "ShadowCaster", false);
+            return changed;
+        }
+
+        // Exact component compare (Vector4 == is approximate and never equal for Infinity).
+        static bool SetVector(Material material, int id, Vector4 value)
+        {
+            if (material.HasProperty(id))
+            {
+                Vector4 current = material.GetVector(id);
+                if (current.x == value.x && current.y == value.y && current.z == value.z && current.w == value.w) return false;
+            }
+            material.SetVector(id, value);
+            return true;
+        }
+
+        static bool SetPassEnabled(Material material, string pass, bool enabled)
+        {
+            if (material.GetShaderPassEnabled(pass) == enabled) return false;
+            material.SetShaderPassEnabled(pass, enabled);
+            return true;
+        }
+
+        static Shader RequireShader(string name)
+        {
+            Shader shader = Shader.Find(name);
+            if (shader == null) throw new System.InvalidOperationException("Shader not found: " + name);
+            return shader;
+        }
+
+        // Loads or creates MaterialsFolder/<name>.mat. The shader is switched only when it differs (then the keywords are cleared).
+        static Material EnsureMaterial(string name, Shader shader, out bool changed)
+        {
+            string path = AssetPaths.MaterialsFolder + "/" + name + ".mat";
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            changed = false;
+            if (material == null)
+            {
+                material = new Material(shader);
+                AssetDatabase.CreateAsset(material, path);
+                changed = true;
+            }
+            if (material.shader != shader)
+            {
+                material.shader = shader;
+                material.shaderKeywords = new string[0];
+                changed = true;
+            }
+            return material;
+        }
+
+        static bool SetKeyword(Material material, string keyword, bool enabled)
+        {
+            if (material.IsKeywordEnabled(keyword) == enabled) return false;
+            if (enabled) material.EnableKeyword(keyword); else material.DisableKeyword(keyword);
+            return true;
+        }
+
+        static bool SetQueue(Material material, int queue)
+        {
+            if (material.renderQueue == queue) return false;
+            material.renderQueue = queue;
+            return true;
         }
 
         // name without extension, e.g. "M_Toon_Base".
