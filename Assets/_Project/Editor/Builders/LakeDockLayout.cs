@@ -41,7 +41,7 @@ namespace FishGame.EditorTools
 
         // Dock visual (planks lie across the deck: 3.0 m in x, 0.26 m in z, 0.1 m thick, 0.04 m gap; 40 planks fill z -52..-40).
         public const int PlankCount = 40;
-        public const float PlankLength = 3f, PlankWidth = 0.26f, PlankThickness = 0.1f, PlankGap = 0.04f, PlankYawDegrees = 0.8f;
+        public const float PlankLength = 3f, PlankWidth = 0.26f, PlankGap = 0.04f, PlankYawDegrees = 0.8f;
         public const float StringerX = 1.2f, StringerSize = 0.12f;
         public const float PostRadius = 0.08f;
         public const int PostSides = 6;

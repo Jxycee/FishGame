@@ -144,11 +144,12 @@ namespace FishGame.EditorTools
             return b.ToMesh("LakeDock_CanopyRound");
         }
 
-        // Two stacked cones around the unit sphere (radius 0.5): the lower dark, the upper light.
+        // Two stacked cones inside the unit sphere (radius 0.5, the canopy collider): the lower dark, the upper light. The lower rim (r 0.3 at y -0.4)
+        // keeps r^2 + y^2 <= 0.25, so the visual never overhangs the collider.
         static Mesh BuildCanopyPine()
         {
             var b = new MeshBuilder(LakeDockLayout.CanopyPineMeshSeed);
-            b.Cylinder(new Vector3(0f, -0.15f, 0f), 0.4f, 0f, 0.5f, LakeDockLayout.TrunkSides, Quaternion.identity, LakeDockLayout.SlotFoliageDark);
+            b.Cylinder(new Vector3(0f, -0.15f, 0f), 0.3f, 0f, 0.5f, LakeDockLayout.TrunkSides, Quaternion.identity, LakeDockLayout.SlotFoliageDark);
             b.Cylinder(new Vector3(0f, 0.225f, 0f), 0.3f, 0f, 0.55f, LakeDockLayout.TrunkSides, Quaternion.identity, LakeDockLayout.SlotFoliage);
             return b.ToMesh("LakeDock_CanopyPine");
         }
