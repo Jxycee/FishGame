@@ -412,10 +412,11 @@ namespace FishGame.Tests.EditMode
         {
             RodStateMachine m = New();
             ToWaiting(m);
-            m.Tick(0.1f, Fr(p2b: 30f));
-            Assert.That(m.State, Is.EqualTo(RodState.Waiting), "30 m is the limit, not beyond it");
+            // R67: PlayerToBobber is root -> bobber; the limit (castMaxDist 18 + spoolExtra 12 = 30 m) is measured from the rod tip, CastTipReach nearer.
+            m.Tick(0.1f, Fr(p2b: FishingConstants.CastTipReach + 29.99f));   // (not exactly 30: the float sum would round above the limit)
+            Assert.That(m.State, Is.EqualTo(RodState.Waiting), "just inside 30 m from the tip is the limit, not beyond it");
             Drain(m);
-            m.Tick(0.1f, Fr(p2b: 30.5f));
+            m.Tick(0.1f, Fr(p2b: FishingConstants.CastTipReach + 30.5f));
             Assert.That(m.State, Is.EqualTo(RodState.Idle));
             List<RodEffect> e = Drain(m);
             Assert.That(Count(e, RodEffectKind.SendCancel), Is.EqualTo(1));

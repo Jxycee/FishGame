@@ -340,6 +340,7 @@ namespace FishGame.Fishing
         }
 
         // Spec 9.3: the landing the cast would make right now, probed every frame. On a disagreement the host wins (recall).
+        // R67: dist is measured from the rod tip; CastMath.Landing adds the fixed FishingConstants.CastTipReach, exactly as the host does.
         private bool UpdateMarker()
         {
             MarkerVisible = Machine.MarkerOn && RodOut;
@@ -392,7 +393,7 @@ namespace FishGame.Fishing
                             {
                                 Vector3 root = transform.position;
                                 float yaw = transform.eulerAngles.y;
-                                CastMath.Landing(root.x, root.z, yaw, Machine.CastDistance, out float lx, out float lz);
+                                CastMath.Landing(root.x, root.z, yaw, Machine.CastDistance, out float lx, out float lz);   // R67: CastDistance is from the tip; Landing adds CastTipReach
                                 _landing = new Vector3(lx, WaterSurface.FlatHeight, lz);   // set before the RPC: solo handles it inline
                                 _hasLanding = true;
                                 _castYaw = yaw;
@@ -467,7 +468,8 @@ namespace FishGame.Fishing
                     if (from == RodState.Casting)
                         // ResetCast will wipe the roll. The telemetry distance is origin -> the ADOPTED landing (the host's, F4/F5 race), not
                         // Machine.CastDistance (the owner's pre-adoption number, which only feeds the landing prediction and the flight time).
-                        _recorder.OnWaiting(Machine.Roll, _hasLanding ? Flat(_castOrigin, _landing) : Machine.CastDistance);
+                        // R67: minus CastTipReach, so it is on the same "distance from the rod tip" basis as CastDistance and castMaxDist.
+                        _recorder.OnWaiting(Machine.Roll, _hasLanding ? Mathf.Max(0f, Flat(_castOrigin, _landing) - FishingConstants.CastTipReach) : Machine.CastDistance);
                     break;
                 case RodState.Bite:
                     _recorder.OnBite(_clock);

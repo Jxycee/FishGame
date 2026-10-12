@@ -9,7 +9,7 @@ namespace FishGame.Core
         public CastPhase Phase;
         public double TAccepted, THooked;      // ledger clock (Now) at accept / at the accepted Hooked message
         public float LineLength0, TFlight;     // LineLength0 is set on Hooked (WalkBoundedLineLength0); TFlight from the cast distance
-        public float CastDistance;             // horizontal origin -> landing, host-derived at accept (anti-teleport bound)
+        public float CastDistance;             // cast distance FROM THE ROD TIP (R67), host-derived at accept; origin -> landing is CastTipReach + this (anti-teleport bound, TFlight)
         public bool Assist;
         public ushort RodIndex;
         public byte BaitIndex;

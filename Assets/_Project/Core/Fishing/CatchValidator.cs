@@ -74,7 +74,8 @@ namespace FishGame.Core
 
         // Anti-teleport bound (T9-R1): a player cannot be nearer the landing than the cast distance minus what the fastest walk
         // covers since the cast was accepted. max(hostLineLength0, castDistance - MaxWalkSpeed * elapsed - HookedLineSlack), floored at landDistance.
-        // MaxWalkSpeed is the sprint speed. A NaN bound (non-finite elapsed) is ignored.
+        // castDistance is the horizontal ORIGIN -> LANDING distance (R67: FishingConstants.CastTipReach + the cast distance from the rod tip; the
+        // ledger passes that sum). MaxWalkSpeed is the sprint speed. A NaN bound (non-finite elapsed) is ignored.
         public static float WalkBoundedLineLength0(float hostLineLength0, float castDistance, double elapsedSeconds, float landDistance)
         {
             float v = hostLineLength0;

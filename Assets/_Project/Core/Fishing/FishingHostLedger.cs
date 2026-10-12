@@ -217,7 +217,9 @@ namespace FishGame.Core
             a.THooked = Now;
             float landDistance = _db.Tuning.LandDistance;
             float hostLine = CatchValidator.HostLineLength0(hostDistanceToLanding, landDistance);
-            a.LineLength0 = CatchValidator.WalkBoundedLineLength0(hostLine, a.CastDistance, Now - a.TAccepted, landDistance);
+            // R67: a.CastDistance is measured from the rod tip; the landing is CastTipReach further from the cast origin, and the walk bound
+            // is on the player's distance to the landing, so it takes the origin -> landing distance.
+            a.LineLength0 = CatchValidator.WalkBoundedLineLength0(hostLine, FishingConstants.CastTipReach + a.CastDistance, Now - a.TAccepted, landDistance);
             c.Active = a;
             return false;
         }

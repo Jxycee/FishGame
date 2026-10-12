@@ -69,16 +69,51 @@ namespace FishGame.Tests.EditMode
             Assert.That(CastMath.PitchApexMult(90f), Is.EqualTo(1.3f).Within(Eps));
         }
 
+        // R67: the landing is origin + yawForward * (CastTipReach + distance); the distance argument is measured from the rod tip.
         [Test]
         public void CastMath_Landing_UsesYawOnly()
         {
+            const float reach = FishingConstants.CastTipReach;
             float x, z;
             CastMath.Landing(1f, 2f, 0f, 10f, out x, out z);
-            Assert.That(x, Is.EqualTo(1f).Within(1e-4f)); Assert.That(z, Is.EqualTo(12f).Within(1e-4f));
+            Assert.That(x, Is.EqualTo(1f).Within(1e-4f)); Assert.That(z, Is.EqualTo(12f + reach).Within(1e-4f));
             CastMath.Landing(1f, 2f, 90f, 10f, out x, out z);
-            Assert.That(x, Is.EqualTo(11f).Within(1e-4f)); Assert.That(z, Is.EqualTo(2f).Within(1e-4f));
+            Assert.That(x, Is.EqualTo(11f + reach).Within(1e-4f)); Assert.That(z, Is.EqualTo(2f).Within(1e-4f));
             CastMath.Landing(1f, 2f, 180f, 10f, out x, out z);
-            Assert.That(x, Is.EqualTo(1f).Within(1e-4f)); Assert.That(z, Is.EqualTo(-8f).Within(1e-4f));
+            Assert.That(x, Is.EqualTo(1f).Within(1e-4f)); Assert.That(z, Is.EqualTo(-8f - reach).Within(1e-4f));
+        }
+
+        // Catches (R67): the cast distance measured from the player root instead of the rod tip (a min-charge cast then lands only 2.5 m out,
+        // inside the tip's own reach, and the owner's line starts at <= landDistance); the tip reach dropped from either end of the range;
+        // the reach applied as a function of charge or pitch instead of a fixed constant.
+        [Test]
+        public void CastMath_Landing_MinAndMaxCharge_AreMeasuredFromTheRodTip()
+        {
+            const float minDist = 2.5f, maxDist = 18f, reach = FishingConstants.CastTipReach;
+            float x, z;
+
+            CastMath.Landing(0f, 0f, 0f, CastMath.Distance(0f, minDist, maxDist), out x, out z);
+            Assert.That(x, Is.EqualTo(0f).Within(1e-4f));
+            Assert.That(z, Is.EqualTo(reach + minDist).Within(1e-4f), "min charge: castTipReach + castMinDist along the yaw");
+
+            CastMath.Landing(0f, 0f, 0f, CastMath.Distance(1f, minDist, maxDist), out x, out z);
+            Assert.That(z, Is.EqualTo(reach + maxDist).Within(1e-4f), "max charge: castTipReach + castMaxDist along the yaw");
+
+            // Any yaw and origin: the horizontal distance from the origin is exactly reach + distance.
+            foreach (float yaw in new[] { 0f, 25f, 90f, 137.5f, 180f, 271f })
+            {
+                CastMath.Landing(3f, -7f, yaw, minDist, out x, out z);
+                float flat = (float)System.Math.Sqrt((x - 3f) * (x - 3f) + (z + 7f) * (z + 7f));
+                Assert.That(flat, Is.EqualTo(reach + minDist).Within(1e-4f), "yaw " + yaw);
+            }
+        }
+
+        // The tip reach is a rig-geometry constant between 1 and 4 m (a negative or huge value is a typo, not a rig).
+        [Test]
+        public void FishingConstants_CastTipReach_IsAPlausibleRoundedRigDistance()
+        {
+            Assert.That(FishingConstants.CastTipReach, Is.InRange(1f, 4f));
+            Assert.That(FishingConstants.CastTipReach * 10f, Is.EqualTo(System.Math.Round(FishingConstants.CastTipReach * 10f)).Within(1e-3f), "rounded to 0.1 m");
         }
 
         [Test]

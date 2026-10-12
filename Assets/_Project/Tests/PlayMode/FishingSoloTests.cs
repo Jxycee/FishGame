@@ -182,7 +182,7 @@ namespace FishGame.Tests.PlayMode
             }
 
             yield return PlayModeHarness.WaitFrames(2, 0f);   // so the context is RodAiming
-            Assert.That(rig.Controller.MarkerValid, Is.True, "the cast marker (2.5 m ahead of the G9 spot) must be on water");
+            Assert.That(rig.Controller.MarkerValid, Is.True, "the cast marker (castTipReach + 2.5 m ahead of the G9 spot, R67) must be on water");
         }
 
         // Press Primary and hold until ChargeNorm >= min. Leaves Secondary and Primary held.
@@ -427,7 +427,7 @@ namespace FishGame.Tests.PlayMode
         // Catches (F4/F5 select race call site): HandleCastResult not adopting the host's landing when the rod was switched mid-charge. The host
         // accepts the select (no ActiveCast yet) and casts with the NEW rod's castMaxDist; the owner's ApplyRod refuses (not Idle) and charged
         // with the OLD rod. The published bobber (ViewState.BobberPos) must be the ledger's landing, not the owner-derived one; and the
-        // telemetry cast distance (FightEnded.CastDistance) must be origin -> the adopted landing, not Machine.CastDistance.
+        // telemetry cast distance (FightEnded.CastDistance) must be origin -> the adopted landing (minus castTipReach, R67), not Machine.CastDistance.
         // Rods: handmade (18 m) held, twig (14 m) selected; charge >= 0.15 -> about 0.5 m apart at the shortest, both well inside the lake.
         [UnityTest]
         public IEnumerator SoloHost_SelectRodMidCharge_OwnerAdoptsHostLanding_AndTelemetryUsesIt()
@@ -491,9 +491,11 @@ namespace FishGame.Tests.PlayMode
             rig.Fake.Frame = default;
             yield return FishingPlayModeDriver.WaitForState(rig, RodState.Idle, 1f);
             Assert.That(ended.Count, Is.EqualTo(1), "one FightEnded for the cast");
-            float expectedDistance = FishingPlayModeDriver.Flat(origin, hostLanding);
-            TestContext.WriteLine($"FG LANDRACE: telemetry castDistance={ended[0].CastDistance:F3} origin->hostLanding={expectedDistance:F3} machine={rig.Machine.CastDistance:F3}");
-            Assert.That(ended[0].CastDistance, Is.EqualTo(expectedDistance).Within(1e-3f), "the recorded cast distance is origin -> the adopted landing");
+            // R67: the telemetry distance is on the rod-tip basis: origin -> the adopted landing minus castTipReach.
+            float expectedDistance = FishingPlayModeDriver.Flat(origin, hostLanding) - FishingConstants.CastTipReach;
+            TestContext.WriteLine($"FG LANDRACE: telemetry castDistance={ended[0].CastDistance:F3} origin->hostLanding-castTipReach={expectedDistance:F3} machine={rig.Machine.CastDistance:F3}");
+            Assert.That(ended[0].CastDistance, Is.EqualTo(expectedDistance).Within(1e-3f), "the recorded cast distance is origin -> the adopted landing, minus castTipReach");
+            Assert.That(ended[0].CastDistance, Is.EqualTo(cast.CastDistance).Within(1e-3f), "...which is the host's distance from the tip for the cast it adopted");
             rig.Log.AssertEmpty("select rod mid-charge");
         }
 
@@ -532,6 +534,51 @@ namespace FishGame.Tests.PlayMode
             Assert.That(FishingConstants.HookedLineSlack, Is.EqualTo(expectedSlack).Within(0.01f),
                 "HookedLineSlack must equal the measured reach + 0.5 m rounded up to 0.1 m (re-derive it after changing the rod rig)");
             rig.Log.AssertEmpty("rod tip reach sweep");
+        }
+
+        // Catches (R67): FishingConstants.CastTipReach drifting from the rig. It is the TipAnchor's horizontal forward reach from the player root
+        // in the owner rest pose at look pitch 0 (rounded to 0.1 m); the owner and the host both add it to the landing, so a rig change that moves
+        // the tip without re-deriving the constant would silently shift every landing relative to the real rod tip (and the owner's start line).
+        [UnityTest]
+        public IEnumerator RodTip_ForwardReachAtPitchZero_MatchesCastTipReach()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig, teleport: false);
+            FishingRig rig = _rig;
+
+            PlayerCamera camera = rig.Player.GetComponent<PlayerCamera>();
+            Assert.That(camera, Is.Not.Null, "PlayerCamera missing");
+            Transform tip = rig.Player.transform.Find(PlayerRigPaths.RodTipAnchor);
+            Assert.That(tip, Is.Not.Null, "TipAnchor missing");
+
+            yield return FishingPlayModeDriver.SetPitch(rig, camera, 0f);
+            float forwardPitch0 = ForwardReach(rig.Player.transform, tip);
+            Vector3 d = tip.position - rig.Player.transform.position;
+            float flatPitch0 = new Vector2(d.x, d.z).magnitude;
+
+            // The rod in hand (equipped) must not move the anchor: the arm pose is camera-space, independent of the tool.
+            yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { EquipPressed = true });
+            rig.Fake.Frame = default;
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, PlayModeHarness.DefaultTimeoutSeconds, "Equip never set the Rod tool");
+            yield return PlayModeHarness.WaitFrames(3, 0.05f);
+            float forwardEquipped = ForwardReach(rig.Player.transform, tip);
+
+            float rounded = Mathf.Round(forwardPitch0 * 10f) / 10f;
+            TestContext.WriteLine($"FG R67 castTipReach: forwardReach(pitch 0)={forwardPitch0:F4} flatReach={flatPitch0:F4} equipped={forwardEquipped:F4} rounded={rounded:F1} constant={FishingConstants.CastTipReach:F1}");
+            Assert.That(forwardEquipped, Is.EqualTo(forwardPitch0).Within(0.01f), "equipping the rod must not move the TipAnchor reach");
+            Assert.That(FishingConstants.CastTipReach, Is.EqualTo(forwardPitch0).Within(0.05f + 1e-3f),
+                "CastTipReach must be the measured pitch-0 forward reach (" + forwardPitch0.ToString("F4") + ") to within 0.05 m");
+            Assert.That(FishingConstants.CastTipReach, Is.EqualTo(rounded).Within(0.01f),
+                "CastTipReach must equal the measured forward reach rounded to 0.1 m (re-derive it after changing the rod rig)");
+            rig.Log.AssertEmpty("cast tip reach at pitch 0");
+        }
+
+        // Horizontal forward reach of the tip from the root, along the player's flat forward.
+        private static float ForwardReach(Transform player, Transform tip)
+        {
+            Vector3 d = tip.position - player.position;
+            Vector3 flatForward = Vector3.ProjectOnPlane(player.forward, Vector3.up).normalized;
+            return Vector3.Dot(new Vector3(d.x, 0f, d.z), flatForward);
         }
 
         // Catches (T19-R1): the owner's start line (rod tip to bobber, FightSim's first LineLength) shorter than the host's LineLength0

@@ -53,12 +53,17 @@ namespace FishGame.Core
             return a * pitchApexMult;
         }
 
-        // Flat forward from yaw only: yaw in degrees, clockwise from +Z (x += sin(yaw) * d, z += cos(yaw) * d).
+        // The ONE landing function, shared by the owner (marker, cast request) and the host (TryComputeLanding, RequestCast) so both are bit-identical.
+        // R67 (spec 3.2 / 9.3): the cast distance is measured from the ROD TIP, so the landing is origin + yawForward * (CastTipReach + distance).
+        // CastTipReach is a fixed rig constant (the tip's horizontal forward reach in the rest pose); look pitch never changes it or the distance.
+        // Flat forward from yaw only: yaw in degrees, clockwise from +Z (x += sin(yaw) * d, z += cos(yaw) * d), d = CastTipReach + distance.
+        // distance is "from the tip" everywhere else too (CastDistance, flight time, ActiveCast.CastDistance); only this function adds the reach.
         public static void Landing(float originX, float originZ, float yawDeg, float distance, out float x, out float z)
         {
             double yaw = yawDeg * DegToRad;
-            x = originX + (float)(Math.Sin(yaw) * distance);
-            z = originZ + (float)(Math.Cos(yaw) * distance);
+            float reach = FishingConstants.CastTipReach + distance;
+            x = originX + (float)(Math.Sin(yaw) * reach);
+            z = originZ + (float)(Math.Cos(yaw) * reach);
         }
 
         // Parabola from start to end with the apex above the higher end: y(0.5) = max(startY, endY) + apex.

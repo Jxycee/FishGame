@@ -25,7 +25,7 @@ namespace FishGame.Core
         public float StateTime { get; private set; }
         public uint CastId { get; private set; }
         public float ChargeNorm { get; private set; }
-        public float CastDistance { get; private set; }
+        public float CastDistance { get; private set; }   // R67: the cast distance FROM THE ROD TIP (lerp(castMinDist, castMaxDist, charge)); the landing is CastTipReach further from the root. Flight time uses it as is.
         public bool MarkerOn => State == RodState.Ready || State == RodState.Charging;
         public bool HasResult { get; private set; }
         public FishingRoll Roll { get; private set; }
@@ -104,7 +104,9 @@ namespace FishGame.Core
         private void TickWaiting(float dt, in RodFrame f)
         {
             if (f.SecondaryPressed) { Recall(sendCancel: true); return; }             // row: Waiting / Secondary pressed
-            if (f.PlayerToBobber > _rod.MaxLineOut(_t.SpoolExtra)) { Recall(sendCancel: true); return; } // row: maxLineOut
+            // row: maxLineOut. R67: the line runs from the rod tip, so the walk-away limit is measured from the tip: the root-to-bobber distance
+            // minus the fixed CastTipReach (pitch-independent, the same constant the landing uses). A max cast then still has the full spoolExtra of slack.
+            if (f.PlayerToBobber - FishingConstants.CastTipReach > _rod.MaxLineOut(_t.SpoolExtra)) { Recall(sendCancel: true); return; }
             BiteTimer += dt;
             while (_nibblesDone < Roll.NibbleCount && _nibblesDone < FishingConstants.MaxNibbleSlots
                    && BiteTimer >= NibbleAt(_nibblesDone))

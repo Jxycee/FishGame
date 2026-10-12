@@ -213,12 +213,13 @@ namespace FishGame.Presentation
 
         private void StartArc(in RodViewState vs, float now)
         {
-            Vector3 root = transform.position;
             float endX = vs.BobberPos.x, endZ = vs.BobberPos.z;
             _arcEnd = new Vector3(endX, WaterSurface.HeightAt(endX, endZ), endZ);
             _arcStart = TipPosition();
 
-            float dx = endX - root.x, dz = endZ - root.z;
+            // R67: the cast distance is measured from the rod tip, so the flight time and apex follow the horizontal tip -> landing distance
+            // (the owner machine's FlightTime(CastDistance) uses the same number; measuring from the root would add CastTipReach to it).
+            float dx = endX - _arcStart.x, dz = endZ - _arcStart.z;
             float distance = Mathf.Sqrt(dx * dx + dz * dz);
             _arcFlight = CastMath.FlightTime(distance);
             _arcApex = CastMath.Apex(distance, CastMath.PitchApexMult(PitchDeg()));

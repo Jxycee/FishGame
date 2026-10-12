@@ -4,8 +4,8 @@ using NUnit.Framework;
 
 namespace FishGame.Tests.EditMode
 {
-    // Host ledger (T9, spec 9.9). Shared setup: ledger seed 42, handmade rod, worm bait, slot 0 / client 100; cast 0.5 charge lands at
-    // distance 10.25 (flight 0.573 s). Ov forces a 2 s bite on a carp, so HookAt(tf + 2.0) hooks exactly on time. A hook at HookDistance
+    // Host ledger (T9, spec 9.9). Shared setup: ledger seed 42, handmade rod, worm bait, slot 0 / client 100; cast 0.5 charge has a tip
+    // distance of 10.25 (flight 0.573 s) and lands at castTipReach + 10.25 from the origin (R67). Ov forces a 2 s bite on a carp, so HookAt(tf + 2.0) hooks exactly on time. A hook at HookDistance
     // (8.5 + HookedLineSlack, so it tracks the constant; it was a literal 10 while the slack was 1.5, T19-R1) gives LineLength0 8.5, so the
     // handmade landing floor is 0.8 x 6.5 / 1.0 - 0.5 = 4.7 s (junk: 0.8 x 6.5 / 3 - 0.5 = 1.233 s).
     public class FishingHostLedgerTests
@@ -314,7 +314,7 @@ namespace FishGame.Tests.EditMode
             Assert.That(a.TFlight, Is.EqualTo(Tf).Within(1e-6f));
             Assert.That(a.TFlight, Is.EqualTo(0.573f).Within(1e-3f));
             Assert.That(a.LandingX, Is.EqualTo(0f).Within(1e-4f));
-            Assert.That(a.LandingZ, Is.EqualTo(10.25f).Within(1e-4f));
+            Assert.That(a.LandingZ, Is.EqualTo(FishingConstants.CastTipReach + 10.25f).Within(1e-4f), "R67: castTipReach + the 10.25 m tip distance");
             Assert.That(a.RodIndex, Is.EqualTo((ushort)FishingTestData.RodHandmade));
             Assert.That(a.BaitIndex, Is.EqualTo((byte)FishingTestData.BaitWorm));
             Assert.That(a.Assist, Is.False);
@@ -326,6 +326,59 @@ namespace FishGame.Tests.EditMode
             Assert.That(z, Is.EqualTo(a.LandingZ));
         }
 
+        // Catches (R67): the host landing computed differently from the owner's (castTipReach applied on one side only, a different distance
+        // formula, the host's rod ignored). The owner side below is the exact call sequence FishingRodController uses for the marker and the
+        // cast request (CastMath.Distance with the machine's rod, then CastMath.Landing at the transform origin and yaw); the comparison is
+        // BIT-IDENTICAL (exact float equality) for every rod, charge and yaw, through TryComputeLanding AND the accepted cast / verdict.
+        [Test]
+        public void FishingHostLedger_Landing_IsBitIdenticalToTheOwnerPrediction_ForEveryRodChargeAndYaw()
+        {
+            FishingTuning t = FishingTestData.Tuning();
+            RodStats[] rods = FishingTestData.Rods();
+            int[] rodIndex = { FishingTestData.RodCarbon, FishingTestData.RodDeepsea, FishingTestData.RodHandmade, FishingTestData.RodTwig };
+            float[] charges = { 0.1f, 0.25f, 0.5f, 0.77f, 1f };
+            float[] yaws = { 0f, 25f, 90f, 133.7f, 200f, 359.9f };
+            uint id = 0;
+            foreach (int ri in rodIndex)
+            {
+                foreach (float charge in charges)
+                {
+                    foreach (float yaw in yaws)
+                    {
+                        id++;
+                        const float ox = 1.5f, oz = -2f;
+                        float ownerDistance = CastMath.Distance(charge, t.CastMinDist, rods[ri].CastMaxDist);
+                        CastMath.Landing(ox, oz, yaw, ownerDistance, out float ownerX, out float ownerZ);
+
+                        FishingHostLedger l = NewLedger();
+                        Assert.That(l.SelectRod(Client, 0, (ushort)ri), Is.True);
+                        CastRequestData req = new CastRequestData { CastId = id, OriginX = ox, OriginY = 0f, OriginZ = oz, YawDeg = yaw,
+                                                                    ChargeNorm = charge, BaitIndex = (byte)FishingTestData.BaitWorm, Assist = false };
+                        string what = "rod " + ri + " charge " + charge + " yaw " + yaw;
+                        Assert.That(l.TryComputeLanding(0, req, out float hx, out float hz), Is.True, what);
+                        Assert.That(hx, Is.EqualTo(ownerX), what + " x (bit-identical)");
+                        Assert.That(hz, Is.EqualTo(ownerZ), what + " z (bit-identical)");
+
+                        HostCastView view = new HostCastView { PlayerX = ox, PlayerY = 0f, PlayerZ = oz, CastingAllowed = true,
+                            Probe = new WaterProbe { FirstHitIsWater = true, WaterY = 0f, HasBed = true, Depth = 3f } };
+                        RollOverrides ov = Ov;
+                        CastVerdict v = l.RequestCast(Client, 0, req, view, in ov);
+                        Assert.That(v.Valid, Is.True, what + ": " + v.Reason);
+                        Assert.That(v.LandingX, Is.EqualTo(ownerX), what + " verdict x");
+                        Assert.That(v.LandingZ, Is.EqualTo(ownerZ), what + " verdict z");
+                        Assert.That(l.TryGetActive(Client, out ActiveCast a), Is.True);
+                        Assert.That(a.LandingX, Is.EqualTo(ownerX), what + " active x");
+                        Assert.That(a.LandingZ, Is.EqualTo(ownerZ), what + " active z");
+                        Assert.That(a.CastDistance, Is.EqualTo(ownerDistance), what + ": CastDistance stays the distance from the rod tip");
+
+                        // And the horizontal origin -> landing distance is exactly castTipReach + the tip distance.
+                        float flat = (float)System.Math.Sqrt((ownerX - ox) * (ownerX - ox) + (ownerZ - oz) * (ownerZ - oz));
+                        Assert.That(flat, Is.EqualTo(FishingConstants.CastTipReach + ownerDistance).Within(1e-3f), what);
+                    }
+                }
+            }
+        }
+
         [Test]
         public void FishingHostLedger_SelectedRod_DrivesLandingDistanceAndFlightTime()
         {
@@ -333,12 +386,12 @@ namespace FishGame.Tests.EditMode
             Assert.That(l.SelectRod(Client, 0, FishingTestData.RodTwig), Is.True);
             Assert.That(l.GetLoadout(0).RodIndex, Is.EqualTo((ushort)FishingTestData.RodTwig));
             Assert.That(l.TryComputeLanding(0, Req(1), out float x, out float z), Is.True);
-            Assert.That(z, Is.EqualTo(2.5f + (14f - 2.5f) * 0.5f).Within(1e-4f), "twig rod reaches 14 m at full charge");
+            Assert.That(z, Is.EqualTo(FishingConstants.CastTipReach + 2.5f + (14f - 2.5f) * 0.5f).Within(1e-4f), "twig rod reaches 14 m from the tip at full charge (R67: landing is castTipReach further)");
             Accept(l, 1, Ov);
             Assert.That(l.TryGetActive(Client, out ActiveCast a), Is.True);
             Assert.That(a.RodIndex, Is.EqualTo((ushort)FishingTestData.RodTwig));
-            Assert.That(a.LandingZ, Is.EqualTo(8.25f).Within(1e-4f));
-            Assert.That(a.TFlight, Is.EqualTo(CastMath.FlightTime(8.25f)).Within(1e-5f));
+            Assert.That(a.LandingZ, Is.EqualTo(FishingConstants.CastTipReach + 8.25f).Within(1e-4f));
+            Assert.That(a.TFlight, Is.EqualTo(CastMath.FlightTime(8.25f)).Within(1e-5f), "R67: the flight time follows the distance from the tip, not the landing from the root");
             Assert.That(l.TryComputeLanding(0, Req(1, float.NaN), out _, out _), Is.False);
             Assert.That(l.TryComputeLanding(0, Req(1, 1.01f), out _, out _), Is.False);
             Assert.That(l.TryComputeLanding(0, Req(1, -0.1f), out _, out _), Is.False);
@@ -1104,7 +1157,7 @@ namespace FishGame.Tests.EditMode
             CastRequestData ok = Req(1);
             ok.YawDeg = 90f;
             Assert.That(l.TryComputeLanding(0, ok, out float ox, out _), Is.True, "a finite yaw still works");
-            Assert.That(ox, Is.EqualTo(10.25f).Within(1e-3f));
+            Assert.That(ox, Is.EqualTo(FishingConstants.CastTipReach + 10.25f).Within(1e-3f));
         }
 
         // Catches: Hooked feeding a non-finite host distance to HostLineLength0 (NaN -> landDistance gives a zero landing floor,
@@ -1160,7 +1213,8 @@ namespace FishGame.Tests.EditMode
             Tick(l, tf + 1.3);
             Assert.That(l.Hooked(Client, 1, 2f, out CommitDecision early), Is.False, "hook accepted: " + early.Reason);   // host measured 2 m: "teleported"
             Assert.That(l.TryGetActive(Client, out ActiveCast a), Is.True);
-            float expected = cast - MovementMath.SprintSpeed * (float)elapsed - FishingConstants.HookedLineSlack;
+            // R67: the bound is on the player's distance to the landing, i.e. castTipReach + the cast distance from the tip.
+            float expected = FishingConstants.CastTipReach + cast - MovementMath.SprintSpeed * (float)elapsed - FishingConstants.HookedLineSlack;
             Assert.That(expected, Is.GreaterThan(5f), "test sanity: the bound must matter here");
             Assert.That(a.LineLength0, Is.EqualTo(expected).Within(1e-3f));
 

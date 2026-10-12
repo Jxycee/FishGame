@@ -32,8 +32,13 @@ namespace FishGame.Core
         // Landed floor (CatchValidator.LandedFloorSeconds). Do not shave 0.8 / 0.5: lag when walking toward the bobber is absorbed by the floor's
         // 0.8 factor plus the 0.5 s slack (delta <= 0.625 * reel).
         public const float LandedFloorFactor = 0.8f, LandedFloorSlackSeconds = 0.5f;
-        public const float HookedLineSlack = 3.1f;           // lineLength0 = hostDistance - slack, floor landDistance; derived from the rig's max tip reach (2.52 m) + 0.5 m margin, T19-R1
-        public const float JunkWeightLowRating = 0.6f;       // effRating 1-2
+        public const float HookedLineSlack = 3.1f;           // lineLength0 = hostDistance - slack, floor landDistance; derived from the rig's max tip reach (2.52 m) + 0.5 m margin, T19-R1. Unchanged by R67: hostDistance is root -> landing and the owner's line is tip -> landing, both measured to the same (CastTipReach-shifted) landing
+        // R67 (spec 3.2 / 9.3): a cast's distance is measured from the rod tip. The landing is origin + yawForward * (CastTipReach + distance).
+        // Rig geometry, not tuning: the rod tip's horizontal forward reach from the player root in the owner rest pose at look pitch 0,
+        // measured from TipAnchor by PlayMode FishingSoloTests.RodTip_ForwardReachAtPitchZero_MatchesCastTipReach (rounded to 0.1 m). Fixed on
+        // owner AND host (identical inputs give a bit-identical landing); pitch never changes it. Re-derive after changing the rod rig.
+        public const float CastTipReach = 2.4f;
+        public const float JunkWeightLowRating = 0.6f;      // effRating 1-2
         public const float JunkWeightMidRating = 0.2f;       // effRating 3-5
         public const float JunkWeightHighRating = 0.05f;     // effRating 6+
         public const float TrophyT = 0.9f, GoodT = 0.6f, TrophyMult = 1.5f, GoodMult = 1.15f;
