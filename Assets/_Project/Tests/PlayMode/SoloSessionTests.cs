@@ -26,6 +26,7 @@ namespace FishGame.Tests.PlayMode
         [UnityTest]
         public IEnumerator Solo_Start_SpawnsOneOwnedPlayerWithCamera()
         {
+            using var logs = new PlayModeHarness.LogCapture();
             yield return PlayModeHarness.LoadBootstrapAndWaitForMenu();
             yield return PlayModeHarness.StartSoloAndWaitForPlayer();
 
@@ -71,11 +72,14 @@ namespace FishGame.Tests.PlayMode
             Assert.That(sceneListener, Is.Not.Null, "SceneCamera has no AudioListener");
             Assert.That(sceneCamera.enabled, Is.False, "SceneCamera Camera must be off while a local player exists");
             Assert.That(sceneListener.enabled, Is.False, "SceneCamera AudioListener must be off while a local player exists");
+
+            logs.AssertNoWarnings("Solo start");
         }
 
         [UnityTest]
         public IEnumerator Solo_LeaveThenRestart_Works()
         {
+            using var logs = new PlayModeHarness.LogCapture();
             yield return PlayModeHarness.LoadBootstrapAndWaitForMenu();
 
             var app = AppBootstrap.Current;
@@ -100,6 +104,8 @@ namespace FishGame.Tests.PlayMode
             Assert.That(PlayerNetState.Local, Is.Not.Null, "Restart after leave did not spawn a local player");
             Assert.That(PlayerNetState.Active.Count, Is.EqualTo(1), "Exactly one player after restart");
             AssertSoloTransport(nm, local, "restart");
+
+            logs.AssertNoWarnings("Solo leave then restart");
         }
 
         [UnityTest]
@@ -107,6 +113,8 @@ namespace FishGame.Tests.PlayMode
         {
             yield return PlayModeHarness.LoadBootstrapAndWaitForMenu();
 
+            // Captures the whole leave-while-loading path (start, leave, late scene activation/spawn window).
+            using var logs = new PlayModeHarness.LogCapture();
             var app = AppBootstrap.Current;
             var session = app.Services.Get<INetworkSession>();
             var local = app.Services.Get<LocalNetworkSession>();
@@ -117,6 +125,9 @@ namespace FishGame.Tests.PlayMode
             var cts = new CancellationTokenSource();
             Task start = session.StartLocalAsync(false, cts.Token);
 
+            // Deterministic, not timing luck: the start path has no await before Established, so the frame that first observes
+            // Connected is the frame NGO connected, while the gameplay scene is still loading. Leaving on that frame is always
+            // leave-while-loading.
             // Inline on purpose: the frame that sees Connected must not pass through a nested enumerator before LeaveAsync.
             double deadline = Time.realtimeSinceStartupAsDouble + 20.0;
             while (session.State != ConnState.Connected && !start.IsCompleted)
@@ -150,6 +161,8 @@ namespace FishGame.Tests.PlayMode
 
             // A late scene activation or a late spawn would show up inside this window; SceneFlow must have sent it back.
             yield return PlayModeHarness.WaitFrames(30, 1.0f);
+
+            logs.AssertNoWarnings("Solo leave right after Connected");
 
             Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo(SceneNames.Menu), "Active scene must be Menu after the stability window");
             Assert.That(session.State, Is.EqualTo(ConnState.Offline), "Session must stay Offline");
