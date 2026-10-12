@@ -27,7 +27,9 @@ namespace FishGame.Core
             return default;
         }
 
-        // Free, RodReady, RodWaiting, Swimming -> true (spec 8.2). Carrying is false in M2: the context is unused (ruling C-Q2; M5 revisits).
+        // World interactables (PlayerInteractor): Free, RodReady, RodWaiting -> true (spec 8.2). Swimming is false: its Interact column is "climb at exits"
+        // only, and that climb reads the routed Interact straight from RouteSwimming (PlayerLocomotion.TryBeginClimb), not through this gate.
+        // Carrying is false in M2: the context is unused (ruling C-Q2; M5 revisits).
         public static bool InteractLive(InputContext context)
         {
             switch (context)
@@ -35,7 +37,6 @@ namespace FishGame.Core
                 case InputContext.Free:
                 case InputContext.RodReady:
                 case InputContext.RodWaiting:
-                case InputContext.Swimming:
                     return true;
                 default:
                     return false;

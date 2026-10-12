@@ -265,15 +265,24 @@ namespace FishGame.Tests.EditMode
             foreach (InputContext ctx in (InputContext[])Enum.GetValues(typeof(InputContext)))
             {
                 bool expected = ctx == InputContext.Free || ctx == InputContext.RodReady
-                                || ctx == InputContext.RodWaiting || ctx == InputContext.Swimming;
+                                || ctx == InputContext.RodWaiting;
                 Assert.AreEqual(expected, InputContextRouter.InteractLive(ctx), ctx.ToString());
                 if (expected) live++; else dead++;
                 if (InputContextRouter.InteractLive(ctx))
                     Assert.IsTrue(InputContextRouter.Route(ctx, AllActive()).InteractPressed, ctx + ": live implies the router passes Interact");
             }
-            Assert.AreEqual(4, live);
-            Assert.AreEqual(9, dead);
+            Assert.AreEqual(3, live);
+            Assert.AreEqual(10, dead);
             Assert.IsFalse(InputContextRouter.InteractLive(InputContext.Carrying), "C-Q2: Carrying is false in M2");
+        }
+
+        // Spec 8.2 Swimming row: Interact = "climb at exits" only. World interactables (the bell) are not live while swimming, yet the router
+        // still passes Interact so PlayerLocomotion can climb at a WaterExit.
+        [Test]
+        public void InputContextRouter_Swimming_InteractClimbsButDoesNotReachInteractables()
+        {
+            Assert.IsFalse(InputContextRouter.InteractLive(InputContext.Swimming), "swimming must not drive PlayerInteractor");
+            Assert.IsTrue(InputContextRouter.Route(InputContext.Swimming, AllActive()).InteractPressed, "the climb at exits still reads Interact");
         }
 
         [Test]
