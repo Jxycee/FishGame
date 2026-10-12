@@ -12,6 +12,9 @@
 // Hardening (T20 review): the canary must be reported by the CompileVariant path (its error exists only under _ADDITIONAL_LIGHTS and it has a
 // FallBack like the project shaders); a shader whose own subshader 0 has zero successful compiles is an error; a fourth keyword set covers
 // _MAIN_LIGHT_SHADOWS/_LIGHT_LAYERS/FOG_EXP; a project shader FallBack other than Off or URP's FallbackError is an error.
+// Render-fix follow-up: VariantErrors counts the raw Error-severity messages of every CompileVariant call BEFORE the per-shader dedupe (the dedupe
+// would otherwise hide a canary error that an earlier keyword set or ShaderHasError already reported); keyword set 4 covers the DepthNormals pass
+// (_GBUFFER_NORMALS_OCT, _WRITE_RENDERING_LAYERS); the fallback subshaders (index > 0) are compiled with the empty keyword set only.
 // Cost with FishGame/Toon alone (before the hardening and the DepthNormals pass): 5 passes (3 own + 2 fallback), 30 compiles, ms=2201 cold and about 30 warm (compile cache).
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -57,13 +60,17 @@ namespace FishGame.EditorTools
             },
             new[] { "_MAIN_LIGHT_SHADOWS_SCREEN", "_ADDITIONAL_LIGHTS_VERTEX", "FOG_LINEAR" },
             new[] { "_MAIN_LIGHT_SHADOWS", "_ADDITIONAL_LIGHTS", "_LIGHT_LAYERS", "FOG_EXP" },
+            new[] { "_GBUFFER_NORMALS_OCT", "_WRITE_RENDERING_LAYERS" },
         };
+
+        // The fallback subshaders (URP FallbackError) have no keywords worth covering: one compile each.
+        static readonly string[][] EmptyKeywordSetOnly = { new string[0] };
 
         sealed class Counters
         {
             public int Passes;
             public int Compiles;
-            public int VariantErrors;   // errors added by the CompileVariant path (not by ShaderHasError / GetShaderMessages)
+            public int VariantErrors;   // raw errors from the CompileVariant path (counted before the dedupe; not ShaderHasError / GetShaderMessages)
         }
 
         public static List<string> Run()
@@ -104,7 +111,7 @@ namespace FishGame.EditorTools
                 }
 
                 timer.Stop();
-                Debug.Log("FG SHADERS checked=" + shaders + " passes=" + counters.Passes + " compiles=" + counters.Compiles + " ms=" + timer.ElapsedMilliseconds);
+                Debug.Log("FG SHADERS checked=" + shaders + " passes=" + counters.Passes + " compiles=" + counters.Compiles + " ms=" + timer.ElapsedMilliseconds);   // ms: canary + every shader, elapsed
                 return errors;
             }
             finally
@@ -194,25 +201,24 @@ namespace FishGame.EditorTools
                 if (subshader == null) { errors.Add(shaderName + ": subshader " + s + " is null"); continue; }
                 int successes = 0;
                 for (int p = 0; p < subshader.PassCount; p++)
-                    successes += CheckPass(shaderName + " #" + s, subshader.GetPass(p), errors, counters, seen);
+                    successes += CheckPass(shaderName + " #" + s, subshader.GetPass(p), errors, counters, seen, s == 0);
                 // The shader's own subshader (0) must really compile: if only the fallback subshaders compiled, a broken real pass would go unnoticed.
                 if (s == 0 && successes == 0) errors.Add(shaderName + ": subshader 0 produced no successful compile");
             }
         }
 
         // Returns the number of successful variant compiles.
-        static int CheckPass(string shaderName, ShaderData.Pass pass, List<string> errors, Counters counters, HashSet<string> seen)
+        static int CheckPass(string shaderName, ShaderData.Pass pass, List<string> errors, Counters counters, HashSet<string> seen, bool allKeywordSets)
         {
             counters.Passes++;
             int successes = 0;
             foreach (ShaderType stage in new[] { ShaderType.Vertex, ShaderType.Fragment })
             {
                 if (!pass.HasShaderStage(stage)) continue;
-                foreach (string[] keywords in KeywordSets)
+                foreach (string[] keywords in allKeywordSets ? KeywordSets : EmptyKeywordSetOnly)
                 {
                     string label = shaderName + " / " + pass.Name + " / " + stage + " [" + string.Join(" ", keywords) + "]";
                     counters.Compiles++;
-                    int errorsBefore = errors.Count;
                     ShaderData.VariantCompileInfo info;
                     try
                     {
@@ -221,30 +227,42 @@ namespace FishGame.EditorTools
                     catch (System.Exception e)
                     {
                         errors.Add(label + ": CompileVariant threw " + e.GetType().Name + ": " + e.Message);
-                        counters.VariantErrors += errors.Count - errorsBefore;
+                        counters.VariantErrors++;
                         continue;
                     }
 
                     ReportMessages(info.Messages, label, errors, seen);
+                    int rawErrors = CountErrors(info.Messages);   // before the dedupe in ReportMessages
+                    counters.VariantErrors += rawErrors;
                     if (!info.Success)
                     {
-                        bool anyError = false;
-                        foreach (ShaderMessage message in info.Messages)
-                            if (message.severity == ShaderCompilerMessageSeverity.Error) anyError = true;
-                        if (!anyError) errors.Add(label + ": compile failed without an error message");
+                        if (rawErrors == 0)
+                        {
+                            errors.Add(label + ": compile failed without an error message");
+                            counters.VariantErrors++;
+                        }
                     }
                     else if (info.ShaderData == null || info.ShaderData.Length == 0)
                     {
                         errors.Add(label + ": empty bytecode");
+                        counters.VariantErrors++;
                     }
                     else
                     {
                         successes++;
                     }
-                    counters.VariantErrors += errors.Count - errorsBefore;
                 }
             }
             return successes;
+        }
+
+        static int CountErrors(ShaderMessage[] messages)
+        {
+            int count = 0;
+            if (messages == null) return 0;
+            foreach (ShaderMessage message in messages)
+                if (message.severity == ShaderCompilerMessageSeverity.Error) count++;
+            return count;
         }
 
         static void ReportMessages(ShaderMessage[] messages, string label, List<string> errors, HashSet<string> seen)

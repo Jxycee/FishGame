@@ -75,8 +75,8 @@ namespace FishGame.Tests.EditMode
             finally { ShaderUtil.allowAsyncCompilation = previous; }
         }
 
-        // Catches: a Toon shader without a DepthNormals pass. PC_Renderer's SSAO (Source = DepthNormals) runs a DepthNormals prepass that also writes
-        // _CameraDepthTexture, so Toon geometry would be missing from the depth texture and FishGame/Water would lose its depth fade over it.
+        // Catches: a Toon shader without a DepthNormals pass. URP's DepthNormals prepass also writes _CameraDepthTexture, so without it Toon geometry
+        // can be missing from the depth texture and FishGame/Water would lose its depth fade over it.
         [Test]
         public void Validation_ToonShader_HasDepthNormalsPass()
         {

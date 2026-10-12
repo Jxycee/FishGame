@@ -30,6 +30,7 @@ namespace FishGame.EditorTools
         public const string ShoreMesh = "Assets/_Project/Content/Meshes/LakeDock_Shore.asset";
         public const string PcRenderPipelineAsset = "Assets/Settings/PC_RPAsset.asset";
         public const string PcRenderer = "Assets/Settings/PC_Renderer.asset";
+        public const string MobileRenderPipelineAsset = "Assets/Settings/Mobile_RPAsset.asset";
         public const string DefaultVolumeProfile = "Assets/Settings/DefaultVolumeProfile.asset";
         public const string TemplateInputActions = "Assets/InputSystem_Actions.inputactions";
         public const string DefaultNetworkPrefabs = "Assets/DefaultNetworkPrefabs.asset";

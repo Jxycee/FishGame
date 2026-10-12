@@ -3,6 +3,10 @@
 // tonemapping; each component is saved as a sub-asset of its profile, otherwise it is lost on reload) and the URP shadow tuning.
 // ApplySceneLighting(): the ACTIVE scene's RenderSettings (skybox M_Sky, ExponentialSquared fog 0.008, flat ambient); scene builders call it after NewScene.
 // Everything is ensured in place (GUIDs kept, SetDirty only on a change), so a second build changes nothing.
+// This builder owns the PC_RPAsset / PC_Renderer / Mobile_RPAsset settings that the render look depends on (C 16 shared edit):
+//   - the ScreenSpaceAmbientOcclusion renderer feature on PC_Renderer is DISABLED (kept as a sub-asset, m_Active 0): not in the spec, Toon never samples AO;
+//   - both pipeline assets keep m_RequireDepthTexture 1, so URP copies depth after the opaques and FishGame/Water's SampleSceneDepth depth fade and
+//     foam keep working without SSAO's DepthNormals prepass (PC_Renderer m_CopyDepthMode 0 = after opaques; ProjectSettingsBuilder also sets the PC flag).
 //
 // Shadow acne (T20 look render): FishGame/Toon samples the shadow map at the raw world position (no receiver bias, the same as URP Lit), so the bias
 // comes from the light/pipeline: PC_RPAsset had depth bias 0.1 and normal bias 0.5, which left diagonal hatching on grazing flat faces (the white
@@ -32,6 +36,9 @@ namespace FishGame.EditorTools
             EnsureProfile(AssetPaths.CoolVolumeProfile, -22f, -4f, -0.3f, -18f, new Color(0.82f, 0.88f, 1.00f));
 
             ApplyShadowTuning();
+            DisableSsao();
+            EnsureDepthTexture(AssetPaths.PcRenderPipelineAsset);
+            EnsureDepthTexture(AssetPaths.MobileRenderPipelineAsset);
         }
 
         // C 6.4: skybox M_Sky, ExponentialSquared fog density 0.008 coloured by the Day phase, flat ambient = the Day toonAmbient.
@@ -50,6 +57,29 @@ namespace FishGame.EditorTools
             RenderSettings.fogColor = day.fogColor;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
             RenderSettings.ambientLight = day.toonAmbient;
+        }
+
+        // Disabled, not removed: the feature stays a sub-asset of PC_Renderer (so m_RendererFeatureMap stays valid) and can be switched back on in one click.
+        static void DisableSsao()
+        {
+            var renderer = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(AssetPaths.PcRenderer);
+            if (renderer == null) throw new System.IO.FileNotFoundException("Missing " + AssetPaths.PcRenderer);
+            foreach (ScriptableRendererFeature feature in renderer.rendererFeatures)
+            {
+                if (!(feature is ScreenSpaceAmbientOcclusion) || !feature.isActive) continue;
+                feature.SetActive(false);
+                EditorUtility.SetDirty(feature);
+                EditorUtility.SetDirty(renderer);
+            }
+        }
+
+        static void EnsureDepthTexture(string assetPath)
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(assetPath);
+            if (asset == null) throw new System.IO.FileNotFoundException("Missing " + assetPath);
+            if (asset.supportsCameraDepthTexture) return;
+            asset.supportsCameraDepthTexture = true;
+            EditorUtility.SetDirty(asset);
         }
 
         static void ApplyShadowTuning()

@@ -62,7 +62,6 @@ Shader "FishGame/Toon"
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile_fragment _ _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
-            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
             #pragma multi_compile_fragment _ _SCREEN_SPACE_IRRADIANCE
             #pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
             #pragma multi_compile_fragment _ _LIGHT_COOKIES
@@ -213,8 +212,9 @@ Shader "FishGame/Toon"
             ENDHLSL
         }
 
-        // PC_Renderer has SSAO with Source = DepthNormals, which makes URP run a DepthNormals prepass that also writes _CameraDepthTexture.
-        // Without this pass Toon geometry (lakebed, shore, dock, players) is missing from the depth texture and FishGame/Water loses its depth fade.
+        // Kept although SSAO is off (spec: none; RenderingSetupBuilder disables it): URP's DepthNormals prepass (also used by any renderer feature that
+        // asks for normals) writes Toon geometry into _CameraDepthTexture. Without a pass Toon geometry (lakebed, shore, dock, players) can be missing from
+        // the depth texture and FishGame/Water would lose its depth fade and foam over it.
         Pass
         {
             Name "DepthNormals"

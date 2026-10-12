@@ -85,7 +85,7 @@ Shader "FishGame/Water"
                 half4 body = lerp(_ShallowColor, _DeepColor, smoothstep(0.0, _DepthRange, depthBelow));
                 float ripple = FG_RippleSum(positionWS.xz, _WaterTime);
                 half foamEdge = 1.0h - saturate(depthBelow / max(_FoamWidth, 0.001));
-                half noise = FG_Hash21(floor(positionWS.xz * 3.0) + floor(_WaterTime * 1.5));
+                half noise = FG_Hash21(floor(positionWS.xz * 3.0) + fmod(floor(_WaterTime * 1.5), 1024.0));   // wrapped: float precision at long session time
                 half foam = saturate(step(noise * 0.7h + 0.15h, foamEdge) + ripple * 0.6h);
 
                 Light mainLight = GetMainLight();

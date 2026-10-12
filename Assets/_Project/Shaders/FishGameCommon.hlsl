@@ -26,10 +26,12 @@ half3 FG_PaletteColor(float slot)
 
 // Mirrors FishGame.Core.WaveMath (T12) term for term: 0 deg = +Z, dir = (sin th, cos th) on (x, z), k = 2 pi / L,
 // term = A * sin(k * (dot(dir, xz) - S * t)); L <= 0, A == 0 or ANY non-finite field (NaN, +/-Inf) -> 0 (T12 follow-up, C 16.2:
-// WaveMath treats a non-finite field as a zero term; without this guard CPU and GPU heights diverge). Change WaveMath and this together, never one.
+// WaveMath treats a non-finite field as a zero term; without this guard CPU and GPU heights diverge). The guard is a bit test on the
+// exponent field (all ones for NaN and +/-Inf), NOT isfinite/isnan/isinf: the shader compiler's fast-math folds those away, which the GPU parity
+// test (WaveGpuParityTests, graphics run) caught. Change WaveMath and this together, never one.
 float FG_WaveTerm(float4 w, float2 xz, float t)
 {
-    if (!all(isfinite(w))) return 0.0;
+    if (any((asuint(w) & 0x7F800000u) == 0x7F800000u)) return 0.0;
     if (w.z <= 0.0 || w.y == 0.0) return 0.0;
     float th = radians(w.x);
     float k = 6.28318530718 / w.z;

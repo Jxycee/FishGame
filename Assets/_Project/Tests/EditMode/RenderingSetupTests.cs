@@ -175,7 +175,9 @@ namespace FishGame.Tests.EditMode
 
         // C#/HLSL wave parity (F1, C-Q4, C 16.2). The GPU cannot run in EditMode (-nographics), so this pins the HLSL source to WaveMath term for term:
         // packing (x deg, y amplitude, z wavelength, w speed), 0 deg = +Z with dir (sin, cos), k = 2 pi / L, and the non-finite guard.
-        // Catches: swapped _Waves fields, a dropped isfinite guard (CPU and GPU heights diverge on NaN/Inf), a slot-3 term, or Water.shader
+        // The guard is a bit test on the exponent field (NaN and +/-Inf all have it all ones) because fast-math compilers may fold isnan/isinf away; the GPU
+        // behaviour itself is proven by WaveGpuParityTests (graphics run only).
+        // Catches: swapped _Waves fields, a dropped non-finite guard (CPU and GPU heights diverge on NaN/Inf), a slot-3 term, or Water.shader
         // re-implementing the term instead of calling FG_WaveHeight.
         [Test]
         public void RenderingSetup_WaterShader_WaveTermMirrorsWaveMathAndComesOnlyFromCommonHlsl()
@@ -183,7 +185,7 @@ namespace FishGame.Tests.EditMode
             string common = StripLineComments(ReadProjectFile(AssetPaths.ShadersFolder + "/FishGameCommon.hlsl"));
             string term = Normalise(FunctionBody(common, "float FG_WaveTerm("));
             Assert.That(term, Is.EqualTo(
-                "if (!all(isfinite(w))) return 0.0; " +
+                "if (any((asuint(w) & 0x7F800000u) == 0x7F800000u)) return 0.0; " +
                 "if (w.z <= 0.0 || w.y == 0.0) return 0.0; " +
                 "float th = radians(w.x); " +
                 "float k = 6.28318530718 / w.z; " +
@@ -198,7 +200,51 @@ namespace FishGame.Tests.EditMode
             Assert.That(water, Does.Contain("FG_WaveHeight(positionWS.xz, _WaterTime)"), "Water.shader calls the shared wave height with _WaterTime");
             Assert.That(water, Does.Not.Contain("_Waves"), "Water.shader must not touch _Waves directly");
             Assert.That(water, Does.Not.Contain("isfinite"), "the guard lives in FG_WaveTerm only");
+            Assert.That(water, Does.Not.Contain("asuint"), "the guard lives in FG_WaveTerm only");
+            Assert.That(common, Does.Not.Contain("isfinite"), "isfinite may be folded away by fast-math: use the exponent bit test");
             Assert.That(water, Does.Not.Contain("sin("), "Water.shader must not re-implement the wave term");
+        }
+
+        // Catches: the foam hash time growing without bound (float precision in floor(_WaterTime * 1.5) makes the foam pattern stutter after hours of play).
+        [Test]
+        public void RenderingSetup_WaterShader_FoamHashTimeWraps()
+        {
+            string water = Normalise(StripLineComments(ReadProjectFile(AssetPaths.ShadersFolder + "/Water.shader")));
+            Assert.That(water, Does.Contain("fmod(floor(_WaterTime * 1.5), 1024.0)"), "foam hash time must wrap");
+            Assert.That(water, Does.Not.Contain("+ floor(_WaterTime * 1.5)"), "the unwrapped foam hash time is back");
+        }
+
+        // Catches: SSAO coming back (it is not in the spec and Toon never samples AO) and the Toon variant keyword that only existed for it.
+        [Test]
+        public void RenderingSetup_NoSsao_ToonHasNoOcclusionKeyword()
+        {
+            string toon = StripLineComments(ReadProjectFile(AssetPaths.ShadersFolder + "/Toon.shader"));
+            Assert.That(toon, Does.Not.Contain("_SCREEN_SPACE_OCCLUSION"), "Toon must not compile an SSAO variant");
+            Assert.That(toon, Does.Contain("LightMode\" = \"DepthNormals\""), "the DepthNormals pass stays (depth prepass for the water depth fade)");
+
+            var renderer = new SerializedObject(AssetDatabase.LoadMainAssetAtPath(AssetPaths.PcRenderer));
+            SerializedProperty features = renderer.FindProperty("m_RendererFeatures");
+            Assert.That(features, Is.Not.Null, "m_RendererFeatures");
+            for (int i = 0; i < features.arraySize; i++)
+            {
+                Object feature = features.GetArrayElementAtIndex(i).objectReferenceValue;
+                if (feature == null || feature.GetType().Name != "ScreenSpaceAmbientOcclusion") continue;
+                SerializedProperty active = new SerializedObject(feature).FindProperty("m_Active");
+                Assert.That(active, Is.Not.Null, "m_Active on the SSAO feature");
+                Assert.That(active.boolValue, Is.False, "PC_Renderer SSAO feature must be disabled");
+            }
+        }
+
+        // Catches: a pipeline asset without the camera depth texture (FishGame/Water's SampleSceneDepth depth fade and foam read the CopyDepth result;
+        // without it the whole surface is the deep colour with no foam). PC and Mobile both.
+        [Test]
+        public void RenderingSetup_PipelineAssets_RequireDepthTexture()
+        {
+            foreach (string path in new[] { AssetPaths.PcRenderPipelineAsset, AssetPaths.MobileRenderPipelineAsset })
+            {
+                var asset = new SerializedObject(AssetDatabase.LoadMainAssetAtPath(path));
+                Assert.That(asset.FindProperty("m_RequireDepthTexture").boolValue, Is.True, path + " m_RequireDepthTexture");
+            }
         }
     }
 }
