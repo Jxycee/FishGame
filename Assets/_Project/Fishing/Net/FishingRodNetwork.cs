@@ -325,7 +325,7 @@ namespace FishGame.Fishing
             FishingHost host = ResolveHost();
             if (host == null)
             {
-                CastResultRpc(castId, false, (byte)CastRejectReason.NotAllowedNow, origin, default);
+                CastResultRpc(castId, false, (byte)CastRejectReason.NotAllowedNow, Vector3.zero, default);   // never echo the client origin (as FishingHost does)
                 return;
             }
             host.HandleCastRequest(this, in req);

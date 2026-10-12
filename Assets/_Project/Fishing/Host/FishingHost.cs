@@ -84,6 +84,9 @@ namespace FishGame.Fishing
             SessionState.SlotTakenOver -= HandleSlotTakenOver;
             Ledger = null;
             if (s_current == this) s_current = null;
+            // F6 (forced bite) and F7 (twitchy hook) are session toggles on statics: a new session must not inherit them (final review M-5).
+            FishingDebugSettings.ForcedBiteWait = 0f;
+            FishingDebugSettings.TwitchyHook = false;
         }
 
         private bool IsServerActive

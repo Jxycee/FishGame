@@ -399,6 +399,43 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("cast result timing");
         }
 
+        // Catches (R67 follow-up, end to end): the owner's own landing prediction (the bobber it publishes the frame it sends the request,
+        // before the host's reply can be adopted) differing from the host's ActiveCast landing by even one ulp: the cast-tip reach applied on one
+        // side only, a different heading or origin, a stale charge (M-4). No rod switch here, so adoption cannot hide a mismatch.
+        [UnityTest]
+        public IEnumerator SoloHost_OwnerPreAdoptionLanding_IsBitIdenticalToTheHostActiveCast()
+        {
+            FishingDebugSettings.ForcedBiteWait = 30f;
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            FishingHost host = FishingHost.Current;
+            Assert.That(host, Is.Not.Null, "the solo host's FishingHost");
+
+            rig.Locomotion.ApplyTeleport(new Vector3(0f, 0.65f, FishingPlayModeDriver.DeckTeleportZ), 25f);   // a non-zero yaw so x discriminates the heading
+            yield return PlayModeHarness.WaitFrames(3, 0.05f);
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsGrounded, PlayModeHarness.DefaultTimeoutSeconds, "the player never became grounded after the teleport");
+
+            yield return FishingPlayModeDriver.EquipAndReady(rig);
+            yield return FishingPlayModeDriver.Charge(rig);
+
+            rig.Fake.Frame = new PlayerInputFrame { SecondaryHeld = true, PrimaryReleased = true };
+            yield return null;   // the owner's Update of this frame sent the request; the host handled it inline; the reply is deferred
+            rig.Fake.Frame = default;
+            Assert.That(rig.Machine.State, Is.EqualTo(RodState.Casting));
+            Assert.That(rig.Machine.HasResult, Is.False, "the host's reply has not been adopted yet: the view is the owner's own prediction");
+
+            Assert.That(host.Ledger.TryGetActive(rig.Player.OwnerClientId, out ActiveCast cast), Is.True, "the host must have accepted the cast");
+            Vector3 predicted = rig.Net.ViewState.BobberPos;
+            TestContext.WriteLine($"FG LANDPARITY: owner=({predicted.x:R},{predicted.z:R}) host=({cast.LandingX:R},{cast.LandingZ:R}) charge={rig.Machine.ChargeNorm:R}");
+            Assert.That(predicted.x, Is.EqualTo(cast.LandingX), "owner landing x == ActiveCast.LandingX (bit-identical)");
+            Assert.That(predicted.z, Is.EqualTo(cast.LandingZ), "owner landing z == ActiveCast.LandingZ (bit-identical)");
+            Assert.That(Mathf.Abs(predicted.x), Is.GreaterThan(1f), "yaw 25: the landing is off the x = 0 line, so a wrong heading would show");
+
+            yield return FishingPlayModeDriver.WaitForState(rig, RodState.Waiting, 4f);
+            rig.Log.AssertEmpty("landing parity");
+        }
+
         // Catches: a Recall in Waiting that sends no CancelRpc, or a host that does not refund the bait on a cancelled Waiting cast
         // (the stock would stay 19), or a refund that over-counts or leaves a creel entry / announcement behind.
         [UnityTest]
@@ -422,6 +459,22 @@ namespace FishGame.Tests.PlayMode
             Assert.That(rig.Creel.Count, Is.EqualTo(0));
             Assert.That(rig.Announced, Is.Empty, "a cancel announces nothing");
             rig.Log.AssertEmpty("cancel in waiting");
+        }
+
+        // Catches (final review M-5): the F6 forced bite and the F7 twitchy hook surviving the session (they are statics, so leaving to the
+        // menu and starting a new run would keep them on). FishingHost.OnDisable (the gameplay scene unloading) clears both.
+        [UnityTest]
+        public IEnumerator SoloHost_LeavingTheSession_ClearsF6AndF7()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingDebugSettings.ForcedBiteWait = 0.1f;   // as F6 / F7 set them mid-session (after the scene loaded)
+            FishingDebugSettings.TwitchyHook = true;
+            _rig.Dispose();
+
+            yield return PlayModeHarness.TearDownApp();   // leaves the session and unloads the gameplay scene
+            Assert.That(FishingDebugSettings.ForcedBiteWait, Is.EqualTo(0f), "F6 must not survive leaving the session");
+            Assert.That(FishingDebugSettings.TwitchyHook, Is.False, "F7 must not survive leaving the session");
         }
 
         // Catches (F4/F5 select race call site): HandleCastResult not adopting the host's landing when the rod was switched mid-charge. The host
