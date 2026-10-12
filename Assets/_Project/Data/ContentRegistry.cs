@@ -300,6 +300,12 @@ namespace FishGame.Data
             }
         }
 
+        // SerializedObject edits (the content builder, the inspector) change the lists without resetting the [NonSerialized] caches.
+        private void OnValidate()
+        {
+            ClearCache();
+        }
+
         private void ClearCache()
         {
             built = false;

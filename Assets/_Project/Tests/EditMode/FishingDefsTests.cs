@@ -279,6 +279,76 @@ namespace FishGame.Tests.EditMode
             }
         }
 
+        private static readonly string[] TuningNames =
+        {
+            "castChargeTime", "chargePingPong", "castMinDist", "minLandDepth", "biteWaitMin", "biteWaitMax", "minBiteWait", "hookBeat",
+            "landDistance", "reelStrainBurst", "counterRelief", "steerStrain", "outOfWindowStrain", "spoolStrain", "spoolExtra",
+            "relaxRate", "relaxWhileReeling", "reelBurstPenalty", "diveRunMult", "snapGrace", "snapGraceAssist", "strainScale",
+            "strainScaleAssist", "pinEscapeTime", "slackEscapeTime", "fishStaminaRegen", "calmCenterPull", "lateralMaxDeg", "hookedLeash",
+            "junkDragSpeed", "resultTimeout", "commitTimeout", "hookTolerance", "maxFightTime", "rodStateHz", "cancelRefundsBait",
+            "creelMaxEntries", "creelMaxKg", "cleanCatchMaxTension", "pityAfterFailures", "pityStrainMult", "pityGraceMult",
+            "pityHookWindowBonus",
+        };
+
+        // Contract 7.13 serialized names. The builder, the T14 asset YAML and every saved asset depend on them: a renamed private field
+        // silently drops the saved value. The property set must equal the list exactly (no extra field either).
+        // Catches: a renamed or removed [SerializeField] field, a stray extra serialized field, slotTints / creelMaxWeightG reappearing.
+        [TestCase("RodDef", "id,displayName,tier,castMaxDist,reelSpeed,lineStrength,angleWindow,steerRate,relaxMult,shopCost,firstCamp")]
+        [TestCase("BaitDef", "id,displayName,rating,stackMax,maxRating,biteSpeedMod,junkMult,maxNibbles,unlimited")]
+        [TestCase("FightProfileDef", "id,displayName,pullStrength,lateralSpeed,runSpeed,staminaDrain,calmMin,calmMax,burstMin,burstMax,flipRate,diveChance,burstRamp,calmDrift,calmDriftRamp,flipMinGap,lateralJitter")]
+        [TestCase("FishSpeciesDef", "id,displayName,rarity,baseValue,weightMinG,weightMaxG,weightSkew,lengthShapeK,fight,bodyShape,colorA,colorB,biteWaitMod,hookWindow,isSpecial,minBaitRating,minDepth,model")]
+        [TestCase("JunkDef", "id,displayName,valueCoins,bodyShape,color")]
+        [TestCase("FishingTuningDef", "TUNING")]
+        [TestCase("SfxCueTableDef", "rows")]
+        [TestCase("ArtPaletteDef", "slotNames,seasons,faceJitter,skinTone,phases,uiAccent,uiGood,uiWarn,uiBad,uiPanel,uiText,m2Season")]
+        [TestCase("WaterSettingsDef", "dirAmpLenSpeed,shallowColor,deepColor,depthRange,foamWidth")]
+        [TestCase("ContentRegistry", "dataVersion,spots,rods,baits,fightProfiles,species,junk,fishingTuning,sfxCueTable,artPalette,waterSettings")]
+        public void FishingDefs_SerializedNames_MatchContract(string typeName, string csv)
+        {
+            ScriptableObject o;
+            switch (typeName)
+            {
+                case "RodDef": o = Make<RodDef>(); break;
+                case "BaitDef": o = Make<BaitDef>(); break;
+                case "FightProfileDef": o = Make<FightProfileDef>(); break;
+                case "FishSpeciesDef": o = Make<FishSpeciesDef>(); break;
+                case "JunkDef": o = Make<JunkDef>(); break;
+                case "FishingTuningDef": o = Make<FishingTuningDef>(); break;
+                case "SfxCueTableDef": o = Make<SfxCueTableDef>(); break;
+                case "ArtPaletteDef": o = Make<ArtPaletteDef>(); break;
+                case "WaterSettingsDef": o = Make<WaterSettingsDef>(); break;
+                case "ContentRegistry": o = Make<ContentRegistry>(); break;
+                default: Assert.Fail("unknown Def " + typeName); return;
+            }
+            string[] expected = csv == "TUNING" ? TuningNames : csv.Split(',');
+            if (csv == "TUNING") Assert.AreEqual(43, expected.Length, "43 serialized members (creelMaxKg replaces CreelMaxWeightG)");
+
+            var so = new UnityEditor.SerializedObject(o);
+            foreach (string name in expected)
+                Assert.IsNotNull(so.FindProperty(name), typeName + " is missing serialized field '" + name + "'");
+
+            var actual = new List<string>();
+            UnityEditor.SerializedProperty it = so.GetIterator();
+            for (bool enter = true; it.NextVisible(enter); enter = false)
+            {
+                if (it.name != "m_Script") actual.Add(it.name);
+            }
+            var extra = new List<string>(actual);
+            extra.RemoveAll(n => Array.IndexOf(expected, n) >= 0);
+            Assert.IsEmpty(extra, typeName + " has serialized fields outside contract 7.13: " + string.Join(",", extra));
+            Assert.AreEqual(expected.Length, actual.Count, typeName + " serialized field count");
+
+            Assert.IsNull(so.FindProperty("slotTints"), "slotTints must not exist (M2-D3)");
+            Assert.IsNull(so.FindProperty("creelMaxWeightG"), "creelMaxWeightG is stored as creelMaxKg");
+        }
+
+        // Catches: the m2Season initialiser dropped (default 0 = Spring).
+        [Test]
+        public void ArtPaletteDef_DefaultM2Season_IsSummer()
+        {
+            Assert.AreEqual(1, Make<ArtPaletteDef>().M2Season);
+        }
+
         // Catches: GetSlotTint reading a stored copy or swapping channels, alpha not 1, an out-of-range slot returning a colour.
         [Test]
         public void ArtPaletteDef_SlotTint_EqualsSlotPalette()

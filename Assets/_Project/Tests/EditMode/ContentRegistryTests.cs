@@ -401,6 +401,110 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(0, MakeRegistry(1, MakeSpot("ok_spot")).Validate().Count);
         }
 
+        private RodDef NewRod(string id)
+        {
+            RodDef d = MakeAsset<RodDef>();
+            d.Configure(id, "x", 0, 1f, 1f, 1f, 0.5f, 0.5f, 1f, 0, 0);
+            return d;
+        }
+
+        private BaitDef NewBait(string id)
+        {
+            BaitDef d = MakeAsset<BaitDef>();
+            d.Configure(id, "x", 1, 1, 1, 1f, 1f, 1, false);
+            return d;
+        }
+
+        private FightProfileDef NewProfile(string id)
+        {
+            FightProfileDef d = MakeAsset<FightProfileDef>();
+            d.Configure(id, "x", 0.3f, 0.6f, 0.3f, 0.08f, 1f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0f, 0f, 0f, 0.5f, 0f);
+            return d;
+        }
+
+        private FishSpeciesDef NewSpecies(string id, FightProfileDef fight)
+        {
+            FishSpeciesDef d = MakeAsset<FishSpeciesDef>();
+            d.Configure(id, "x", FishRarity.Common, 5, 200, 800, 2.2f, 1f, fight, BodyShape.Round, Color.red, Color.green, 1f, 0f, false, 1, 1f, null);
+            return d;
+        }
+
+        private JunkDef NewJunk(string id)
+        {
+            JunkDef d = MakeAsset<JunkDef>();
+            d.Configure(id, "x", 2, BodyShape.Long, Color.gray);
+            return d;
+        }
+
+        // Each fishing list reports its own serialized field name in the per-entry messages (invalid id, duplicate id, null).
+        // Catches: a typo or a copy-paste in one list-name literal of Validate (for example "fightProfile" or "rod").
+        [TestCase("rods")]
+        [TestCase("baits")]
+        [TestCase("fightProfiles")]
+        [TestCase("species")]
+        [TestCase("junk")]
+        public void ContentRegistry_FishingLists_ValidateMessagesUseListName(string list)
+        {
+            FishingSet set = MakeFishingSet();
+            int n;
+            string firstId;
+            switch (list)
+            {
+                case "rods":
+                    n = set.Rods.Length; firstId = set.Rods[0].Id;
+                    set.Rods = set.Rods.Concat(new[] { NewRod("Bad Id"), NewRod(firstId), null }).ToArray();
+                    break;
+                case "baits":
+                    n = set.Baits.Length; firstId = set.Baits[0].Id;
+                    set.Baits = set.Baits.Concat(new[] { NewBait("Bad Id"), NewBait(firstId), null }).ToArray();
+                    break;
+                case "fightProfiles":
+                    n = set.Profiles.Length; firstId = set.Profiles[0].Id;
+                    set.Profiles = set.Profiles.Concat(new[] { NewProfile("Bad Id"), NewProfile(firstId), null }).ToArray();
+                    break;
+                case "species":
+                    n = set.Species.Length; firstId = set.Species[0].Id;
+                    FightProfileDef fight = set.Profiles[0];
+                    set.Species = set.Species.Concat(new[] { NewSpecies("Bad Id", fight), NewSpecies(firstId, fight), null }).ToArray();
+                    break;
+                case "junk":
+                    n = set.Junk.Length; firstId = set.Junk[0].Id;
+                    set.Junk = set.Junk.Concat(new[] { NewJunk("Bad Id"), NewJunk(firstId), null }).ToArray();
+                    break;
+                default:
+                    Assert.Fail("unknown list " + list);
+                    return;
+            }
+            CollectionAssert.AreEqual(new[]
+            {
+                list + "[" + n + "] has invalid id 'Bad Id'.",
+                list + "[" + (n + 1) + "] duplicate id '" + firstId + "'.",
+                list + "[" + (n + 2) + "] is null.",
+            }, MakeFishingRegistry(set).Validate());
+        }
+
+        // A SerializedObject edit (the content builder, the inspector) must not leave a stale built index behind.
+        // Catches: a missing OnValidate cache reset (the second SpotIndex would throw KeyNotFoundException).
+        [Test]
+        public void ContentRegistry_SerializedEdit_ClearsBuiltCache()
+        {
+            SpotDef pond = MakeSpot("pond_north");
+            SpotDef lake = MakeSpot(ContentIds.LakeDock);
+            ContentRegistry reg = MakeRegistry(1, pond);
+            Assert.AreEqual((ushort)0, reg.SpotIndex("pond_north"));
+            Assert.Throws<KeyNotFoundException>(() => reg.SpotIndex("lake_dock"));
+
+            var so = new UnityEditor.SerializedObject(reg);
+            UnityEditor.SerializedProperty spots = so.FindProperty("spots");
+            spots.arraySize = 2;
+            spots.GetArrayElementAtIndex(1).objectReferenceValue = lake;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.AreEqual(2, reg.Spots.Count);
+            Assert.AreEqual((ushort)0, reg.SpotIndex("lake_dock"));
+            Assert.AreEqual((ushort)1, reg.SpotIndex("pond_north"));
+        }
+
         // Catches: species FightProfileIndex taken from the list position instead of the ordinal profile index, the database built
         // from list order (not index order), Tuning not converted, Fishing non-null for a spots-only registry, a stale database after
         // ConfigureFishing.
