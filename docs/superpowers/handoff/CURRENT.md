@@ -100,4 +100,4 @@ Also on the board:
 
 ## 12. Ideas queued for the design session
 - Seagulls that steal voices (user, 2026-10-14): like the Lethal Company voice-mimic mods (Skinwalkers/Mirage), gulls record short clips of players and squawk them back positionally. Needs voice chat first (Vivox likely). Research: docs/superpowers/research/2026-10-14-voice-mimic-seagulls.md (in progress). Must have an opt-out setting.
-- REA MCP note: REA takes ~42 s to start but the MCP connect timeout is 30 s, so it fails at session start; fix with env MCP_TIMEOUT=90000 in ~/.claude/settings.json (user to approve) or /mcp reconnect.
+- REA MCP: takes ~42 s to start vs the 30 s default connect timeout. FIXED 2026-10-14: MCP_TIMEOUT=90000 in ~/.claude/settings.json env (applies from the next session).
