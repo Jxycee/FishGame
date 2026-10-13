@@ -79,6 +79,7 @@ Also on the board:
 - the online-cancel message.
 
 ## 10. Harbour detail pass (user, 2026-10-14) - Blender side DONE, Unity side next
+- **Polish workflow running (user: iterate until highly polished, competes with popular indie maps):** run wf_f18c5f35-033 (script under ~/.claude/projects/C--Dev-FishGame/0f9e3f02-.../workflows/scripts/harbour-polish-*.js; resumable with resumeFromRunId). Steps: integrate harbour-art2 into Unity + HarbourCapture tool, toon shader top/bottom tint + hue shift, then up to 5 rounds of 2 critics (art director, level designer; score vs RV/PEAK/REPO, pass = overall >= 8.5, no category < 7.5) and an Opus artist fix pass, then final check + review. All on worktree C:\Dev\FishGame-harbour-art, branch harbour-art2. Shots: scratchpad/harbour-polish/r<N>. Controller merges into main after it finishes.
 - **Status (2026-10-14):** branch `harbour-art2` pushed. Commits 3bfd603 (detail pass) and dbeaf30 (fixes). Phase-1 FBX are byte-identical; the rebuild from an empty Blender is deterministic. 37 new FBX (core 149.7k tris, detail 43.2k hidden on Low) plus a `pass2` manifest block (placements, animHint, smoke/light points, ladders).
 - **Triangles (worst view):**
   - High: ~372k (22k over the old 350k aim).
