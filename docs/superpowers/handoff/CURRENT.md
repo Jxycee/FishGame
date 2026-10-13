@@ -4,7 +4,7 @@
 
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
-_Last updated: 2026-10-14, early. New checks board for this round; T20 started ahead of T15 in its own worktree while W1 is pending._
+_Last updated: 2026-10-14. W1 PASSED. T15 and T20 run in parallel in their own worktrees. First board notes logged for the fix round._
 
 ## 1. Read these next (in order)
 1. `C:\Dev\FishGame-m3\CLAUDE.md`: project rules (Git: no PRs; merge yourself when reviewed and green; PlayMode guard).
@@ -26,11 +26,15 @@ _Last updated: 2026-10-14, early. New checks board for this round; T20 started a
 
    Summarise them, turn each FAIL or note into a task or a question, and reply under each check via its `reply` field.
 2. If **W1** (two-window WorldState sync) passed, start **T15**. If it failed, do the M3-D18 prefab fallback first. If it isn't done yet, do what doesn't need it and remind the user.
+   - **W1 PASSED (2026-10-13).** T15 is in flight in worktree `C:\Dev\FishGame-t15`, branch `m3-t15` (Sonnet; Opus high review next). T15 changes no scene and no file T20 owns.
    - **In flight (2026-10-14):** T20 (save + journal recorder) runs ahead of T15, in worktree `C:\Dev\FishGame-t20`, branch `m3-t20` (from m3-fish-ecology 070609d, copied Library), so the user can test W1 in `C:\Dev\FishGame-m3`. After Opus high review, merge `m3-t20` into `m3-fish-ecology`. T20 changes `Spot_LakeDock.unity`: whichever of T20/T15 lands second regenerates the scene from the builders, never a hand-merge of the .unity text.
 3. As tasks land, add their new checks to the board (for example M6 after T17/T21/T22).
 
 ## 4. After M3
-Merge M3 into main. Then the fix round from the user's board notes (including the friendlier fight tuning; re-run EcologyBalanceReports after any fight retune).
+Merge M3 into main. Then the fix round from the user's board notes (including the friendlier fight tuning; re-run EcologyBalanceReports after any fight retune). Logged so far from the board:
+- S3 performance: the frame is GPU-bound (CPU 0.2 ms of ~5 ms, 210 fps on the user's PC). Minimum-spec target: a GTX 900-series card (960/970 class) at a steady 60 fps, 1080p. Keep the load on the GPU, with quality presets.
+- S4 ladders: faster, arcade-style climb with momentum and a small launch off the top; less realistic.
+- S6 menus: add a Graphics tab (preset, resolution, window mode, vsync, frame cap, shadow/fog quality, render scale) in the fix round. A full modern-menu redesign goes to the design session (pick reference games first); some screens are hard to read.
 
 Then a **design session with the user** (superpowers:brainstorming, about an hour). Input: `docs/superpowers/design/2026-10-13-fun-formula.md`, the user's reasons for loving Gamble With Your Friends, RV There Yet, REPO and PEAK, plus the board's "Ideas for the game" box (`notes/ideas`). Decide the core ingredients, items, gambling, the mafia, map size, failure, and the first vertical-slice day. Target: about 70 fish, a third of them with gameplay quirks.
 
