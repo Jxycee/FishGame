@@ -3,11 +3,14 @@
 using System.Collections;
 using System.Text.RegularExpressions;
 using FishGame.Core;
+using FishGame.Data;
+using FishGame.Fishing;
 using FishGame.Gameplay;
 using FishGame.Runtime;
 using NUnit.Framework;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
 namespace FishGame.Tests.PlayMode
@@ -85,6 +88,77 @@ namespace FishGame.Tests.PlayMode
             Assert.That(second.GetComponent<DevWorldDriver>().Run, Is.Null, "the second instance's driver was never initialised");
             Assert.That(EcologySession.Current, Is.SameAs(first.GetComponent<DevWorldDriver>().Run), "the session run state is untouched");
             Assert.That(first.HasState, Is.True);
+        }
+
+        // Catches (T17, E-CCR-3): the harbour missing from the build list; a broken spawn path on the switch (late OnLoadComplete: the player on the plateau,
+        // under the pier, or at the lake's coordinates); the in-scene World not spawning in the second scene; the run state dropped across the switch;
+        // a baked grid that disagrees with the scene's physics (the owner/host gate pair of M3-D16 refuses a cell the bake marked castable).
+        [UnityTest]
+        public IEnumerator EcologyMap_HarbourDevLoad_SpawnsOnPierAndProbesEverySubArea()
+        {
+            using var logs = new PlayModeHarness.LogCapture();
+            yield return PlayModeHarness.LoadBootstrapAndWaitForMenu();
+            yield return PlayModeHarness.StartSoloAndWaitForPlayer();
+            yield return PlayModeHarness.WaitUntil(() => WorldState.Current != null && WorldState.Current.HasState, 5f,
+                                                   "WorldState.Current did not spawn with state within 5 s");
+
+            WorldState lakeWorld = WorldState.Current;
+            PlayerNetState lakePlayer = PlayerNetState.Local;
+            EcologyRunState run = EcologySession.Current;
+            Assert.That(run, Is.Not.Null, "the session run state exists on the lake");
+            uint casts = run.HostCastCounter;
+
+            Assert.That(ServiceRoots.App.TryGet(out EventBus bus), Is.True, "no App EventBus");
+            Assert.That(ServiceRoots.App.TryGet(out ContentRegistry registry), Is.True, "no ContentRegistry");
+            bus.Publish(new DevLoadSpotRequested(ContentIds.HarbourPier));
+
+            yield return PlayModeHarness.WaitUntil(
+                () => SceneManager.GetActiveScene().name == SceneNames.SpotHarbourPier
+                      && WorldState.Current != null && WorldState.Current != lakeWorld && WorldState.Current.HasState
+                      && PlayerNetState.Local != null && PlayerNetState.Local != lakePlayer,
+                20f, "the dev load never produced the harbour scene, its World and a new local player within 20 s");
+            yield return PlayModeHarness.WaitFrames(5, 0.2f);   // physics settles; the player is grounded on the deck
+
+            WorldState world = WorldState.Current;
+            Assert.That(world.SpotId, Is.EqualTo(ContentIds.HarbourPier));
+            Assert.That(world.IsSpawned, Is.True);
+            Assert.That(ReferenceEquals(EcologySession.Current, run), Is.True, "the session run state survives the switch");
+            Assert.That(run.HostCastCounter, Is.EqualTo(casts), "the cast counter is unchanged");
+
+            PlayerNetState player = PlayerNetState.Local;
+            Vector3 position = player.transform.position;
+            Assert.That(position.y, Is.GreaterThan(1.4f), "the player stands on the deck (y " + position.y + ")");
+            Assert.That(PlayerSpawner.Current, Is.Not.Null, "the harbour PlayerSpawner");
+            Assert.That(PlayerSpawner.Current.TryGetSpawnPose(player.Slot, out Vector3 spawn, out _), Is.True, "spawn pose of slot " + player.Slot);
+            Assert.That((position - spawn).magnitude, Is.LessThan(2f), "the player is within 2 m of its spawn point " + spawn + " (at " + position + ")");
+            Assert.That(UnityEngine.Object.FindFirstObjectByType<DockBell>(), Is.Not.Null, "the DockBell spawned at the BellAnchor");
+
+            // One reachable castable cell per sub-area, picked from the baked grid: the cast gate agrees with the grid.
+            Assert.That(SpotEcology.TryResolve(registry, world, out _, out ZoneData zone), Is.True, "the harbour zone");
+            ShoreGrid grid = zone.Grid;
+            Assert.That(grid, Is.Not.Null, "the harbour grid is baked");
+            float minLandDepth = registry.FishingTuning.MinLandDepth;
+            var picked = new Vector2?[zone.SubAreas.Count];
+            for (int cz = 0; cz < grid.Height; cz++)
+            {
+                for (int cx = 0; cx < grid.Width; cx++)
+                {
+                    if (!grid.IsCastable(cx, cz) || !grid.IsReachable(cx, cz)) continue;
+                    grid.CellCentre(cx, cz, out float x, out float z);
+                    if (!grid.IsWater(x, z)) continue;
+                    int sub = zone.SubAreaIndexFor(grid.ShoreM(x, z));
+                    if (picked[sub] == null) picked[sub] = new Vector2(x, z);
+                }
+            }
+            for (int sub = 0; sub < picked.Length; sub++)
+            {
+                Assert.That(picked[sub].HasValue, Is.True, "a reachable castable cell in sub-area " + sub);
+                Vector2 p = picked[sub].Value;
+                Assert.That(grid.IsWater(p.x, p.y), Is.True, "the grid says water at " + p);
+                Assert.That(CastMath.ProbeReason(CastProbe.Probe(p.x, p.y), minLandDepth), Is.EqualTo(CastRejectReason.None),
+                            "the cast gate agrees with the grid in sub-area " + sub + " at " + p);
+            }
+            logs.AssertNoWarnings("harbour dev load");
         }
     }
 }
