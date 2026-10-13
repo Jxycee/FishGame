@@ -4,7 +4,7 @@
 
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
-_Last updated: 2026-10-14. ALL M3 tasks merged (m3-fish-ecology af95354; check PASS: EditMode 1378 incl. 1 skip, PlayMode 137; two-build ContentHash 54AA263BB84936CE identical). Acceptance doc: docs/superpowers/plans/2026-10-13-m3-acceptance.md. In flight: Opus xhigh branch review. Then merge M3 into main (no PR; merge commit). Board now has the M3 sign-off rows ME1-ME8, DC1-DC5, DN1-DN5, JE8-JE9 plus the re-checks._
+_Last updated: 2026-10-14. **M3 MERGED INTO MAIN** (7af8041; check on main PASS: EditMode 1378 incl. 1 skip, PlayMode 139). In flight: harbour detail pass (Blender, branch harbour-art2), research notes (mafia counter-play; voice-mimic seagulls). Next: user's board checks, harbour pass into Unity, then the M4 design session (inputs: docs/superpowers/design/2026-10-14-m4-design-inputs.md)._
 
 ## 1. Read these next (in order)
 1. `C:\Dev\FishGame-m3\CLAUDE.md`: project rules (Git: no PRs; merge yourself when reviewed and green; PlayMode guard).
@@ -97,3 +97,7 @@ Also on the board:
 
 ## 9. Live pages this round
 - Harbour build log (screenshots as the map is built): https://claude.ai/artifact/TmqCpXrHJBXRZBhZMKkMhW (db `shots`, `meta/status`; images uploaded as assets).
+
+## 12. Ideas queued for the design session
+- Seagulls that steal voices (user, 2026-10-14): like the Lethal Company voice-mimic mods (Skinwalkers/Mirage), gulls record short clips of players and squawk them back positionally. Needs voice chat first (Vivox likely). Research: docs/superpowers/research/2026-10-14-voice-mimic-seagulls.md (in progress). Must have an opt-out setting.
+- REA MCP note: REA takes ~42 s to start but the MCP connect timeout is 30 s, so it fails at session start; fix with env MCP_TIMEOUT=90000 in ~/.claude/settings.json (user to approve) or /mcp reconnect.
