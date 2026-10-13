@@ -83,7 +83,7 @@ namespace FishGame.Tests.PlayMode
                 // (b) the bite caption (owner, settings.captions).
                 Assert.That(captions, Does.Contain("cap.bite"), "CaptionRequested(cap.bite) at the bite");
 
-                yield return FishingPlayModeDriver.FightRhythm(rig, 60f);
+                yield return FishingPlayModeDriver.FightRhythm(rig, 100f);
                 Assert.That(rig.Machine.State, Is.EqualTo(RodState.Landed), "the scripted fight must land the fish");
 
                 // (c) the reveal: active within 0.5 s of the announcement, with a mesh and one material per submesh, hidden again within 2.5 s.

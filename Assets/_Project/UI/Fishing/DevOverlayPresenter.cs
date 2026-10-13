@@ -271,10 +271,11 @@ namespace FishGame.UI
             }
 
             _sb.Append("FIGHT phase=").Append(s.Phase).Append(" dir=").Append(((int)s.BurstDir).ToString(Inv))
-                .Append(" tension=").Append(F2(s.Tension)).Append(" stamina=").Append(F2(s.FishStamina))
+                .Append(" back=").Append(s.Back ? "1" : "0")
+                .Append(" strain=").Append(F2(s.Strain)).Append(" tension=").Append(F2(s.Tension)).Append(" tire=").Append(F2(s.Tire))
+                .Append(" p=").Append(F2(fight.PullWave))
                 .Append(" line=").Append(F1(s.LineLength)).Append("m lat=").Append(F2(s.Lateral))
-                .Append(" el=").Append(F1(s.Elapsed)).Append("s snap=").Append(F2(s.SnapTimer))
-                .Append(" pin=").Append(F2(s.PinnedTimer)).Append(" slack=").Append(F2(s.SlackTimer))
+                .Append(" el=").Append(F1(s.Elapsed)).Append("s over=").Append(F2(s.SnapTimer))
                 .Append(" recov=").Append(s.NearSnapRecoveries.ToString(Inv)).Append(" max=").Append(F2(s.MaxTension)).Append('\n');
         }
 

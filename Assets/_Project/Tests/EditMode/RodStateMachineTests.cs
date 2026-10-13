@@ -144,20 +144,24 @@ namespace FishGame.Tests.EditMode
             Drain(m);
         }
 
+        // R72: the fight lands at 1.0 m while reeling. Carp reels 0.54 m/s (0.6 x 0.9): 1.02 -> 1.0092 -> 0.9984, so exactly two reel ticks.
         static void ToLanded(RodStateMachine m)
         {
-            ToHooked(m, null, 2.05f);
-            for (int i = 0; i < 3; i++) m.TickFight(In(0f, true), Fr());
+            ToHooked(m, null, 1.02f);
+            var s = new FightState { LineLength = 1.02f, Phase = FightPhase.Calm, PhaseTimer = 5f };
+            m.Fight.ForceState(in s);
+            for (int i = 0; i < 2; i++) m.TickFight(In(0f, true), Fr());
             Assert.That(m.State, Is.EqualTo(RodState.Landed));
             Drain(m);
         }
 
-        static void ForceSnapState(RodStateMachine m, float snapTimer)
+        // R72: strain 6.999 on a carp (large tier): one reel tick adds 0.04125 and crosses the snap strain 7.
+        static void ForceSnapState(RodStateMachine m)
         {
             var s = new FightState
             {
-                LineLength = 10f, Lateral = 0.7f, Tension = 1f, FishStamina = 1f,
-                Phase = FightPhase.Burst, BurstDir = 1, PhaseTimer = 5f, SnapTimer = snapTimer
+                LineLength = 10f, Lateral = 0.7f, Strain = 6.999f,
+                Phase = FightPhase.Burst, BurstDir = 1, PhaseTimer = 5f
             };
             m.Fight.ForceState(in s);
         }
@@ -165,7 +169,7 @@ namespace FishGame.Tests.EditMode
         static void ToSnapped(RodStateMachine m)
         {
             ToHooked(m);
-            ForceSnapState(m, 0.24f);
+            ForceSnapState(m);
             m.TickFight(In(0f, true), Fr());
             Assert.That(m.State, Is.EqualTo(RodState.Snapped));
             Drain(m);
@@ -563,10 +567,11 @@ namespace FishGame.Tests.EditMode
         public void RodStateMachine_Hooked_LineAtLandDistanceWhileReeling_LandsWithFightReport()
         {
             RodStateMachine m = New();
-            ToHooked(m, null, 2.05f);
+            ToHooked(m, null, 1.02f);
+            var land = new FightState { LineLength = 1.02f, Phase = FightPhase.Calm, PhaseTimer = 5f };
+            m.Fight.ForceState(in land);
             m.TickFight(In(0f, true), Fr());
-            m.TickFight(In(0f, true), Fr());
-            Assert.That(m.State, Is.EqualTo(RodState.Hooked));
+            Assert.That(m.State, Is.EqualTo(RodState.Hooked), "1.0092 m is still outside the landing distance");
             m.TickFight(In(0f, true), Fr());
             Assert.That(m.State, Is.EqualTo(RodState.Landed));
             Assert.That(m.Outcome, Is.EqualTo(FightOutcome.Landed));
@@ -574,17 +579,17 @@ namespace FishGame.Tests.EditMode
             RodEffect res = First(e, RodEffectKind.SendResult);
             Assert.That(res.Outcome, Is.EqualTo(FightOutcome.Landed));
             Assert.That(res.Reason, Is.EqualTo(EscapeReason.None));
-            Assert.That(res.Report.MaxTension, Is.EqualTo(0f));
-            Assert.That(res.Report.FightSeconds, Is.EqualTo(0.06f).Within(1e-5f));
+            Assert.That(res.Report.MaxTension, Is.EqualTo(2f * 0.009375f / 6f).Within(1e-6f), "two rest-reel ticks of a large fish, as a share of the bar");
+            Assert.That(res.Report.FightSeconds, Is.EqualTo(0.04f).Within(1e-5f));
             Assert.That(res.Report.NearSnapRecoveries, Is.EqualTo(0));
             Assert.That(HasCue(e, RodCue.LineLanded), Is.True);
 
             // FightReport echo: the report carries the sim's MaxTension, NearSnapRecoveries and Elapsed (5 s + 3 ticks of 0.02 s).
             RodStateMachine r = New();
-            ToHooked(r, null, 2.05f);
+            ToHooked(r, null, 1.03f);
             var s = new FightState
             {
-                LineLength = 2.05f, FishStamina = 1f, Phase = FightPhase.Calm, PhaseTimer = 5f,
+                LineLength = 1.03f, Phase = FightPhase.Calm, PhaseTimer = 5f,
                 MaxTension = 0.7f, NearSnapRecoveries = 2, Elapsed = 5f
             };
             r.Fight.ForceState(in s);
@@ -605,7 +610,7 @@ namespace FishGame.Tests.EditMode
             ToBite(m);
             m.Tick(0.3f, Fr());
             all.AddRange(Drain(m));                                   // hook effects: cue HookSet and friends
-            ForceSnapState(m, 0.24f);
+            ForceSnapState(m);
             m.TickFight(In(0f, true), Fr());
             Assert.That(m.State, Is.EqualTo(RodState.Snapped));
             Assert.That(m.Outcome, Is.EqualTo(FightOutcome.Snapped));
@@ -630,26 +635,26 @@ namespace FishGame.Tests.EditMode
         }
 
         [Test]
-        public void RodStateMachine_Hooked_PinnedTooLong_EscapesPinned()
+        public void RodStateMachine_Hooked_FightTimeout_EscapesTimeout()
         {
             RodStateMachine m = New();
             ToHooked(m);
-            var s = new FightState { LineLength = 10f, Lateral = 1f, FishStamina = 1f, Phase = FightPhase.Calm, PhaseTimer = 5f, PinnedTimer = 4.99f };
+            var s = new FightState { LineLength = 10f, Phase = FightPhase.Calm, PhaseTimer = 5f, Elapsed = 119.99f };
             m.Fight.ForceState(in s);
             m.TickFight(In(0f, false), Fr());
             Assert.That(m.State, Is.EqualTo(RodState.Escaped));
-            Assert.That(m.Reason, Is.EqualTo(EscapeReason.Pinned));
+            Assert.That(m.Reason, Is.EqualTo(EscapeReason.Timeout));
             RodEffect res = First(Drain(m), RodEffectKind.SendResult);
             Assert.That(res.Outcome, Is.EqualTo(FightOutcome.Escaped));
-            Assert.That(res.Reason, Is.EqualTo(EscapeReason.Pinned));
+            Assert.That(res.Reason, Is.EqualTo(EscapeReason.Timeout));
         }
 
         [Test]
-        public void RodStateMachine_Hooked_SlackTooLong_EscapesThrewHook()
+        public void RodStateMachine_Hooked_JunkSlackTooLong_EscapesThrewHook()
         {
             RodStateMachine m = New();
-            ToHooked(m);
-            var s = new FightState { LineLength = 10f, FishStamina = 1f, Phase = FightPhase.Calm, PhaseTimer = 5f, SlackTimer = 11.99f };
+            ToHooked(m, FishRoll(junk: true));
+            var s = new FightState { LineLength = 10f, SlackTimer = 11.99f };
             m.Fight.ForceState(in s);
             m.TickFight(In(0f, false), Fr());
             Assert.That(m.State, Is.EqualTo(RodState.Escaped));
@@ -1119,8 +1124,10 @@ namespace FishGame.Tests.EditMode
             m.Tick(0.6f, Fr(ph: true));
             for (int i = 0; i < 8 && m.State == RodState.Waiting; i++) m.Tick(0.5f, Fr(ph: true));
             Assert.That(m.State, Is.EqualTo(RodState.Bite));
-            m.Tick(0.3f, Fr(ph: true, t2b: 2.05f));
+            m.Tick(0.3f, Fr(ph: true, t2b: 1.03f));
             Assert.That(m.State, Is.EqualTo(RodState.Hooked));
+            var land = new FightState { LineLength = 1.03f, Phase = FightPhase.Calm, PhaseTimer = 5f };   // R72: lands at 1.0 m (carp reels 0.0108 per tick: 3 ticks)
+            m.Fight.ForceState(in land);
             for (int i = 0; i < 3; i++) m.TickFight(In(0f, true), Fr(ph: true));
             Assert.That(m.State, Is.EqualTo(RodState.Landed));
             m.OnCommit(1u, true, FightOutcome.Landed, EscapeReason.None);
@@ -1210,11 +1217,13 @@ namespace FishGame.Tests.EditMode
             Assert.That(m.IgnoredEventCount, Is.EqualTo(1));
         }
 
-        // Ticks (1-based) a forced Burst/Tension-1 fight takes to snap, reeling all the way.
+        // Ticks (1-based) a forced side run takes to snap from strain 0, reeling all the way. Carp (large): 0.04125 per tick without assist,
+        // 0.02475 with assist (gains x0.6): 7 / rate = 170 / 283 ticks.
         static int SnapTick(RodStateMachine m)
         {
-            ForceSnapState(m, 0f);
-            for (int i = 1; i <= 80; i++)
+            var s = new FightState { LineLength = 10f, Lateral = 0.7f, Phase = FightPhase.Burst, BurstDir = 1, PhaseTimer = 30f };
+            m.Fight.ForceState(in s);
+            for (int i = 1; i <= 400; i++)
             {
                 m.TickFight(In(0f, true), Fr());
                 if (m.State == RodState.Snapped) return i;
@@ -1230,12 +1239,52 @@ namespace FishGame.Tests.EditMode
             ToCasting(m);                 // release captures Assist = false
             m.Assist = true;              // changed later: affects only the next cast
             ToHooked(m);
-            Assert.That(SnapTick(m), Is.EqualTo(13), "no-assist grace (0.25 s)");
+            Assert.That(SnapTick(m), Is.EqualTo(170).Within(1), "no assist: strain gains at full rate");
 
             RodStateMachine a = New();
             a.Assist = true;
             ToHooked(a);
-            Assert.That(SnapTick(a), Is.EqualTo(38), "assist grace (0.75 s) when set before release");
+            Assert.That(SnapTick(a), Is.EqualTo(283).Within(1), "assist (gains x0.6) when set before release");
+        }
+
+        // R72: a new run raises SideRun, or Dive when it also pulls back; never both and never neither.
+        [Test]
+        public void RodStateMachine_Fight_NewRunCuesDiveOnlyWhenItPullsBack()
+        {
+            RodStateMachine m = New();
+            ToHooked(m);
+            int dives = 0, sides = 0;
+            for (int i = 0; i < 40; i++)
+            {
+                var s = new FightState { LineLength = 10f, Phase = FightPhase.Calm, PhaseTimer = 0f };
+                m.Fight.ForceState(in s);
+                m.TickFight(In(0f, false), Fr());
+                List<RodEffect> e = Drain(m);
+                int d = CueCount(e, RodCue.Dive), sd = CueCount(e, RodCue.SideRun);
+                Assert.That(d + sd, Is.EqualTo(1), "exactly one run cue, run " + i);
+                Assert.That(d == 1, Is.EqualTo(m.Fight.State.Back), "Dive if and only if the run pulls back, run " + i);
+                dives += d; sides += sd;
+            }
+            Assert.That(dives, Is.GreaterThan(0));
+            Assert.That(sides, Is.GreaterThan(0));
+        }
+
+        // R72: Exhausted is a rising-edge cue (tire reaching 20), once; a spent fish's zero-length runs make no splash.
+        [Test]
+        public void RodStateMachine_Fight_ExhaustedRisingEdgeCuesOnce()
+        {
+            RodStateMachine m = New();
+            ToHooked(m);
+            var s = new FightState { LineLength = 10f, Lateral = 0.3f, Tire = 19.995f, Phase = FightPhase.Calm, PhaseTimer = 5f };
+            m.Fight.ForceState(in s);
+            m.TickFight(In(-1f, false), Fr());
+            List<RodEffect> first = Drain(m);
+            Assert.That(CueCount(first, RodCue.Exhausted), Is.EqualTo(1));
+            for (int i = 0; i < 20; i++) m.TickFight(In(0f, false), Fr());
+            List<RodEffect> rest = Drain(m);
+            Assert.That(CueCount(rest, RodCue.Exhausted), Is.EqualTo(0));
+            Assert.That(CueCount(rest, RodCue.SideRun), Is.EqualTo(0));
+            Assert.That(CueCount(rest, RodCue.Dive), Is.EqualTo(0));
         }
     }
 }

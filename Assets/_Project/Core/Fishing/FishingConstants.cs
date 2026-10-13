@@ -15,9 +15,19 @@ namespace FishGame.Core
         public const float SideRunAgainstChance = 0.75f;     // P(new side run is away from the current side); else a random side, so 87.5% away overall (spec 9.5 literal, B-Q4)
         public const float CenterDeadzone = 0.1f;            // |lateral| below: random side
         public const float PinnedLateral = 0.95f;
-        public const float NearSnapHigh = 0.8f, NearSnapLow = 0.5f;
+        public const float NearSnapHigh = 1.0f, NearSnapLow = 0.5f;   // over the full bar (R72)
         public const float WeightFactorMin = 0.85f, WeightFactorMax = 1.25f;
         public const float ReelRateFloor = 0.1f;             // max(0.1, 1 - penalty * P)
+        // R72 Rust fight baseline (spec 9.5): structural constants, not tuning.
+        public const float PullWavePeak = 2f;                // p = clamp(triangle peaking at 2, floor, 2); Rust: PingPong(t, 2)
+        public const float RustWavePeriod = 4f;              // Rust's wave period; used when a profile's WavePeriod is not > 0
+        public const float PullWaveFloor = 0.2f;
+        public const float SteerDigitalThreshold = 0.5f;     // |steer| at or above counts as a key press (Rust steer is digital)
+        public const float LateralMinRadius = 1.0f;          // m: floor of the radius when turning sideways m/s into lateral
+        public const float CounterSideMult = 0.5f;           // a counter-steer halves the side run
+        public const float ReelBackMult = 0.5f;              // reeling halves a back pull
+        public const float SideRunLeftChance = 0.5f;         // a run goes left or right 50/50
+        public const float HostTimeoutSlackSeconds = 2.0f;   // host accepts an owner Timeout when its own elapsed >= FightTimeout - this
         public const float NibbleJitterSeconds = 0.3f, NibbleMinOffsetSeconds = 0.5f, NibbleBiteGapSeconds = 0.6f;
         public const float NibbleMinBiteWait = 1.4f;         // below: zero nibbles
         public const int MaxNibbleSlots = 3;                 // FishingRoll.Nibble0..2

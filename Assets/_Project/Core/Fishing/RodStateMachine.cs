@@ -158,9 +158,11 @@ namespace FishGame.Core
                 if (Fight.IsJunk) return;
                 FightPhase now = Fight.State.Phase;
                 if (Fight.Exhausted && !wasExhausted) Cue(RodCue.Exhausted);
+                else if (Fight.Exhausted) return;                                          // a spent fish's zero-length runs make no splash
                 else if (now == FightPhase.Calm && phase == FightPhase.Burst) Cue(RodCue.Calm);
-                else if (now == FightPhase.Burst && (phase == FightPhase.Calm || Fight.State.BurstDir != dir))
-                    Cue(Fight.State.BurstDir == 0 ? RodCue.Dive : RodCue.SideRun);  // new run or a flip
+                else if (now == FightPhase.Burst && phase == FightPhase.Calm)
+                    Cue(Fight.State.Back ? RodCue.Dive : RodCue.SideRun);                 // a new run: Dive when it pulls back
+                else if (now == FightPhase.Burst && Fight.State.BurstDir != dir) Cue(RodCue.SideRun);   // the side flipped at the cone edge
                 return;
             }
             FightReport report = ReportOf(Fight);
@@ -177,7 +179,7 @@ namespace FishGame.Core
                 RodEvent(RodEventType.Snapped, Roll.SizeClass);
                 Cue(RodCue.Snapped);
             }
-            else EndEscaped(Fight.State.Reason);                                       // rows: pinned, slack
+            else EndEscaped(Fight.State.Reason);                                       // rows: timeout (fish), slack (junk)
         }
 
         private void TickTerminal()

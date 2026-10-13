@@ -219,20 +219,25 @@ namespace FishGame.Tests.PlayMode
                 "the rod never reached " + state + " (state " + rig.Machine.State + ")");
         }
 
-        // Counter-steers each burst, rests the reel above 0.8 tension and resumes below 0.5; holds the reel off during a dive-less pause.
+        // R72 Rust pump: counter a run without reeling (only while the steer counts, i.e. the fish is on its pull side), reel at rest steering
+        // toward the cast line, and let go above 0.85 tension until it falls below 0.30.
         public static IEnumerator FightRhythm(FishingRig rig, float timeoutSeconds)
         {
             double deadline = Time.realtimeSinceStartupAsDouble + timeoutSeconds;
-            bool rest = false;
+            bool easing = false;
             while (rig.Machine.State == RodState.Hooked)
             {
                 if (Time.realtimeSinceStartupAsDouble >= deadline) Assert.Fail("the fight did not end within " + timeoutSeconds + " s");
                 FightState s = rig.Machine.Fight.State;
-                bool burst = s.Phase == FightPhase.Burst;
-                float steer = burst && s.BurstDir != 0 ? -s.BurstDir : 0f;
-                if (s.Tension >= 0.8f) rest = true;
-                else if (s.Tension < 0.5f) rest = false;
-                bool reel = !rest && !(burst && s.BurstDir == 0);
+                bool run = s.Phase == FightPhase.Burst;
+                if (s.Tension >= 0.85f) easing = true;
+                else if (easing && s.Tension <= 0.30f) easing = false;
+                float steer = 0f; bool reel = false;
+                if (!easing)
+                {
+                    if (run) steer = s.BurstDir * s.Lateral > 0f ? -s.BurstDir : 0f;
+                    else { reel = true; steer = s.Lateral > 0.05f ? -1f : s.Lateral < -0.05f ? 1f : 0f; }
+                }
                 yield return Step(rig.Fake, new PlayerInputFrame { Steer = steer, Reel = reel });
             }
 
@@ -333,7 +338,7 @@ namespace FishGame.Tests.PlayMode
             yield return PlayModeHarness.WaitFrames(2, 0f);
             Assert.That(rig.Fake.GameplayContext, Is.EqualTo(InputContext.RodFighting), "PlayerLocomotion writes RodFighting from the controller's request");
 
-            yield return FishingPlayModeDriver.FightRhythm(rig, 60f);
+            yield return FishingPlayModeDriver.FightRhythm(rig, 100f);
             Assert.That(rig.Machine.State, Is.EqualTo(RodState.Landed), "the scripted fight must land the fish (outcome " + rig.Machine.Outcome + "/" + rig.Machine.Reason + ")");
 
             yield return FishingPlayModeDriver.WaitForState(rig, RodState.Idle, 5f);

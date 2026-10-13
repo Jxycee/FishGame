@@ -1,4 +1,6 @@
 // Tests/EditMode/FishingTestData.cs - spec 9.6/9.7/9.12 tables for the Core fishing tests (T5; read-only for T6-T9).
+// R72 baseline values (plan rework-fight F2.7): Rust's shared tuning, Rust's rods ratios, quirk-free BaseProfiles for the hand checks and
+// the five-style MotionProfiles for the machine, ledger and quirk tests.
 // Index order = ContentRegistry ordinal id sort. Runtime seeds live in FishingSeedData (T14); both must equal the spec.
 using FishGame.Core;
 
@@ -15,12 +17,12 @@ namespace FishGame.Tests.EditMode
         public static FishingTuning Tuning() => new FishingTuning
         {
             CastChargeTime = 1f, ChargePingPong = true, CastMinDist = 2.5f, MinLandDepth = 0.8f,
-            BiteWaitMin = 4f, BiteWaitMax = 18f, MinBiteWait = 1f, HookBeat = 0.25f, LandDistance = 2f,
+            BiteWaitMin = 4f, BiteWaitMax = 18f, MinBiteWait = 1f, HookBeat = 0.25f, LandDistance = 1f,
             ReelStrainBurst = 0.30f, CounterRelief = 0.5f, SteerStrain = 0.03f, OutOfWindowStrain = 0.20f,
-            SpoolStrain = 0.50f, SpoolExtra = 12f, RelaxRate = 0.45f, RelaxWhileReeling = 0.10f,
+            SpoolStrain = 0.50f, SpoolExtra = 12f, RelaxRate = 1.5f, RelaxWhileReeling = 0.10f,
             ReelBurstPenalty = 1.0f, DiveRunMult = 1.5f, SnapGrace = 0.25f, SnapGraceAssist = 0.75f,
-            StrainScale = 1.0f, StrainScaleAssist = 0.6f, PinEscapeTime = 5f, SlackEscapeTime = 12f,
-            FishStaminaRegen = 0.04f, CalmCenterPull = 0.15f, LateralMaxDeg = 75f, HookedLeash = 3f,
+            StrainScale = 0.75f, StrainScaleAssist = 0.45f, PinEscapeTime = 5f, SlackEscapeTime = 12f,
+            FishStaminaRegen = 0.04f, CalmCenterPull = 0.15f, LateralMaxDeg = 60f, HookedLeash = 3f,
             JunkDragSpeed = 3f, ResultTimeout = 3f, CommitTimeout = 3f, HookTolerance = 0.75f,
             MaxFightTime = 240f, RodStateHz = 15, CancelRefundsBait = true,
             CreelMaxEntries = 12, CreelMaxWeightG = 15000, CleanCatchMaxTension = 0.8f,
@@ -38,10 +40,10 @@ namespace FishGame.Tests.EditMode
 
         public static RodStats[] Rods() => new[]
         {
-            Rod(2, 24f, 1.2f, 1.3f, 0.70f, 0.70f, 1.1f),   // rod_carbon
-            Rod(3, 30f, 1.3f, 1.6f, 0.75f, 0.80f, 1.2f),   // rod_deepsea
-            Rod(1, 18f, 1.0f, 1.0f, 0.60f, 0.60f, 1.0f),   // rod_handmade
-            Rod(0, 14f, 0.9f, 0.8f, 0.50f, 0.50f, 0.9f),   // rod_twig
+            Rod(2, 24f, 0.72f, 1.3f, 0.70f, 0.93f, 1.1f),   // rod_carbon
+            Rod(3, 30f, 0.78f, 1.6f, 0.75f, 1.07f, 1.2f),   // rod_deepsea
+            Rod(1, 18f, 0.6f, 1.0f, 0.60f, 0.8f, 1.0f),     // rod_handmade (Rust's rod)
+            Rod(0, 14f, 0.54f, 0.8f, 0.50f, 0.67f, 0.9f),   // rod_twig
         };
 
         static BaitStats Bait(int rating, int stack, int max, int nibbles, float speed, float junk, bool unlimited = false) =>
@@ -81,7 +83,13 @@ namespace FishGame.Tests.EditMode
             Tier(ref p[ProfileThrasher], 1f, 1f, 1f);
             Tier(ref p[ProfileBulldog], 1.25f, 1.25f, 0.9f);
             Tier(ref p[ProfileRunner], 1.25f, 1.25f, 0.9f);
-            for (int i = 0; i < p.Length; i++) p[i].WavePeriod = 4f;
+            // Rust-faithful and quirk-free (the hand checks): rest 2-4 s, run 3-7 s, back 0.39, no flips, ramp, drift or jitter, 4 s wave.
+            for (int i = 0; i < p.Length; i++)
+            {
+                p[i].CalmMin = 2f; p[i].CalmMax = 4f; p[i].BurstMin = 3f; p[i].BurstMax = 7f; p[i].DiveChance = 0.39f;
+                p[i].FlipRate = 0f; p[i].FlipMinGap = 0.5f; p[i].BurstRamp = 0f; p[i].CalmDrift = 0f; p[i].CalmDriftRamp = 0f;
+                p[i].LateralJitter = 0f; p[i].WavePeriod = 4f;
+            }
             return p;
         }
 
@@ -90,17 +98,21 @@ namespace FishGame.Tests.EditMode
             p.StrainMod = strainMod; p.MoveMult = moveMult; p.ReelInMult = reelInMult;
         }
 
-        // C 7.7 motion seeds on top of the base columns (FightMotionTests; machine and ledger tests).
+        // R72: the five styles (spec 9.6 quirks, plan rework-fight 0.3) on top of the quirk-free base: the shipped values (FightSim quirk tests;
+        // machine and ledger tests).
         public static FishFightProfile[] MotionProfiles()
         {
             FishFightProfile[] p = BaseProfiles();
-            p[ProfileSteady].BurstRamp = 0.6f;
-            p[ProfileDarter].CalmMin = 0.3f; p[ProfileDarter].CalmMax = 0.8f;
-            p[ProfileDarter].BurstMin = 0.4f; p[ProfileDarter].BurstMax = 0.9f;
-            p[ProfileDarter].FlipRate = 1.0f; p[ProfileDarter].FlipMinGap = 0.3f;
-            p[ProfileBulldog].CalmDrift = 0.12f; p[ProfileBulldog].CalmDriftRamp = 2.5f;
+            p[ProfileSteady].BurstMin = 3f; p[ProfileSteady].BurstMax = 5f; p[ProfileSteady].DiveChance = 0.15f; p[ProfileSteady].BurstRamp = 0.6f;
+            p[ProfileDarter].CalmMin = 1f; p[ProfileDarter].CalmMax = 2f; p[ProfileDarter].BurstMin = 2f; p[ProfileDarter].BurstMax = 3.5f;
+            p[ProfileDarter].DiveChance = 0.15f; p[ProfileDarter].FlipRate = 1.0f; p[ProfileDarter].FlipMinGap = 0.3f;
+            p[ProfileThrasher].CalmMin = 1.5f; p[ProfileThrasher].CalmMax = 3f; p[ProfileThrasher].BurstMin = 3f; p[ProfileThrasher].BurstMax = 5f;
+            p[ProfileThrasher].DiveChance = 0.20f; p[ProfileThrasher].FlipRate = 0.4f; p[ProfileThrasher].FlipMinGap = 0.5f;
             p[ProfileThrasher].LateralJitter = 0.3f; p[ProfileThrasher].WavePeriod = 1.5f;
-            p[ProfileRunner].BurstRamp = 0.8f;
+            p[ProfileBulldog].BurstMin = 2.5f; p[ProfileBulldog].BurstMax = 4.5f; p[ProfileBulldog].DiveChance = 0.55f;
+            p[ProfileBulldog].CalmDrift = 0.06f; p[ProfileBulldog].CalmDriftRamp = 2.5f;
+            p[ProfileRunner].CalmMin = 2f; p[ProfileRunner].CalmMax = 3.5f; p[ProfileRunner].BurstMin = 5f; p[ProfileRunner].BurstMax = 9f;
+            p[ProfileRunner].DiveChance = 0.30f; p[ProfileRunner].BurstRamp = 0.8f;
             return p;
         }
 

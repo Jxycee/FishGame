@@ -1,6 +1,6 @@
 // T15 (plan data-tuning section 4): scripted tuning bots (Greedy, CounterReel, Rhythm) that fight the REAL assets through FightSim,
-// print distributions and signature-motion stats, and assert the spec 9.12 / 17.2 targets. Bots draw nothing random: seeds are a fixed formula.
-// A failing target is fixed by retuning data (assets + FishingSeedData + TunedDeviations), never by changing FightSim.
+// print distributions, and (before R72) asserted the spec 9.12 / 17.2 targets. Bots draw nothing random: seeds are a fixed formula.
+// R72 (plan rework-fight F2): the pre-R72 targets are deleted; F4 adds the Rust baseline bots and targets.
 // This file must not reference FishingSeedData: data comes from AssetDatabase.LoadAssetAtPath + ToCore().
 using System;
 using System.Collections.Generic;
@@ -17,10 +17,6 @@ namespace FishGame.Tests.EditMode
     [Category("Tuning")]
     public class FishingBots
     {
-        // Acceptance 8 escape hatch: key = test name, value = one line with the measured numbers and the reason. Each entry needs the
-        // controller's approval (ruling D-Q6) and is carried into the T30 acceptance checklist.
-        static readonly Dictionary<string, string> TuningItems = new Dictionary<string, string>();
-
         // Ruling D-Q3: equal to FishingConstants.CenterDeadzone; the counter-steer holds until the fish is this far past centre.
         const float CounterHold = 0.1f;
         const float EaseOnTension = 0.8f;
@@ -84,7 +80,7 @@ namespace FishGame.Tests.EditMode
 
         struct FightRecord
         {
-            public FightOutcome Outcome;     // None = bot-side Timeout
+            public FightOutcome Outcome;
             public EscapeReason Reason;
             public float Elapsed, MaxTension;
             public int Recoveries;
@@ -95,21 +91,16 @@ namespace FishGame.Tests.EditMode
             return unchecked(2654435761u * (uint)(i + 1));
         }
 
-        static FightRecord RunFight(BotKind kind, in FishFightProfile p, in RodStats rod, in FishingTuning t, float weightT, uint seed, SigAccum sig)
+        static FightRecord RunFight(BotKind kind, in FishFightProfile p, in RodStats rod, in FishingTuning t, float weightT, uint seed)
         {
             var sim = new FightSim(p, rod, t, weightT, seed, rod.CastMaxDist, false, false);
             bool easing = false;
             int maxTicks = (int)Math.Ceiling(t.MaxFightTime / FightSim.Step);
             for (int k = 0; k < maxTicks; k++)
             {
-                FightState b = sim.State;
-                FightInput input = Decide(kind, b, ref easing);
-                bool exhaustedBefore = sim.Exhausted;
-                FightOutcome o = sim.Tick(input);
-                if (sig != null) sig.Collect(b, sim.State, input, rod, p, t, sim.WeightFactor, exhaustedBefore);
-                if (o != FightOutcome.None) break;
+                FightInput input = Decide(kind, sim.State, ref easing);
+                if (sim.Tick(input) != FightOutcome.None) break;
             }
-            if (sig != null) sig.EndFight();
             FightState f = sim.State;
             return new FightRecord { Outcome = f.Outcome, Reason = f.Reason, Elapsed = f.Elapsed, MaxTension = f.MaxTension, Recoveries = f.NearSnapRecoveries };
         }
@@ -166,6 +157,7 @@ namespace FishGame.Tests.EditMode
                         s.Escaped++;
                         if (f.Reason == EscapeReason.Pinned) s.Pinned++;
                         else if (f.Reason == EscapeReason.ThrewHook) s.ThrewHook++;
+                        else if (f.Reason == EscapeReason.Timeout) s.Timeouts++;   // R72: the sim times a fish fight out at 120 s
                         break;
                     default:
                         s.Timeouts++;
@@ -184,103 +176,9 @@ namespace FishGame.Tests.EditMode
             return s;
         }
 
-        // ------------------------------------------------------------------ signature-motion stats (Rhythm, handmade, w 0.5)
-
-        sealed class SigAccum
-        {
-            const float Dt = FightSim.Step;
-            public double SideRunSec;
-            public int Flips;
-            public double MinFlipGap = double.PositiveInfinity;
-            public double CreepSum; public int CreepTicks;
-            public readonly List<double> FullForceTimes = new List<double>();
-            public readonly List<double> BurstMedians = new List<double>();
-            public int Dives, Bursts;
-
-            // current burst
-            bool _open, _side;
-            int _burstTicks;
-            double _lastFlipTime = double.NaN;
-            readonly List<double> _ms = new List<double>();
-            readonly List<double> _msTimes = new List<double>();
-
-            void FinishBurst()
-            {
-                if (!_open) return;
-                _open = false;
-                if (!_side || _ms.Count * (double)Dt < 0.5) return;
-                double mMax = 0;
-                foreach (double m in _ms) if (m > mMax) mMax = m;
-                for (int i = 0; i < _ms.Count; i++)
-                    if (_ms[i] >= 0.95 * mMax) { FullForceTimes.Add(_msTimes[i]); break; }
-                _postRamp.Clear();
-                for (int i = 0; i < _ms.Count; i++)
-                    if (_msTimes[i] >= _ramp - 1e-6) _postRamp.Add(_ms[i]);
-                if (_postRamp.Count > 0)
-                {
-                    _postRamp.Sort();
-                    BurstMedians.Add(_postRamp[(int)Math.Ceiling(0.5 * _postRamp.Count) - 1]);
-                }
-            }
-
-            readonly List<double> _postRamp = new List<double>();
-            double _ramp;
-
-            public void EndFight()
-            {
-                FinishBurst();
-            }
-
-            public void Collect(in FightState b, in FightState a, in FightInput input, in RodStats rod, in FishFightProfile p, in FishingTuning t,
-                float weightFactor, bool exhaustedBefore)
-            {
-                bool bBurst = b.Phase == FightPhase.Burst, aBurst = a.Phase == FightPhase.Burst;
-                if (bBurst && _open) _burstTicks++;
-                double burstTime = _burstTicks * (double)Dt;
-
-                if (bBurst && b.BurstDir != 0 && aBurst)
-                {
-                    SideRunSec += Dt;
-                    if (a.BurstDir == -b.BurstDir)
-                    {
-                        Flips++;
-                        if (!double.IsNaN(_lastFlipTime) && burstTime - _lastFlipTime < MinFlipGap) MinFlipGap = burstTime - _lastFlipTime;
-                        _lastFlipTime = burstTime;
-                    }
-                    if (Math.Abs(a.Lateral) < 0.999f && Math.Abs(b.Lateral) < 0.999f && b.FishStamina > 0.05f)
-                    {
-                        double push = (a.Lateral - b.Lateral - input.Steer * rod.SteerRate * Dt) / Dt;
-                        double m = Math.Abs(push) / (p.PullStrength * weightFactor * b.FishStamina * p.LateralSpeed);
-                        _ms.Add(m); _msTimes.Add(burstTime);
-                    }
-                }
-
-                if (b.Phase == FightPhase.Calm && a.Phase == FightPhase.Calm && !exhaustedBefore
-                    && a.LineLength > 0f && a.LineLength < rod.CastMaxDist + t.SpoolExtra)
-                {
-                    CreepSum += (a.LineLength - b.LineLength) + (input.Reel ? rod.ReelSpeed * Dt : 0f);
-                    CreepTicks++;
-                }
-
-                if (!bBurst && aBurst)
-                {
-                    FinishBurst();
-                    _open = true; _side = a.BurstDir != 0; _burstTicks = 0; _lastFlipTime = double.NaN; _ramp = p.BurstRamp;
-                    _ms.Clear(); _msTimes.Clear();
-                    Bursts++;
-                    if (a.BurstDir == 0) Dives++;
-                }
-                else if (bBurst && !aBurst)
-                {
-                    FinishBurst();
-                }
-            }
-        }
-
         // ------------------------------------------------------------------ the matrix
 
         static readonly Dictionary<string, BatchStats> s_cache = new Dictionary<string, BatchStats>();
-        static readonly Dictionary<string, SigAccum> s_sig = new Dictionary<string, SigAccum>();
         static double s_matrixSeconds = double.NaN;
         static bool s_matrixDone;
 
@@ -298,14 +196,11 @@ namespace FishGame.Tests.EditMode
                     foreach (float w in Weights)
                         foreach (BotKind bot in Bots)
                         {
-                            bool wantSig = bot == BotKind.Rhythm && rod == "rod_handmade" && w == 0.5f;
-                            SigAccum sig = wantSig ? new SigAccum() : null;
                             FishFightProfile p = d.Profiles[profile];
                             RodStats r = d.Rods[rod];
                             var fights = new List<FightRecord>(FightsPerBatch);
-                            for (int i = 0; i < FightsPerBatch; i++) fights.Add(RunFight(bot, p, r, d.T, w, SeedFor(i), sig));
+                            for (int i = 0; i < FightsPerBatch; i++) fights.Add(RunFight(bot, p, r, d.T, w, SeedFor(i)));
                             s_cache[Key(bot, profile, rod, w)] = Compute(fights, d.T.CleanCatchMaxTension);
-                            if (wantSig) s_sig[profile] = sig;
                         }
             sw.Stop();
             s_matrixSeconds = sw.Elapsed.TotalSeconds;
@@ -328,7 +223,6 @@ namespace FishGame.Tests.EditMode
         static string F2(double v) { return N(v, "F2"); }
         static string F3(double v) { return N(v, "F3"); }
         static string P(double v) { return N(v, "F1") + "%"; }
-        static string Sec(double v) { return double.IsNaN(v) ? "n/a" : N(v, "F1") + "s"; }
 
         static string BotLine(BotKind bot, string profile, string rod, float w, BatchStats s)
         {
@@ -342,6 +236,8 @@ namespace FishGame.Tests.EditMode
                 + " maxT med=" + F2(s.MaxTMed);
         }
 
+        static string Sec(double v) { return double.IsNaN(v) ? "n/a" : N(v, "F1") + "s"; }
+
         static void WriteLine(string line)
         {
             TestContext.WriteLine(line);
@@ -352,7 +248,11 @@ namespace FishGame.Tests.EditMode
             foreach (BotKind bot in bots) WriteLine(BotLine(bot, profile, rod, w, Batch(d, bot, profile, rod, w)));
         }
 
-        // ------------------------------------------------------------------ target bookkeeping
+        // ------------------------------------------------------------------ target bookkeeping (kept for F4)
+
+        // Acceptance 8 escape hatch: key = test name, value = one line with the measured numbers and the reason. Each entry needs the
+        // controller's approval (ruling D-Q6).
+        static readonly Dictionary<string, string> TuningItems = new Dictionary<string, string>();
 
         sealed class Targets
         {
@@ -391,7 +291,6 @@ namespace FishGame.Tests.EditMode
         public void ClearBotCaches()
         {
             s_cache.Clear();
-            s_sig.Clear();
             s_matrixSeconds = double.NaN;
             s_matrixDone = false;
         }
@@ -452,109 +351,29 @@ namespace FishGame.Tests.EditMode
             Assert.IsTrue(counterDive.Reel, "CounterReel in a dive: still reels");
         }
 
-        // Catches: Bulldog tuned so that a good player cannot or cannot fail: Greedy must snap (reel-and-pray punished), CounterReel must snap
-        // sometimes (steering alone is not enough), Rhythm must land safely in 35-55 s (spec 9.12 / 17.2).
+        // Catches: a NaN or infinite number in any recorded distribution. Prints everything the F4 retarget reads.
         [Test]
-        public void FishingBots_BulldogHandmade_MeetsGreedyCounterRhythmTargets()
-        {
-            Loaded d = LoadData();
-            var g = Batch(d, BotKind.Greedy, "bulldog", "rod_handmade", 0.5f);
-            var c = Batch(d, BotKind.CounterReel, "bulldog", "rod_handmade", 0.5f);
-            var r = Batch(d, BotKind.Rhythm, "bulldog", "rod_handmade", 0.5f);
-            PrintBots(d, "bulldog", "rod_handmade", 0.5f, BotKind.Greedy, BotKind.CounterReel, BotKind.Rhythm);
-            var t = new Targets(nameof(FishingBots_BulldogHandmade_MeetsGreedyCounterRhythmTargets));
-            t.Add(g.SnapPct >= 70.0, "Greedy snap=" + P(g.SnapPct), "snap >= 70%");
-            t.Add(In(c.SnapPct, 10.0, 40.0), "CounterReel snap=" + P(c.SnapPct), "snap in [10%, 40%]");
-            t.Add(r.SnapPct <= 5.0, "Rhythm snap=" + P(r.SnapPct), "snap <= 5%");
-            t.Add(In(r.LenMed, 35.0, 55.0), "Rhythm median=" + Sec(r.LenMed), "median in [35, 55] s");
-            t.Complete();
-        }
-
-        // Catches: Steady drifting out of 15-30 s median under the Rhythm bot.
-        [Test]
-        public void FishingBots_SteadyRhythm_MedianFifteenToThirtySeconds()
-        {
-            MedianTarget(nameof(FishingBots_SteadyRhythm_MedianFifteenToThirtySeconds), "steady", 15.0, 30.0);
-        }
-
-        // Catches: Darter drifting out of 15-30 s median under the Rhythm bot.
-        [Test]
-        public void FishingBots_DarterRhythm_MedianFifteenToThirtySeconds()
-        {
-            MedianTarget(nameof(FishingBots_DarterRhythm_MedianFifteenToThirtySeconds), "darter", 15.0, 30.0);
-        }
-
-        // Catches: Thrasher fights too short (or too long) under the Rhythm bot: 35-55 s.
-        [Test]
-        public void FishingBots_ThrasherRhythm_MedianThirtyFiveToFiftyFiveSeconds()
-        {
-            MedianTarget(nameof(FishingBots_ThrasherRhythm_MedianThirtyFiveToFiftyFiveSeconds), "thrasher", 35.0, 55.0);
-        }
-
-        static void MedianTarget(string test, string profile, double lo, double hi)
-        {
-            Loaded d = LoadData();
-            var r = Batch(d, BotKind.Rhythm, profile, "rod_handmade", 0.5f);
-            PrintBots(d, profile, "rod_handmade", 0.5f, BotKind.Rhythm);
-            var t = new Targets(test);
-            t.Add(In(r.LenMed, lo, hi), "Rhythm median=" + Sec(r.LenMed), "median in [" + F1(lo) + ", " + F1(hi) + "] s");
-            t.Complete();
-        }
-
-        // Catches: Runner fights too short, or Runner snapping a Rhythm player too often (spec 9.12: 60-110 s, snaps stay rare).
-        [Test]
-        public void FishingBots_RunnerRhythm_MedianSixtyToOneTenSnapsAtMostFifteenPercent()
-        {
-            Loaded d = LoadData();
-            var r = Batch(d, BotKind.Rhythm, "runner", "rod_handmade", 0.5f);
-            PrintBots(d, "runner", "rod_handmade", 0.5f, BotKind.Rhythm);
-            var t = new Targets(nameof(FishingBots_RunnerRhythm_MedianSixtyToOneTenSnapsAtMostFifteenPercent));
-            t.Add(In(r.LenMed, 60.0, 110.0), "Rhythm median=" + Sec(r.LenMed), "median in [60, 110] s");
-            t.Add(r.SnapPct <= 15.0, "Rhythm snap=" + P(r.SnapPct), "snap <= 15%");
-            t.Complete();
-        }
-
-        // Catches: the starter Twig rod being unfishable for a careful player on any profile (spec 9.12: Twig lands >= 90% at half weight, >= 75% at 0.9).
-        [Test]
-        public void FishingBots_TwigRod_RhythmLandsNinetyPercentAtHalfWeightSeventyFiveAtPointNine()
-        {
-            Loaded d = LoadData();
-            var t = new Targets(nameof(FishingBots_TwigRod_RhythmLandsNinetyPercentAtHalfWeightSeventyFiveAtPointNine));
-            foreach (string profile in ProfileIds)
-            {
-                PrintBots(d, profile, "rod_twig", 0.5f, BotKind.Rhythm);
-                PrintBots(d, profile, "rod_twig", 0.9f, BotKind.Rhythm);
-                var lo = Batch(d, BotKind.Rhythm, profile, "rod_twig", 0.5f);
-                var hi = Batch(d, BotKind.Rhythm, profile, "rod_twig", 0.9f);
-                t.Add(lo.LandPct >= 90.0, profile + " w=0.5 land=" + P(lo.LandPct), "land >= 90%");
-                t.Add(hi.LandPct >= 75.0, profile + " w=0.9 land=" + P(hi.LandPct), "land >= 75%");
-            }
-            t.Complete();
-        }
-
-        // Catches: a NaN or infinite number in any recorded distribution or signature stat. Prints everything the retune reads.
-        [Test]
-        public void FishingBots_AllProfiles_PrintSignatureMotionAndDistributions()
+        public void FishingBots_AllProfiles_PrintDistributions()
         {
             Loaded d = LoadData();
             EnsureMatrix(d);
             FishingTuning t = d.T;
-            WriteLine("FG DATA tuning relaxWhileReeling=" + F2(t.RelaxWhileReeling) + " reelStrainBurst=" + F2(t.ReelStrainBurst)
-                + " counterRelief=" + F2(t.CounterRelief) + " snapGrace=" + F2(t.SnapGrace) + " cleanMax=" + F2(t.CleanCatchMaxTension)
+            WriteLine("FG DATA tuning relaxRate=" + F2(t.RelaxRate) + " strainScale=" + F2(t.StrainScale) + " strainBarFull=" + F2(t.StrainBarFull)
+                + " strainSnap=" + F2(t.StrainSnap) + " fightTimeout=" + F1(t.FightTimeout) + " cleanMax=" + F2(t.CleanCatchMaxTension)
                 + " maxFight=" + F1(t.MaxFightTime));
             foreach (string rid in RodIds)
             {
                 RodStats r = d.Rods[rid];
                 WriteLine("FG DATA rod " + rid + " cast=" + F1(r.CastMaxDist) + " reel=" + F2(r.ReelSpeed) + " strength=" + F2(r.LineStrength)
-                    + " window=" + F2(r.AngleWindow) + " steer=" + F2(r.SteerRate) + " relax=" + F2(r.RelaxMult));
+                    + " steer=" + F2(r.SteerRate) + " relax=" + F2(r.RelaxMult));
             }
             foreach (string pid in ProfileIds)
             {
                 FishFightProfile p = d.Profiles[pid];
-                WriteLine("FG DATA profile " + pid + " pull=" + F2(p.PullStrength) + " lat=" + F2(p.LateralSpeed) + " run=" + F2(p.RunSpeed)
-                    + " drain=" + F3(p.StaminaDrain) + " calm=" + F2(p.CalmMin) + "-" + F2(p.CalmMax) + " burst=" + F2(p.BurstMin) + "-" + F2(p.BurstMax)
+                WriteLine("FG DATA profile " + pid + " tier=" + F2(p.StrainMod) + "/" + F2(p.MoveMult) + "/" + F2(p.ReelInMult)
+                    + " calm=" + F2(p.CalmMin) + "-" + F2(p.CalmMax) + " burst=" + F2(p.BurstMin) + "-" + F2(p.BurstMax)
                     + " flip=" + F2(p.FlipRate) + " dive=" + F2(p.DiveChance) + " ramp=" + F2(p.BurstRamp) + " drift=" + F2(p.CalmDrift) + "/" + F2(p.CalmDriftRamp)
-                    + " gap=" + F2(p.FlipMinGap) + " jitter=" + F2(p.LateralJitter));
+                    + " gap=" + F2(p.FlipMinGap) + " jitter=" + F2(p.LateralJitter) + " wave=" + F2(p.WavePeriod));
             }
 
             bool finite = true;
@@ -570,66 +389,12 @@ namespace FishGame.Tests.EditMode
                                 && IsFiniteOrNa(s.LenP10) && IsFiniteOrNa(s.LenMed) && IsFiniteOrNa(s.LenP90) && IsFiniteOrNa(s.SnapTMed)
                                 && IsFinite(s.CleanOfLandedPct) && IsFinite(s.CleanOfAllPct);
                         }
-
-            foreach (string pid in ProfileIds)
-            {
-                SigAccum g = s_sig[pid];
-                double flipsPerSec = g.SideRunSec > 0 ? g.Flips / g.SideRunSec : 0.0;
-                double minGap = double.IsInfinity(g.MinFlipGap) ? double.NaN : g.MinFlipGap;
-                double creep = g.CreepTicks > 0 ? g.CreepSum / (g.CreepTicks * (double)FightSim.Step) : double.NaN;
-                double fullForce = Mean(g.FullForceTimes);
-                double jMin = double.NaN, jMax = double.NaN, jSd = double.NaN;
-                if (g.BurstMedians.Count > 0)
-                {
-                    jMin = double.PositiveInfinity; jMax = double.NegativeInfinity;
-                    double mean = Mean(g.BurstMedians);
-                    double acc = 0;
-                    foreach (double m in g.BurstMedians)
-                    {
-                        if (m < jMin) jMin = m;
-                        if (m > jMax) jMax = m;
-                        acc += (m - mean) * (m - mean);
-                    }
-                    jSd = Math.Sqrt(acc / g.BurstMedians.Count);
-                }
-                double diveShare = g.Bursts > 0 ? 100.0 * g.Dives / g.Bursts : 0.0;
-                WriteLine("FG SIG " + pid + " sideRunSec=" + F1(g.SideRunSec) + " flips/s=" + F2(flipsPerSec) + " minFlipGap=" + F2(minGap)
-                    + " creep=" + F3(creep) + "m/s fullForce=" + F2(fullForce) + "s jitter min/max/sd=" + F2(jMin) + "/" + F2(jMax) + "/" + F2(jSd)
-                    + " dives=" + P(diveShare) + " bursts=" + g.Bursts);
-                finite &= IsFinite(g.SideRunSec) && IsFinite(flipsPerSec) && IsFiniteOrNa(minGap) && IsFiniteOrNa(creep) && IsFiniteOrNa(fullForce)
-                    && IsFiniteOrNa(jMin) && IsFiniteOrNa(jMax) && IsFiniteOrNa(jSd) && IsFinite(diveShare);
-            }
-
-            // Informational fun-gate proxies (spec 17.2): Rhythm, handmade, w 0.5, near-snap recovery share on the three hard profiles.
-            foreach (string pid in new[] { "bulldog", "thrasher", "runner" })
-            {
-                BatchStats s = Batch(d, BotKind.Rhythm, pid, "rod_handmade", 0.5f);
-                WriteLine("FG FUN " + pid + " Rhythm rec>=1=" + P(s.RecAtLeast1Pct) + " (fun-gate line >= 40%) clean=" + P(s.CleanOfLandedPct) + "/" + P(s.CleanOfAllPct));
-            }
-            foreach (BotKind bot in Bots)
-            {
-                double snapped = 0, n = 0;
-                foreach (string pid in ProfileIds)
-                {
-                    BatchStats s = Batch(d, bot, pid, "rod_handmade", 0.5f);
-                    snapped += s.Snapped; n += s.N;
-                }
-                WriteLine("FG FUN snap overall " + bot + " handmade w=0.5 over 5 profiles=" + P(100.0 * snapped / n) + " (fun-gate 10-30%)");
-            }
             WriteLine("FG TIME FishingBots matrix=" + F1(s_matrixSeconds) + "s");
             Assert.IsTrue(finite, "a recorded bot number is NaN or infinite");
         }
 
         static bool IsFinite(double v) { return !double.IsNaN(v) && !double.IsInfinity(v); }
         static bool IsFiniteOrNa(double v) { return double.IsNaN(v) || !double.IsInfinity(v); }
-
-        static double Mean(List<double> xs)
-        {
-            if (xs.Count == 0) return double.NaN;
-            double s = 0;
-            foreach (double x in xs) s += x;
-            return s / xs.Count;
-        }
 
         // ------------------------------------------------------------------ perf
 

@@ -237,7 +237,8 @@ namespace FishGame.Core
             bool wasHooked = a.Phase == CastPhase.Hooked;
             bool junk = a.Roll.Catch.IsJunk;
             ref readonly FishingTuning t = ref _db.Tuning;
-            float speed = junk ? t.JunkDragSpeed : _db.Rods[a.RodIndex].ReelSpeed;   // host rod, never an owner value
+            float speed = junk ? t.JunkDragSpeed
+                : CatchValidator.MaxReelSpeed(_db.Rods[a.RodIndex], _db.Profiles[_db.Species[a.Roll.Catch.ItemIndex].FightProfileIndex], in t);   // host rod and rolled profile, never an owner value (R72 MaxReelSpeed)
 
             bool valid;
             switch (outcome)
@@ -248,9 +249,9 @@ namespace FishGame.Core
                 case FightOutcome.Snapped:
                     valid = wasHooked; reason = EscapeReason.None; break;
                 case FightOutcome.Escaped:
-                    valid = reason == EscapeReason.Missed
-                        ? !wasHooked
-                        : wasHooked && (reason == EscapeReason.Pinned || reason == EscapeReason.ThrewHook || reason == EscapeReason.Dropped);
+                    valid = reason == EscapeReason.Missed ? !wasHooked
+                        : reason == EscapeReason.Timeout ? wasHooked && CatchValidator.OwnerTimeoutPlausible(Now, in a, t.FightTimeout)
+                        : wasHooked && (reason == EscapeReason.Pinned || reason == EscapeReason.ThrewHook || reason == EscapeReason.Dropped);   // Pinned: harmless, the owner no longer sends it
                     break;
                 default: valid = false; break;                                            // None, Cancelled
             }
