@@ -139,7 +139,7 @@ MonoBehaviour:
     seasons: 6
     weather: 6
     bands: 56
-    weight: 12
+    weight: 18
     minRodTier: 0
     minBaitRating: 0
     minDepth: 0

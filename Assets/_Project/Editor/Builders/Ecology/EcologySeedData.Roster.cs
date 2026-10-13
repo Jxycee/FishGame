@@ -36,8 +36,8 @@ namespace FishGame.EditorTools
             // Columns: id, name, profile, g min, g max, baseValue, Sw, rarity, rod, tags | shape, lengthShapeK, colour A, colour B, model file | lake sub-areas, harbour sub-areas
             // | seasons, weather, bands.
 
-            // 12.6 row 1
-            Row(sp, lake, harbour, sortedProfileIds, "mirror_minnow", "Mirror Minnow", "darter", 50, 200, 5, 10f, FishRarity.Common, 0, FishTags.Schooling,
+            // 12.6 row 1   // T12 retune: Sw 10 -> 4 (V5 best-for-coins: lake Winter deep_water won 18/18)
+            Row(sp, lake, harbour, sortedProfileIds, "mirror_minnow", "Mirror Minnow", "darter", 50, 200, 5, 4f, FishRarity.Common, 0, FishTags.Schooling,
                 BodyShape.Long, 1.0f, Rgb(0.80f, 0.84f, 0.88f), Rgb(0.20f, 0.62f, 0.66f), "Fish_MirrorMinnow.fbx",
                 "reeds open_water", null, AllSeasons, AnyWeather, Da | Mo | Mi | Af);
             // 12.6 row 2 (equals T3's FishingSeedData row: 200-600 g, value 8, biteWaitMod 1.0, Schooling, gates 0/0, M2 colours, Fish_Bluegill.fbx)
@@ -109,7 +109,8 @@ namespace FishGame.EditorTools
                 BodyShape.Flat, 1.0f, Rgb(0.62f, 0.54f, 0.40f), Rgb(0.30f, 0.26f, 0.20f), "Fish_SneakyFlounder.fbx",
                 null, "shallows channel", Sp | Au | Wi, AnyWeather, Da | Mo | Mi | Af);
             // 12.6 row 19
-            Row(sp, lake, harbour, sortedProfileIds, "red_snapper", "Red Snapper", "bulldog", 1000, 4000, 28, 12f, FishRarity.Uncommon, 0, FishTags.Predator,
+            // T12 retune: Sw 12 -> 18 (V5 best-for-coins: harbour Autumn open_sea won 16/18)
+            Row(sp, lake, harbour, sortedProfileIds, "red_snapper", "Red Snapper", "bulldog", 1000, 4000, 28, 18f, FishRarity.Uncommon, 0, FishTags.Predator,
                 BodyShape.Round, 1.0f, Rgb(0.86f, 0.24f, 0.22f), Rgb(0.98f, 0.70f, 0.66f), "Fish_RedSnapper.fbx",
                 null, "channel", Su | Au, Rain | Fog, Af | Du | Ni);
             // 12.6 row 20

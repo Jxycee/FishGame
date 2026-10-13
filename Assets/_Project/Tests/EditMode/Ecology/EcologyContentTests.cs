@@ -17,7 +17,12 @@ namespace FishGame.Tests.EditMode
     {
         // Retuned values (T11/T12 only, with approval): key "<kind>.<owner>.<field>" -> the value the seed and asset carry instead of the spec's.
         // species.<id>.<field> | rule.<zone>.<speciesId>.<field> | band.<zone>.<subAreaId>.junkChance | junk.<zone>.<junkId>.weight
-        internal static readonly Dictionary<string, float> EcologyTunedDeviations = new Dictionary<string, float>();
+        internal static readonly Dictionary<string, float> EcologyTunedDeviations = new Dictionary<string, float>
+        {
+            // T12 retunes (V5 best-for-coins, plan 5.6): spec 12.6 Sw 10 -> 4 and 12 -> 18. The controller amends spec 12.6 after T12.
+            { "rule.lake_dock.mirror_minnow.weight", 4f },
+            { "rule.harbour_pier.red_snapper.weight", 18f },
+        };
 
         private static float E(string key, float specValue)
         {
