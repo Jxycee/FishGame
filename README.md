@@ -125,7 +125,7 @@ These keys exist only in the editor and in development builds. In a build made w
 | F6 | Toggle a forced 0.1 s bite (host only). |
 | F7 | Toggle the twitchy hook (host only). |
 | F9 | Ripple at the crosshair. |
-| F10 | Cycle the forced species (host only; does nothing while paused). None, then each species in database order (bluegill, perch, carp, trout, catfish), then None again. The F3 overlay's HOST line shows `species=`. On a client it shows "Host only". |
+| F10 | Cycle the forced species (host only; does nothing while paused). None, then each species in database order (bluegill, perch, carp, trout, catfish), then None again. The F3 overlay's HOST line shows `species=`. On a client it shows "Host only". The pick stays set (it is not cleared when a session ends) until you cycle back to None. |
 
 F8 is reserved for M3 (the dev clock scrub). The dock bell rings a debug "sell creel" that empties your creel and adds coins.
 
