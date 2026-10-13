@@ -1265,7 +1265,7 @@ Tension below is the display value, strain / 6 (1.0 = full bar; the line snaps a
 
 **User playtest 2026-10-13 (R77, batch A).** The user's M3 notes F1, F7, S10 and F10, applied as data and small code changes; the strain path (`strainBarFull`, `strainSnap`, the strain gains, `relaxRate`, `strainScale`) is untouched.
 
-- **F1, reeling halted for the first second.** Checked before changing anything: input is not gated (Bite and Hooked both route as RodFighting, and `HookBeat` is the 0.25 s auto-hook delay before the fight), and `LineView` and `BobberView` ease at 20/s. The cause is the maths: at tire 0 the reel is x1 (Handmade vs a Darter 0.6 m/s), the opening run starts on tick 1, and a back pull at the wave peak outruns an x1 reel. Line taken under full reel from the hook, 120 seeds per cell, median [worst seed] in metres:
+- **F1, reeling halted for the first second.** Checked before changing anything: input is not gated (Bite and Hooked both route as RodFighting, and `HookBeat` is the 0.25 s auto-hook delay before the fight), and `LineView` and `BobberView` ease at 20/s. The cause is the maths: at tire 0 the reel is x1 (Handmade vs a Darter 0.6 m/s), the opening run starts on tick 1, and a back pull at the wave peak outruns an x1 reel. Line taken under full reel from the hook, 120 seeds per cell, median [worst seed] in metres. These traces come from the shared test fixture (the pre-F10 Rust tuning and profiles: `backMoveSpeed` 1.3, Bulldog `reelInMult` 0.9), which is the HARDER case for the surge than the shipped data (Bulldog `reelInMult` 1.0, `backMoveSpeed` 1.0):
 
   | Cell | 0.2 s | 0.5 s | 1.0 s | 1.5 s |
   |---|---|---|---|---|
@@ -1300,7 +1300,7 @@ Tension below is the display value, strain / 6 (1.0 = full bar; the line snaps a
 | Walking away while Waiting | Allowed; past `maxLineOut` (measured from the rod tip: root-to-bobber minus `castTipReach`, R67) auto-reel (refunded) |
 | Fish over land or dock (cosmetic) | View samples water every 0.2 s and holds the last valid water point; sim unaffected |
 | Line all out | Clamped at maxLineOut with no strain (strain is input-only, R72). Back pulls stop inside castMaxDist - 2 m, so this is rare (Rust fails at twice its cast range instead) |
-| Alt-tab mid-fight | Neutral input → strain drains at 1.5/s while the fish keeps running; the fight times out at 120 s; Run In Background keeps the session alive; rumble off |
+| Alt-tab mid-fight | Neutral input → strain drains at 1.5/s while the fish keeps running; after 30 s of neutral input the fish throws the hook (R77/F7 `idleEscapeTime`; solo pause freezes the timer, a multiplayer alt-tab or open menu does not); `fightTimeout` 120 s stays the overall cap; Run In Background keeps the session alive; rumble off |
 | Owner hangs but stays connected | Host timeouts resolve the cast |
 | No `CommitRpc` | Owner returns to Idle after 3 s and logs a warning; the rod is never stuck |
 | Host disconnects | Session ends (no migration). From M4 the run is recoverable from the host's last Night Camp snapshot via Hub resume; only the in-progress day is lost |

@@ -464,7 +464,7 @@ namespace FishGame.Tests.EditMode
 
         // User playtest 2026-10-13 (F10): re-pinned around the shortened medians (Handmade / Twig). Before: steady 14.0 / 14.4, darter 19.1 / 21.6,
         // thrasher 17.8 / 21.7, runner 26.2 / 30.5, bulldog 30.9 / 33.7. After: steady 13.7 / 13.9, darter 13.2 / 15.5, thrasher 13.8 / 17.2,
-        // runner ~20.2 / ~22, bulldog 19.3 / 20.5. Bands are about 0.75x to 1.3x the median, the same width logic as the R72 bands.
+        // runner 20.4 / 21.6, bulldog 19.3 / 20.5. Bands are about 0.75x to 1.3x the median, the same width logic as the R72 bands.
         static readonly Dictionary<string, double[]> RhythmBands = new Dictionary<string, double[]>
         {
             { "steady|rod_handmade", new[] { 10.0, 18.0 } }, { "darter|rod_handmade", new[] { 10.0, 17.5 } },

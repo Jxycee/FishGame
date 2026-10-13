@@ -25,9 +25,11 @@ namespace FishGame.Tests.EditMode
         }
 
         // Catches: a retune that lets an honest, bot-driven landing finish before the host's floor (the host would refuse it as LandedTooFast and
-        // the player would lose the fish): any rod x profile x bot x seed. The owner's start line is TipToBobber; the host's is hostDistance - 3.1,
-        // which is 0.7 m shorter than the owner's (3.1 slack - 2.4 tip reach), so the floor is computed from the SHORTER host line (the lenient side
-        // for the player is the longer line, so this is the strict check). Also checks MaxFightTime / FightTimeout are not tripped by a landing.
+        // the player would lose the fish): any rod x profile x bot x seed. The owner's start line is TipToBobber; the host derives its own
+        // lineLength0 = hostDistance - 3.1 (HookedLineSlack), and hostDistance is the root-to-landing distance, so for a player who does not run at
+        // the bobber the host line is about 0.7 m SHORTER than the owner's (3.1 slack - 2.4 tip reach). That realistic host line is what the floor
+        // is computed from here. (A shorter line0 lowers the floor; using the owner's longer line would raise it by at most about 0.4 s of the
+        // 2.98 s margin.) Also checks MaxFightTime / FightTimeout are not tripped by a landing.
         [Test]
         public void FightPace_HonestBotLandings_NeverTripTheHostLandedFloorOrCaps()
         {
