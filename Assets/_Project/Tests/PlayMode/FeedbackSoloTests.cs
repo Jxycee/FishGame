@@ -667,11 +667,14 @@ namespace FishGame.Tests.PlayMode
             return FindLoop(bus) != null;
         }
 
+        // With no name, the weather's Loop_Rain_Patter does not count: rain is the world's loop (CCR-F4, applied defensively), not the rod's, and it
+        // runs whenever the fixed dev seed's weather is Rain.
         private static Transform FindLoop(AudioBus bus, string name = null)
         {
+            string rain = "Loop_" + SfxIds.RainPatter;
             foreach (Transform child in bus.transform)
             {
-                if (name == null ? child.name.StartsWith("Loop_", StringComparison.Ordinal) : child.name == name) return child;
+                if (name == null ? child.name.StartsWith("Loop_", StringComparison.Ordinal) && child.name != rain : child.name == name) return child;
             }
             return null;
         }

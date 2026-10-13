@@ -207,5 +207,41 @@ namespace FishGame.Tests.PlayMode
 
             logs.AssertNoWarnings("seasonal ambience");
         }
+
+        // Catches (T18/T19 review): Summer not settling EXACTLY back to the M2 wind. The re-register epsilon (1e-4) swallowed the final ramp
+        // step, leaving the volume a hair off. Deterministic: the bed's Update is off and the test steps it with a fixed delta time chosen so
+        // the last ramp step before the snap leaves a remainder of 5e-6 (0.5 per second x 0.0099999 s = 0.00499995 per step; 100 steps cover
+        // 0.499995 of the 0.5 Winter-to-Summer distance).
+        [UnityTest]
+        public IEnumerator AmbienceBed_BackToSummer_VolumeEqualsTheM2WindExactly()
+        {
+            using var logs = new PlayModeHarness.LogCapture();
+            yield return Arrange(300);
+
+            GameObject bedGo = GameObject.Find("Ambience");
+            Assert.That(bedGo, Is.Not.Null, "Ambience root");
+            var bed = bedGo.GetComponent<AmbienceBed>();
+            Assert.That(bed, Is.Not.Null, "AmbienceBed on the Ambience root");
+            Assert.That(bed.enabled, Is.True, "AudioBus not ready: the AmbienceBed disabled itself");
+            var wind = bedGo.transform.Find("Wind").GetComponent<AudioSource>();
+
+            _driver.DevSetSeason(Season.Summer);
+            yield return PlayModeHarness.WaitFrames(3, 2f);
+            float m2Volume = wind.volume;
+            Assert.That(m2Volume, Is.GreaterThan(0f), "the wind is audible in Summer");
+
+            _driver.DevSetSeason(Season.Winter);
+            yield return PlayModeHarness.WaitFrames(3, 3f);   // gain ramp done (1.5), the bed has seen the new season
+            Assert.That(wind.volume, Is.Not.EqualTo(m2Volume), "Winter differs from the M2 wind");
+
+            bed.enabled = false;                              // Update off: the test is the only clock from here
+            _driver.DevSetSeason(Season.Summer);
+            yield return PlayModeHarness.WaitFrames(3, 0f);   // OnWorldChanged still runs while disabled and retargets the bed
+            for (int i = 0; i < 150; i++) bed.StepWind(0.0099999f, Time.unscaledTime);
+            Assert.That(wind.volume, Is.EqualTo(m2Volume), "back to Summer: the volume is the M2 value exactly");
+
+            bed.enabled = true;
+            logs.AssertNoWarnings("back to summer");
+        }
     }
 }

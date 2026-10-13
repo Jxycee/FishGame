@@ -138,7 +138,7 @@ namespace FishGame.Presentation
             _lookIdx = idx;
             _hadState = state;
             _fade = Mathf.Min(1f, _fade + Time.deltaTime / WeatherFadeSeconds);
-            _active = LerpLook(_from, _to, _fade);
+            _active = _fade >= 1f ? _to : LerpLook(_from, _to, _fade);   // a finished fade is bit-exactly the target look (Lerp at 1 can leave a residue)
 
             // Phase blend (M3-D24, B-D12).
             PhaseBlend b = DayNightMath.Blend(f, _starts, _sunMoon.blendWindow);

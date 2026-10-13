@@ -330,6 +330,10 @@ namespace FishGame.Tests.PlayMode
                     Assert.That(density, Is.EqualTo(expected).Within(1e-5f), "fog density follows max(phase x mult, min): " + at);
                     if (minutes[k] == 300)
                         Assert.That(_sun.intensity, Is.EqualTo(phase.lightIntensity * look.lightMult).Within(1e-4f), "sun intensity x lightMult: " + at);
+
+                    // Post-process volume weights follow the pure phase, whatever the weather (seeds: Dawn 0.6/0, Day 0/0, Dusk 1/0, Night 0/1).
+                    Assert.That(VolumeWeight("WarmVolume"), Is.EqualTo(WarmSeeds[k]).Within(1e-5f), "WarmVolume weight: " + at);
+                    Assert.That(VolumeWeight("CoolVolume"), Is.EqualTo(CoolSeeds[k]).Within(1e-5f), "CoolVolume weight: " + at);
                 }
 
                 if (weathers[w] == WeatherMask.Fog)
@@ -342,7 +346,40 @@ namespace FishGame.Tests.PlayMode
                     }
                 }
             }
+            // Rain -> Clear: once the 4 s fade has finished, the look is EXACTLY the Clear look (a finished fade does not leave a lerp residue).
+            ArtPaletteDef clearArt = Art();
+            WeatherAmbient clear = clearArt.WeatherLooks[0];
+            _driver.DevSetWeatherOverride(WeatherMask.Rain);
+            yield return PlayModeHarness.WaitFrames(3, 4.5f);
+            _driver.DevSetWeatherOverride(WeatherMask.Clear);
+            yield return PlayModeHarness.WaitFrames(3, 4.5f);
+            _driver.DevSetMinute(300);
+            yield return PlayModeHarness.WaitFrames(2, 0f);
+            DayPhaseAmbient day = clearArt.Phases[1];
+            Assert.That(RenderSettings.fogDensity, Is.EqualTo(Mathf.Max(day.fogDensity * clear.fogDensityMult, clear.fogDensityMin)),
+                "Rain -> Clear: the fog density is bit-exact Clear (no tolerance)");
+            Assert.That(_sun.intensity, Is.EqualTo(day.lightIntensity * clear.lightMult).Within(1e-6f), "Rain -> Clear: the sun intensity is Clear");
+
             logs.AssertNoWarnings("fog readability");
+        }
+
+        private static readonly float[] WarmSeeds = { 0.6f, 0f, 1f, 0f };
+        private static readonly float[] CoolSeeds = { 0f, 0f, 0f, 1f };
+
+        // The URP Volume component's weight, by reflection (this assembly does not reference Unity.RenderPipelines.Core.Runtime).
+        private static float VolumeWeight(string objectName)
+        {
+            GameObject go = GameObject.Find(objectName);
+            Assert.That(go, Is.Not.Null, "scene object '" + objectName + "'");
+            foreach (Component c in go.GetComponents<Component>())
+            {
+                if (c == null || c.GetType().Name != "Volume") continue;
+                FieldInfo f = c.GetType().GetField("weight");
+                Assert.That(f, Is.Not.Null, "Volume.weight (public field)");
+                return (float)f.GetValue(c);
+            }
+            Assert.Fail("'" + objectName + "' has no Volume");
+            return 0f;
         }
     }
 }

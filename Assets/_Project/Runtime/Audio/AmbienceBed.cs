@@ -153,13 +153,19 @@ namespace FishGame.Runtime
         }
 
         // The gain ramps toward the season's value; the LFO is a sine wobble of depth 0.25 on it. Summer (gain 1, no LFO) never re-registers.
-        private void UpdateWind()
+        private void UpdateWind() => StepWind(Time.unscaledDeltaTime, Time.unscaledTime);
+
+        // The wind step with the clock passed in (internal test seam: WeatherFxTests drives it with a fixed delta time).
+        internal void StepWind(float unscaledDeltaTime, float unscaledTime)
         {
             if (_wind == null) return;
-            _gain = Mathf.MoveTowards(_gain, _target.windGain, GainRampPerSecond * Time.unscaledDeltaTime);
-            float lfo = _target.windLfoHz > 0f ? 1f + LfoDepth * Mathf.Sin(2f * Mathf.PI * _target.windLfoHz * (Time.unscaledTime - _lfoStart)) : 1f;
+            _gain = Mathf.MoveTowards(_gain, _target.windGain, GainRampPerSecond * unscaledDeltaTime);
+            float lfo = _target.windLfoHz > 0f ? 1f + LfoDepth * Mathf.Sin(2f * Mathf.PI * _target.windLfoHz * (unscaledTime - _lfoStart)) : 1f;
             float cueBase = _windBase * _gain * lfo;
-            if (Mathf.Abs(cueBase - _lastCueBase) > ReRegisterEpsilon)
+            // While ramping or wobbling, tiny changes are not worth a re-register; once SETTLED (gain at target, no wobble) any difference is, so a
+            // season change always ends on the exact target volume (Summer is exactly the M2 wind).
+            bool settled = _gain == _target.windGain && lfo == 1f;
+            if (settled ? cueBase != _lastCueBase : Mathf.Abs(cueBase - _lastCueBase) > ReRegisterEpsilon)
             {
                 _lastCueBase = cueBase;
                 _bus.Register(_wind, AudioCategory.Ambience, cueBase);
