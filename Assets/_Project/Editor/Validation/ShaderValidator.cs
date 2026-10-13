@@ -58,7 +58,8 @@ namespace FishGame.EditorTools
             new[]
             {
                 "_MAIN_LIGHT_SHADOWS_CASCADE", "_ADDITIONAL_LIGHTS", "_CLUSTER_LIGHT_LOOP", "_ADDITIONAL_LIGHT_SHADOWS", "_SHADOWS_SOFT",
-                "_LIGHT_LAYERS", "_LIGHT_COOKIES", "FOG_EXP2", "_CASTING_PUNCTUAL_LIGHT_SHADOW", "INSTANCING_ON"
+                "_LIGHT_LAYERS", "_LIGHT_COOKIES", "FOG_EXP2", "_CASTING_PUNCTUAL_LIGHT_SHADOW", "INSTANCING_ON",
+                "_NORMALMAP"   // R74: FishGame/Toon's optional normal-map variant (shader_feature_local_fragment)
             },
             new[] { "_MAIN_LIGHT_SHADOWS_SCREEN", "_ADDITIONAL_LIGHTS_VERTEX", "FOG_LINEAR" },
             new[] { "_MAIN_LIGHT_SHADOWS", "_ADDITIONAL_LIGHTS", "_LIGHT_LAYERS", "FOG_EXP" },

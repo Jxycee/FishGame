@@ -22,15 +22,32 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _FGAlbedoArray:
+        m_Texture: {fileID: 18700000, guid: 80a0b92682d9ad24d9279f5c26c97a05, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _FGNormalArray:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _Desaturate: 0
+    - _FGArrayGain: 2
+    - _FGMacro: 0.7
+    - _FGNormalStrength: 1
+    - _FGTexWeight: 1
+    - _FGTiling: 0.6
     - _JitterEncoded: 1
-    - _RampMid: 0.5
-    - _RampSoft: 0.04
-    - _RimPow: 4
-    - _RimStrength: 0
+    - _RampMid: 0.3
+    - _RampSoft: 0.28
+    - _RimPow: 3.5
+    - _RimStrength: 0.18
+    - _SkyFill: 0.22
+    - _SpecPower: 48
+    - _SpecStrength: 0
+    - _UseNormalMap: 0
     - _UsePalette: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}

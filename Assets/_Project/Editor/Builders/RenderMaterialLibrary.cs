@@ -3,6 +3,8 @@
 // only when it differs (and then the Lit keyword leftovers are cleared); each property is set only when it differs; SetDirty only on a change.
 // Ruling BF-7: _JitterEncoded is 1 for every material drawn on a MeshBuilder mesh (half-scale grey vertex colour, doubled by the shader) and
 // 0 for M_Toon_Fish, whose Blender fish models carry full-scale linear albedo.
+// R74 look-dev (2026-10-12): every Toon material also gets a ToonLook (soft ramp, sky fill, rim, toon highlight, texture array, gain, tiling, macro).
+// M_Toon_Base and the body/skin materials use the env detail array (gain 2); M_Toon_Fish uses the fish skin array (gain 1, layer from the model's uv1.y).
 using System.Collections.Generic;
 using FishGame.Core;
 using UnityEditor;
@@ -51,22 +53,49 @@ namespace FishGame.EditorTools
         static readonly int RimPowId = Shader.PropertyToID("_RimPow");
         static readonly int RimStrengthId = Shader.PropertyToID("_RimStrength");
 
+        // R74 realistic-toon look per material (FishGame/Toon header). Array null = untextured (_FGTexWeight 0).
+        internal readonly struct ToonLook
+        {
+            public readonly float RampMid, RampSoft, RimPow, RimStrength, SkyFill, SpecStrength, SpecPower, Gain, Tiling, Macro;
+            public readonly Texture2DArray Array;
+            public ToonLook(float rampMid, float rampSoft, float rimPow, float rimStrength, float skyFill, float specStrength, float specPower,
+                Texture2DArray array, float gain, float tiling, float macro = 0f)
+            {
+                RampMid = rampMid; RampSoft = rampSoft; RimPow = rimPow; RimStrength = rimStrength; SkyFill = skyFill;
+                SpecStrength = specStrength; SpecPower = specPower; Array = array; Gain = gain; Tiling = tiling; Macro = macro;
+            }
+        }
+
+        // Soft ramp (band 0.02..0.58 of n.l), a little sky fill and rim. Environment and clothes share the env detail array (gain 2, hue from the
+        // palette or _BaseColor); the fish read the sRGB skin array (gain 1). Tiling is repeats per metre of uv0 (mesh builders write metres).
+        internal const float EnvTiling = 0.6f, ClothTiling = 2.5f;
+
         public static void BuildAll()
         {
             Shader toon = Shader.Find(ToonShaderName);
             if (toon == null) throw new System.InvalidOperationException("Shader not found: " + ToonShaderName);
             BuilderUtil.EnsureFolder(AssetPaths.MaterialsFolder);
+            TextureArrayPostprocessor.EnsureImportSettings();
+            Texture2DArray env = TextureArrayPostprocessor.Load(AssetPaths.EnvDetailArray);
+            Texture2DArray skin = TextureArrayPostprocessor.Load(AssetPaths.FishSkinArray);
 
-            EnsureToon(toon, "M_Toon_Base", true, true, Color.white);
-            EnsureToon(toon, "M_Toon_Fish", false, false, Color.white);
-            EnsureToon(toon, "M_Toon_FishFallback", false, true, Color.white);
+            var envLook = new ToonLook(0.30f, 0.28f, 3.5f, 0.18f, 0.22f, 0f, 48f, env, 2f, EnvTiling, 0.7f);
+            var clothLook = new ToonLook(0.30f, 0.28f, 3f, 0.25f, 0.22f, 0f, 48f, env, 2f, ClothTiling);
+            // Skin: the env array at tiling 1 so the head's +Z face maps exactly onto the face tile (EnvTextureLayers.Face).
+            var skinLook = new ToonLook(0.30f, 0.28f, 3f, 0.25f, 0.22f, 0.10f, 32f, env, 2f, 1f);
+            var fishLook = new ToonLook(0.28f, 0.30f, 3f, 0.30f, 0.20f, 0.30f, 180f, skin, 1f, 1f);
+            var fallbackLook = new ToonLook(0.30f, 0.28f, 3f, 0.25f, 0.20f, 0.2f, 48f, null, 1f, 1f);
+
+            EnsureToon(toon, "M_Toon_Base", true, true, Color.white, envLook);
+            EnsureToon(toon, "M_Toon_Fish", false, false, Color.white, fishLook);
+            EnsureToon(toon, "M_Toon_FishFallback", false, true, Color.white, fallbackLook);
             for (int i = 0; i < SlotPalette.Count; i++)
             {
                 SlotPalette.GetRgb(i, out float r, out float g, out float b);
-                EnsureToon(toon, "M_Body_Slot" + i, false, true, new Color(r, g, b));
+                EnsureToon(toon, "M_Body_Slot" + i, false, true, new Color(r, g, b), clothLook);
             }
             SlotPalette.GetSkinRgb(out float sr, out float sg, out float sb);
-            EnsureToon(toon, "M_Skin", false, true, new Color(sr, sg, sb));
+            EnsureToon(toon, "M_Skin", false, true, new Color(sr, sg, sb), skinLook);
 
             // BuildWorldMaterials(WaterSettingsDef) (T21) is called from RenderingSetupBuilder.Build, after T14's WaterSettings asset exists (ruling F5).
 
@@ -204,7 +233,16 @@ namespace FishGame.EditorTools
             return material;
         }
 
-        static void EnsureToon(Shader toon, string name, bool usePalette, bool jitterEncoded, Color baseColor)
+        static readonly int AlbedoArrayId = Shader.PropertyToID("_FGAlbedoArray");
+        static readonly int TexWeightId = Shader.PropertyToID("_FGTexWeight");
+        static readonly int ArrayGainId = Shader.PropertyToID("_FGArrayGain");
+        static readonly int TilingId = Shader.PropertyToID("_FGTiling");
+        static readonly int MacroId = Shader.PropertyToID("_FGMacro");
+        static readonly int SkyFillId = Shader.PropertyToID("_SkyFill");
+        static readonly int SpecStrengthId = Shader.PropertyToID("_SpecStrength");
+        static readonly int SpecPowerId = Shader.PropertyToID("_SpecPower");
+
+        static void EnsureToon(Shader toon, string name, bool usePalette, bool jitterEncoded, Color baseColor, ToonLook look)
         {
             string path = AssetPaths.MaterialsFolder + "/" + name + ".mat";
             Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -224,11 +262,19 @@ namespace FishGame.EditorTools
             changed |= SetColor(material, BaseColorId, baseColor);
             changed |= SetFloat(material, UsePaletteId, usePalette ? 1f : 0f);
             changed |= SetFloat(material, JitterEncodedId, jitterEncoded ? 1f : 0f);
-            changed |= SetFloat(material, RampMidId, 0.5f);
-            changed |= SetFloat(material, RampSoftId, 0.04f);
+            changed |= SetFloat(material, RampMidId, look.RampMid);
+            changed |= SetFloat(material, RampSoftId, look.RampSoft);
             changed |= SetFloat(material, DesaturateId, 0f);
-            changed |= SetFloat(material, RimPowId, 4f);
-            changed |= SetFloat(material, RimStrengthId, 0f);
+            changed |= SetFloat(material, RimPowId, look.RimPow);
+            changed |= SetFloat(material, RimStrengthId, look.RimStrength);
+            changed |= SetFloat(material, SkyFillId, look.SkyFill);
+            changed |= SetFloat(material, SpecStrengthId, look.SpecStrength);
+            changed |= SetFloat(material, SpecPowerId, look.SpecPower);
+            changed |= SetFloat(material, TexWeightId, look.Array != null ? 1f : 0f);
+            changed |= SetFloat(material, ArrayGainId, look.Gain);
+            changed |= SetFloat(material, TilingId, look.Tiling);
+            changed |= SetFloat(material, MacroId, look.Macro);
+            if (material.GetTexture(AlbedoArrayId) != look.Array) { material.SetTexture(AlbedoArrayId, look.Array); changed = true; }
             if (changed) EditorUtility.SetDirty(material);
         }
 

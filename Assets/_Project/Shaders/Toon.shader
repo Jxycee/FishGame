@@ -7,6 +7,17 @@
 // Lighting: band = smoothstep(mid - soft, mid + soft, saturate(dot(n, L)) * shadowAtten);
 //           lit = albedo * lerp(_ToonShade, mainLight.color, band) + albedo * _ToonAmbient * 0.15; additional lights banded.
 // Vertex colour is linear (F3): never converted here.
+//
+// R74 realistic-toon extension (look-dev 2026-10-12). Every new property defaults to "off", so a material that does not set them renders as before.
+//  - Texture array: albedo *= lerp(1, sample(_FGAlbedoArray, uv, layer) * _FGArrayGain, _FGTexWeight). The layer is round(uv1.y); uv1.z picks the
+//    mapping: 0 = uv0 (metres from the mesh builder, or the fish UV tile) and 1 = world triplanar (positionWS, blend by |n|^4). Both are scaled by
+//    _FGTiling (repeats per metre); _FGMacro multiplies in the same layer at 1/11 scale in world xz (tile-repeat breakup). Layer 0 is neutral in every array, so a mesh without uv1.y (MeshBuilder props, the rod) is untouched. The env
+//    array is linear detail centred on 0.5 (gain 2, hue from the palette); the fish array is sRGB albedo (gain 1, layer 0 white).
+//  - Light: the existing band (mid/soft; the realistic-toon materials use a wide soft ramp) plus a sky fill lerp(_SkyGround, _SkyTop, n.y) *
+//    _SkyFill, a rim pow(1 - n.v, _RimPow) * _RimStrength tinted from the sky horizon (shadowed side) to the light (lit side), and a soft toon
+//    highlight (_SpecStrength, _SpecPower) on the lit side only.
+//  - _NORMALMAP (shader_feature_local_fragment): tangent-space normal from _FGNormalArray at the same uv/layer (uv0 mapping only; needs tangents).
+//  - Ambient occlusion is baked into the vertex colour by the builders and the fish bake (no SSAO: it would force a DepthNormals prepass).
 Shader "FishGame/Toon"
 {
     Properties
@@ -19,6 +30,17 @@ Shader "FishGame/Toon"
         _Desaturate("Desaturate", Range(0, 1)) = 0
         _RimPow("Rim Power", Range(0.5, 8)) = 4
         _RimStrength("Rim Strength", Range(0, 1)) = 0
+        [NoScaleOffset] _FGAlbedoArray("Albedo/Detail Array (layer = uv1.y)", 2DArray) = "" {}
+        _FGTexWeight("Texture Weight", Range(0, 1)) = 0
+        _FGArrayGain("Array Gain", Range(0, 4)) = 1
+        _FGTiling("Tiling (repeats per metre)", Float) = 1
+        _FGMacro("Macro Breakup (world xz, 1/11 scale)", Range(0, 1)) = 0
+        _SkyFill("Sky Fill", Range(0, 1)) = 0
+        _SpecStrength("Toon Highlight Strength", Range(0, 1)) = 0
+        _SpecPower("Toon Highlight Power", Range(4, 256)) = 48
+        [Toggle(_NORMALMAP)] _UseNormalMap("Normal Map", Float) = 0
+        [NoScaleOffset] _FGNormalArray("Normal Array (same layer)", 2DArray) = "" {}
+        _FGNormalStrength("Normal Strength", Range(0, 2)) = 1
     }
 
     SubShader
@@ -36,6 +58,15 @@ Shader "FishGame/Toon"
             half _Desaturate;
             half _RimPow;
             half _RimStrength;
+            half _FGTexWeight;
+            half _FGArrayGain;
+            float _FGTiling;
+            half _SkyFill;
+            half _SpecStrength;
+            half _SpecPower;
+            half _UseNormalMap;
+            half _FGNormalStrength;
+            half _FGMacro;
         CBUFFER_END
         ENDHLSL
 
@@ -68,16 +99,24 @@ Shader "FishGame/Toon"
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Fog.hlsl"
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
             #pragma multi_compile_instancing
+            #pragma shader_feature_local_fragment _NORMALMAP
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Assets/_Project/Shaders/FishGameCommon.hlsl"
+
+            TEXTURE2D_ARRAY(_FGAlbedoArray);
+            SAMPLER(sampler_FGAlbedoArray);
+            TEXTURE2D_ARRAY(_FGNormalArray);
+            SAMPLER(sampler_FGNormalArray);
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
                 float3 normalOS   : NORMAL;
+                float4 tangentOS  : TANGENT;
                 half4  color      : COLOR;
-                float2 uv1        : TEXCOORD1;   // x = palette slot (F2)
+                float2 uv0        : TEXCOORD0;   // metres (mesh builders) or the fish skin tile
+                float4 uv1        : TEXCOORD1;   // x = palette slot (F2), y = texture layer, z = mapping (0 uv0, 1 world triplanar)
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -88,8 +127,38 @@ Shader "FishGame/Toon"
                 half3  normalWS   : TEXCOORD1;
                 half3  albedo     : TEXCOORD2;   // per vertex: the 3 vertices of a flat face share it
                 half   fogFactor  : TEXCOORD3;
+                float4 uvLayer    : TEXCOORD4;   // xy = uv0 * tiling, z = layer, w = mapping
+                half4  tangentWS  : TEXCOORD5;   // xyz tangent, w sign (used by _NORMALMAP only)
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
+
+            half3 FG_SampleArray(float3 uvl)
+            {
+                return SAMPLE_TEXTURE2D_ARRAY(_FGAlbedoArray, sampler_FGAlbedoArray, uvl.xy, uvl.z).rgb;
+            }
+
+            // Texture factor (1 = untouched). Both mappings are evaluated and blended by the per-vertex mapping flag, so there is no
+            // divergent branch around the gradient samples; the uniform _FGTexWeight branch skips all four samples on untextured materials.
+            half3 FG_TextureFactor(float4 uvLayer, float3 positionWS, half3 geomNormal)
+            {
+                half3 factor = half3(1.0h, 1.0h, 1.0h);
+                [branch] if (_FGTexWeight > 0.001h)
+                {
+                    half3 uvSample = FG_SampleArray(float3(uvLayer.xy, uvLayer.z));
+                    float3 p = positionWS * _FGTiling;
+                    half3 w = pow(abs(geomNormal), 4.0h);
+                    w /= max(w.x + w.y + w.z, 1e-4h);
+                    half3 tri = FG_SampleArray(float3(p.zy, uvLayer.z)) * w.x
+                              + FG_SampleArray(float3(p.xz, uvLayer.z)) * w.y
+                              + FG_SampleArray(float3(p.xy, uvLayer.z)) * w.z;
+                    half3 s = lerp(uvSample, tri, saturate((half)uvLayer.w)) * _FGArrayGain;
+                    // Macro breakup: the same layer at 1/11 scale in world xz, so large surfaces (shore, lakebed) never show the tile repeat.
+                    half3 macro = FG_SampleArray(float3(positionWS.xz * (_FGTiling * 0.09), uvLayer.z)) * _FGArrayGain;
+                    s *= lerp(half3(1.0h, 1.0h, 1.0h), macro, _FGMacro);
+                    factor = lerp(factor, s, _FGTexWeight);
+                }
+                return factor;
+            }
 
             half FG_ToonBand(half ndl, half atten)
             {
@@ -111,6 +180,8 @@ Shader "FishGame/Toon"
                 output.positionCS = pos.positionCS;
                 output.positionWS = pos.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                output.uvLayer = float4(input.uv0 * _FGTiling, round(input.uv1.y), input.uv1.z);
+                output.tangentWS = half4(TransformObjectToWorldDir(input.tangentOS.xyz), input.tangentOS.w * GetOddNegativeScale());
                 half3 vertexFactor = lerp(input.color.rgb, 2.0h * input.color.rgb, _JitterEncoded);   // BF-7: grey meshes have r == g == b
                 half3 baseRgb = _UsePalette > 0.5h ? FG_PaletteColor(input.uv1.x) * vertexFactor : vertexFactor;
                 half3 albedo = baseRgb * _BaseColor.rgb;
@@ -124,6 +195,16 @@ Shader "FishGame/Toon"
             {
                 UNITY_SETUP_INSTANCE_ID(input);
                 half3 n = normalize(input.normalWS);
+                half3 texFactor = FG_TextureFactor(input.uvLayer, input.positionWS, n);
+            #if defined(_NORMALMAP)
+                {
+                    half4 packed = SAMPLE_TEXTURE2D_ARRAY(_FGNormalArray, sampler_FGNormalArray, input.uvLayer.xy, input.uvLayer.z);
+                    half3 nTS = UnpackNormalScale(packed, _FGNormalStrength);
+                    half3 t = normalize(input.tangentWS.xyz);
+                    half3 b = cross(n, t) * input.tangentWS.w;
+                    n = normalize(nTS.x * t + nTS.y * b + nTS.z * n);
+                }
+            #endif
 
                 InputData inputData = (InputData)0;     // the cluster loop macros read positionWS and normalizedScreenSpaceUV
                 inputData.positionWS = input.positionWS;
@@ -136,13 +217,19 @@ Shader "FishGame/Toon"
 
                 half4 shadowMask = CalculateShadowMask(inputData);
                 Light mainLight = GetMainLight(inputData.shadowCoord, inputData.positionWS, shadowMask);
-                half3 albedo = input.albedo;
+                half3 albedo = input.albedo * texFactor;
 
                 half band = FG_ToonBand(saturate(dot(n, mainLight.direction)), mainLight.shadowAttenuation);
                 half3 tint = lerp(_ToonShade.rgb, mainLight.color, band);
                 half3 lit = albedo * tint + albedo * _ToonAmbient.rgb * 0.15h;
+                // Sky fill: a soft hemisphere term so shaded sides pick up sky colour from above and ground bounce from below.
+                lit += albedo * lerp(_SkyGround.rgb, _SkyTop.rgb, saturate(n.y * 0.5h + 0.5h)) * _SkyFill;
                 half rim = pow(1.0h - saturate(dot(n, inputData.viewDirectionWS)), _RimPow) * _RimStrength;
-                lit += albedo * tint * rim;
+                lit += (albedo * 0.5h + 0.5h) * lerp(_SkyHorizon.rgb, mainLight.color, band) * rim;
+                // Soft toon highlight: a smoothstepped Blinn-Phong lobe, lit side only.
+                half3 h = normalize(mainLight.direction + inputData.viewDirectionWS);
+                half lobe = smoothstep(0.25h, 0.6h, pow(saturate(dot(n, h)), _SpecPower));
+                lit += mainLight.color * (lobe * band * _SpecStrength);
 
             #if defined(_ADDITIONAL_LIGHTS)
                 uint meshRenderingLayers = GetMeshRenderingLayer();
