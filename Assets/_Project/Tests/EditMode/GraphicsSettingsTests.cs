@@ -27,6 +27,13 @@ namespace FishGame.Tests.EditMode
             if (Directory.Exists(_dir)) Directory.Delete(_dir, true);
         }
 
+        // The main instance defaults to the project's full-screen window; a second local instance (a -dev-profile such as the test runs' fgtest,
+        // or an MPPM clone) defaults to Windowed so two built instances do not cover each other.
+        private static int ExpectedDefaultWindowMode()
+        {
+            return InstanceProfile.Current.Suffix.Length == 0 ? (int)WindowModeKind.Borderless : (int)WindowModeKind.Windowed;
+        }
+
         // Catches: a table edit that silently changes what Low means (the GTX 900 class target) or the default for new installs.
         [Test]
         public void Presets_LowMediumHigh_HaveTheAgreedValues()
@@ -150,7 +157,7 @@ namespace FishGame.Tests.EditMode
             Assert.IsTrue(d.vsync);
             Assert.AreEqual(GraphicsPresets.DefaultFrameCapIndex, d.frameRateCap);
             Assert.AreEqual(0, GraphicsPresets.FrameCaps[d.frameRateCap], "unlimited");
-            Assert.AreEqual((int)WindowModeKind.Borderless, d.windowMode, "the project's existing full-screen window");
+            Assert.AreEqual(ExpectedDefaultWindowMode(), d.windowMode, "the project's full-screen window; Windowed for a secondary instance");
             Assert.AreEqual(0, d.resolutionWidth);
             Assert.AreEqual(0, d.resolutionHeight);
             d.Clamp();
@@ -184,7 +191,7 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual((int)ShadowTier.High, d.shadowQuality);
             Assert.AreEqual((int)AaMode.Msaa4x, d.antiAliasing);
             Assert.IsTrue(d.vsync);
-            Assert.AreEqual((int)WindowModeKind.Borderless, d.windowMode);
+            Assert.AreEqual(ExpectedDefaultWindowMode(), d.windowMode);
             Assert.AreEqual(0, d.resolutionWidth);
 
             // And a save writes the new keys, so the next load reads them back.

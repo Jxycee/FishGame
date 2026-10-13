@@ -36,8 +36,17 @@ namespace FishGame.Runtime
         public int antiAliasing = (int)FishGame.Core.AaMode.Msaa4x;          // 0..3 = AaMode (Off, FXAA, MSAA 2x, MSAA 4x)
         public bool vsync = true;
         public int frameRateCap = FishGame.Core.GraphicsPresets.DefaultFrameCapIndex;   // 0..4 = index into GraphicsPresets.FrameCaps (30, 60, 120, 144, Unlimited); only with VSync off
-        public int windowMode = (int)FishGame.Core.WindowModeKind.Borderless;   // 0..2 = WindowModeKind (Fullscreen, Borderless, Windowed); Borderless is the project default
+        public int windowMode = DefaultWindowMode();   // 0..2 = WindowModeKind (Fullscreen, Borderless, Windowed); default Borderless (the project default), Windowed for a secondary local instance
         public int resolutionWidth = 0, resolutionHeight = 0;   // 0 x 0 = native (leave the desktop resolution alone); otherwise 640x480 and up
+
+        // A second local instance (-dev-profile / MPPM clone, settings suffix not empty) starts Windowed so two built instances on one
+        // machine do not cover each other. The main instance keeps the project's full-screen window.
+        private static int DefaultWindowMode()
+        {
+            return InstanceProfile.Current.Suffix.Length == 0
+                ? (int)FishGame.Core.WindowModeKind.Borderless
+                : (int)FishGame.Core.WindowModeKind.Windowed;
+        }
 
         public void Clamp()
         {

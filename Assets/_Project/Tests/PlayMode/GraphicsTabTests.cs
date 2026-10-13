@@ -1,6 +1,6 @@
 // Authority: test-only (client-side UI + local rendering settings; no networked state). Drives the real Graphics tab of the Settings screen
-// through UiFlowController in the Menu scene, and checks that GraphicsApplier puts the values on a RUNTIME COPY of the URP asset (never on
-// the project's asset) and puts everything back when the app goes away. The user's real settings.json is saved/restored by TearDown.
+// through UiFlowController in the Menu scene, and checks that GraphicsApplier sets the values on the URP asset in place and puts the five
+// original values back when the app goes away (no pipeline swap). The user's real settings.json is saved/restored by TearDown.
 using System.Collections;
 using FishGame.App;
 using FishGame.Core;
@@ -28,9 +28,6 @@ namespace FishGame.Tests.PlayMode
         private VisualElement _root;
         private GraphicsApplier _graphics;
         private SettingsData _saved;
-        private RenderPipelineAsset _qualityBefore;
-        private float _sourceScaleBefore, _sourceShadowBefore;
-        private int _sourceMsaaBefore;
 
         [UnityTearDown]
         public IEnumerator TearDown()
@@ -59,7 +56,6 @@ namespace FishGame.Tests.PlayMode
 
         private IEnumerator OpenSettings(int preset)
         {
-            _qualityBefore = QualitySettings.renderPipeline;   // what the app should put back when it goes away
             yield return PlayModeHarness.LoadBootstrapAndWaitForMenu();
             var app = AppBootstrap.Current;
             _settings = app.Services.Get<ISettings>();
@@ -68,13 +64,6 @@ namespace FishGame.Tests.PlayMode
             Assert.That(_ui, Is.Not.Null, "UiFlowController");
             _root = _ui.GetComponent<UIDocument>().rootVisualElement;
             _saved = _settings.Current.Clone();
-
-            if (_graphics.SourceAsset != null)
-            {
-                _sourceScaleBefore = _graphics.SourceAsset.renderScale;
-                _sourceShadowBefore = _graphics.SourceAsset.shadowDistance;
-                _sourceMsaaBefore = _graphics.SourceAsset.msaaSampleCount;
-            }
 
             // Start every test from a known preset through the real settings path (the applier follows Changed).
             ApplyPreset(preset);
@@ -159,18 +148,18 @@ namespace FishGame.Tests.PlayMode
             Assert.That(graphics.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
         }
 
-        // Catches: a preset that does not reach the render pipeline (render scale, shadows, MSAA, FXAA), High drifting from the project's authored
-        // asset values, or the project's own URP asset being written instead of the runtime copy.
+        // Catches: a preset that does not reach the render pipeline (render scale, shadows, MSAA, FXAA), or High drifting from the project's
+        // authored asset values (the shipped asset is asserted to be the High look: scale 1, 70 m, 2048, 2 cascades, 4x MSAA).
         [UnityTest]
-        public IEnumerator Preset_LowThenHigh_ChangesTheRuntimeUrpCopy_NotTheProjectAsset()
+        public IEnumerator Preset_LowThenHigh_ChangesTheUrpAssetValues()
         {
             yield return OpenSettings((int)QualityPreset.High);
             UniversalRenderPipelineAsset runtime = _graphics.RuntimeAsset;
-            UniversalRenderPipelineAsset source = _graphics.SourceAsset;
             Assert.That(runtime, Is.Not.Null, "the test project renders with URP");
-            Assert.That(source, Is.Not.Null);
-            Assert.That(runtime, Is.Not.SameAs(source), "values go on a copy");
-            Assert.That(GraphicsSettings.currentRenderPipeline, Is.SameAs(runtime), "the copy is the active pipeline asset");
+            Assert.That(GraphicsSettings.currentRenderPipeline, Is.SameAs(runtime), "the active pipeline asset carries the values (no swap)");
+            Assert.That(_graphics.OriginalRenderScale, Is.EqualTo(1f).Within(1e-4f), "the shipped asset is the High look");
+            Assert.That(_graphics.OriginalShadowDistance, Is.EqualTo(70f));
+            Assert.That(_graphics.OriginalMsaa, Is.EqualTo(4));
 
             Assert.That(runtime.renderScale, Is.EqualTo(1f).Within(1e-4f), "High: full render scale");
             Assert.That(runtime.shadowDistance, Is.EqualTo(70f), "High: the authored 70 m");
@@ -201,11 +190,6 @@ namespace FishGame.Tests.PlayMode
             Assert.That(_root.Q<SliderInt>("AntiAliasing").value, Is.EqualTo((int)AaMode.Fxaa));
             Assert.That(preset.value, Is.EqualTo((int)QualityPreset.Low));
             Assert.That(preset.label, Does.EndWith("Low"));
-
-            // The project's asset is untouched.
-            Assert.That(source.renderScale, Is.EqualTo(_sourceScaleBefore).Within(1e-6f), "project URP asset render scale");
-            Assert.That(source.shadowDistance, Is.EqualTo(_sourceShadowBefore).Within(1e-6f), "project URP asset shadow distance");
-            Assert.That(source.msaaSampleCount, Is.EqualTo(_sourceMsaaBefore), "project URP asset MSAA");
 
             preset.value = (int)QualityPreset.High;
             Assert.That(runtime.renderScale, Is.EqualTo(1f).Within(1e-4f));
@@ -289,17 +273,18 @@ namespace FishGame.Tests.PlayMode
             }
         }
 
-        // Catches: the app leaving the runtime copy installed (a leak into the next test or, in the editor, into the project settings), or the
-        // project's asset being modified. Runs after the app is gone, so it does its own teardown first.
+        // Catches: the applied values staying on the project's URP asset after the app is gone (a leak into the next test or, in the editor, a
+        // dirty project asset). The asset is edited in place, so Dispose must write the five original values back.
         [UnityTest]
-        public IEnumerator AppTeardown_PutsTheOriginalPipelineAssetBack()
+        public IEnumerator AppTeardown_PutsTheUrpAssetValuesBack()
         {
             yield return OpenSettings((int)QualityPreset.Low);
-            UniversalRenderPipelineAsset source = _graphics.SourceAsset;
-            Assert.That(source, Is.Not.Null);
-            Assert.That(QualitySettings.renderPipeline, Is.SameAs(_graphics.RuntimeAsset), "the copy is installed while the app runs");
-            RenderPipelineAsset before = _qualityBefore;
-            float scale = _sourceScaleBefore;
+            UniversalRenderPipelineAsset asset = _graphics.RuntimeAsset;
+            Assert.That(asset, Is.Not.Null);
+            float scale = _graphics.OriginalRenderScale, shadowDistance = _graphics.OriginalShadowDistance;
+            int msaa = _graphics.OriginalMsaa, shadowRes = _graphics.OriginalShadowResolution, cascades = _graphics.OriginalCascades;
+            Assert.That(asset.renderScale, Is.EqualTo(0.75f).Within(1e-4f), "Low is applied while the app runs");
+            Assert.That(asset.msaaSampleCount, Is.EqualTo(1));
 
             // TearDown (UnityTearDown) restores the settings and destroys the app; mirror the order here to check the result.
             SettingsData d = _settings.Current;
@@ -312,9 +297,12 @@ namespace FishGame.Tests.PlayMode
             _saved = null;   // TearDown has nothing more to restore
             yield return PlayModeHarness.TearDownApp();
 
-            Assert.That(QualitySettings.renderPipeline, Is.SameAs(before), "the original quality-level pipeline asset is back");
-            Assert.That(source.renderScale, Is.EqualTo(scale).Within(1e-6f), "the project asset was never modified");
-            Assert.That(source.shadowDistance, Is.EqualTo(_sourceShadowBefore).Within(1e-6f));
+            Assert.That(asset.renderScale, Is.EqualTo(scale).Within(1e-6f), "render scale restored");
+            Assert.That(asset.shadowDistance, Is.EqualTo(shadowDistance).Within(1e-6f), "shadow distance restored");
+            Assert.That(asset.msaaSampleCount, Is.EqualTo(msaa), "MSAA restored");
+            Assert.That(asset.mainLightShadowmapResolution, Is.EqualTo(shadowRes), "shadow resolution restored");
+            Assert.That(asset.shadowCascadeCount, Is.EqualTo(cascades), "cascades restored");
+            Assert.That(GraphicsSettings.currentRenderPipeline, Is.SameAs(asset), "no pipeline swap ever happened");
         }
     }
 }

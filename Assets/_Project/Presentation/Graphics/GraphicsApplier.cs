@@ -1,12 +1,14 @@
 // Authority: local only (every peer); never writes gameplay state.
 // Applies the Graphics settings (playtest notes S6/S3, 2026-10-13) at startup and live on every ISettings.Changed:
-//  - URP: render scale, MSAA, and main-light shadow distance / resolution / cascades go onto a RUNTIME COPY of the active URP asset, which is
-//    swapped in through QualitySettings.renderPipeline. The project's URP asset on disk is never touched (the copy lives in memory only),
-//    and Dispose puts the original back, so a PlayMode session leaves ProjectSettings and Assets/Settings unchanged.
+//  - URP: render scale, MSAA, and main-light shadow distance / resolution / cascades are set IN PLACE on the active URP asset (no pipeline swap:
+//    a hidden runtime copy assigned to QualitySettings.renderPipeline could be serialized as null by a project save during Play and leave the
+//    project with no render pipeline). The five original values are captured first and written back by Dispose, which also runs from the
+//    editor's ExitingPlayMode and beforeAssemblyReload hooks in case OnDestroy never does. The setters do not mark the asset dirty and nothing
+//    here calls SetDirty or saves, so Assets/Settings and ProjectSettings stay unchanged after a session.
 //  - FXAA is a per-camera setting: beginCameraRendering sets UniversalAdditionalCameraData.antialiasing on Game cameras, so a player camera
 //    that spawns later (the player prefab) is covered without registering anything.
-//  - VSync and the frame-rate cap are skipped in batch mode (headless tests run at 1000+ fps and assume it); resolution and window mode are
-//    skipped in the editor and in batch mode, where they do nothing and Unity warns. Nothing here logs.
+//  - VSync, the frame-rate cap, resolution and window mode are skipped in the editor (Play Mode keeps its own settings) and in batch mode
+//    (headless tests run at 1000+ fps and assume it; Screen calls do nothing there and Unity warns). Nothing here logs.
 // Pure numbers live in FishGame.Core.GraphicsPresets; the stored rows are SettingsData.
 using System;
 using FishGame.Core;
@@ -46,11 +48,14 @@ namespace FishGame.Presentation
             public override int GetHashCode() => HashCode.Combine(Scale, Shadows, Aa, FrameCap, WindowMode, Width, Height) ^ (Vsync ? 1 : 0);
         }
 
+        // The live applier, so the editor hooks below can put the asset back even when OnDestroy never runs.
+        private static GraphicsApplier s_active;
+
         private readonly ISettings _settings;
-        private readonly UniversalRenderPipelineAsset _source;
-        private readonly RenderPipelineAsset _previousQualityAsset;
+        private readonly UniversalRenderPipelineAsset _asset;
         private readonly int _originalVSync, _originalTargetFrameRate;
-        private UniversalRenderPipelineAsset _runtimeAsset;
+        private readonly float _originalRenderScale, _originalShadowDistance;
+        private readonly int _originalMsaa, _originalShadowResolution, _originalCascades;
         private Snapshot _last;
         private bool _hasLast;
         private bool _touchedFrame;
@@ -60,29 +65,58 @@ namespace FishGame.Presentation
         public GraphicsApplier(ISettings settings)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            s_active?.Dispose();   // a leaked earlier applier first puts its originals back, so ours are the true ones
             _originalVSync = QualitySettings.vSyncCount;
             _originalTargetFrameRate = Application.targetFrameRate;
-            _previousQualityAsset = QualitySettings.renderPipeline;
 
-            if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset source)
+            if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset asset)
             {
-                _source = source;
-                _runtimeAsset = UnityEngine.Object.Instantiate(source);
-                _runtimeAsset.name = source.name + " (runtime copy)";
-                _runtimeAsset.hideFlags = HideFlags.HideAndDontSave;
-                QualitySettings.renderPipeline = _runtimeAsset;
+                _asset = asset;
+                _originalRenderScale = asset.renderScale;
+                _originalMsaa = asset.msaaSampleCount;
+                _originalShadowDistance = asset.shadowDistance;
+                _originalShadowResolution = asset.mainLightShadowmapResolution;
+                _originalCascades = asset.shadowCascadeCount;
             }
 
+            s_active = this;
             RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
             _settings.Changed += OnSettingsChanged;
             Apply(_settings.Current);
         }
 
-        // The in-memory copy of the URP asset that carries the applied values; null when the active pipeline is not URP.
-        public UniversalRenderPipelineAsset RuntimeAsset => _runtimeAsset;
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            s_active = null;
+        }
 
-        // The project's URP asset the copy was made from; never modified (tests assert that).
-        public UniversalRenderPipelineAsset SourceAsset => _source;
+#if UNITY_EDITOR
+        // Belt and braces for the editor: leaving Play Mode or reloading assemblies puts the URP asset back even if the app object's OnDestroy
+        // never ran (an exception during teardown, a stopped test run).
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void HookEditor()
+        {
+            UnityEditor.EditorApplication.playModeStateChanged += state =>
+            {
+                if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode) s_active?.Dispose();
+            };
+            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += () => s_active?.Dispose();
+        }
+#endif
+
+        // The project's URP asset the values are applied to (edited in place, restored by Dispose); null when the active pipeline is not URP.
+        public UniversalRenderPipelineAsset RuntimeAsset => _asset;
+
+        // Same asset as RuntimeAsset (kept for callers that name the project asset).
+        public UniversalRenderPipelineAsset SourceAsset => _asset;
+
+        // The asset's values as they were before this applier touched them (tests compare the asset with these after teardown).
+        public float OriginalRenderScale => _originalRenderScale;
+        public int OriginalMsaa => _originalMsaa;
+        public float OriginalShadowDistance => _originalShadowDistance;
+        public int OriginalShadowResolution => _originalShadowResolution;
+        public int OriginalCascades => _originalCascades;
 
         // True while FXAA is the selected anti-aliasing (cameras get it in beginCameraRendering).
         public bool FxaaSelected => _fxaa;
@@ -98,6 +132,7 @@ namespace FishGame.Presentation
         {
             if (_disposed) return;
             _disposed = true;
+            if (s_active == this) s_active = null;
             _settings.Changed -= OnSettingsChanged;
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 
@@ -107,11 +142,13 @@ namespace FishGame.Presentation
                 Application.targetFrameRate = _originalTargetFrameRate;
             }
 
-            if (_runtimeAsset != null)
+            if (_asset != null)   // a destroyed asset compares null
             {
-                QualitySettings.renderPipeline = _previousQualityAsset;
-                UnityEngine.Object.Destroy(_runtimeAsset);
-                _runtimeAsset = null;
+                _asset.renderScale = _originalRenderScale;
+                _asset.msaaSampleCount = _originalMsaa;
+                _asset.shadowDistance = _originalShadowDistance;
+                _asset.mainLightShadowmapResolution = _originalShadowResolution;
+                _asset.shadowCascadeCount = _originalCascades;
             }
         }
 
@@ -137,23 +174,23 @@ namespace FishGame.Presentation
         private void ApplyPipeline(Snapshot s)
         {
             _fxaa = GraphicsPresets.UsesFxaa(s.Aa);
-            if (_runtimeAsset == null) return;
+            if (_asset == null) return;
 
-            _runtimeAsset.renderScale = s.Scale / 100f;
-            _runtimeAsset.msaaSampleCount = GraphicsPresets.MsaaSamples(s.Aa);
+            _asset.renderScale = s.Scale / 100f;
+            _asset.msaaSampleCount = GraphicsPresets.MsaaSamples(s.Aa);
 
             ShadowParams shadows = GraphicsPresets.ShadowFor(s.Shadows);
-            _runtimeAsset.shadowDistance = shadows.Distance;   // 0 turns the main-light shadow pass off
+            _asset.shadowDistance = shadows.Distance;   // 0 turns the main-light shadow pass off
             if (shadows.Distance > 0f)
             {
-                _runtimeAsset.mainLightShadowmapResolution = shadows.Resolution;
-                _runtimeAsset.shadowCascadeCount = shadows.Cascades;
+                _asset.mainLightShadowmapResolution = shadows.Resolution;
+                _asset.shadowCascadeCount = shadows.Cascades;
             }
         }
 
         private void ApplyFrameRate(Snapshot s)
         {
-            if (Application.isBatchMode) return;   // headless runs assume an uncapped frame rate
+            if (Application.isEditor || Application.isBatchMode) return;   // the editor keeps its own VSync; headless runs assume an uncapped frame rate
 
             _touchedFrame = true;
             QualitySettings.vSyncCount = s.Vsync ? 1 : 0;
