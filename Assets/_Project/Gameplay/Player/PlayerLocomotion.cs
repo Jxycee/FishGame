@@ -9,7 +9,7 @@ namespace FishGame.Gameplay
     // Authority: owner only. PlayerNetState enables this component (after the CharacterController) on the owning peer.
     // Moves the owner's CharacterController from the routed PlayerIntent; NetworkTransform (AuthorityMode Owner) replicates
     // the result to everyone. The host never moves players. Rules: spec 7.3; contract 7.12, D25, D26, D36 (ramp foot only since R70), M2-D29, M2-D30.
-    // Ladders (R70): the owner alone decides a climb from the static LadderVolumes; no RPC, no ladder state on the wire (no NetClimbing in M2,
+    // Ladders (R70, arcade climb 2026-10-13): the owner alone decides a climb from the static LadderVolumes; no RPC, no ladder state on the wire (no NetClimbing in M2,
     // M2-D32). Entering a ladder writes NetSwimming false. While climbing there is no gravity and Move goes along the camera look.
     // No RequireComponent on purpose: PrefabBuilder (T15) adds the CharacterController itself (contract 6.3).
     // M2 (T16, M2-D1/D2): this stays the ONLY writer of IInputService.GameplayContext. Other components request a context through
@@ -42,6 +42,8 @@ namespace FishGame.Gameplay
         private JumpAssist _jump;
         private PlayerCamera _camera;   // pitch for the ladder climb; null on test rigs (pitch 0 then)
         private ClimbGate _climbGate;
+        private ClimbMomentum _climbMomentum;   // arcade climb: kick and ramp while heading up (playtest 2026-10-13)
+        private Vector3 _climbWish;             // the boosted wish velocity of the last climb frame (the top-out launch direction)
         private LadderVolume _ladder;   // the volume that held the capsule centre on the last climbing frame
         private RampAssist _rampAssist;   // R70 shore-ramp foot: wade not swim, one kick on entry
         private float _vx, _vz;   // horizontal velocity, accelerated toward the wish velocity
@@ -77,6 +79,7 @@ namespace FishGame.Gameplay
             IsClimbing = false;
             _ladder = null;
             _climbGate.Reset();
+            _climbMomentum.Reset();
             _rampAssist = RampAssist.Create();
             IsSprinting = false;
             SecondsInWater = 0f;
@@ -88,6 +91,7 @@ namespace FishGame.Gameplay
         {
             _ladder = null;
             _climbGate.Reset();
+            _climbMomentum.Reset();
             _rampAssist = RampAssist.Create();
 
             IsClimbing = false;
@@ -290,6 +294,7 @@ namespace FishGame.Gameplay
             IsClimbing = false;
             _ladder = null;
             _climbGate.Reset();
+            _climbMomentum.Reset();
             _rampAssist = RampAssist.Create();
             IsGrounded = false;
             SecondsInWater = 0f;
@@ -308,6 +313,8 @@ namespace FishGame.Gameplay
         private void BeginLadderClimb(LadderVolume ladder)
         {
             ResetMotion();
+            _climbMomentum.Reset();
+            _climbWish = Vector3.zero;
             _ladder = ladder;
             IsClimbing = true;
             IsSprinting = false;
@@ -325,15 +332,20 @@ namespace FishGame.Gameplay
             _rampAssist = RampAssist.Create();
         }
 
-        // R70: no gravity, no acceleration ramp. Move goes along the camera look (PlayerCamera.PitchDeg, 0 without a camera) at ClimbSpeed;
-        // zero input hangs in place. Locked (a source reporting LocksMovement) also hangs. The rail, posts and deck still collide.
+        // R70 + arcade climb (playtest 2026-10-13): no gravity. Move goes along the camera look (PlayerCamera.PitchDeg, 0 without a camera);
+        // while the climb heads up it kicks and ramps (ClimbMomentum) to about 2.3x ClimbSpeed, otherwise it stays at ClimbSpeed. Zero input
+        // hangs in place at once (the charge resets). Locked (a source reporting LocksMovement) also hangs. The rail, posts and deck still collide.
         private void UpdateLadderClimb(float dt, in PlayerIntent intent, bool locked)
         {
             float pitch = _camera != null ? _camera.PitchDeg : 0f;
             float moveX = locked ? 0f : intent.MoveX;
             float moveY = locked ? 0f : intent.MoveY;
             MovementMath.ClimbWish(transform.eulerAngles.y, pitch, moveX, moveY, out float wx, out float wy, out float wz);
-            _cc.Move(new Vector3(wx, wy, wz) * dt);
+            float len = Mathf.Sqrt(wx * wx + wy * wy + wz * wz);
+            bool holding = len > 0f;
+            float boost = _climbMomentum.Step(holding, holding ? wy / len : 0f, dt);
+            _climbWish = new Vector3(wx, wy, wz) * boost;
+            _cc.Move(_climbWish * dt);
             Velocity = _cc.velocity;
             SecondsInWater = 0f;
 
@@ -348,16 +360,34 @@ namespace FishGame.Gameplay
             EndLadderClimb(_ladder != null && _ladder.IsAtOrAboveTop(center));
         }
 
-        // Leaving the volume ends the climb. The applied climb velocity carries on (RV's flying -> falling keeps it), so a climber who tops
-        // out keeps moving onto the deck; next frame is ordinary walking, falling or swimming. Topping out starts the re-entry grace.
-        // The carried speed is clamped to ClimbSpeed: _cc.velocity is a position delta, so a depenetration spike must not become a launch.
+        // Leaving the volume ends the climb. Through the top the climber gets the arcade launch (ClimbMomentum.TopOutLaunch: a small hop up and
+        // forward along the commanded climb direction, built from the wish and not from _cc.velocity, which spikes at high frame rates), so
+        // it pops onto the deck and normal control takes over. Any other exit keeps the applied velocity (RV's flying -> falling keeps it),
+        // clamped to ClimbSpeed so a depenetration spike or the boosted climb speed is never carried into the water. Topping out starts the re-entry grace.
         private void EndLadderClimb(bool throughTop)
         {
             Vector3 v = Velocity;
             float cx = v.x, cy = v.y, cz = v.z;
-            MovementMath.ClampClimbCarry(ref cx, ref cy, ref cz);
+            bool launched = false;
+            if (throughTop)
+            {
+                Vector3 facing = transform.forward;
+                launched = ClimbMomentum.TopOutLaunch(_climbMomentum.Speed, _climbWish.x, _climbWish.y, _climbWish.z, facing.x, facing.z,
+                    out cx, out cy, out cz);
+            }
+
+            if (!launched)
+            {
+                cx = v.x;
+                cy = v.y;
+                cz = v.z;
+                MovementMath.ClampClimbCarry(ref cx, ref cy, ref cz);
+            }
+
             IsClimbing = false;
             _ladder = null;
+            _climbMomentum.Reset();
+            _climbWish = Vector3.zero;
             _vx = cx;
             _vz = cz;
             _vy = cy;

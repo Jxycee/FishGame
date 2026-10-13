@@ -81,27 +81,29 @@ namespace FishGame.Tests.PlayMode
             _rig.Log.AssertEmpty("ladder geometry");
         }
 
-        // Catches (spec 7.8 #3): the climb-out failing or taking longer than 2 s at a 45 deg look-up (pitch sign wrong, Move zeroed while
-        // climbing, the volume top too low). It does NOT pin the top-out velocity carry: W stays held, so air control lands the player anyway;
-        // Ladder_TopOutThenRelease_CarriedVelocityLandsOnDeckAndStaysOff pins the carry.
+        // Catches (spec 7.8 #3 and the R70 arcade delta, playtest 2026-10-13): the climb-out failing, or being slow again (pitch sign wrong,
+        // Move zeroed while climbing, the momentum ramp lost, the volume top too low). The climb itself (box entry to the top face) takes about
+        // 0.5-0.6 s at 45 deg (it was 1.25 s with a flat 2.4 m/s); the lower bound fails a teleport-fast climb. The wait for the deck adds the
+        // launch's hop and landing. It does NOT pin the top-out launch: W stays held, so air control lands the player anyway;
+        // Ladder_TopOutThenRelease_LaunchLandsOnDeckAndStopsWithinAMetre pins the launch.
         [UnityTest]
-        public IEnumerator Ladder_ClimbUpFromWater_Pitch45_LandsOnDeckWithin2s()
+        public IEnumerator Ladder_ClimbUpFromWater_Pitch45_ClimbsInHalfASecondAndLandsOnDeck()
         {
-            yield return ClimbUpFromWater(45f, 2.0f);
+            yield return ClimbUpFromWater(45f, 0.40f, 0.75f, 1.1f);
         }
 
         // Catches: a shallow look-up that cannot top out (the climber slides up the rail but never gets over the deck lip).
         [UnityTest]
         public IEnumerator Ladder_ClimbUpFromWater_Pitch30_LandsOnDeck()
         {
-            yield return ClimbUpFromWater(30f, 3.0f);
+            yield return ClimbUpFromWater(30f, 0.5f, 1.1f, 1.5f);
         }
 
         // Catches: a steep look-up that leaves the box through the top short of the deck and falls back into the lake.
         [UnityTest]
         public IEnumerator Ladder_ClimbUpFromWater_Pitch60_LandsOnDeck()
         {
-            yield return ClimbUpFromWater(60f, 3.0f);
+            yield return ClimbUpFromWater(60f, 0.3f, 0.7f, 1.0f);
         }
 
         // Catches: no entry from the deck edge (R70 "step off the deck edge"), free fall instead of a controlled descent, input that keeps
@@ -206,7 +208,9 @@ namespace FishGame.Tests.PlayMode
             yield return FishingPlayModeDriver.Arrange(_rig);
             FishingRig rig = _rig;
             PlayerCamera camera = rig.Player.GetComponent<PlayerCamera>();
-            yield return FishingPlayModeDriver.SetPitch(rig, camera, 45f);
+            // 80 deg, not 45: the top-out launch is forward along the climb (arcade climb, 2026-10-13) and scaled down for a steep look, so a
+            // climber facing away from the dock hops almost in place and is caught again; at 45 deg it is flung out over the water on purpose.
+            yield return FishingPlayModeDriver.SetPitch(rig, camera, 80f);
 
             // Inside LadderR near its top, facing away from the dock (+x) so the top-out is not over the deck.
             rig.Locomotion.ApplyTeleport(new Vector3(2.05f, 0.6f, LadderZ), 90f);
@@ -234,11 +238,13 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("top-out grace");
         }
 
-        // Catches (finding 3): the climb velocity not carried out of the box. The input is cleared on the first frame the climb is over, so only
-        // the carried velocity can move the climber from there: one frame later the flat speed must still be well above zero (a zero carry
-        // reads 0), the climber must land on the deck within a second, and the ladder must not catch it again once the grace is over.
+        // Catches (finding 3, arcade climb 2026-10-13): the top-out launch missing. The input is cleared on the first frame the climb is over, so
+        // only the launch can move the climber from there: the flat speed over the next 0.03 s must be near LaunchForward (a zero carry reads
+        // 0), the climber must land on the deck within a second, the ladder must not catch it again once the grace is over, and (user note
+        // "no floaty overshoot past about 1 m", no launch into the water on the far side of the 3 m deck) it comes to rest within 1.1 m of
+        // the box exit, inside the planks, never higher than a small hop above the deck.
         [UnityTest]
-        public IEnumerator Ladder_TopOutThenRelease_CarriedVelocityLandsOnDeckAndStaysOff()
+        public IEnumerator Ladder_TopOutThenRelease_LaunchLandsOnDeckAndStopsWithinAMetre()
         {
             _rig = new FishingRig();
             yield return FishingPlayModeDriver.Arrange(_rig);
@@ -260,11 +266,37 @@ namespace FishGame.Tests.PlayMode
             Vector3 laterPos = rig.Player.transform.position;
             float flatSpeed = new Vector2(laterPos.x - exitPos.x, laterPos.z - exitPos.z).magnitude / (Time.time - exitTime);
             TestContext.WriteLine($"top-out release: flat speed over the 0.03 s after the exit {flatSpeed:F2} m/s");
-            Assert.That(flatSpeed, Is.GreaterThan(1f), "the climb velocity carried out of the box (input already cleared)");
-            Assert.That(flatSpeed, Is.LessThanOrEqualTo(MovementMath.ClimbSpeed + 0.05f), "the carry never exceeds ClimbSpeed (final review I4)");
+            Assert.That(flatSpeed, Is.GreaterThan(ClimbMomentum.LaunchForward * 0.6f), "the launch carried out of the box (input already cleared)");
+            Assert.That(flatSpeed, Is.LessThanOrEqualTo(ClimbMomentum.LaunchForward + 0.1f), "the launch is the cap (final review I4: no spike)");
 
-            yield return PlayModeHarness.WaitUntil(() => OnDeck(rig), 1f, "never landed on the deck from the carried velocity (at " + rig.Player.transform.position + ")");
-            TestContext.WriteLine($"top-out release: on the deck {Time.time - exitTime:F2} s after the exit");
+            // Follow the hop: peak height above the deck, and never off the planks or into the water on the far side.
+            float peakY = rig.Player.transform.position.y;
+            float minX = rig.Player.transform.position.x;
+            double settleBy = Time.realtimeSinceStartupAsDouble + 3.0;
+            Vector3 last = rig.Player.transform.position;
+            float stillSince = -1f;
+            while (stillSince < 0f || Time.time - stillSince < 0.2f)
+            {
+                Assert.That(Time.realtimeSinceStartupAsDouble < settleBy, Is.True, "never came to rest (at " + rig.Player.transform.position + ")");
+                yield return null;
+                Vector3 p = rig.Player.transform.position;
+                peakY = Mathf.Max(peakY, p.y);
+                minX = Mathf.Min(minX, p.x);
+                Assert.That(p.y, Is.GreaterThan(DeckTopY - 0.15f), "dropped off the planks at " + p);
+                bool still = rig.Locomotion.IsGrounded && (p - last).magnitude < 0.0005f;
+                if (!still) stillSince = -1f;
+                else if (stillSince < 0f) stillSince = Time.time;
+                last = p;
+            }
+
+            Vector3 rest = rig.Player.transform.position;
+            float traveled = new Vector2(rest.x - exitPos.x, rest.z - exitPos.z).magnitude;
+            TestContext.WriteLine($"top-out release: exit {exitPos}, rest {rest}, travel {traveled:F2} m, peak {peakY - exitPos.y:F2} m above the exit, on the deck after {Time.time - exitTime:F2} s");
+            Assert.That(OnDeck(rig), Is.True, "came to rest on the deck (at " + rest + ")");
+            Assert.That(peakY - exitPos.y, Is.LessThan(0.4f), "no floaty hop above the exit");
+            Assert.That(traveled, Is.LessThan(1.2f), "no overshoot past about a metre");
+            Assert.That(traveled, Is.GreaterThan(0.3f), "a real step onto the deck");
+            Assert.That(minX, Is.GreaterThan(-1.2f), "never near the far edge of the 3 m deck");
 
             // Past the grace, then 0.5 s more: the climber must stay off the ladder.
             yield return PlayModeHarness.WaitUntil(() => Time.time - exitTime >= MovementMath.ClimbReentryGrace, 2f, "grace wait");
@@ -358,8 +390,12 @@ namespace FishGame.Tests.PlayMode
             yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 2f, "Equip never set the Rod tool");
             yield return FishingPlayModeDriver.SetPitch(rig, camera, 85f);
 
-            rig.Locomotion.ApplyTeleport(new Vector3(3.0f, -1.2f, LadderZ), -90f);
-            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.None, PlayModeHarness.DefaultTimeoutSeconds, "the rod was not put away in the water");
+            // Inside LadderR near its top, facing AWAY from the dock (+x): the top-out launch (arcade climb, 2026-10-13) is almost a hop in place at
+            // this pitch, so the climber really does bob (top out, fall, caught again after the grace). Facing the dock the launch carries the
+            // climber onto the deck instead, which phase 2 below covers.
+            rig.Locomotion.ApplyTeleport(new Vector3(2.05f, 0.6f, LadderZ), 90f);
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsClimbing, 2f, "never started climbing near the top");
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.None, PlayModeHarness.DefaultTimeoutSeconds, "the rod was not put away on the ladder");
             yield return PlayModeHarness.WaitFrames(3, 0.05f);
 
             int topOuts = 0, equips = 0;
@@ -388,8 +424,11 @@ namespace FishGame.Tests.PlayMode
             TestContext.WriteLine($"top-out bob at pitch 85: {topOuts} exits, {equips} equips in 2.5 s");
             Assert.That(topOuts, Is.GreaterThanOrEqualTo(1), "precondition: the climber topped out at least once");
 
-            // Come down on the deck: look 45 deg up so the next top-out lands on the planks; the rod returns once grounded.
+            // Phase 2: from the water facing the dock, look 45 deg up so the top-out launch lands on the planks; the rod returns once grounded.
+            rig.Fake.Frame = default;
             yield return FishingPlayModeDriver.SetPitch(rig, camera, 45f);
+            rig.Locomotion.ApplyTeleport(new Vector3(3.0f, -1.2f, LadderZ), -90f);
+            yield return PlayModeHarness.WaitFrames(3, 0.05f);
             rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
             yield return PlayModeHarness.WaitUntil(() => OnDeck(rig), 6f, "never got onto the deck (at " + rig.Player.transform.position + ")");
             rig.Fake.Frame = default;
@@ -593,7 +632,8 @@ namespace FishGame.Tests.PlayMode
         }
 
         // Shared body of the three climb-out tests. Starts in the water 0.45 m outside LadderR, facing the dock, with the given look pitch.
-        private IEnumerator ClimbUpFromWater(float pitchDeg, float limitSeconds)
+        // climbMin/climbMax bound the time the player spends Climbing; deckMax bounds the time from box entry until standing on the deck.
+        private IEnumerator ClimbUpFromWater(float pitchDeg, float climbMin, float climbMax, float deckMax)
         {
             _rig = new FishingRig();
             yield return FishingPlayModeDriver.Arrange(_rig);
@@ -611,12 +651,16 @@ namespace FishGame.Tests.PlayMode
             float start = Time.time;
             Assert.That(rig.Fake.GameplayContext, Is.EqualTo(InputContext.Climbing));
 
-            yield return PlayModeHarness.WaitUntil(() => OnDeck(rig), limitSeconds + 3f,
+            yield return PlayModeHarness.WaitUntil(() => !rig.Locomotion.IsClimbing, climbMax + 3f,
+                "never topped out at pitch " + pitchDeg + " (at " + rig.Player.transform.position + ")");
+            float climbTook = Time.time - start;
+            yield return PlayModeHarness.WaitUntil(() => OnDeck(rig), deckMax + 3f,
                 "never got onto the deck at pitch " + pitchDeg + " (at " + rig.Player.transform.position + ")");
             float took = Time.time - start;
             rig.Fake.Frame = default;
-            TestContext.WriteLine($"climb-out at pitch {pitchDeg}: {took:F2} s");
-            Assert.That(took, Is.LessThanOrEqualTo(limitSeconds), "climb-out at pitch " + pitchDeg);
+            TestContext.WriteLine($"climb-out at pitch {pitchDeg}: climbing {climbTook:F2} s, on the deck {took:F2} s");
+            Assert.That(climbTook, Is.InRange(climbMin, climbMax), "time spent climbing at pitch " + pitchDeg);
+            Assert.That(took, Is.LessThanOrEqualTo(deckMax), "climb-out to standing on the deck at pitch " + pitchDeg);
 
             yield return PlayModeHarness.WaitFrames(5, 0.1f);
             Assert.That(rig.Locomotion.IsSwimming, Is.False);
