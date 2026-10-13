@@ -49,8 +49,8 @@ One shader for everything opaque. Every new property defaults to off, so older m
 ### 2.2 Textures: what, how big, where
 - **Two Texture2DArrays.** Each is imported from one flipbook PNG of 512 x 512 tiles by `TextureArrayPostprocessor`: Repeat, Trilinear, aniso 4, CompressedHQ (BC7 on PC), mipmaps, max size 2048.
   - `Content/Textures/T_EnvDetailArray.png`: 4 x 4 tiles, linear. It holds detail maps centred on 0.5 and is multiplied by `_FGArrayGain 2`, so 0.5 means no change. Hue comes from the palette slot or `_BaseColor`, which keeps the M3 season swap and the "slots differ in lightness" rule working. Layers: 0 neutral, 1 grass, 2 foliage, 3 wood (grain along u), 4 bark (ridges along v), 5 sand, 6 rock, 7 cloth, 8 player face decal, 9 to 15 reserved (neutral).
-  - `Content/Textures/T_FishSkinArray.png`: 4 x 2 tiles, sRGB, full-colour albedo at gain 1. Layer 0 is white and layer 1 is the bluegill.
-- **Layer selection:** the layer is `round(uv1.y)` and the mapping is `uv1.z`, where 0 is uv0 and 1 is world triplanar. A mesh without uv1.y reads layer 0 and renders untextured: the reeds, the rod and the four other M2 fish.
+  - `Content/Textures/T_FishSkinArray.png`: 4 columns of 512² tiles, sRGB, full-colour albedo at gain 1. Layers: 0 white, 1 bluegill, 2 perch, 3 carp, 4 trout, 5 catfish, 6 and 7 white. M3 appends rows (keep 4 columns) so existing layer numbers never shift.
+- **Layer selection:** the layer is `round(uv1.y)`. The mapping is per material (adoption, 2026-10-13): `M_Toon_Base` and the character materials are uv0-mapped; `M_Toon_Tri` sets the `_FG_TRIPLANAR` keyword (rocks, canopies). `uv1.z` records which mapping a mesh was built for (0 uv0, 1 triplanar); put it on the matching material. A mesh without uv1.y reads layer 0 and renders untextured (the cast marker, `FishFallbackMesh`).
 - **Texel density:**
   - Environment: `_FGTiling 0.6` repeats per metre, so one 512 tile covers 1.67 m, about 300 px/m. A macro breakup (`_FGMacro 0.7`, the same layer at 1/11 scale in world xz) hides the repeat on the shore and lakebed.
   - Cloth: `_FGTiling 2.5`.
@@ -72,7 +72,9 @@ One shader for everything opaque. Every new property defaults to off, so older m
 
 ### 2.5 Recipes per asset type
 - **Dock and wood props:** rounded boxes, grain along the long axis (wood layer 3, uv0 in metres), per-plank palette slot (Wood or Dock), ao 0.45 toward the bottom face. Posts are lathes with grain running up (`swapUv`), darker toward the bed and just under the deck.
-- **Ground (shore, lakebed, banks):** the collider mesh stays as built. The visual twin uses the same positions with shared vertices, slope normals, uv0 = world xz, the sand or grass layer per band, and macro breakup.
+- **Ground (shore, lakebed, banks):** the collider mesh stays as built. The visual twin is finer than the collider (4× sectors, 2 sub-rings per collider band, heights interpolated on the collider surface) so the shoreline, the foam edge and the sand/grass edge read round, not segmented. Shared vertices, slope normals, uv0 = world xz, the sand or grass layer per band, macro breakup, and a per-vertex palette slot so sand blends into grass across one band.
+- **Reeds:** tapered 5-sided lathes with grass strokes running up, darker at the foot; a cattail head (WoodDark, untextured) on every third blade.
+- **Small props (bell, rod, bobber):** lathes and radials; brass on `M_Toon_Brass` (strong toon highlight); bobber as two hemispheres so the red/white edge stays crisp.
 - **Rocks:** `Radial` with two noise octaves plus a rounded-box bias (soft planes) and a flattened base. Rock layer 6, triplanar. ao from 0.62 at the bottom to 1.0 at the top.
 - **Trees:** the trunk is a lathe with root flare and the bark layer along v, ao 0.6 at the foot. Round canopies are lumpy `Radial` shapes. Pines are two tiered lathes with a closed rounded lip. Both use the foliage layer (triplanar), with ao of about 0.55 underneath. All of it stays inside the canopy collider sphere.
 - **Characters:** pillowy rounded-box torso, smooth capsules (arms and legs overlap the torso and shoulders, so there are no gaps), sphere head with a face decal (layer 8 on the head's +Z cube face: dot eyes, glint, smile), cloth layer on clothes and no texture on skin.
@@ -81,7 +83,8 @@ One shader for everything opaque. Every new property defaults to off, so older m
   - **UVs:** UV0 is a side projection per part into fixed boxes. Eyes go to the top strip of the tile (white left, black right). UV "Layer" = (0, species layer).
   - **Skin:** painted procedurally in object space (back-to-belly gradient, bars, cheek, ear flap, scales, mouth) and baked to the species tile.
   - **Vertex colour:** baked AO.
-  - **Export:** one submesh, no materials, `bake_space_transform` on. Script: `fg_bluegill.py` + `fg_bluegill_paint.py`.
+  - **Export:** one submesh, no materials, `bake_space_transform` on. Script: `fg_fish.py` (generic: one SPECIES entry per model with stations, fins, barbels, eye, paint; perch, carp, trout, catfish) and the original `fg_bluegill.py` + `fg_bluegill_paint.py` for the bluegill.
+  - **Species recipes (adoption 2026-10-13):** perch (yellow-gold with 7 dark saddle bars, spiny double dorsal, orange lower fins), carp (deep bronze body with big reticulated scales, long dorsal, red-brown fins, short barbels), trout (olive back, pink lateral stripe, silver belly, adipose fin), catfish (flat broad head, long whiskers, smooth mottled grey-olive skin, adipose fin).
 
 ## 3. What the spike changed (summary)
 - **Shader:** `FishGame/Toon` extension, `TextureArrayPostprocessor`, `RenderMaterialLibrary` `ToonLook` presets, and the validator keyword.
