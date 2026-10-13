@@ -212,6 +212,13 @@ namespace FishGame.Fishing
             if (!intent.EquipPressed || !RodControllerRules.EquipAllowed(context)) return;
             if (RodOut) Stow(RodForceReason.Stow);
             else Equip();
+
+            // A manual toggle during the away hold (airborne after a top-out, ladder grace, centre inside a volume) makes the away bookkeeping
+            // stale: with _wasAway still true a later re-catch or a return to swimming would see no edge and never stow the rod. Resync it to
+            // the real state (swimming or climbing now). Preferred over ignoring the key: the key stays responsive, and the edge logic stays
+            // the single place that decides stow/equip.
+            _awayStowed = false;
+            _wasAway = RodControllerRules.IsAway(_locomotion.IsSwimming, _locomotion.IsClimbing);
         }
 
         // Owner Equip/Stow cues come only from these two methods (C 8.1); remotes get theirs from FishingRodNetwork's ToolChanged handler.

@@ -253,11 +253,14 @@ namespace FishGame.Tests.PlayMode
             yield return PlayModeHarness.WaitUntil(() => !rig.Locomotion.IsClimbing, 4f, "never topped out");
             rig.Fake.Frame = default;   // released on the first frame the climb is over
             float exitTime = Time.time;
-            yield return null;
 
-            var flat = new Vector2(rig.Locomotion.Velocity.x, rig.Locomotion.Velocity.z);
-            TestContext.WriteLine($"top-out release: flat speed one frame after the exit {flat.magnitude:F2} m/s");
-            Assert.That(flat.magnitude, Is.GreaterThan(1f), "the climb velocity carried out of the box (input already cleared)");
+            // Flat speed over the next 0.03 s from sampled positions (CharacterController.velocity is noise at the headless frame rate).
+            Vector3 exitPos = rig.Player.transform.position;
+            yield return PlayModeHarness.WaitUntil(() => Time.time - exitTime >= 0.03f, 1f, "sample window");
+            Vector3 laterPos = rig.Player.transform.position;
+            float flatSpeed = new Vector2(laterPos.x - exitPos.x, laterPos.z - exitPos.z).magnitude / (Time.time - exitTime);
+            TestContext.WriteLine($"top-out release: flat speed over the 0.03 s after the exit {flatSpeed:F2} m/s");
+            Assert.That(flatSpeed, Is.GreaterThan(1f), "the climb velocity carried out of the box (input already cleared)");
 
             yield return PlayModeHarness.WaitUntil(() => OnDeck(rig), 1f, "never landed on the deck from the carried velocity (at " + rig.Player.transform.position + ")");
             TestContext.WriteLine($"top-out release: on the deck {Time.time - exitTime:F2} s after the exit");
@@ -391,6 +394,40 @@ namespace FishGame.Tests.PlayMode
             rig.Fake.Frame = default;
             yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 1f, "the rod never came back once on the deck");
             rig.Log.AssertEmpty("top-out bob");
+        }
+
+        // Catches (review must-fix): a manual Equip during the away hold (airborne after a top-out) leaving the away bookkeeping stale, so the
+        // ladder's re-catch never stows the rod again and it stays out while climbing.
+        [UnityTest]
+        public IEnumerator Ladder_ManualEquipDuringTheAwayHold_IsStowedAgainWhenTheLadderRecatches()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            PlayerCamera camera = rig.Player.GetComponent<PlayerCamera>();
+
+            yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { EquipPressed = true });
+            rig.Fake.Frame = default;
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 2f, "Equip never set the Rod tool");
+            yield return FishingPlayModeDriver.SetPitch(rig, camera, 85f);   // the top-out bob: left through the top, caught again after the grace
+
+            rig.Locomotion.ApplyTeleport(new Vector3(3.0f, -1.2f, LadderZ), -90f);
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.None, PlayModeHarness.DefaultTimeoutSeconds, "the rod was not put away in the water");
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsClimbing, 3f, "never reached the ladder");
+            yield return PlayModeHarness.WaitUntil(() => !rig.Locomotion.IsClimbing, 4f, "never topped out");
+            Assert.That(rig.Player.Tool, Is.EqualTo(ToolKind.None), "precondition: the rod is held away right after the top-out");
+
+            // Press Equip once inside the hold (the hold lasts the 0.25 s grace at least).
+            yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { MoveY = 1f, EquipPressed = true });
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            Assert.That(rig.Locomotion.IsClimbing, Is.False, "precondition: still inside the grace when Equip was pressed");
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 1f, "the manual Equip during the hold did nothing");
+
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsClimbing, 2f, "the ladder never caught the fall again");
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.None, 1f, "the rod stayed out while climbing");
+            rig.Fake.Frame = default;
+            rig.Log.AssertEmpty("manual equip during the away hold");
         }
 
         // Catches (finding 2): ladder entry while movement is locked (RodFighting or any source's LocksMovement): the player would be pulled

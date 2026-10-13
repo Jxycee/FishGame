@@ -24,8 +24,9 @@ namespace FishGame.Gameplay
         public bool IsClimbing { get; private set; }
         public float SecondsInWater { get; private set; }
 
-        // True while a ladder may (re)take the player at once: inside the re-entry grace after a top-out, or with the capsule centre inside a
-        // LadderVolume. FishingRodController holds the rod away while this is true, so a top-out bob does not equip and stow it again.
+        // Owner only (reads the owner's climb gate and capsule). True while a ladder may (re)take the player at once: inside the re-entry
+        // grace after a top-out, or with the capsule centre inside a LadderVolume. FishingRodController holds the rod away while this is
+        // true, so a top-out bob does not equip and stow it again.
         public bool LadderCatchPending => _cc != null && (!_climbGate.CanEnter || LadderVolume.FindContaining(CapsuleCenter()) != null);
 
         // Owner only. Raised as the last statement of ApplyTeleport (TeleportRpc, out-of-bounds and water-timeout recovery).
@@ -362,6 +363,8 @@ namespace FishGame.Gameplay
             IsGrounded = false;
             _climbGate.OnExit(throughTop);
 
+            // (SwimmingAt deliberately skips the ramp-foot wade rule: the ladders and the ramp foot do not overlap, and the next Update
+            // applies the foot rule anyway.)
             // A swimmer who leaves the volume at swim depth is swimming again on this very frame. Without this IsSwimming stays false for one
             // frame, so FishingRodController sees "not away" and equips the rod, then stows it again on the next frame (NetTool churn).
             if (SwimmingAt(transform.position))
