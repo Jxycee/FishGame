@@ -88,7 +88,7 @@ namespace FishGame.Tests.EditMode
             Assert.That(gHalf.RumbleHigh, Is.EqualTo(0.3f).Within(1e-5f));
 
             Assert.That(TensionCues.Evaluate(0.7f, false, 1f, 1f).LineWarm01, Is.EqualTo(0.5f).Within(1e-5f));
-            Assert.That(TensionCues.Evaluate(0.8f, false, 1f, 1f).CreakVolume01, Is.EqualTo(0.5f).Within(1e-5f));
+            Assert.That(TensionCues.Evaluate(0.8f, false, 1f, 1f).CreakVolume01, Is.EqualTo(0.646964f).Within(1e-5f), "R72: Rust strainGainCurve");
             Assert.That(TensionCues.Evaluate(0.65f, false, 1f, 1f).RodBend01, Is.EqualTo(0.5f).Within(1e-5f));
             Assert.That(TensionCues.Evaluate(0.6f, false, 1f, 1f).LineWarm01, Is.EqualTo(0f).Within(1e-6f));
             Assert.That(TensionCues.Evaluate(0.8f, false, 1f, 1f).LineWarm01, Is.EqualTo(1f).Within(1e-6f));
@@ -108,6 +108,28 @@ namespace FishGame.Tests.EditMode
             TensionCueState under = TensionCues.Evaluate(0.9f, false, 1f, -1f);
             Assert.That(under.RumbleLow, Is.EqualTo(0f));
             Assert.That(under.Shake, Is.False);
+        }
+
+        // Catches (R72): a linear ramp, a curve that still starts at the pre-R72 0.6 band, a wrong end tangent (the Hermite coefficients are
+        // derived in TensionCues: keys (0.10, 0, flat) and (0.95, 1, slope 2.66)), a creak that stays on at or below 0.10.
+        [Test]
+        public void TensionCues_CreakGain_FollowsRustCurve()
+        {
+            float[] t = { 0.05f, 0.10f, 0.2f, 0.3f, 0.525f, 0.8f, 0.9f, 0.95f, 1.2f, float.NaN };
+            float[] want = { 0f, 0f, 0.010653f, 0.044313f, 0.217375f, 0.646964f, 0.872213f, 1f, 1f, 0f };
+            for (int i = 0; i < t.Length; i++)
+                Assert.That(TensionCues.CreakGain(t[i]), Is.EqualTo(want[i]).Within(1e-5f), "tension " + t[i]);
+            float prev = 0f;
+            for (int i = 0; i <= 100; i++)
+            {
+                float g = TensionCues.CreakGain(i * 0.01f);
+                Assert.That(g, Is.GreaterThanOrEqualTo(prev), "non-decreasing at " + i * 0.01f);
+                prev = g;
+            }
+            Assert.That(TensionCues.Evaluate(0.10f, false, 1f, 1f).CreakOn, Is.False);
+            Assert.That(TensionCues.Evaluate(0.11f, false, 1f, 1f).CreakOn, Is.True);
+            Assert.That(TensionCues.Evaluate(0f, true, 1f, 1f).CreakOn, Is.True, "in grace the creak is on regardless");
+            Assert.That(TensionCues.Evaluate(0.2f, false, 1f, 1f).CreakVolume01, Is.EqualTo(0.010653f).Within(1e-5f));
         }
 
         [Test]

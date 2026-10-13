@@ -90,13 +90,17 @@ namespace FishGame.Fishing
             return IsFinite(candidate) ? candidate : (IsFinite(fallback) ? fallback : Vector3.zero);
         }
 
-        // The Hooked-state wire flags (RodWireQuant.Flag*). A dive is a burst with direction 0. Grace = the snap timer is running, i.e. tension
-        // has been at 1.0 on the last fight tick (spec 9.5); remotes cannot see that in their smoothed Tension, so they read the flag.
-        public static byte HookedFlags(FightPhase phase, sbyte burstDir, bool reeling, bool exhausted, float snapTimer)
+        // R72: FlagBurst while the fish runs (not when spent), FlagRight for a right pull, FlagDive for a back pull; FlagGrace while the
+        // strain is over the full bar (SnapTimer > 0): remotes cannot see that in their smoothed Tension, so they read the flag.
+        public static byte HookedFlags(FightPhase phase, sbyte burstDir, bool back, bool reeling, bool exhausted, float snapTimer)
         {
             byte flags = 0;
-            if (phase == FightPhase.Burst)
-                flags |= burstDir == 0 ? (byte)(RodWireQuant.FlagBurst | RodWireQuant.FlagDive) : RodWireQuant.FlagBurst;
+            if (phase == FightPhase.Burst && !exhausted)
+            {
+                flags |= RodWireQuant.FlagBurst;
+                if (burstDir > 0) flags |= RodWireQuant.FlagRight;
+                if (back) flags |= RodWireQuant.FlagDive;
+            }
             if (reeling) flags |= RodWireQuant.FlagReel;
             if (exhausted) flags |= RodWireQuant.FlagExhausted;
             if (snapTimer > 0f) flags |= RodWireQuant.FlagGrace;

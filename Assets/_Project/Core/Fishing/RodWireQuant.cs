@@ -7,7 +7,8 @@ namespace FishGame.Core
     public static class RodWireQuant
     {
         public const byte FlagBurst = 1, FlagReel = 2, FlagDive = 4, FlagExhausted = 8, FlagRecall = 16;
-        public const byte FlagGrace = 32;                     // Hooked and the snap grace timer is running (tension at 1.0); remotes smooth Tension, so they read this, not Tension >= 0.999
+        public const byte FlagGrace = 32;                     // Hooked and the strain is over the full bar (R72 headroom, SnapTimer > 0); remotes smooth Tension, so they read this, not Tension >= 0.999
+        public const byte FlagRight = 64;                     // R72: the run pulls right (with FlagBurst); bobber tilt on every peer
         public const byte AnnounceFlagClean = 1;              // CatchAnnouncedRpc flags
 
         // round(clamp(-1, 1) * 127), away from zero.

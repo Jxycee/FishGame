@@ -236,19 +236,22 @@ namespace FishGame.Tests.EditMode
             Assert.That(d2, Is.LessThanOrEqualTo(RodControllerRules.LandingMismatchLogMeters), "same spot: below the log threshold");
         }
 
-        // Catches (T23 review): FlagGrace not set while the snap timer runs (remotes would never hear the crack: their Tension is smoothed),
-        // set while it does not, or a flag bit moved/merged (dive without burst, reel/exhausted dropped).
+        // Catches (T23 review, R72): FlagGrace not set while the strain is over the full bar (remotes would never hear the crack: their Tension is
+        // smoothed), the run side lost from the wire (FlagRight: remote bobber tilt), FlagDive set for a side run instead of a back pull, a spent
+        // fish still showing a run, or a flag bit moved/merged (reel/exhausted dropped).
         [Test]
-        public void RodControllerRules_HookedFlags_GraceFollowsSnapTimer_AndTheOtherBitsStay()
+        public void RodControllerRules_HookedFlags_RunSideBackGraceAndSpent()
         {
-            Assert.That(RodControllerRules.HookedFlags(FightPhase.Calm, 0, false, false, 0f), Is.EqualTo((byte)0));
-            Assert.That(RodControllerRules.HookedFlags(FightPhase.Calm, 0, false, false, 0.01f), Is.EqualTo(RodWireQuant.FlagGrace), "timer running = grace");
-            Assert.That(RodControllerRules.HookedFlags(FightPhase.Burst, 1, false, false, 0f), Is.EqualTo(RodWireQuant.FlagBurst), "side run");
-            Assert.That(RodControllerRules.HookedFlags(FightPhase.Burst, -1, true, false, 0f), Is.EqualTo((byte)(RodWireQuant.FlagBurst | RodWireQuant.FlagReel)));
-            Assert.That(RodControllerRules.HookedFlags(FightPhase.Burst, 0, false, false, 0f), Is.EqualTo((byte)(RodWireQuant.FlagBurst | RodWireQuant.FlagDive)), "dive");
-            Assert.That(RodControllerRules.HookedFlags(FightPhase.Calm, 0, true, true, 0f), Is.EqualTo((byte)(RodWireQuant.FlagReel | RodWireQuant.FlagExhausted)));
-            byte all = RodControllerRules.HookedFlags(FightPhase.Burst, 0, true, true, 0.2f);
-            Assert.That(all, Is.EqualTo((byte)(RodWireQuant.FlagBurst | RodWireQuant.FlagReel | RodWireQuant.FlagDive | RodWireQuant.FlagExhausted | RodWireQuant.FlagGrace)));
+            const byte B = RodWireQuant.FlagBurst, R = RodWireQuant.FlagRight, D = RodWireQuant.FlagDive, L = RodWireQuant.FlagReel;
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Calm, 0, false, false, false, 0f), Is.EqualTo((byte)0));
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Burst, -1, false, false, false, 0f), Is.EqualTo(B), "left run");
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Burst, 1, false, false, false, 0f), Is.EqualTo((byte)(B | R)), "right run");
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Burst, 1, true, true, false, 0f), Is.EqualTo((byte)(B | R | D | L)));
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Burst, -1, true, false, false, 0f), Is.EqualTo((byte)(B | D)));
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Burst, 1, true, false, true, 0f), Is.EqualTo(RodWireQuant.FlagExhausted), "a spent fish shows no run");
+            Assert.That(RodControllerRules.HookedFlags(FightPhase.Calm, 0, false, false, false, 0.01f), Is.EqualTo(RodWireQuant.FlagGrace), "over the full bar = grace");
+            byte all = RodControllerRules.HookedFlags(FightPhase.Burst, 1, true, true, false, 0.2f);
+            Assert.That(all, Is.EqualTo((byte)(B | R | D | L | RodWireQuant.FlagGrace)));
             Assert.That(all & RodWireQuant.FlagRecall, Is.EqualTo(0), "recall is set by the caller, never here");
         }
     }
