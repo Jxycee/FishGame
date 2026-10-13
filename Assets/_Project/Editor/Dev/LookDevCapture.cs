@@ -289,7 +289,7 @@ namespace FishGame.EditorTools
         // M3 T17 (2026-10-14): fixed views of Spot_HarbourPier as the real scene draws them (toon shader, palette and wave globals pushed like the runtime
         // does): overview from above the hut, deck level looking out, the T-head looking back, the breakwater, the beach, and a dusk view. 1280 x 720
         // PNGs named harbour_<shot>.png in -fgLookOut. Opens the scene and never saves it. Needs a graphics device (no -nographics).
-        public static readonly string[] HarbourShots = { "overview", "deck", "thead", "breakwater", "beach", "dusk" };
+        public static readonly string[] HarbourShots = { "overview", "deck", "thead", "breakwater", "beach", "ladder", "coast", "dusk" };
         const int HarbourWidth = 1280, HarbourHeight = 720;
 
         public static void CaptureHarbour()
@@ -321,6 +321,9 @@ namespace FishGame.EditorTools
             Shoot(camera, new Vector3(0.5f, 3.2f, -5.6f), new Vector3(0f, 1.6f, -52f), 62f, outDir, "harbour_thead", HarbourWidth, HarbourHeight);
             Shoot(camera, new Vector3(13f, 4.5f, -18f), new Vector3(30f, 0.6f, -40f), 55f, outDir, "harbour_breakwater", HarbourWidth, HarbourHeight);
             Shoot(camera, new Vector3(-12f, 2.6f, -30f), new Vector3(-30f, 0.8f, -52f), 62f, outDir, "harbour_beach", HarbourWidth, HarbourHeight);
+            // After the T17 review: the mid ladder seen from the water, and the coast seen past the old x +-120 edge of the land and the sea.
+            Shoot(camera, new Vector3(6f, 0.9f, -21.5f), new Vector3(1.9f, 0.7f, -25f), 55f, outDir, "harbour_ladder", HarbourWidth, HarbourHeight);
+            Shoot(camera, new Vector3(55f, 5f, -38f), new Vector3(-120f, 0f, -52f), 60f, outDir, "harbour_coast", HarbourWidth, HarbourHeight);
             ApplyPhase(palette, DuskPhase, sun, daySun);
             Shoot(camera, new Vector3(4.5f, 3.2f, -40f), new Vector3(-1f, 1.4f, -8f), 62f, outDir, "harbour_dusk", HarbourWidth, HarbourHeight);
 

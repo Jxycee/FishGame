@@ -27,6 +27,9 @@ namespace FishGame.EditorTools
         public sealed class Model
         {
             public string name;            // the FBX mesh name, for example "Harbour_Rocks_Tri"
+            public int triangles;          // the artist's count (Unity's import drops a few degenerate faces: HarbourPierModelTests compares with a margin)
+            public float[] bounds_min;     // the model's world AABB
+            public float[] bounds_max;
             public Item[] items;
         }
 

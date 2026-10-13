@@ -628,7 +628,8 @@ namespace FishGame.Tests.EditMode
             List<Mesh> b = HarbourPierMeshes.BuildAllInMemory();
             try
             {
-                Assert.That(a.Count, Is.EqualTo(3), "water, seabed, beach");
+                Assert.That(a.Count, Is.EqualTo(4), "water, water skirt, seabed, beach");
+                AssertSkirtMatchesWaterBorder(a[0], a[1]);
                 Assert.That(b.Count, Is.EqualTo(a.Count));
                 for (int m = 0; m < a.Count; m++)
                 {
@@ -647,7 +648,7 @@ namespace FishGame.Tests.EditMode
                     y.GetUVs(1, uy);
                     Assert.That(uy, Is.EqualTo(ux), x.name + " uv1");
 
-                    if (x.name == "Harbour_Water") continue;   // the water grid: flat colours-free mesh for the water shader (51,200 triangles, 16-bit)
+                    if (x.name == "Harbour_Water" || x.name == "Harbour_WaterSkirt") continue;   // the water meshes (51,200 and 672 triangles, 16-bit) are not Toon: no colours or uv1
                     Assert.That(x.triangles.Length / 3, Is.LessThanOrEqualTo(LakeDockLayout.MaxCombinedTriangles), x.name + " triangle limit");
                     Assert.That(x.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.Color), Is.True, x.name + " has vertex colours");
                     Assert.That(ux.Count, Is.EqualTo(x.vertexCount), x.name + " has uv1 on every vertex");
@@ -666,6 +667,43 @@ namespace FishGame.Tests.EditMode
                 foreach (Mesh mesh in a) UnityEngine.Object.DestroyImmediate(mesh);
                 foreach (Mesh mesh in b) UnityEngine.Object.DestroyImmediate(mesh);
             }
+        }
+
+        // Catches: a crack or a T-junction between the water grid and the sea skirt (the sea would show a hairline of sky or seabed at +-120 m), a skirt
+        // that does not reach the far clip plane, a skirt facing down, a skirt off the water plane.
+        static void AssertSkirtMatchesWaterBorder(Mesh water, Mesh skirt)
+        {
+            Assert.That(skirt.name, Is.EqualTo("Harbour_WaterSkirt"));
+            var skirtVertices = new HashSet<Vector3>(skirt.vertices);
+            float edge = HarbourPierLayout.WaterGridCells * HarbourPierLayout.WaterCellSize * 0.5f;
+            int border = 0;
+            foreach (Vector3 v in water.vertices)
+            {
+                if (Mathf.Max(Mathf.Abs(v.x), Mathf.Abs(v.z)) != edge) continue;
+                border++;
+                Assert.That(skirtVertices.Contains(v), Is.True, "the water grid's border vertex " + v + " is not a skirt vertex (bit for bit)");
+            }
+            Assert.That(border, Is.EqualTo(4 * HarbourPierLayout.WaterGridCells), "the grid's border has 640 vertices");
+            Vector3[] vs = skirt.vertices;
+            Vector3[] ns = skirt.normals;
+            float far = 0f;
+            for (int i = 0; i < vs.Length; i++)
+            {
+                Assert.That(vs[i].y, Is.EqualTo(0f), "skirt vertex " + i + " is on the water plane");
+                Assert.That(ns[i], Is.EqualTo(Vector3.up), "skirt normal " + i + " is up");
+                far = Mathf.Max(far, Mathf.Abs(vs[i].x), Mathf.Abs(vs[i].z));
+            }
+            Assert.That(far, Is.EqualTo(HarbourPierLayout.SkirtOuterHalfExtent), "the skirt reaches the far clip plane");
+            int[] tris = skirt.triangles;
+            float area = 0f;
+            for (int t = 0; t < tris.Length; t += 3)
+            {
+                Vector3 c = Vector3.Cross(vs[tris[t + 1]] - vs[tris[t]], vs[tris[t + 2]] - vs[tris[t]]);
+                Assert.That(c.y, Is.GreaterThan(0f), "skirt triangle " + t / 3 + " faces up");
+                area += c.y * 0.5f;
+            }
+            float want = 4f * HarbourPierLayout.SkirtOuterHalfExtent * HarbourPierLayout.SkirtOuterHalfExtent - 4f * edge * edge;
+            Assert.That(area, Is.EqualTo(want).Within(want * 1e-3f), "the skirt covers exactly the ring between the grid and the far square (no gap, no overlap)");
         }
 
         // Catches: a collider moved off the layout or the manifest; a breakwater collider above the walkable top (an invisible bump on the path edge);
@@ -711,6 +749,11 @@ namespace FishGame.Tests.EditMode
                 Assert.That(mid.center, Is.EqualTo(HarbourPierLayout.LadderMidRailBox.center).Using(Vector3EqualityComparer.Instance));
                 Bounds railHead = pier.transform.Find("Ladder_Head").GetComponent<BoxCollider>().bounds;
                 Assert.That(railHead.center, Is.EqualTo(HarbourPierLayout.LadderHeadRailBox.center).Using(Vector3EqualityComparer.Instance));
+                // The rail colliders end at the deck top (a wall above it makes the ladders unclimbable; the visual rails rise higher).
+                Assert.That(mid.max.y, Is.EqualTo(HarbourPierLayout.DeckTopY).Within(1e-4f), "mid rail collider top is the deck top");
+                Assert.That(railHead.max.y, Is.EqualTo(HarbourPierLayout.DeckTopY).Within(1e-4f), "head rail collider top is the deck top");
+                Assert.That(mid.min.y, Is.EqualTo(HarbourPierLayout.LadderVolumeBottomY).Within(1e-4f), "mid rail collider foot");
+                Assert.That(railHead.min.y, Is.EqualTo(HarbourPierLayout.LadderVolumeBottomY).Within(1e-4f), "head rail collider foot");
                 foreach (Collider c in pier.GetComponentsInChildren<Collider>(true)) Assert.That(c.isTrigger, Is.False, c.name);
 
                 // Ladder volumes.

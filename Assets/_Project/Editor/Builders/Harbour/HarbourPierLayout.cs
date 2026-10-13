@@ -34,11 +34,14 @@ namespace FishGame.EditorTools
         public static float BeachY(float z) => Mathf.Clamp(BeachSlope * (CoastZ - z), BeachMinY, BeachMaxY);
         public static float TerrainY(float x, float z) => z <= CoastZ ? BeachY(z) : SeabedY(z);
 
-        // Seabed (Ground): x -120..120, z -47..121, vertex grid 2 m (so the kinks at z -45 and z -9 are vertices and the surface is exactly the formula).
-        public const float SeabedMinX = -120f, SeabedMaxX = 120f, SeabedMinZ = -47f, SeabedMaxZ = 121f, SeabedStep = 2f;
+        // Seabed (Ground): x -400..400 (to the sea skirt's far edge, so the sea floor does not end at the water grid), z -47..121. Rows every 2 m in z (so the
+        // kinks at z -45 and z -9 are vertices and the surface is exactly the formula); columns every 20 m in x: every height-field attribute is independent
+        // of x, so the surface is the same plane at any x step and the bake sees the same rays.
+        public const float SeabedMinX = -400f, SeabedMaxX = 400f, SeabedMinZ = -47f, SeabedMaxZ = 121f, SeabedStepX = 20f, SeabedStepZ = 2f;
         // Beach and plateau (Shore): x -120..120 in 2 m steps; rows (z): the submerged lip -44.5, then -45 down to -55 every metre (the two kinks),
         // then -100 (flat plateau). Sand below BeachSandMaxY, Grass above (the slot blends across the band that crosses it).
-        public const float BeachMinX = -120f, BeachMaxX = 120f, BeachStep = 2f, BeachLipZ = -44.5f, BeachFlatFromZ = -55f, BeachEndZ = -100f;
+        // The land runs to x +-400 (20 m columns, the heights do not depend on x) and z -400, the sea skirt's far edge, so the land has no visible edge.
+        public const float BeachMinX = -400f, BeachMaxX = 400f, BeachStep = 20f, BeachLipZ = -44.5f, BeachFlatFromZ = -55f, BeachEndZ = -400f;
         public const float BeachSandMaxY = 0.55f;
         // Water visual: MeshBuilder.Grid(160, 160, 1.5) = 240 m, centred at the origin, y 0 (25,921 vertices, 16-bit safe).
         public const int WaterGridCells = 160;
@@ -48,6 +51,9 @@ namespace FishGame.EditorTools
 
         // ---- asset paths ----
         public const string WaterMeshPath = AssetPaths.MeshesFolder + "/Harbour_Water.asset";
+        public const string WaterSkirtMeshPath = AssetPaths.MeshesFolder + "/Harbour_WaterSkirt.asset";
+        public const float SkirtOuterHalfExtent = 400f;   // MovementMath.FarClip: the sea reaches the far clip plane
+        public const int SkirtOuterSegmentsPerSide = 8;
         public const string SeabedMeshPath = AssetPaths.MeshesFolder + "/Harbour_Seabed.asset";
         public const string BeachMeshPath = AssetPaths.MeshesFolder + "/Harbour_Beach.asset";
         public const string ModelsFolder = AssetPaths.ModelsFolder + "/Harbour";
@@ -88,11 +94,14 @@ namespace FishGame.EditorTools
         public static readonly Bounds LadderMidVolume = new Bounds(new Vector3(2.05f, 0.55f, -25f), new Vector3(1f, 3.9f, 1f));      // x 1.55..2.55, z -25.5..-24.5
         public static readonly Bounds LadderHeadVolume = new Bounds(new Vector3(2f, 0.55f, -4.45f), new Vector3(1f, 3.9f, 1f));      // x 1.5..2.5, z -4.95..-3.95
         // Collider-only rail boxes (Structure): the mid ladder's rails stand at x 1.58 (0.06 thick) across z -25.25..-24.75; the head ladder's rails
-        // stand against the T-head face at z -4.92 (0.06 thick) across x 1.75..2.25. Bottom -1.4 (the ladder's foot), top RailTopY.
-        public static readonly Bounds LadderMidRailBox = new Bounds(new Vector3(1.58f, (LadderVolumeBottomY + RailTopY) * 0.5f, -25f),
-                                                                     new Vector3(0.06f, RailTopY - LadderVolumeBottomY, 0.5f));
-        public static readonly Bounds LadderHeadRailBox = new Bounds(new Vector3(2f, (LadderVolumeBottomY + RailTopY) * 0.5f, -4.92f),
-                                                                      new Vector3(0.5f, RailTopY - LadderVolumeBottomY, 0.06f));
+        // stand against the T-head face at z -4.92 (0.06 thick) across x 1.75..2.25. Bottom -1.4 (the ladder's foot), top = the deck top, as
+        // LakeDockBuilder.AddLadder: a collider wall above the deck leaves the climber short of the lip (feet top out at about 1.6 against
+        // StepOffset 0.35) and blocks climbing down. The grab rails of the VISUAL rise to RailTopY (2.35) above the collider, which is why the
+        // bounds test checks the rails' x and z against these boxes and their height against RailTopY.
+        public static readonly Bounds LadderMidRailBox = new Bounds(new Vector3(1.58f, (LadderVolumeBottomY + DeckTopY) * 0.5f, -25f),
+                                                                     new Vector3(0.06f, DeckTopY - LadderVolumeBottomY, 0.5f));
+        public static readonly Bounds LadderHeadRailBox = new Bounds(new Vector3(2f, (LadderVolumeBottomY + DeckTopY) * 0.5f, -4.92f),
+                                                                      new Vector3(0.5f, DeckTopY - LadderVolumeBottomY, 0.06f));
 
         // ---- breakwater (Shore): the walkable box x 28..32, z -56..-25, y -6..1.5 (starts on the plateau at 1.2, a 0.3 m step with StepOffset 0.35) ----
         public static readonly Bounds BreakwaterBox = FromMinMax(new Vector3(28f, -6f, -56f), new Vector3(32f, DeckTopY, -25f));

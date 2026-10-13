@@ -19,19 +19,19 @@ namespace FishGame.EditorTools
         // Builds and saves Harbour_Water, Harbour_Seabed and Harbour_Beach (step 1 of HarbourPierBuilder.Build, before NewScene).
         public static void BuildAll()
         {
-            string[] paths = { HarbourPierLayout.WaterMeshPath, HarbourPierLayout.SeabedMeshPath, HarbourPierLayout.BeachMeshPath };
+            string[] paths = { HarbourPierLayout.WaterMeshPath, HarbourPierLayout.WaterSkirtMeshPath, HarbourPierLayout.SeabedMeshPath, HarbourPierLayout.BeachMeshPath };
             List<Mesh> meshes = BuildAllInMemory();
             for (int i = 0; i < meshes.Count; i++) Save(paths[i], meshes[i]);
             AssetDatabase.SaveAssets();   // meshes are on disk before the scene references them
         }
 
-        // The same meshes, unsaved, in a fixed order (water, seabed, beach). Test seam: the caller destroys them.
+        // The same meshes, unsaved, in a fixed order (water, water skirt, seabed, beach). Test seam: the caller destroys them.
         internal static List<Mesh> BuildAllInMemory()
         {
-            return new List<Mesh> { BuildWater(), BuildSeabed(), BuildBeach() };
+            return new List<Mesh> { BuildWater(), BuildWaterSkirt(), BuildSeabed(), BuildBeach() };
         }
 
-        // Copies the built mesh into the existing asset (GUID kept) or creates the asset. The temporary mesh is destroyed.
+        // mirrors LakeDockMeshes.Save. Copies the built mesh into the existing asset (GUID kept) or creates the asset. The temporary mesh is destroyed.
         static void Save(string assetPath, Mesh built)
         {
             BuilderUtil.EnsureFolder(BuilderUtil.Folder(assetPath));
@@ -55,11 +55,73 @@ namespace FishGame.EditorTools
             return MeshBuilder.Grid(HarbourPierLayout.WaterGridCells, HarbourPierLayout.WaterGridCells, HarbourPierLayout.WaterCellSize, "Harbour_Water");
         }
 
-        // x -120..120, z -47..121 on a 2 m vertex grid: the kinks of SeabedY (z -45 and z -9) are vertices, so the surface is exactly the formula.
+        // The sea beyond the water grid: a ring between the grid's 640-vertex border (the very same expression as MeshBuilder.Grid, so the vertices match
+        // bit for bit and leave no crack) and a square at +-SkirtOuterHalfExtent with 8 segments per side. The two loops are zipped by perimeter fraction
+        // (outer vertex k sits at k / 32 of the way round, inner vertex i at i / 640), which is the four trapezoid strips of the ring. Normals up, y 0,
+        // 16-bit safe. Not Toon (water shader): no vertex colours or uv1.
+        static Mesh BuildWaterSkirt()
+        {
+            int cells = HarbourPierLayout.WaterGridCells;
+            float size = HarbourPierLayout.WaterCellSize;
+            var inner = new List<Vector3>();   // counter-clockwise from (min, min): along z = min, along x = max, back along z = max, down x = min
+            for (int i = 0; i <= cells; i++) inner.Add(new Vector3(GridCoord(cells, size, i), 0f, GridCoord(cells, size, 0)));
+            for (int j = 1; j <= cells; j++) inner.Add(new Vector3(GridCoord(cells, size, cells), 0f, GridCoord(cells, size, j)));
+            for (int i = cells - 1; i >= 0; i--) inner.Add(new Vector3(GridCoord(cells, size, i), 0f, GridCoord(cells, size, cells)));
+            for (int j = cells - 1; j >= 1; j--) inner.Add(new Vector3(GridCoord(cells, size, 0), 0f, GridCoord(cells, size, j)));
+
+            float e = HarbourPierLayout.SkirtOuterHalfExtent;
+            int seg = HarbourPierLayout.SkirtOuterSegmentsPerSide;
+            var outer = new List<Vector3>();
+            for (int m = 0; m < seg; m++) outer.Add(new Vector3(-e + 2f * e * m / seg, 0f, -e));
+            for (int m = 0; m < seg; m++) outer.Add(new Vector3(e, 0f, -e + 2f * e * m / seg));
+            for (int m = 0; m < seg; m++) outer.Add(new Vector3(e - 2f * e * m / seg, 0f, e));
+            for (int m = 0; m < seg; m++) outer.Add(new Vector3(-e, 0f, e - 2f * e * m / seg));
+
+            var vertices = new List<Vector3>(inner);
+            vertices.AddRange(outer);
+            int ni = inner.Count, no = outer.Count;
+            var triangles = new List<int>();
+            int a = 0, b = 0;
+            while (a < ni || b < no)
+            {
+                int ia = a % ni, ib = ni + b % no;
+                if (b >= no || (a < ni && (long)(a + 1) * no <= (long)(b + 1) * ni))
+                {
+                    AddIndexedUp(vertices, triangles, ia, (a + 1) % ni, ib);   // advance the inner loop
+                    a++;
+                }
+                else
+                {
+                    AddIndexedUp(vertices, triangles, ib, ia, ni + (b + 1) % no);   // advance the outer loop
+                    b++;
+                }
+            }
+
+            var normals = new List<Vector3>(vertices.Count);
+            var uv0 = new List<Vector2>(vertices.Count);
+            foreach (Vector3 v in vertices)
+            {
+                normals.Add(Vector3.up);
+                uv0.Add(new Vector2(v.x, v.z) / (2f * e) + new Vector2(0.5f, 0.5f));
+            }
+            var mesh = new Mesh { name = "Harbour_WaterSkirt" };
+            mesh.indexFormat = IndexFormat.UInt16;
+            mesh.SetVertices(vertices);
+            mesh.SetNormals(normals);
+            mesh.SetUVs(0, uv0);
+            mesh.SetTriangles(triangles, 0);
+            mesh.bounds = new Bounds(Vector3.zero, new Vector3(2f * e, 2f, 2f * e));   // +-1 m covers the shader displacement, as MeshBuilder.Grid
+            return mesh;
+        }
+
+        // MeshBuilder.Grid's vertex coordinate along one axis, written the same way so the floats are identical.
+        static float GridCoord(int cells, float size, int i) => -cells * size * 0.5f + i * size;
+
+        // x -400..400 (20 m columns), z -47..121 on 2 m rows: the kinks of SeabedY (z -45 and z -9) are rows, so the surface is exactly the formula.
         static Mesh BuildSeabed()
         {
-            int nx = Mathf.RoundToInt((HarbourPierLayout.SeabedMaxX - HarbourPierLayout.SeabedMinX) / HarbourPierLayout.SeabedStep) + 1;
-            int nz = Mathf.RoundToInt((HarbourPierLayout.SeabedMaxZ - HarbourPierLayout.SeabedMinZ) / HarbourPierLayout.SeabedStep) + 1;
+            int nx = Mathf.RoundToInt((HarbourPierLayout.SeabedMaxX - HarbourPierLayout.SeabedMinX) / HarbourPierLayout.SeabedStepX) + 1;
+            int nz = Mathf.RoundToInt((HarbourPierLayout.SeabedMaxZ - HarbourPierLayout.SeabedMinZ) / HarbourPierLayout.SeabedStepZ) + 1;
             var vertices = new List<Vector3>(nx * nz);
             var normals = new List<Vector3>(nx * nz);
             var uv0 = new List<Vector2>(nx * nz);
@@ -68,7 +130,7 @@ namespace FishGame.EditorTools
             var triangles = new List<int>((nx - 1) * (nz - 1) * 6);
             for (int iz = 0; iz < nz; iz++)
             {
-                float z = HarbourPierLayout.SeabedMinZ + iz * HarbourPierLayout.SeabedStep;
+                float z = HarbourPierLayout.SeabedMinZ + iz * HarbourPierLayout.SeabedStepZ;
                 float y = HarbourPierLayout.SeabedY(z);
                 float slope = (HarbourPierLayout.SeabedY(z + 1f) - HarbourPierLayout.SeabedY(z - 1f)) * 0.5f;
                 Vector3 normal = new Vector3(0f, 1f, -slope).normalized;
@@ -77,7 +139,7 @@ namespace FishGame.EditorTools
                 float g = 0.5f * ao;
                 for (int ix = 0; ix < nx; ix++)
                 {
-                    float x = HarbourPierLayout.SeabedMinX + ix * HarbourPierLayout.SeabedStep;
+                    float x = HarbourPierLayout.SeabedMinX + ix * HarbourPierLayout.SeabedStepX;
                     vertices.Add(new Vector3(x, y, z));
                     normals.Add(normal);
                     uv0.Add(new Vector2(x, z));

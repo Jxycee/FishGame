@@ -31,7 +31,7 @@ namespace FishGame.EditorTools
         sealed class ArtAssets
         {
             public Material Toon, ToonTri, Water;
-            public Mesh WaterMesh, Seabed, Beach;
+            public Mesh WaterMesh, WaterSkirt, Seabed, Beach;
             public Mesh[] VisualMeshes;   // HarbourPierLayout.Visuals order
             // The lake's tree meshes (read-only reuse; LakeDockBuilder builds them earlier in the same BuildAll).
             public Mesh Trunk, CanopyPine, CanopyPineSnow, Blossoms, Branches;
@@ -56,6 +56,7 @@ namespace FishGame.EditorTools
                 ToonTri = RenderMaterialLibrary.Get("M_Toon_Tri"),
                 Water = RenderMaterialLibrary.Get("M_Water_Surface"),
                 WaterMesh = LoadMesh(HarbourPierLayout.WaterMeshPath),
+                WaterSkirt = LoadMesh(HarbourPierLayout.WaterSkirtMeshPath),
                 Seabed = LoadMesh(HarbourPierLayout.SeabedMeshPath),
                 Beach = LoadMesh(HarbourPierLayout.BeachMeshPath),
                 VisualMeshes = LoadVisualMeshes(),
@@ -198,7 +199,8 @@ namespace FishGame.EditorTools
             {
                 HarbourPierLayout.VisualModel visual = HarbourPierLayout.Visuals[i];
                 if (visual.Parent != rootName) continue;
-                AddVisual(root, visual.Name, art.VisualMeshes[i], visual.Triplanar ? art.ToonTri : art.Toon, Quaternion.identity, true);
+                // The rubble base lies under the water: it casts no shadow.
+                AddVisual(root, visual.Name, art.VisualMeshes[i], visual.Triplanar ? art.ToonTri : art.Toon, Quaternion.identity, visual.Name != "BreakwaterBaseVisual");
             }
         }
 
@@ -262,6 +264,16 @@ namespace FishGame.EditorTools
             water.shadowCastingMode = ShadowCastingMode.Off;
             water.receiveShadows = false;
 
+            // The sea beyond the 240 m grid, out to the far clip plane (fog cannot hide the grid's edge: Water.shader blends only part of it and the
+            // day-night controller owns the density). Same layer, material and flags as the grid; no collider; its inner edge is the grid's border.
+            var skirt = new GameObject("WaterSkirt") { layer = Layers.Water };
+            skirt.transform.SetParent(visual.transform, false);
+            skirt.AddComponent<MeshFilter>().sharedMesh = art.WaterSkirt;
+            MeshRenderer skirtRenderer = skirt.AddComponent<MeshRenderer>();
+            skirtRenderer.sharedMaterial = art.Water;
+            skirtRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            skirtRenderer.receiveShadows = false;
+
             GameObject volume = Root("WaterVolume", Layers.Water);
             BoxCollider box = volume.AddComponent<BoxCollider>();
             box.isTrigger = true;
@@ -275,7 +287,9 @@ namespace FishGame.EditorTools
         {
             GameObject go = Root("Seabed", Layers.Ground);
             go.AddComponent<MeshFilter>().sharedMesh = art.Seabed;
-            go.AddComponent<MeshRenderer>().sharedMaterial = art.Toon;
+            MeshRenderer seabed = go.AddComponent<MeshRenderer>();
+            seabed.sharedMaterial = art.Toon;
+            seabed.shadowCastingMode = ShadowCastingMode.Off;   // the sea floor casts nothing onto anything visible
             go.AddComponent<MeshCollider>().sharedMesh = art.Seabed;
         }
 
