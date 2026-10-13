@@ -401,6 +401,63 @@ namespace FishGame.Tests.EditMode
             Assert.That(b.State.Tire, Is.EqualTo(0.016f).Within(1e-6f));
         }
 
+        // Catches (review finding 1): the strain table checking the counter-steer before the reel (Rust: reeling takes precedence, so reel plus a
+        // counter is still 2.2, or 2.5 on a back pull), or the rates summing instead. The counter still halves the run, pushes, and tires.
+        [Test]
+        public void FightSim_ReelPlusCounter_ReelTakesPrecedence()
+        {
+            FightSim a = Make(P(Medium));
+            a.ForceState(RunState(1, false, 0.5f, 18f));
+            a.Tick(In(-1f, true));
+            Assert.That(a.State.Strain, Is.EqualTo(0.033f).Within(1e-6f), "2.2 x 0.75 x 0.02, not the 0.8 of a counter alone");
+            Assert.That(a.State.Tire, Is.EqualTo(0.025f).Within(1e-6f), "a counter of a plain run tires at 1.25/s even while reeling");
+            Assert.That(a.State.LineLength - 18f, Is.EqualTo(-0.012f).Within(1e-6f));
+            float expect = (0.6f * a.PullWave - 0.8f) * 0.02f / (18f * 1.0471976f);
+            Assert.That(a.State.Lateral - 0.5f, Is.EqualTo(expect).Within(1e-6f), "run halved plus the 0.8 push");
+
+            FightSim b = Make(P(Medium));
+            b.ForceState(RunState(1, true, 0.5f, 18f));
+            b.Tick(In(-1f, true));
+            Assert.That(b.State.Strain, Is.EqualTo(0.0375f).Within(1e-6f), "2.5 on a back pull");
+            Assert.That(b.State.Tire, Is.EqualTo(0.016f).Within(1e-6f), "0.8/s during a back pull");
+
+            FightSim c = Make(P(Medium));
+            c.ForceState(RestState(10f, lateral: 0.3f));
+            c.Tick(In(-1f, true));
+            Assert.That(c.State.Strain, Is.EqualTo(0.0075f).Within(1e-6f), "at rest k is 0.5 once, not a sum of reel and steer");
+        }
+
+        // Catches (review finding 2): rod stats read from the wrong place. Twig: reel 0.54, steerRate 0.67, relaxMult 0.9, lineStrength 0.8.
+        // A gain that ignores lineStrength, a drain that ignores relaxMult, a push that uses another rate, a reel that ignores the rod.
+        [Test]
+        public void FightSim_TwigRod_UsesItsOwnStats()
+        {
+            RodStats twig = FishingTestData.Rods()[FishingTestData.RodTwig];
+
+            FightSim a = Make(P(Small), rod: twig);
+            a.ForceState(RunState(1, false, 0.5f, 18f));
+            a.Tick(In(0f, true));
+            Assert.That(a.State.Strain, Is.EqualTo(0.033f).Within(1e-6f), "2.2 x 0.8 x 0.75 / 0.8 x 0.02");
+            int end = 1 + RunUntilEnd(a, In(0f, true), 600);
+            Assert.That(end, Is.EqualTo(213).Within(1));
+            Assert.That(a.State.Outcome, Is.EqualTo(FightOutcome.Snapped));
+
+            FightSim d = Make(P(Medium), rod: twig);
+            d.ForceState(RestState(10f, strain: 6f));
+            for (int i = 0; i < 120; i++) d.Tick(In(0f, false));
+            Assert.That(d.State.Strain, Is.EqualTo(2.76f).Within(1e-3f), "6 - 1.5 x 0.9 x 2.4 s");
+
+            FightSim p = Make(P(Medium), rod: twig);
+            p.ForceState(RestState(10f, lateral: 0.3f));
+            p.Tick(In(-1f, false));
+            Assert.That(p.State.Lateral - 0.3f, Is.EqualTo(-0.67f * 0.02f / (10f * 1.0471976f)).Within(1e-6f), "the push is the rod's steerRate");
+
+            FightSim r = Make(P(Medium), rod: twig);
+            r.ForceState(RestState(10f));
+            r.Tick(In(0f, true));
+            Assert.That(r.State.LineLength - 10f, Is.EqualTo(-0.0108f).Within(1e-6f), "0.54 x 1.0 x 0.02");
+        }
+
         // Catches: a counter during a back pull tiring at the plain-counter rate (1.25) or charging the counter rate when the table says the
         // run is a back pull (it is still counter-only, k 0.8, but tire +0.8/s).
         [Test]
