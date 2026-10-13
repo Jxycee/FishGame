@@ -350,10 +350,8 @@ namespace FishGame.EditorTools
 
         // ---- render ----
 
-        // Spec 10.7 record: what this camera sees (frustum-culled renderers, their triangles and distinct materials) plus the editor's UnityStats
-        // for the last render (batches, SetPass calls, draw calls, triangles; these read 0 when the editor does not collect stats in batchmode).
-        static string s_statsLine = "";
-
+        // Spec 10.7 record: what this camera sees (frustum-culled renderers, their triangles and distinct materials). The render counters (batches,
+        // SetPass, draw calls via ProfilerRecorder) read 0 in batchmode, so the GPU-side counts stay a check on the user's machine.
         static void LogStats(Camera camera, string name)
         {
             Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
@@ -369,8 +367,7 @@ namespace FishGame.EditorTools
                     for (int s = 0; s < f.sharedMesh.subMeshCount; s++) triangles += f.sharedMesh.GetIndexCount(s) / 3;
                     foreach (Material m in r.sharedMaterials) if (m != null) materials.Add(m);
                 }
-            Debug.Log("FG LOOKDEV STATS " + name + " visibleRenderers=" + renderers + " visibleTris=" + triangles + " materials=" + materials.Count +
-                      " | recorder " + s_statsLine);
+            Debug.Log("FG LOOKDEV STATS " + name + " visibleRenderers=" + renderers + " visibleTris=" + triangles + " materials=" + materials.Count);
         }
 
         static void Shoot(Camera camera, Vector3 eye, Vector3 target, float verticalFov, string outDir, string name)
@@ -381,14 +378,7 @@ namespace FishGame.EditorTools
             var rt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 };
             camera.targetTexture = rt;
             camera.Render();
-            using (var batches = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Render, "Batches Count"))
-            using (var setPass = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Render, "SetPass Calls Count"))
-            using (var draws = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Render, "Draw Calls Count"))
-            using (var tris = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Render, "Triangles Count"))
-            {
-                camera.Render();   // second frame: shadow and depth history settled
-                s_statsLine = "batches=" + batches.CurrentValue + " setPass=" + setPass.CurrentValue + " drawCalls=" + draws.CurrentValue + " tris=" + tris.CurrentValue;
-            }
+            camera.Render();   // second frame: shadow and depth history settled
             LogStats(camera, name);
             RenderTexture previous = RenderTexture.active;
             RenderTexture.active = rt;

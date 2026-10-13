@@ -384,14 +384,14 @@ namespace FishGame.EditorTools
                     Vector3 baseWorld = new Vector3(bx, LakeDockLayout.BedYAt(bx, bz) - sink, bz);
                     Quaternion lean = Quaternion.Euler(leanX, 0f, leanZ);
                     float blade = LakeDockLayout.ReedBladeRadius;
-                    b.Lathe(baseWorld + lean * new Vector3(0f, length * 0.5f, 0f), t => blade * (1.35f - 1.25f * t * t), length, 6, 4, lean,
+                    b.Lathe(baseWorld + lean * new Vector3(0f, length * 0.5f, 0f), t => blade * (1.35f - 1.25f * t * t), length, 5, 3, lean,
                         LakeDockLayout.SlotReed, EnvTextureLayers.Grass, SmoothMeshBuilder.MappingUv, t => 0.62f + 0.38f * Mathf.Sqrt(t), blade);
                     if (k % 3 == 0)
                     {
                         // Cattail: a soft brown sausage just below the tip.
                         float headLength = 0.16f, headRadius = blade * 2.4f;
                         Vector3 head = baseWorld + lean * new Vector3(0f, length - 0.1f - headLength * 0.5f, 0f);
-                        b.Lathe(head, t => headRadius * Mathf.Sqrt(Mathf.Max(0f, Mathf.Sin(Mathf.PI * t))), headLength, 8, 6, lean,
+                        b.Lathe(head, t => headRadius * Mathf.Sqrt(Mathf.Max(0f, Mathf.Sin(Mathf.PI * t))), headLength, 6, 4, lean,
                             LakeDockLayout.SlotWoodDark, EnvTextureLayers.None, SmoothMeshBuilder.MappingUv, t => 0.8f + 0.2f * t, headRadius);
                     }
                 }
