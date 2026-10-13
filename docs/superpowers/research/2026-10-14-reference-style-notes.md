@@ -32,3 +32,15 @@ Local copies of the viewed screenshots (browser captures, 800x450, not in the re
 4. **Surface breakup.** In Unity, our palette slot plus painted texture layers carry this. Make sure every mesh uses a texture layer (wood, rock, sand, grass), not layer 0, wherever it covers a large area.
 5. **Lighting and atmosphere** (Unity side, later): a warmer sun, a stronger sky colour and a light distance haze, checked against the GTX 900 Low preset.
 6. **The tug as the hero.** Like the RV, it should be in view from most of the map and look lived-in. The LUCKY BREAK tug already does this well.
+
+## Tech they ship (from the installed games' managed assembly names, 2026-10-14)
+Read from the `*_Data/Managed` file lists of the user's installed copies (names only; no code or assets opened).
+- **PEAK:** URP; **HBAO** (horizon-based ambient occlusion: the soft contact shadows), **LightVolume** (baked light volumes); Photon PUN + **Photon Voice**; DOTween; Cinemachine; Animation Rigging; Addressables; Odin.
+- **REPO:** Post-processing Stack v2 (built-in-pipeline style post: the VHS look); Photon PUN + **Photon Voice**; **Klattersynth** (speech synthesis, likely the robot voices); Splines; Timeline; Addressables.
+- **Gamble With Your Friends:** URP; **Dissonance** voice (FMOD playback/recording); Mirror networking (Steam transport); FMOD audio; **Shapes** (vector UI/FX); **Febucci TextAnimator** (bouncy text); NiceVibrations; MoreMountains tools; UModeler; DOTween.
+- **Rust:** IL2CPP build (no managed names to read); its tugboat is a reference for our R78 tug.
+- **Takeaways for FishGame:**
+  - A good screen-space AO is a big part of the "soft toon" depth. Check URP's built-in SSAO on our Medium/High presets before adding anything.
+  - Bouncy text and tweening are cheap juice worth having: DOTween-style easing, and TextAnimator-like effects for toasts.
+  - Voice: two of three use Photon Voice and one uses Dissonance. We plan Vivox (research 2026-10-14-voice-mimic-seagulls.md).
+- **Limit:** REA analyses code, not Unity art files (meshes, textures, materials). Inspecting their art directly would need a Unity asset viewer (e.g. AssetStudio or AssetRipper), study only.
