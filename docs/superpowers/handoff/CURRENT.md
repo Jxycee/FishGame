@@ -4,7 +4,7 @@
 
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
-_Last updated: 2026-10-14. **M3 MERGED INTO MAIN** (7af8041; check on main PASS: EditMode 1378 incl. 1 skip, PlayMode 139). In flight: harbour detail pass (Blender, branch harbour-art2), research notes (mafia counter-play; voice-mimic seagulls). Next: user's board checks, harbour pass into Unity, then the M4 design session (inputs: docs/superpowers/design/2026-10-14-m4-design-inputs.md)._
+_Last updated: 2026-10-14. **M3 MERGED INTO MAIN** (7af8041; check on main PASS: EditMode 1378 incl. 1 skip, PlayMode 139). Harbour detail pass Blender side done (branch harbour-art2; Unity side next). Reference asset study done (research/2026-10-14-reference-style-notes.md: grey masks + colour parameters, top/bottom tint, crown cards, LODs). In flight: research notes (mafia counter-play; voice-mimic seagulls). Next: user's board checks, harbour pass into Unity, then the M4 design session (inputs: docs/superpowers/design/2026-10-14-m4-design-inputs.md)._
 
 ## 1. Read these next (in order)
 1. `C:\Dev\FishGame-m3\CLAUDE.md`: project rules (Git: no PRs; merge yourself when reviewed and green; PlayMode guard).
@@ -78,7 +78,27 @@ Also on the board:
 - winter tree colliders;
 - the online-cancel message.
 
-## 10. Harbour detail pass (user, 2026-10-14) - in flight
+## 10. Harbour detail pass (user, 2026-10-14) - Blender side DONE, Unity side next
+- **Status (2026-10-14):** branch `harbour-art2` pushed. Commits 3bfd603 (detail pass) and dbeaf30 (fixes). Phase-1 FBX are byte-identical; the rebuild from an empty Blender is deterministic. 37 new FBX (core 149.7k tris, detail 43.2k hidden on Low) plus a `pass2` manifest block (placements, animHint, smoke/light points, ladders).
+- **Triangles (worst view):**
+  - High: ~372k (22k over the old 350k aim).
+  - Low: ~327k.
+  - The perf target is a GTX 900 at Low-Medium, so High may stay over. Trim with LODs/impostors in the Unity task (see the asset study in research/2026-10-14-reference-style-notes.md).
+- **Tug placement:** moored on the EAST (outer) face of the breakwater at (36.8, 0, -22). The inner face clipped the x=14 beach cast lane.
+  - The tug hull covers ~70 castable cells and the gangway ~6, so a grid rebake is needed in the Unity task.
+- **Open items:**
+  - The 16 code village trees are still cones/blobs. Replace them in the Unity task, at ported positions.
+  - The LUCKY BREAK lettering is partly hidden by the fender.
+  - The bow waterline stripe is jagged.
+  - Ice chests are one model with 4 placements.
+  - Sapling/A.N.T./Poly Haven were not used (determinism).
+- **Unity builder checklist:** in the agent's report (task a0dad2601da7be3ce); summary in the next Unity brief. The key points:
+  - Copy the FBX + manifest + `HarbourPierLayout.Visuals` together.
+  - `_Tri` models use M_Toon_Tri.
+  - `Harbour_Core_River` uses the water material, with no collider and not on the Water layer.
+  - Col models: MeshCollider only. Wall/pillars/dunes go on the Shore layer.
+  - Low hides group "detail".
+  - Rebake the grid.
 - User: the harbour is "decent but very simple". Wants all of: shaped land, harbour life + clutter, shoreline + vegetation, backdrop/skyline; cozy-busy; "don't be afraid to add triangles" (user has an RTX 5070). Perf target revised: GTX 900-series at LOW-MEDIUM settings.
 - Story (user): each map must feel like a stop on the downriver run ("they drove the boat to that area"): the crew's getaway boat moored as a hero prop (FBX Harbour_Core_CrewBoat, reused for the M4 boat ride), a river mouth in the backdrop, light mafia hints (wanted poster, dark boat on the horizon), the world continuing past the walls. Life from noise/clutter/details (REPO, PEAK) and realism + scale (RV There Yet).
 - Blender artist (Opus) on worktree C:\Dev\FishGame-harbour-art, branch harbour-art2 (from af95354). Output: Harbour_Core_*, Harbour_Detail_*, *_Col FBX + manifest (animHint per object for Unity sway/bob/smoke/gull wiring). Screenshots 15+ go to the build log.

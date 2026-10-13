@@ -44,3 +44,65 @@ Read from the `*_Data/Managed` file lists of the user's installed copies (names 
   - Bouncy text and tweening are cheap juice worth having: DOTween-style easing, and TextAnimator-like effects for toasts.
   - Voice: two of three use Photon Voice and one uses Dissonance. We plan Vivox (research 2026-10-14-voice-mimic-seagulls.md).
 - **Limit:** REA analyses code, not Unity art files (meshes, textures, materials). Inspecting their art directly would need a Unity asset viewer (e.g. AssetStudio or AssetRipper), study only.
+
+## How their art is built (asset study, 2026-10-14)
+Study only. PEAK and REPO were opened read-only in AssetRipper (material properties, texture sizes, mesh counts). RV There Yet is an Unreal game (install folder `Ride`); its packages are not opened, so only the asset path list in its `Manifest_UFSFiles_Win64.txt` was read. A few PEAK textures were saved to the session scratchpad for viewing; nothing was copied into the repo.
+
+### The shared trick: grey masks, colour from parameters
+PEAK and RV There Yet both keep texture maps **greyscale** and set colour in the material.
+- **PEAK foliage:** shader `GD/FoliageGD`.
+  - **Textures:**
+    - A 2048 top-down crown card (`T_Foliage TreeCrown`). It is a radial burst of painted brush strokes with branch-fork tips, alpha-clipped at 0.4.
+    - A tiling 1024 "paint" mask (`A_Paint_Foliage`). It holds soft blobs plus doodled leaf-scallop strokes (w/m shapes), all in grey.
+  - **Colour comes from parameters:**
+    - `_BaseColor` (teal-green).
+    - `_TopColor` and `_TopColorSecondary`, with a top-surface tightness. Upward faces get a lighter, yellower green.
+    - `_BottomColor`, a dark blue-purple for shadowed undersides.
+    - `_HueShifts` and `_HueStr`, which vary the hue per object.
+    - Vertex-colour amount and vertex wind.
+  - **Projection:** textures are **triplanar** (`_TRIPLANAR1..3`). That is why bark and rock never show UV seams.
+- **PEAK rock:** a Shader Graph (`W/Peak_Rock`) with scripts `SetRockColors` and `RockMaterialSwapper`. The same rock meshes are recoloured per biome.
+- **PEAK grass:** GPU grass (`GrassGeometryCompute`, `GrassChunking`, `GrassRenderer`). Grass is not hand-placed meshes.
+- **RV There Yet rock:** rocks ship only `_Mask` and `_Nor` textures. Colour comes from a gradient atlas (`CurveAtlas_Rocks`: `Curve_Rock_BaseColor`, `_Grey`, `_Jungle`). Each rock has material instances per biome (`MI_CliffWall_02_Jungle`, `_Snow`, `_Grey`, `_Golf`).
+- **RV There Yet master materials:** a handful (`MM_Asset`, `MM_Foliage`, `MM_TreeStem`, `MM_Trim`, `MM_Landscape`) drive hundreds of instances. Props have a `TX_ColorMask_Default`.
+- **RV There Yet landscape:**
+  - Material functions per surface: `MF_Dirt`, `MF_Grass`, `MF_Rock`, `MF_RockyDirt`, plus `_Jungle`/`_Snow`/`_Cold` variants.
+  - Runtime virtual textures (`RVT_Landscape*`). Meshes sampling the RVT pick up the ground colour where they meet it, so rocks and foliage blend into the terrain.
+- **RV There Yet trees:**
+  - Spruce, fir, jungle and palm, each with a separate simple collision mesh (`_COL`).
+  - Snow and no-moss variants.
+  - **Impostor** billboards (`MI_Impostor_SM_Spruce_01`) for distance.
+  - Grass is landscape grass types (scattered automatically from the ground material).
+- **RV There Yet uses bought or free marketplace packs** (UltraDynamicSky, Stylized_Rocks_Free, Simple_Trees_Pack, MWLandscapeAutoMaterial, TrainPack). The look comes from one consistent recolouring system, not from bespoke art for every asset.
+- **REPO is different.** Props are standard PBR from Substance Painter: `_BaseColor`/`_Normal`, plus metallic/smoothness on some. Textures are mostly 512 (1024 for hero props), and props are low poly:
+
+  | REPO prop | Triangles |
+  |---|---|
+  | Crate | 108 |
+  | Barrel | ~570 |
+  | Bookshelf | ~320 |
+  | Big valuable crate | ~860 |
+
+  The REPO look is density of cheap props, not detail per prop.
+
+### Mesh density (PEAK)
+| Asset | LOD0 | LOD1 | LOD2 | LOD3 |
+|---|---|---|---|---|
+| Rock_Round | ~4.0k tris | 1.2k | 600 | 200 |
+| Rock_Wall | ~3.3k | 1.3k | 500 | 250 |
+| Fern | 112 | 55 | 28 | 10 |
+| Dead shrub | 1.0k–3.2k | | | |
+
+Hero rocks are a few thousand triangles with four LODs. Small plants are tiny, and colliders are separate low-poly meshes.
+
+### What this means for FishGame
+1. **Our palette-slot + texture-layer approach matches what both games do.** Push it further:
+   - Keep the painted layers greyscale.
+   - Add a **top colour** (world-up tint) and a **bottom/shadow colour** (cool blue-purple) to M_Toon_Base/M_Toon_Tri.
+   - Add a small per-object hue shift.
+   - This is one shader change that lifts every mesh, and it's cheap on a GTX 900.
+2. **Trees:** build canopies from crossed/clustered **alpha-clipped crown cards** with a painted radial-stroke texture. Faceted clumps look more solid but less painterly. Keep a simple trunk collider.
+3. **Biome variants by recolour:** one rock or tree set, recoloured per river stage (palette + top/bottom colours). This fits the 7-stage escalation without new meshes per map.
+4. **LODs and impostors:** hero rocks ~3–4k triangles with LOD1–3. Far trees as billboards on Low. This gives triangle budget back (the harbour pass2 is ~22k over on High).
+5. **Grass:** GPU-instanced or compute grass over the land beats hand-placed tuft meshes, both for density and for cost. Candidate for the art polish task, after M4 core.
+6. **Ground blending:** an RVT-like effect (meshes tinted by the terrain colour near the ground) is a later nice-to-have. A cheap version is a world-height gradient in the toon shader.
