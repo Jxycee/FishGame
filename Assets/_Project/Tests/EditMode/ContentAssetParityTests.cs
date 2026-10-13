@@ -12,7 +12,9 @@ namespace FishGame.Tests.EditMode
 {
     public class ContentAssetParityTests
     {
-        const int MaxFishModelTriangles = 400;   // the low-poly budget for one species model
+        // The budget for one species model. R74 (realistic toon, look-dev 2026-10-12): smooth subdivided fish with big eyes; the look-dev bluegill is
+        // ~3.9k triangles. Was 400 under the low-poly look.
+        const int MaxFishModelTriangles = 5000;
 
         // Catches: the committed Content/Audio/SfxCueTable.asset drifting from the seed rows (a retuned recipe or a hand-edited asset that the
         // builder's create-only rule would never refresh), a missing or extra row, a changed field. Rows are matched by id, not by position.
@@ -44,7 +46,7 @@ namespace FishGame.Tests.EditMode
         }
 
         // Catches: a species whose Model was never filled (the fish would render the fallback mesh), a model without vertex colours or with several
-        // submeshes (IsFishModelMesh), or a model over the low-poly triangle budget.
+        // submeshes (IsFishModelMesh), or a model over the triangle budget.
         [Test]
         public void SeedSpecies_Models_AreFishModelMeshes_UnderTriangleBudget()
         {
