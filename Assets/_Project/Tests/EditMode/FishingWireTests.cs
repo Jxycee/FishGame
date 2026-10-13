@@ -290,5 +290,68 @@ namespace FishGame.Tests.EditMode
             FishingDebugSettings.ForcedBiteWait = -3f;
             Assert.That(FishingDebugSettings.ToOverrides(null).ForcedBiteWait, Is.EqualTo(0f), "negative clamps to 0");
         }
+
+        static readonly string[] SpeciesIds = { "bluegill", "perch", "carp", "trout", "catfish" };
+
+        // Catches: F10 skipping a species, not returning to None after the last one, or wedging on the first press.
+        [Test]
+        public void FishingDebugSettings_NextForcedSpecies_CyclesNoneThroughEverySpeciesBackToNone()
+        {
+            string current = null;
+            var seen = new List<string>();
+            for (int i = 0; i < SpeciesIds.Length; i++)
+            {
+                current = FishingDebugSettings.NextForcedSpecies(current, SpeciesIds);
+                seen.Add(current);
+            }
+            Assert.That(seen, Is.EqualTo(SpeciesIds), "None, then every species in database order");
+            Assert.That(FishingDebugSettings.NextForcedSpecies(current, SpeciesIds), Is.Null, "after the last species it is None again");
+            Assert.That(FishingDebugSettings.NextForcedSpecies("", SpeciesIds), Is.EqualTo("bluegill"), "an empty id is None");
+        }
+
+        // Catches: a stale id (a species removed from the database) trapping the cycle, and a crash on an empty or missing list.
+        [Test]
+        public void FishingDebugSettings_NextForcedSpecies_UnknownIdRestartsAndEmptyListStaysNone()
+        {
+            Assert.That(FishingDebugSettings.NextForcedSpecies("not_a_fish", SpeciesIds), Is.EqualTo("bluegill"));
+            Assert.That(FishingDebugSettings.NextForcedSpecies("bluegill", new string[0]), Is.Null);
+            Assert.That(FishingDebugSettings.NextForcedSpecies(null, null), Is.Null);
+        }
+
+        // Catches: F10 changing the forced species on a client (only the host's roll counts) and a client getting no "Host only" answer.
+        [Test]
+        public void FishingDebugSettings_CycleForcedSpecies_ClientShowsHostOnlyAndChangesNothing()
+        {
+            ForcedSpeciesKeyResult result = FishingDebugSettings.CycleForcedSpecies(false, false, SpeciesIds);
+            Assert.That(result, Is.EqualTo(ForcedSpeciesKeyResult.HostOnly));
+            Assert.That(FishingDebugSettings.ForcedSpeciesId, Is.Null);
+        }
+
+        // Catches: F10 cycling while the solo game is paused.
+        [Test]
+        public void FishingDebugSettings_CycleForcedSpecies_DoesNothingWhilePaused()
+        {
+            FishingDebugSettings.ForcedSpeciesId = "perch";
+            ForcedSpeciesKeyResult result = FishingDebugSettings.CycleForcedSpecies(true, true, SpeciesIds);
+            Assert.That(result, Is.EqualTo(ForcedSpeciesKeyResult.Ignored));
+            Assert.That(FishingDebugSettings.ForcedSpeciesId, Is.EqualTo("perch"));
+            Assert.That(FishingDebugSettings.CycleForcedSpecies(false, true, SpeciesIds), Is.EqualTo(ForcedSpeciesKeyResult.Ignored), "paused wins over host only");
+        }
+
+        // Catches: the key not reaching the roll: the host's ToOverrides must see the id F10 set.
+        [Test]
+        public void FishingDebugSettings_CycleForcedSpecies_HostStepsTheSettingThroughTheList()
+        {
+            Assert.That(FishingDebugSettings.CycleForcedSpecies(true, false, SpeciesIds), Is.EqualTo(ForcedSpeciesKeyResult.Changed));
+            Assert.That(FishingDebugSettings.ForcedSpeciesId, Is.EqualTo("bluegill"));
+            Assert.That(FishingDebugSettings.CycleForcedSpecies(true, false, SpeciesIds), Is.EqualTo(ForcedSpeciesKeyResult.Changed));
+            Assert.That(FishingDebugSettings.ForcedSpeciesId, Is.EqualTo("perch"));
+
+            for (int i = 0; i < SpeciesIds.Length - 1; i++) FishingDebugSettings.CycleForcedSpecies(true, false, SpeciesIds);
+            Assert.That(FishingDebugSettings.ForcedSpeciesId, Is.Null, "a full lap ends back at None");
+
+            Assert.That(FishingDebugSettings.CycleForcedSpecies(true, false, new string[0]), Is.EqualTo(ForcedSpeciesKeyResult.NoSpecies));
+            Assert.That(FishingDebugSettings.ForcedSpeciesId, Is.Null);
+        }
     }
 }

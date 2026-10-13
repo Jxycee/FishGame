@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using FishGame.Core;
@@ -15,9 +16,10 @@ namespace FishGame.UI
     // Authority: client-only (local UI), dev builds only (Debug.isDebugBuild, checked at runtime; never #if). Keys come from IDevInput only.
     // Reads FishingRodController.Local (Machine getters), the local FishingRodNetwork NetVars, and on the host FishingHost.Current.Ledger.
     // Its only writes are the C 7.26 ones: the owner's SelectRodRpc / SelectBaitRpc (the host decides and mirrors the loadout back, so the
-    // overlay shows the NetVar truth), the HOST-only statics FishingDebugSettings.ForcedBiteWait / TwitchyHook (F6, F7), and a local
-    // ripple (F9). RunSeed is displayed only (ruling G-Q5). Spec 9.11 (last bullet), 17.2 item 5.
-    // Keys: F3 overlay, F4 next rod, F5 next bait, F6 forced bite (host), F7 twitchy hook (host), F9 ripple at the crosshair (F8 is unused).
+    // overlay shows the NetVar truth), the HOST-only statics FishingDebugSettings.ForcedBiteWait / TwitchyHook / ForcedSpeciesId
+    // (F6, F7, F10), and a local ripple (F9). RunSeed is displayed only (ruling G-Q5). Spec 9.11 (last bullet), 17.2 item 5.
+    // Keys: F3 overlay, F4 next rod, F5 next bait, F6 forced bite (host), F7 twitchy hook (host), F9 ripple at the crosshair,
+    // F10 cycle the forced species None -> each species -> None (host only, not while paused). F8 is reserved for M3.
     internal sealed class DevOverlayPresenter : IHudExtension
     {
         private const float RefreshSeconds = 0.1f;      // 10 Hz, and only while visible
@@ -29,6 +31,7 @@ namespace FishGame.UI
         private static readonly DevKey[] Keys =
         {
             DevKey.ToggleOverlay, DevKey.NextRod, DevKey.NextBait, DevKey.ToggleForcedBite, DevKey.ToggleTwitchy, DevKey.RippleAtCrosshair,
+            DevKey.CycleForcedSpecies,
         };
 
         private readonly StringBuilder _sb = new StringBuilder(768);
@@ -150,7 +153,47 @@ namespace FishGame.UI
                 case DevKey.RippleAtCrosshair:
                     RippleAtCrosshair();
                     break;
+                case DevKey.CycleForcedSpecies:
+                    CycleForcedSpecies();
+                    break;
             }
+        }
+
+        // F10: None -> every species in index order -> None (host only; nothing while the solo game is paused). The rule lives in
+        // FishingDebugSettings.CycleForcedSpecies so EditMode tests cover it.
+        private void CycleForcedSpecies()
+        {
+            var ids = new List<string>();
+            if (_registry != null)
+            {
+                int count = _registry.Species.Count;
+                for (int i = 0; i < count; i++) ids.Add(_registry.SpeciesAt((ushort)i).Id);
+            }
+
+            switch (FishingDebugSettings.CycleForcedSpecies(IsHost(), IsPaused(), ids))
+            {
+                case ForcedSpeciesKeyResult.Changed:
+                    SetLast("forcedSpecies=" + ForcedSpeciesText());
+                    break;
+                case ForcedSpeciesKeyResult.HostOnly:
+                    SetLast(UiStrings.Get("dev.host_only"));
+                    break;
+                case ForcedSpeciesKeyResult.NoSpecies:
+                    SetLast("no species in the registry");
+                    break;
+            }
+        }
+
+        private static string ForcedSpeciesText()
+        {
+            string id = FishingDebugSettings.ForcedSpeciesId;
+            return string.IsNullOrEmpty(id) ? "none" : id;
+        }
+
+        private static bool IsPaused()
+        {
+            ServiceRegistry game = ServiceRoots.Game;
+            return game != null && game.TryGet(out IPauseState pause) && pause.Paused;
         }
 
         // Host check by the NetworkManager, never by FishingHost.Current.Ledger (null before the first server tick).
@@ -320,7 +363,8 @@ namespace FishGame.UI
                 _sb.Append("HOST ledger not started");
                 if (host != null) _sb.Append(" runSeed=0x").Append(host.RunSeed.ToString("X16", Inv));
                 _sb.Append(" forcedBite=").Append(F2(FishingDebugSettings.ForcedBiteWait))
-                    .Append(" twitchy=").Append(OnOff(FishingDebugSettings.TwitchyHook)).Append('\n');
+                    .Append(" twitchy=").Append(OnOff(FishingDebugSettings.TwitchyHook))
+                    .Append(" species=").Append(ForcedSpeciesText()).Append('\n');
                 return;
             }
 
@@ -328,7 +372,8 @@ namespace FishGame.UI
                 .Append(" now=").Append(ledger.Now.ToString("0.0", Inv)).Append("s catches=").Append(ledger.CatchLog.Count.ToString(Inv))
                 .Append(" runSeed=0x").Append(ledger.RunSeed.ToString("X16", Inv))
                 .Append(" forcedBite=").Append(F2(FishingDebugSettings.ForcedBiteWait))
-                .Append(" twitchy=").Append(OnOff(FishingDebugSettings.TwitchyHook)).Append('\n');
+                .Append(" twitchy=").Append(OnOff(FishingDebugSettings.TwitchyHook))
+                .Append(" species=").Append(ForcedSpeciesText()).Append('\n');
 
             var rods = FishingRodNetwork.Active;
             for (int i = 0; i < rods.Count; i++)

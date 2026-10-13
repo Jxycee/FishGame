@@ -119,14 +119,15 @@ These keys exist only in the editor and in development builds. In a build made w
 
 | Key | Effect |
 |---|---|
-| F3 | Toggle the dev overlay: rod state, tension, stamina, line, timers, the last roll, the loadout and (on the host) the ledger. |
+| F3 | Toggle the dev overlay: rod state, the fight (strain, tire, back and p, the pull wave), line, timers, the last roll, the loadout and (on the host) the ledger, including the forced species. |
 | F4 | Next rod (cycles through all four rods). |
 | F5 | Next bait. |
 | F6 | Toggle a forced 0.1 s bite (host only). |
 | F7 | Toggle the twitchy hook (host only). |
 | F9 | Ripple at the crosshair. |
+| F10 | Cycle the forced species (host only; does nothing while paused). None, then each species in database order (bluegill, perch, carp, trout, catfish), then None again. The F3 overlay's HOST line shows `species=`. On a client it shows "Host only". |
 
-F8 is unused. The dock bell rings a debug "sell creel" that empties your creel and adds coins.
+F8 is reserved for M3 (the dev clock scrub). The dock bell rings a debug "sell creel" that empties your creel and adds coins.
 
 The debug loadout every player starts with: the Handmade rod, the worm selected, 20 of each bait, and the bare hook unlimited. The host refuses a rod or bait selection while that player has an active cast (a cast that has been accepted and not yet resolved). Do not switch rod or bait in the middle of a charge: only the landing is reconciled.
 
