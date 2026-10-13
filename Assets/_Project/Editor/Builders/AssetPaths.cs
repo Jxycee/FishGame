@@ -72,6 +72,7 @@ namespace FishGame.EditorTools
         public const string TexturesFolder = "Assets/_Project/Content/Textures";
         public const string EnvDetailArray = TexturesFolder + "/T_EnvDetailArray.png";
         public const string FishSkinArray = TexturesFolder + "/T_FishSkinArray.png";
+        public const string FishIconAtlas = TexturesFolder + "/T_FishIcons.png";    // T21: the baked journal icons (FishIconBaker)
 
         // T10 additions (M3 ecology data; C 6.2). T16/T17 reuse ShoreGridsFolder; do not redeclare it.
         public const string HarbourPierSpotAsset = "Assets/_Project/Content/Spots/harbour_pier.asset";

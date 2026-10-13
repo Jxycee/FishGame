@@ -185,3 +185,130 @@ MonoBehaviour:
     lightMult: 0.9
     desaturate: 0.15
     rainAmount: 0
+  fishIconAtlas: {fileID: 2800000, guid: ae230739c6a8d7e4eb602328b7f59c81, type: 3}
+  fishIconTiles:
+  - id: bluegill
+    x: 0
+    y: 512
+    w: 256
+    h: 128
+  - id: bruiser_tuna
+    x: 256
+    y: 512
+    w: 256
+    h: 128
+  - id: bucketmouth_bass
+    x: 512
+    y: 512
+    w: 256
+    h: 128
+  - id: frost_char
+    x: 768
+    y: 512
+    w: 256
+    h: 128
+  - id: gawping_gurnard
+    x: 1024
+    y: 512
+    w: 256
+    h: 128
+  - id: gilded_carp
+    x: 0
+    y: 384
+    w: 256
+    h: 128
+  - id: glimmer_eel
+    x: 256
+    y: 384
+    w: 256
+    h: 128
+  - id: grumble_mackerel
+    x: 512
+    y: 384
+    w: 256
+    h: 128
+  - id: grumpy_carp
+    x: 768
+    y: 384
+    w: 256
+    h: 128
+  - id: grumpy_puffer
+    x: 1024
+    y: 384
+    w: 256
+    h: 128
+  - id: ice_herring
+    x: 0
+    y: 256
+    w: 256
+    h: 128
+  - id: lake_pike
+    x: 256
+    y: 256
+    w: 256
+    h: 128
+  - id: lanternfish
+    x: 512
+    y: 256
+    w: 256
+    h: 128
+  - id: mirror_minnow
+    x: 768
+    y: 256
+    w: 256
+    h: 128
+  - id: moon_squid
+    x: 1024
+    y: 256
+    w: 256
+    h: 128
+  - id: mudcat
+    x: 0
+    y: 128
+    w: 256
+    h: 128
+  - id: old_barnacle
+    x: 256
+    y: 128
+    w: 256
+    h: 128
+  - id: pier_sardine
+    x: 512
+    y: 128
+    w: 256
+    h: 128
+  - id: red_snapper
+    x: 768
+    y: 128
+    w: 256
+    h: 128
+  - id: silver_mullet
+    x: 1024
+    y: 128
+    w: 256
+    h: 128
+  - id: sleepy_sturgeon
+    x: 0
+    y: 0
+    w: 256
+    h: 128
+  - id: sneaky_flounder
+    x: 256
+    y: 0
+    w: 256
+    h: 128
+  - id: storm_ray
+    x: 512
+    y: 0
+    w: 256
+    h: 128
+  - id: sunny_trout
+    x: 768
+    y: 0
+    w: 256
+    h: 128
+  - id: yellow_perch
+    x: 1024
+    y: 0
+    w: 256
+    h: 128

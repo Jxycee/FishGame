@@ -2,17 +2,52 @@ using System.Collections.Generic;
 using FishGame.Core;
 using FishGame.Data;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace FishGame.UI
 {
-    // Authority: client-only (local UI). Journal fish icons, drawn at runtime from the species data (spec 11.1, M3-D29): a soft anti-aliased
-    // silhouette from SilhouetteMath with a back-to-belly gradient (colorB belly to colorA back), a darker rim, a faint top sheen and one comic
-    // eye (the R74 "realistic toon" look). Textures are created once per species on first use, cached by species id and never saved.
-    // Level 0 of the journal reuses the same texture tinted black (UiTint), so the eye disappears with the colours.
+    // Authority: client-only (local UI). Journal fish icons (spec 11.1, M3-D29). Primary source: the baked atlas T_FishIcons.png on the ArtPalette
+    // (the real R74 models rendered by Editor/Dev/FishIconBaker): one Sprite per species over that texture, created once and cached by species id.
+    // Fallback (no atlas, or no tile for the species): a runtime silhouette from SilhouetteMath with a back-to-belly gradient, a darker rim, a faint
+    // top sheen and one comic eye, cached by species id and never saved. Level 0 of the journal reuses the same image tinted black (UiTint).
     internal static class IconFactory
     {
         internal const int Width = 256;
         internal const int Height = 128;
+
+        private static readonly Dictionary<string, Sprite> Sprites = new Dictionary<string, Sprite>();
+
+        // The icon of a species for a UI Toolkit background: its atlas tile when the palette has one, else the silhouette. Null def: false.
+        internal static bool TryGetBackground(FishSpeciesDef def, ArtPaletteDef palette, out Background background)
+        {
+            background = default;
+            if (def == null) return false;
+            Sprite sprite = AtlasSprite(def, palette);
+            if (sprite != null)
+            {
+                background = Background.FromSprite(sprite);
+                return true;
+            }
+            Texture2D tex = Get(def);
+            if (tex == null) return false;
+            background = Background.FromTexture2D(tex);
+            return true;
+        }
+
+        private static Sprite AtlasSprite(FishSpeciesDef def, ArtPaletteDef palette)
+        {
+            if (palette == null || def.Id == null) return null;
+            Texture2D atlas = palette.FishIconAtlas;
+            if (atlas == null || !palette.TryGetFishIconTile(def.Id, out FishIconTile tile)) return null;
+            if (tile.w <= 0 || tile.h <= 0 || tile.x < 0 || tile.y < 0 || tile.x + tile.w > atlas.width || tile.y + tile.h > atlas.height) return null;
+            if (Sprites.TryGetValue(def.Id, out Sprite cached) && cached != null && cached.texture == atlas) return cached;
+
+            var sprite = Sprite.Create(atlas, new Rect(tile.x, tile.y, tile.w, tile.h), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
+            sprite.name = "JournalIconTile_" + def.Id;
+            sprite.hideFlags = HideFlags.HideAndDontSave;
+            Sprites[def.Id] = sprite;
+            return sprite;
+        }
 
         private const float MaxBodyLength = 196f;       // body length cap, px (the canvas is 256 wide)
         private const float MaxExtent = 240f;           // body plus tail or tentacles
@@ -56,6 +91,11 @@ namespace FishGame.UI
                 Object.DestroyImmediate(tex);       // immediate: a deferred Destroy never runs once the app is quitting
             }
             Cache.Clear();
+            foreach (KeyValuePair<string, Sprite> pair in Sprites)
+            {
+                if (pair.Value != null) Object.DestroyImmediate(pair.Value);   // the sprite only; the atlas texture is an asset
+            }
+            Sprites.Clear();
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

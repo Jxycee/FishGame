@@ -371,7 +371,7 @@ namespace FishGame.UI
             // Legend in icon order, so the glyph names are readable without a tooltip (keyboard and gamepad have no hover).
             _sb.Clear();
             for (int i = 0; i < SeasonKeys.Length; i++) _sb.Append(i > 0 ? ", " : string.Empty).Append(UiStrings.Get(SeasonKeys[i]));
-            _sb.Append("  /  ");
+            _sb.Append('\n');                        // seasons on the first line, weather on the second: one tidy break instead of a ragged wrap
             for (int i = 0; i < WeatherKeys.Length; i++) _sb.Append(i > 0 ? ", " : string.Empty).Append(UiStrings.Get(WeatherKeys[i]));
             var legend = new Label(_sb.ToString()) { pickingMode = PickingMode.Ignore };
             legend.AddToClassList("journal-legend");
@@ -448,8 +448,10 @@ namespace FishGame.UI
                 card.Root.AddToClassList("level-" + level);
                 card.Level = level;
 
-                Texture2D tex = IconFactory.Get(card.Def);
-                card.Icon.style.backgroundImage = tex != null ? new StyleBackground(tex) : new StyleBackground(StyleKeyword.None);
+                ArtPaletteDef palette = _registry != null ? _registry.ArtPalette : null;
+                card.Icon.style.backgroundImage = IconFactory.TryGetBackground(card.Def, palette, out Background icon)
+                    ? new StyleBackground(icon)
+                    : new StyleBackground(StyleKeyword.None);
                 card.Icon.style.unityBackgroundImageTintColor = level == 0 ? new StyleColor(IconFactory.UiTint) : new StyleColor(Color.white);
                 UiQuery.Show(card.Glyphs, level >= 2);
             }
