@@ -88,8 +88,7 @@ Also on the board:
 ## 11. M3 branch review (Opus xhigh, 2026-10-14): MERGE WITH FIXES
 - Fix wave in flight: worktree C:\Dev\FishGame-t15, branch m3-final-fixes (acceptance-doc fixes + dev panel "Day over" button; host ignores rod/bait selection in release builds; __Temp test flake; FishIconBaker GPU guard; dev panel closes on a bite; contract M3-D97 for T17-B). Then full check, merge into m3-fish-ecology, merge M3 into main (merge commit, no PR).
 - Deferred to M4 / post-merge round (from the review):
-  - Cancel-reroll: the owner learns the species at cast accept and Cancel refunds bait (R45), so a modded client can re-roll for specials and hold a catch-limit reservation up to 240 s. Send the species only at hook, or stop refunding after the bobber lands.
-  - The 3 m cast-origin slack (M2) now reaches deeper sub-areas.
+  - (Dropped 2026-10-14, user: no anti-cheat; mods/WeMod welcome) cancel-reroll and cast-origin-slack exploits; the rod/bait release-build guard was removed from the fix wave.
   - In-scene WorldState GlobalObjectIdHash changes on every Build All and is not in ContentHash: put each Spot's World hash in the approval payload (or pin file ids).
   - Newer-schema meta.json that fails to parse is treated as corrupt: read schemaVersion first.
   - Journal saves do a synchronous Flush per change on every peer: debounce / background.

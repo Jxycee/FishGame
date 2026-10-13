@@ -31,7 +31,8 @@ Co-op (1–4) friend-slop rogue-lite fishing game. Unity 6000.6.5f1 (URP), Netco
 
 ## Agent roles (user preference)
 **Scale reviews to risk (2026-10-13, usage analysis):**
-- Opus reviews only networking, anti-cheat/host validation, save data and milestone merges.
+- Opus reviews only networking/host sync, save data and milestone merges.
+- No anti-cheat (user, 2026-10-14): modded clients and trainers (WeMod) are welcome, as in other friend-slop games. Host authority exists to keep peers in sync, not to stop cheating; don't add cheat-proofing or report client exploits as findings.
 - Sonnet reviews data, art, presentation and docs.
 - A fix of 30 lines or fewer in one area gets the controller's own diff read, with no review agent.
 - Batch small tasks into one implementer run and one review.
