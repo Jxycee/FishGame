@@ -151,6 +151,9 @@ namespace FishGame.Tests.EditMode
 
             var material = new Material(Shader.Find("FishGame/Toon")) { name = "__TestToonJitter" };
             material.SetFloat("_FGTexWeight", texWeight);
+            // The shader declares [Toggle(_FG_TRIPLANAR)] _UseTriplanar, and Unity re-applies a toggle's keyword from its float when the material asset is
+            // imported (as RenderMaterialLibrary does for M_Toon_Tri), so the float must agree with the keyword or the keyword is cleared again.
+            material.SetFloat("_UseTriplanar", triplanarMaterial ? 1f : 0f);
             if (triplanarMaterial) material.EnableKeyword("_FG_TRIPLANAR");
             AssetDatabase.CreateAsset(material, TempToonMaterial);
 
