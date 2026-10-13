@@ -6,6 +6,8 @@
 
 ## 0. Open questions for the user (each has a default that applies if unanswered)
 
+**Answered 2026-10-13: the user accepted every default** (Q1 `minLandDepth` 0.5; Q2 models do not gate the M3 exit; fixed dev run seed; the M3-D3 and M3-D31 rulings stand). The R74 look is approved (spec R74), so sections E-G can be written.
+
 1. **Reeds are too shallow to cast into.** The lake bed slopes 0.15 m per metre from the shore. So the whole 0-5 m "reeds" band is at most about 0.7 m deep, below the 0.8 m minimum landing depth: today nobody can cast into the reeds. M3's "where you fish matters" needs them castable. **Default: lower the minimum landing depth from 0.8 to 0.5 m** (one tuning value). The alternative is a steeper first metre of lake bed near the shore (a lake layout change). (C M3-D52)
 2. **Do the new fish models gate M3's exit?** M3 needs 20 new models (18 species plus 2 specials; the M2 bluegill, perch, carp, trout and catfish models are reused for bluegill, yellow_perch, grumpy_carp, sunny_trout and mudcat). They are built in the new R74 look after look-dev approval. **Default: no.** Models land in batches as a parallel controller track, you look at each batch, and any species without a model shows the procedural fallback fish. M3 exits on the gameplay criteria. (C 2.8 #28, T23)
 
