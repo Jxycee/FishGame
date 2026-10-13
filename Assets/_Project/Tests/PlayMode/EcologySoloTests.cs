@@ -560,8 +560,8 @@ namespace FishGame.Tests.PlayMode
                 float advanced = world.MinuteF - m0;
                 double elapsed = Time.realtimeSinceStartupAsDouble - t0;
                 TestContext.WriteLine("FG T24 clock advanced " + advanced.ToString("F3") + " minutes in " + elapsed.ToString("F3") + " s (rate " + rate.ToString("F3") + ")");
+                // Only the relative check: an absolute "4 +- 0.5 minutes in 3 s" fails on a single long frame, since WaitFrames(1, 3f) can last longer.
                 Assert.That(advanced, Is.EqualTo((float)elapsed * rate).Within(0.5f), "the clock runs at the dev rate");
-                Assert.That(advanced, Is.EqualTo(4f).Within(0.5f), "4 +- 0.5 minutes in 3 s");
                 Assert.That(Time.timeScale, Is.EqualTo(1f), "timeScale while running");
 
                 ui.Show(UiScreen.Pause);
