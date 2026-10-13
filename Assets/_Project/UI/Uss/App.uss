@@ -81,4 +81,21 @@
 .journal-band-labels { flex-direction: row; }
 .journal-band-label { flex-grow: 1; flex-basis: 0; margin: 3px 0 0 0; font-size: 13px; -unity-text-align: upper-center; color: rgb(170, 182, 196); }
 .journal-empty { font-size: 24px; margin: 48px 0; -unity-text-align: middle-center; color: rgb(180, 190, 200); }
-.dev-overlay { position: absolute; left: 16px; top: 16px; max-width: 46%; padding: 8px; font-size: 13px; white-space: normal; color: rgb(220, 235, 245); background-color: rgba(10, 18, 28, 0.75); -unity-text-align: upper-left; }
+.clock-hud { position: absolute; left: 16px; top: 16px; flex-direction: row; align-items: center; padding: 3px 10px; border-radius: 6px; background-color: rgba(10, 18, 28, 0.72); }
+.clock-text { font-size: 18px; margin: 0 8px 0 0; color: rgb(255, 255, 255); -unity-text-outline-width: 1px; -unity-text-outline-color: rgb(0, 0, 0); }
+.clock-glyph { width: 20px; height: 20px; margin: 0 4px 0 0; flex-shrink: 0; }
+.clock-name { font-size: 15px; margin: 0 8px 0 0; color: rgb(245, 248, 250); -unity-text-outline-width: 1px; -unity-text-outline-color: rgb(0, 0, 0); }
+.dev-panel { position: absolute; right: 16px; top: 16px; bottom: 16px; width: 380px; flex-direction: column; padding: 10px; border-radius: 8px; color: rgb(235, 240, 245); font-size: 14px; background-color: rgba(20, 30, 44, 0.96); }
+.dev-title { font-size: 18px; -unity-font-style: bold; margin: 0 0 6px 0; color: rgb(200, 230, 255); }
+.dev-row-label { font-size: 14px; margin: 8px 2px 2px 2px; color: rgb(200, 210, 222); }
+.dev-hint { font-size: 12px; margin: 2px 4px; color: rgb(170, 180, 190); white-space: normal; }
+.dev-btn { flex-grow: 1; flex-basis: 0; height: 28px; margin: 2px; padding: 0 4px; font-size: 13px; background-color: rgba(40, 56, 76, 0.9); color: rgb(225, 232, 240); border-width: 2px; border-color: rgba(0, 0, 0, 0); }
+.dev-btn.selected { background-color: rgb(52, 112, 170); color: rgb(255, 255, 255); -unity-font-style: bold; border-color: rgb(255, 210, 90); }
+.dev-btn:focus { border-color: rgb(255, 210, 90); }
+.dev-btn:disabled { opacity: 0.45; }
+.dev-wide { flex-grow: 0; flex-shrink: 0; flex-basis: auto; align-self: stretch; }
+.dev-slider, .dev-toggle { margin: 2px; }
+.dev-seed { flex-grow: 1; margin: 2px; }
+.dev-seed .unity-base-text-field__input { font-size: 13px; min-height: 26px; color: rgb(235, 240, 245); background-color: rgb(30, 44, 62); border-color: rgb(80, 100, 124); }
+.dev-map-row { flex-wrap: wrap; }
+.dev-overlay { position: absolute; left: 16px; top: 56px; max-width: 880px; padding: 8px; font-size: 13px; white-space: normal; color: rgb(220, 235, 245); background-color: rgba(10, 18, 28, 0.75); -unity-text-align: upper-left; }

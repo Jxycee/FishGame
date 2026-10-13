@@ -5,6 +5,7 @@ using System.Text;
 using FishGame.Core;
 using FishGame.Data;
 using FishGame.Fishing;
+using FishGame.Gameplay;
 using FishGame.Presentation;
 using FishGame.Runtime;
 using Unity.Netcode;
@@ -19,7 +20,12 @@ namespace FishGame.UI
     // overlay shows the NetVar truth), the HOST-only statics FishingDebugSettings.ForcedBiteWait / TwitchyHook / ForcedSpeciesId
     // (F6, F7, F10), and a local ripple (F9). RunSeed is displayed only (ruling G-Q5). Spec 9.11 (last bullet), 17.2 item 5.
     // Keys: F3 overlay, F4 next rod, F5 next bait, F6 forced bite (host), F7 twitchy hook (host), F9 ripple at the crosshair,
-    // F10 cycle the forced species None -> each species -> None (host only, not while paused). F8 is reserved for M3.
+    // F10 cycle the forced species None -> each species -> None (host only, not while paused).
+    // M3 (T22): F3 steps the shared HUD mode Off -> Overlay -> Panel -> Off (DevPanelPresenter owns the panel and listens to ModeChanged);
+    // the label shows in Overlay and Panel, with a WORLD line (spot, minute, season, weather, hotspot; on the host day, clock, scrub, casts, seed).
+    // F8 (clock scrub) is read by DevPanelPresenter.
+    internal enum DevHudMode : byte { Off, Overlay, Panel }
+
     internal sealed class DevOverlayPresenter : IHudExtension
     {
         private const float RefreshSeconds = 0.1f;      // 10 Hz, and only while visible
@@ -38,13 +44,27 @@ namespace FishGame.UI
         private readonly LogOnce _log = new LogOnce();
 
         private bool _bound;
-        private bool _visible;                  // survives scene loads: this presenter lives in the App root
+        private DevHudMode _mode;               // survives scene loads: this presenter lives in the App root
         private Label _label;
         private IDevInput _dev;
         private ContentRegistry _registry;
         private float _refreshTimer;
         private string _lastAction = string.Empty;
         private float _lastActionTimer;
+
+        internal DevHudMode Mode => _mode;
+
+        internal event Action<DevHudMode> ModeChanged;
+
+        // Idempotent. The panel presenter calls it (refused modal, Close, Esc); F3 steps through HandleKey.
+        internal void SetMode(DevHudMode mode)
+        {
+            if (_mode == mode) return;
+            _mode = mode;
+            ApplyVisible();
+            if (_bound) SetLast("hud " + mode.ToString().ToLowerInvariant());
+            ModeChanged?.Invoke(mode);
+        }
 
         public void Bind(VisualElement root, ServiceRegistry app)
         {
@@ -105,7 +125,7 @@ namespace FishGame.UI
                 }
             }
 
-            if (!_visible) return;
+            if (_mode == DevHudMode.Off) return;
             _refreshTimer += dt;
             if (_refreshTimer < RefreshSeconds) return;
             _refreshTimer = 0f;
@@ -130,9 +150,9 @@ namespace FishGame.UI
             switch (key)
             {
                 case DevKey.ToggleOverlay:
-                    _visible = !_visible;
-                    ApplyVisible();
-                    SetLast(_visible ? "overlay on" : "overlay off");
+                    // Off -> Overlay -> Panel -> Off. Panel -> Off normally comes from the panel itself (the open panel is a modal, so IDevInput
+                    // reads false in the Menu context), but the step is here too.
+                    SetMode(_mode == DevHudMode.Off ? DevHudMode.Overlay : _mode == DevHudMode.Overlay ? DevHudMode.Panel : DevHudMode.Off);
                     break;
                 case DevKey.NextRod:
                     SelectNext(rod: true);
@@ -255,12 +275,12 @@ namespace FishGame.UI
         {
             _lastAction = text ?? string.Empty;
             _lastActionTimer = LastActionSeconds;
-            if (_visible) _refreshTimer = RefreshSeconds;   // repaint on the next tick, not up to 0.1 s later
+            if (_mode != DevHudMode.Off) _refreshTimer = RefreshSeconds;   // repaint on the next tick, not up to 0.1 s later
         }
 
         private void ApplyVisible()
         {
-            if (_label != null) _label.EnableInClassList("hidden", !_visible);
+            if (_label != null) _label.EnableInClassList("hidden", _mode == DevHudMode.Off);
         }
 
         // ---- overlay text ----
@@ -286,6 +306,7 @@ namespace FishGame.UI
             FishingRodNetwork net = controller != null ? controller.GetComponent<FishingRodNetwork>() : null;
             if (net != null) AppendLoadout(net);
 
+            AppendWorld();
             AppendHost();
 
             if (_lastAction.Length > 0) _sb.Append("LAST ").Append(_lastAction).Append('\n');
@@ -344,6 +365,46 @@ namespace FishGame.UI
             _sb.Append("LOADOUT rod=").Append(RodName(net.NetRodIndex.Value))
                 .Append(" bait=").Append(BaitName(net.NetSelectedBait.Value))
                 .Append(" x").Append(count == ushort.MaxValue ? "inf" : count.ToString(Inv)).Append('\n');
+        }
+
+        // T22: the replicated world on every peer; the run state (day, clock, scrub, casts, seed) on the host only. The scrub shows from the
+        // anchor's rate (the driver's flag is private and a stopped clock is not re-anchored by a scrub, so a stopped clock reads scrub=off).
+        private void AppendWorld()
+        {
+            WorldState world = WorldState.Current;
+            if (world == null || !world.HasState)
+            {
+                _sb.Append("WORLD none\n");
+                return;
+            }
+
+            int minute = world.Minute;
+            _sb.Append("WORLD spot=").Append(world.SpotId).Append(" min=").Append(minute.ToString(Inv))
+                .Append(" (").Append(DayClock.FormatTime(minute)).Append(") season=").Append(world.Season)
+                .Append(" weather=").Append(world.Weather).Append(" hotspot=");
+            HotspotData hotspot = world.NetHotspot.Value.ToCore();
+            if (hotspot.Active)
+            {
+                _sb.Append(F1(hotspot.X)).Append(',').Append(F1(hotspot.Z)).Append(" r=").Append(F1(hotspot.Radius))
+                    .Append(" until ").Append(hotspot.EndMinute.ToString(Inv));
+            }
+            else
+            {
+                _sb.Append("none");
+            }
+            _sb.Append(" open=").Append(world.CastingOpen ? "yes" : "no");
+
+            EcologyRunState run = EcologySession.Current;
+            DevWorldDriver driver = IsHost() ? world.GetComponent<DevWorldDriver>() : null;
+            if (driver != null && run != null)
+            {
+                ClockAnchor anchor = world.NetClock.Value;
+                bool scrub = anchor.Running != 0 && anchor.MinutesPerSecond > DayClock.DefaultMinutesPerSecond * 30f;
+                _sb.Append(" day=").Append(run.Day.ToString(Inv)).Append(" clock=").Append(driver.ClockRunning ? "run" : "stop")
+                    .Append(" scrub=").Append(OnOff(scrub)).Append(" casts=").Append(run.HostCastCounter.ToString(Inv))
+                    .Append(" seed=0x").Append(run.RunSeed.ToString("X16", Inv));
+            }
+            _sb.Append('\n');
         }
 
         private void AppendHost()

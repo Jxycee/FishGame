@@ -11,7 +11,57 @@
             <ui:Label name="FishingHookPrompt" class="fishing-hook" picking-mode="Ignore" focusable="false" />
             <ui:Label name="FishingCaption" class="fishing-caption" picking-mode="Ignore" focusable="false" />
             <ui:Label name="FishingCreel" class="fishing-creel" picking-mode="Ignore" focusable="false" />
+            <ui:VisualElement name="ClockHud" class="clock-hud hidden" picking-mode="Ignore" focusable="false">
+                <ui:Label name="ClockTime" class="clock-text" picking-mode="Ignore" focusable="false" />
+            </ui:VisualElement>
             <ui:Label name="DevOverlay" class="dev-overlay hidden" picking-mode="Ignore" focusable="false" />
+            <ui:VisualElement name="DevPanel" class="dev-panel hidden" picking-mode="Position">
+                <ui:Label name="DevPanelTitle" class="dev-title" />
+                <ui:ScrollView name="DevPanelScroll" class="grow">
+                    <ui:Label name="DevSeasonLabel" class="dev-row-label" />
+                    <ui:VisualElement class="row">
+                        <ui:Button name="DevSeason0" class="dev-btn" />
+                        <ui:Button name="DevSeason1" class="dev-btn" />
+                        <ui:Button name="DevSeason2" class="dev-btn" />
+                        <ui:Button name="DevSeason3" class="dev-btn" />
+                    </ui:VisualElement>
+                    <ui:Label name="DevMinuteLabel" class="dev-row-label" />
+                    <ui:SliderInt name="DevMinute" class="dev-slider" low-value="0" high-value="1190" />
+                    <ui:Label name="DevWeatherLabel" class="dev-row-label" />
+                    <ui:VisualElement class="row">
+                        <ui:Button name="DevWeather0" class="dev-btn" />
+                        <ui:Button name="DevWeather1" class="dev-btn" />
+                        <ui:Button name="DevWeather2" class="dev-btn" />
+                        <ui:Button name="DevWeather3" class="dev-btn" />
+                    </ui:VisualElement>
+                    <ui:Toggle name="DevClockToggle" class="dev-toggle" />
+                    <ui:VisualElement class="row">
+                        <ui:Button name="DevNewDay" class="dev-btn" />
+                        <ui:Label name="DevScrubHint" class="dev-hint" />
+                    </ui:VisualElement>
+                    <ui:Button name="DevHotspotButton" class="dev-btn dev-wide" />
+                    <ui:Label name="DevHotspotStatus" class="dev-hint" />
+                    <ui:Label name="DevSeedLabel" class="dev-row-label" />
+                    <ui:VisualElement class="row">
+                        <ui:TextField name="DevSeedField" class="dev-seed" />
+                        <ui:Button name="DevSeedApply" class="dev-btn" />
+                    </ui:VisualElement>
+                    <ui:Label name="DevSeedStatus" class="dev-hint" />
+                    <ui:Label name="DevLuckLabel" class="dev-row-label" />
+                    <ui:Slider name="DevLuck" class="dev-slider" low-value="-1" high-value="1" />
+                    <ui:Label name="DevRodLabel" class="dev-row-label" />
+                    <ui:VisualElement class="row">
+                        <ui:Button name="DevRod0" class="dev-btn" />
+                        <ui:Button name="DevRod1" class="dev-btn" />
+                        <ui:Button name="DevRod2" class="dev-btn" />
+                        <ui:Button name="DevRod3" class="dev-btn" />
+                    </ui:VisualElement>
+                    <ui:Label name="DevMapLabel" class="dev-row-label" />
+                    <ui:VisualElement name="DevMapRow" class="row dev-map-row" />
+                    <ui:Label name="DevLastAction" class="dev-hint" />
+                </ui:ScrollView>
+                <ui:Button name="DevClose" class="dev-btn dev-wide" />
+            </ui:VisualElement>
         </ui:VisualElement>
 
         <ui:VisualElement name="ScreenMainMenu" class="screen hidden">
