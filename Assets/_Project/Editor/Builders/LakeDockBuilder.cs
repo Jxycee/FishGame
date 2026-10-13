@@ -25,7 +25,7 @@ namespace FishGame.EditorTools
         sealed class ArtAssets
         {
             public Material Toon, Water;
-            public Mesh WaterMesh, Lakebed, Shore, Rock, Trunk, CanopyRound, CanopyPine, Dock, Reeds;
+            public Mesh WaterMesh, Lakebed, Shore, LakebedVisual, ShoreVisual, Rock, Trunk, CanopyRound, CanopyPine, Dock, Reeds;
             public VolumeProfile WarmProfile, CoolProfile;
             public ArtPaletteDef Palette;
         }
@@ -46,6 +46,8 @@ namespace FishGame.EditorTools
                 WaterMesh = LoadMesh(LakeDockLayout.WaterMeshPath),
                 Lakebed = LoadMesh(AssetPaths.LakebedMesh),
                 Shore = LoadMesh(AssetPaths.ShoreMesh),
+                LakebedVisual = LoadMesh(LakeDockLayout.LakebedVisualMeshPath),
+                ShoreVisual = LoadMesh(LakeDockLayout.ShoreVisualMeshPath),
                 Rock = LoadMesh(LakeDockLayout.RockMeshPath),
                 Trunk = LoadMesh(LakeDockLayout.TrunkMeshPath),
                 CanopyRound = LoadMesh(LakeDockLayout.CanopyRoundMeshPath),
@@ -63,8 +65,8 @@ namespace FishGame.EditorTools
             AddSun(art.Palette);
             Root("Ambience", Layers.Default).AddComponent<AmbienceBed>();
             AddWater(art);
-            AddSurface("Lakebed", Layers.Ground, art.Lakebed, art.Toon);
-            GameObject shore = AddSurface("Shore", Layers.Shore, art.Shore, art.Toon);
+            AddSurface("Lakebed", Layers.Ground, art.LakebedVisual, art.Lakebed, art.Toon);
+            GameObject shore = AddSurface("Shore", Layers.Shore, art.ShoreVisual, art.Shore, art.Toon);
             PlaceRocks(shore.transform, art);
             PlaceTrees(shore.transform, art);
             AddDock(art);
@@ -169,12 +171,13 @@ namespace FishGame.EditorTools
             volume.AddComponent<WaterVolume>();
         }
 
-        static GameObject AddSurface(string name, int layer, Mesh mesh, Material material)
+        // R74: the renderer draws the smooth visual mesh; the MeshCollider keeps the M1 physics mesh (same positions, byte-identical asset).
+        static GameObject AddSurface(string name, int layer, Mesh visual, Mesh collider, Material material)
         {
             GameObject go = Root(name, layer);
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            go.AddComponent<MeshFilter>().sharedMesh = visual;
             go.AddComponent<MeshRenderer>().sharedMaterial = material;
-            go.AddComponent<MeshCollider>().sharedMesh = mesh;
+            go.AddComponent<MeshCollider>().sharedMesh = collider;
             return go;
         }
 

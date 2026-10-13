@@ -23,6 +23,10 @@ namespace FishGame.EditorTools
         public const string CanopyRoundMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyRound.asset";
         public const string CanopyPineMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyPine.asset";
         public const string ReedsMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Reeds.asset";
+        // R74 look-dev: smooth VISUAL meshes for the lakebed and shore (same vertex positions as the collider meshes, shared vertices, smooth normals,
+        // world-xz UVs). The MeshColliders keep LakebedMesh / ShoreMesh, which stay byte-identical (physics fingerprint).
+        public const string LakebedVisualMeshPath = AssetPaths.MeshesFolder + "/LakeDock_LakebedVisual.asset";
+        public const string ShoreVisualMeshPath = AssetPaths.MeshesFolder + "/LakeDock_ShoreVisual.asset";
 
         // FaceJitter mesh seeds, one per mesh (fixed: an Inspector edit must never change a generated mesh).
         public const uint LakebedMeshSeed = 0x1A4E0B01u, ShoreMeshSeed = 0x1A4E0B02u, DockMeshSeed = 0x1A4E0B03u, RockMeshSeed = 0x1A4E0B04u;
