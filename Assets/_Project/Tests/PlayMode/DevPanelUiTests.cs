@@ -41,6 +41,7 @@ namespace FishGame.Tests.PlayMode
             _fake = null;
             _ui = null;
             _root = null;
+            EcologySession.Clear();           // the seed test replaces the session's run state
             yield return PlayModeHarness.TearDownApp();
         }
 
@@ -190,7 +191,7 @@ namespace FishGame.Tests.PlayMode
             log.AssertNoWarnings("dev panel and journal exclusion");
         }
 
-        // Catches: a host row calling the wrong driver method, a duplicate world write, the F8 scrub not starting on the press, not stopping on
+        // Catches: a host row calling the wrong driver method, the F8 scrub not starting on the press, not stopping on
         // the release or on a Menu context (alt-tab reads the same), the minute slider writing before its debounce, the Load map row not listing
         // both spots or not disabling the current one, and a header that does not say host.
         [UnityTest]
@@ -321,6 +322,97 @@ namespace FishGame.Tests.PlayMode
             Assert.That(_root.Q<GlyphElement>("ClockWeather").Glyph, Is.EqualTo(Glyph.Fog));
 
             log.AssertNoWarnings("clock hud");
+            yield return PlayModeHarness.LeaveAndWaitForMenu();
+        }
+
+        // Catches: the 4 Hz refresh writing the old seed back into the field after it lost focus (Tab or a click on Apply), so Apply would read
+        // the OLD seed. Types a seed, moves focus to Apply, lets more than one refresh pass, then applies: the new seed must be the run's.
+        [UnityTest]
+        public IEnumerator DevPanel_TypedSeed_SurvivesFocusLoss_AndApplies()
+        {
+            yield return BootSolo();
+            BindPair();
+            using var log = new PlayModeHarness.LogCapture();
+            _overlay.SetMode(DevHudMode.Panel);
+            yield return PlayModeHarness.WaitFrames(3, 0.2f);
+            _panel.Tick(0.3f);
+
+            TextField field = _root.Q<TextField>("DevSeedField");
+            Assert.That(field.value, Does.StartWith("0x"), "the field shows the run's seed first");
+            ulong before = EcologySession.Current.RunSeed;
+            field.Focus();
+            field.value = "12345";
+            _root.Q<Button>("DevSeedApply").Focus();            // the typed field loses focus, like Tab or a click on Apply
+            yield return PlayModeHarness.WaitFrames(2, 0.1f);
+            _panel.Tick(0.3f);
+            _panel.Tick(0.3f);
+            yield return PlayModeHarness.WaitFrames(2, 0.6f);
+            _panel.Tick(0.3f);
+            Assert.That(field.value, Is.EqualTo("12345"), "a refresh must not overwrite the typed seed");
+
+            Press(_root.Q<Button>("DevSeedApply"));
+            Assert.That(EcologySession.Current.RunSeed, Is.EqualTo(12345UL), "Apply used the typed seed");
+            Assert.That(EcologySession.Current.RunSeed, Is.Not.EqualTo(before));
+            _panel.Tick(0.3f);
+            Assert.That(field.value, Is.EqualTo("0x0000000000003039"), "after Apply the field shows the applied seed");
+
+            _overlay.SetMode(DevHudMode.Off);
+            log.AssertNoWarnings("typed seed");
+            yield return PlayModeHarness.LeaveAndWaitForMenu();
+        }
+
+        // Catches: F3 not closing the panel when nothing is focused (key events then target the panel's visualTree, above the document root),
+        // and F3 closing it before the F3 that opened it was released.
+        [UnityTest]
+        public IEnumerator DevPanel_F3_ClosesIt_WhenNothingIsFocused_AfterTheOpeningKeyWasReleased()
+        {
+            yield return BootMenu();
+            BindPair();
+            _overlay.SetMode(DevHudMode.Panel);
+            yield return PlayModeHarness.WaitFrames(3, 0.2f);
+            VisualElement tree = _root.panel.visualTree;
+            _root.panel.focusController.focusedElement?.Blur();
+            Assert.That(_root.panel.focusController.focusedElement, Is.Null, "nothing focused");
+
+            SendKey(tree, KeyCode.F3, down: true);
+            Assert.That(_overlay.Mode, Is.EqualTo(DevHudMode.Panel), "an F3 press before the opening F3 was released does nothing");
+            SendKey(tree, KeyCode.F3, down: false);
+            SendKey(tree, KeyCode.F3, down: true);
+            Assert.That(_overlay.Mode, Is.EqualTo(DevHudMode.Off), "F3 closes the panel with nothing focused");
+            Assert.That(_ui.ModalOpen, Is.False);
+        }
+
+        private static void SendKey(VisualElement target, KeyCode key, bool down)
+        {
+            using (EventBase e = down ? (EventBase)KeyDownEvent.GetPooled('\0', key, EventModifiers.None) : KeyUpEvent.GetPooled('\0', key, EventModifiers.None))
+            {
+                e.target = target;
+                target.SendEvent(e);
+            }
+        }
+
+        // Reproduction check (review item 4): a focused seed field inside a hidden panel. Reports through the assertion message whether focus
+        // stays inside the hidden panel; the panel must not keep keyboard focus once it is closed.
+        [UnityTest]
+        public IEnumerator DevPanel_Closing_LeavesNoFocusInsideTheHiddenPanel()
+        {
+            yield return BootSolo();
+            BindPair();
+            _overlay.SetMode(DevHudMode.Panel);
+            yield return PlayModeHarness.WaitFrames(3, 0.2f);
+            TextField field = _root.Q<TextField>("DevSeedField");
+            field.Focus();
+            var focus = _root.panel.focusController;
+            Assert.That(focus.focusedElement, Is.Not.Null, "the seed field took focus");
+            var focusedNow = (VisualElement)focus.focusedElement;
+            Assert.That(focusedNow == field || field.Contains(focusedNow), Is.True, "the focus is on the seed field: " + focusedNow.name);
+
+            _overlay.SetMode(DevHudMode.Off);
+            yield return PlayModeHarness.WaitFrames(3, 0.2f);
+            var now = focus.focusedElement as VisualElement;
+            VisualElement panelElement = _root.Q<VisualElement>("DevPanel");
+            bool inside = now != null && (now == panelElement || panelElement.Contains(now));
+            Assert.That(inside, Is.False, "focus stayed inside the hidden dev panel: " + (now != null ? now.name + "/" + now.GetType().Name : "null"));
             yield return PlayModeHarness.LeaveAndWaitForMenu();
         }
 

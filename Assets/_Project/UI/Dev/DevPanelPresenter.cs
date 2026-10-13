@@ -66,7 +66,9 @@ namespace FishGame.UI
         private float _minuteTimer;
         private int _minuteValue;
         private bool _seedFocused;
-        private bool _f3Armed;                 // F3 closes the panel only after the F3 that opened it was released (no repeat closes it)
+        private bool _seedDirty;               // the user typed in the seed field: a refresh never overwrites it (until applied, locked or reopened)
+        private string _shownSeedText;         // what the refresh last wrote into the field; null forces the next refresh to write
+        private bool _f3Armed;                // F3 closes the panel only after the F3 that opened it was released (no repeat closes it)
         private int _openedFrame = -1;
         private bool _rowsEnabled = true;
         private bool _rowsEnabledKnown;
@@ -182,9 +184,12 @@ namespace FishGame.UI
             HookChange(_minute, OnMinuteChanged);
             HookChange(_luck, OnLuckChanged);
             HookChange(_clockToggle, OnClockToggle);
+            HookChange(_seedField, OnSeedChanged);
             HookFocus(_seedField);
-            Hook(_root, KeyDown);
-            Hook(_root, KeyUp);
+            // With nothing focused (a click on the panel background) key events target the panel's visualTree, above the document root.
+            VisualElement keyTarget = root.panel != null ? root.panel.visualTree : root;
+            Hook(keyTarget, KeyDown);
+            Hook(keyTarget, KeyUp);
             BuildMapButtons();
 
             _overlay.ModeChanged += OnModeChanged;
@@ -232,6 +237,8 @@ namespace FishGame.UI
             _driver = null;
             _minutePending = false;
             _seedFocused = false;
+            _seedDirty = false;
+            _shownSeedText = null;
             _worldRows.Clear();
             _seasonButtons.Clear();
             _weatherButtons.Clear();
@@ -317,6 +324,7 @@ namespace FishGame.UI
             if (!_bound) return;
             ResolveWorld();
             TickScrub();
+            if (!Application.isFocused) _f3Armed = true;      // a KeyUp that arrived while the window was unfocused is lost: never leave F3 unarmed
 
             if (_lastActionTimer > 0f)
             {
@@ -402,6 +410,8 @@ namespace FishGame.UI
         {
             _openedFrame = Time.frameCount;
             _f3Armed = false;
+            _seedDirty = false;
+            _shownSeedText = null;
             _refreshTimer = RefreshSeconds;
             _minutePending = false;
             _rowsEnabledKnown = false;
@@ -516,6 +526,11 @@ namespace FishGame.UI
             _minutePending = true;
         }
 
+        private void OnSeedChanged(ChangeEvent<string> evt)
+        {
+            if (evt.newValue != _shownSeedText) _seedDirty = true;   // only a user edit raises this (the refresh uses SetValueWithoutNotify)
+        }
+
         private void OnLuckChanged(ChangeEvent<float> evt)
         {
             if (!IsHost()) return;
@@ -566,7 +581,8 @@ namespace FishGame.UI
             host.SetRunSeed(seed);
             _seedStatus.text = string.Empty;
             SetLast("run seed 0x" + seed.ToString("X16", Inv));
-            _seedFocused = false;
+            _seedDirty = false;
+            _shownSeedText = null;                            // the next refresh shows the applied seed
             _refreshTimer = RefreshSeconds;
         }
 
@@ -672,11 +688,17 @@ namespace FishGame.UI
         {
             EcologyRunState run = EcologySession.Current;
             bool locked = host && run != null && run.HostCastCounter > 0;
-            if (!_seedFocused)
+            if (locked) _seedDirty = false;
+            // The field is written only when the shown value is stale and the user is not editing: typed text survives losing focus (Tab or a
+            // click on Apply) until it is applied, the row locks or the panel is reopened.
+            if (!_seedDirty && !_seedFocused)
             {
-                _seedField.SetValueWithoutNotify(host
-                    ? (run != null ? "0x" + run.RunSeed.ToString("X16", Inv) : string.Empty)
-                    : "n/a (client)");
+                string desired = host ? (run != null ? "0x" + run.RunSeed.ToString("X16", Inv) : string.Empty) : "n/a (client)";
+                if (desired != _shownSeedText)
+                {
+                    _seedField.SetValueWithoutNotify(desired);
+                    _shownSeedText = desired;
+                }
             }
             if (host)
             {
