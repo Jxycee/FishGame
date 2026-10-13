@@ -21,7 +21,9 @@ Co-op (1–4) friend-slop rogue-lite fishing game. Unity 6000.6.5f1 (URP), Netco
 - No external/paid assets. Art direction (spec R74, 2026-10-12): smooth stylised "realistic toon" (references RV There Yet, Gamble With Your Friends) - rounded models, soft toon lighting, painted-style textures made for the project (Blender, procedural or baked). The old low-poly flat-colour look is the M2 baseline being replaced after look-dev approval.
 
 ## Git
-- Commit only when the user asks, or when a plan step says to. Never force-push. Stay on `main` unless a plan says otherwise (M1 work happened on branch `m1-foundation`).
+- Commit when the user asks or a plan step says to. Never force-push. Milestone work happens on a feature branch (`m1-foundation`, `m2-fishing-core`, `m3-fish-ecology`).
+- No pull requests (user preference, 2026-10-13): push branches, and merge them yourself (including into `main`) once the work is reviewed and a full `check` is green. Merge commits, never squash. Tell the user what was merged.
+- PlayMode runs in different worktrees collide on the same UDP port: before a PlayMode run, check for another Unity process with `-testPlatform PlayMode` and wait for it to finish.
 - Never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`, `*.csproj`, `*.slnx`.
 
 ## Agent roles (user preference)
