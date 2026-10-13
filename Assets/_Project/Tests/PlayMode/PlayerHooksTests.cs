@@ -101,7 +101,7 @@ namespace FishGame.Tests.PlayMode
         // ---- locomotion ----
 
         // Catches: the lock ignored or applied only through the router (the source alone, with the context still Free, must stop walking and
-        // jumping), jump/ladder-entry gating dropped, gravity or yaw frozen by the lock, and the no-source path (M1 behaviour) being changed.
+        // jumping), jump gating dropped (ladder entry while locked is LadderClimbTests.Ladder_EntryWhileMovementLocked_WaitsForTheLockToEnd), gravity or yaw frozen by the lock, and the no-source path (M1 behaviour) being changed.
         [UnityTest]
         public IEnumerator Locomotion_LockingSource_BlocksWalkAndJump_ButGravityAndYawContinue()
         {
