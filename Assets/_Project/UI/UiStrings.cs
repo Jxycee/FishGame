@@ -22,6 +22,7 @@ namespace FishGame.UI
             ["busy.joining"] = "Joining session...",
             ["busy.loading"] = "Loading...",
             ["busy.cancel"] = "Cancel",
+            ["busy.cancelling"] = "Cancelling...",
             ["toast.join_code"] = "Join code: {0}",
             ["pause.title"] = "Paused",
             ["pause.resume"] = "Resume",

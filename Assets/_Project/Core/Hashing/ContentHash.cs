@@ -26,6 +26,14 @@ namespace FishGame.Core
             var sortedCategories = new List<ContentCategoryIds>(categories);
             sortedCategories.Sort((a, b) => StringComparer.Ordinal.Compare(a.Category, b.Category));
 
+            // M3 T2: a repeated category name is a data bug (two lists under one name would hash as two blocks and hide a missing list).
+            // Checked after the ordinal sort, so duplicates are adjacent wherever they were in the input; ordinal, so "Species" and "species" differ.
+            for (int c = 1; c < sortedCategories.Count; c++)
+            {
+                if (StringComparer.Ordinal.Equals(sortedCategories[c].Category, sortedCategories[c - 1].Category))
+                    throw new ArgumentException("duplicate content category '" + sortedCategories[c].Category + "'", nameof(categories));
+            }
+
             var h = Fnv1a64.Create();
             for (int c = 0; c < sortedCategories.Count; c++)
             {

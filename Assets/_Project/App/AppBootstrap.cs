@@ -36,6 +36,8 @@ namespace FishGame.App
 
         public static AppBootstrap Current { get; private set; }
         public static bool SuppressDevAutoStart { get; set; }
+        // Test seam (PlayMode UiFlowCancelTests): null in production; read lazily when the first online attempt creates the backend.
+        public static Func<INetworkSession> OnlineSessionFactoryOverride { get; set; }
         public ServiceRegistry Services => services;
         public NetworkManager NetworkManager { get; private set; }
         public ulong ContentHashValue { get; private set; }
@@ -52,6 +54,7 @@ namespace FishGame.App
         private static void ResetStatics()
         {
             Current = null;
+            OnlineSessionFactoryOverride = null;
         }
 
         private void Awake()
@@ -147,7 +150,8 @@ namespace FishGame.App
             var sessionConfig = new NetworkSessionConfig(NetworkManager, bridge, settings, protocolVersion, ContentHashValue, longTimeout);
             var local = new LocalNetworkSession(sessionConfig);
             services.Register(local);
-            session = new CompositeNetworkSession(local, () => new UgsNetworkSession(sessionConfig));
+            session = new CompositeNetworkSession(local,
+                () => OnlineSessionFactoryOverride != null ? OnlineSessionFactoryOverride() : new UgsNetworkSession(sessionConfig));
             services.Register<INetworkSession>(session);
 
             ServiceRoots.SetApp(services);
