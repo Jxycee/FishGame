@@ -146,8 +146,11 @@ namespace FishGame.EditorTools
             // knob on M_Toon_Brass).
             GameObject post = BuilderUtil.EnsurePrimitive(root.transform, "Post", PrimitiveType.Cylinder, new Vector3(0f, 0.8f, 0f),
                 Quaternion.identity, new Vector3(0.12f, 0.8f, 0.12f), RenderMaterialLibrary.Get("M_Toon_Base"), false);
-            GameObject bell = BuilderUtil.EnsurePrimitive(root.transform, "Bell", PrimitiveType.Sphere, new Vector3(0f, 1.45f, 0f),
-                Quaternion.identity, new Vector3(0.35f, 0.4f, 0.35f), RenderMaterialLibrary.Get("M_Toon_Brass"), false);
+            // The bell mesh has its crown at the origin (BellCrownY), so the child sits at the old belly height 1.45 plus crown * scale.y: the bell
+            // looks the same, and DockBell's swing pivots at the top. Only this child moves; the root, its collider and its components are unchanged.
+            const float bellScaleY = 0.4f;
+            GameObject bell = BuilderUtil.EnsurePrimitive(root.transform, "Bell", PrimitiveType.Sphere, new Vector3(0f, 1.45f + BellCrownY * bellScaleY, 0f),
+                Quaternion.identity, new Vector3(0.35f, bellScaleY, 0.35f), RenderMaterialLibrary.Get("M_Toon_Brass"), false);
             UseMesh(post, SaveMesh(BellPostMesh, BuildBellPost()));
             UseMesh(bell, SaveMesh(BellMesh, BuildBell()));
             BuilderUtil.SetLayerRecursive(root, Layers.Interactable);
@@ -165,7 +168,9 @@ namespace FishGame.EditorTools
         // T20 unit body meshes (plan T20.6). Default face jitter, slot 0 (unused in vertex-colour mode). No colour pass: the half-scale grey
         // stays as built and the body materials set _JitterEncoded 1 (BF-7). Sizes equal Unity's primitives: sphere diameter 1, cube 1, capsule height 2.
         // R74 (look-dev 2026-10-12): the same unit volumes, now SMOOTH (SmoothMeshBuilder): a sphere, a pillowy rounded box (torso and nose) and a
-        // smooth capsule. Cloth detail layer for the slot materials (M_Skin is untextured), ao a little darker underneath. Transforms unchanged.
+        // smooth capsule. The box and capsule carry the Cloth detail layer (the slot materials' weave); ao a little darker underneath. M_Skin is textured
+        // too (the env array at tiling 1, for the head's face tile), so the NOSE, which shares Body_UnitBox with the torso, shows the cloth weave at
+        // that tiling: a faint value pattern on a small part. A skin-layer nose would need its own box mesh; left as is. Transforms unchanged.
         static Mesh BuildUnitSphere()
         {
             var builder = new SmoothMeshBuilder();
@@ -205,18 +210,27 @@ namespace FishGame.EditorTools
             return builder.ToMesh("Bell_Post");
         }
 
-        // Unit sphere volume: a bell flaring to the mouth at the bottom, a domed crown and a knob; darker toward the lip (ao).
+        // Mesh-local height of the bell's domed crown before the pivot shift. DockBell swings the "Bell" transform about its origin, so the mesh is
+        // built with the crown AT the origin (the bell hangs from the top: the swing reads as a pendulum, not a spin about the belly) and the Bell
+        // child is raised by CrownY * its scale.y to leave the bell exactly where it was.
+        const float BellCrownY = 0.4f;
+
+        // Unit sphere volume: a bell flaring to the mouth at the bottom, a domed crown and a knob; darker toward the lip (ao). The mouth is closed by
+        // a shallow downward-pointing cap just inside the lip, so the underside is never open (a lathe has no end caps). The crown is at the origin.
         static Mesh BuildBell()
         {
             var builder = new SmoothMeshBuilder();
-            builder.Lathe(new Vector3(0f, -0.05f, 0f), t =>
+            // Mouth cap: apex on the mouth plane (y -0.5), radius growing to the lip radius at y -0.48 (lip(t = 0.0222) = 0.4222).
+            builder.Lathe(new Vector3(0f, -0.49f - BellCrownY, 0f), t => 0.4222f * t, 0.02f, 20, 3, Quaternion.identity, 0, EnvTextureLayers.None,
+                SmoothMeshBuilder.MappingUv, t => 0.45f, 0.4f);
+            builder.Lathe(new Vector3(0f, -0.05f - BellCrownY, 0f), t =>
             {
                 float crown = Mathf.Sqrt(Mathf.Max(0f, 1f - Mathf.Pow(Mathf.Clamp01((t - 0.72f) / 0.28f), 2f)));
                 float body = Mathf.Lerp(0.48f, 0.30f, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.72f)));
                 float lip = t < 0.08f ? Mathf.Lerp(0.40f, 0.48f, t / 0.08f) : body;
                 return t < 0.72f ? lip : 0.30f * crown;
             }, 0.9f, 20, 14, Quaternion.identity, 0, EnvTextureLayers.None, SmoothMeshBuilder.MappingUv, t => 0.7f + 0.3f * Mathf.Clamp01(t * 3f), 0.4f);
-            builder.Radial(new Vector3(0f, 0.45f, 0f), d => 0.07f, 3, Quaternion.identity, Vector3.one, 0, EnvTextureLayers.None, SmoothMeshBuilder.MappingUv,
+            builder.Radial(new Vector3(0f, 0.45f - BellCrownY, 0f), d => 0.07f, 3, Quaternion.identity, Vector3.one, 0, EnvTextureLayers.None, SmoothMeshBuilder.MappingUv,
                 d => 0.9f, 0.1f);
             return builder.ToMesh("Bell_Bell");
         }
