@@ -210,9 +210,41 @@ namespace FishGame.EditorTools
 
         // ---- globals (same values as PaletteGlobals / WaterTimeDriver at runtime) ----
 
-        static void PushPalette(ArtPaletteDef palette)
+        // Palette check (R74 adoption): the same shore view under each of the four seasons' palettes (season_0..3.png), Day phase lighting.
+        public static void CaptureSeasons()
         {
-            Vector4[] authored = palette.PaletteVectors(palette.M2Season);
+            string outDir = Arg("-fgLookOut");
+            if (string.IsNullOrEmpty(outDir)) throw new System.ArgumentException("-fgLookOut <dir> is required");
+            Directory.CreateDirectory(outDir);
+            EditorSceneManager.OpenScene(AssetPaths.LakeDockScene, OpenSceneMode.Single);
+            var palette = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
+            PushWaves(AssetDatabase.LoadAssetAtPath<WaterSettingsDef>(AssetPaths.WaterSettingsAsset));
+            Light sun = FindSun();
+            ApplyPhase(palette, DayPhase, sun, sun.transform.rotation);
+            var cameraGo = new GameObject("LookDevCamera");
+            Camera camera = cameraGo.AddComponent<Camera>();
+            camera.nearClipPlane = MovementMath.NearClip;
+            camera.farClipPlane = MovementMath.FarClip;
+            cameraGo.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = true;
+            Camera sceneCamera = GameObject.Find("SceneCamera")?.GetComponent<Camera>();
+            if (sceneCamera != null) sceneCamera.enabled = false;
+            Transform rock = FindRock();
+            Vector3 rockPos = rock.position;
+            Vector3 toCentre = new Vector3(-rockPos.x, 0f, -rockPos.z).normalized;
+            for (int season = 0; season < ArtPaletteDef.SeasonCount && season < palette.Seasons.Count; season++)
+            {
+                PushPalette(palette, season);
+                Shoot(camera, rockPos + toCentre * 7f + Vector3.up * 2.2f, rockPos + Vector3.up * 1.0f - toCentre * 6f, 55f, outDir, "season_" + season);
+            }
+            Object.DestroyImmediate(cameraGo);
+            Debug.Log("FG LOOKDEV seasons captured");
+        }
+
+        static void PushPalette(ArtPaletteDef palette) => PushPalette(palette, palette.M2Season);
+
+        static void PushPalette(ArtPaletteDef palette, int season)
+        {
+            Vector4[] authored = palette.PaletteVectors(season);
             var linear = new Vector4[ShaderGlobals.PaletteLength];
             for (int i = 0; i < linear.Length; i++)
             {
