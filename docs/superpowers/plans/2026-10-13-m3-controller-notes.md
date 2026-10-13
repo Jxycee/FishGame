@@ -153,3 +153,7 @@ The user asked for the map to be modelled in Blender instead of code-generated m
 - Owed manual check (the plan's T15 step 5, now on the board): the marker turns red over a dock-shadowed cell (no automated test covers the host's GridWater wiring); the F3 overlay `HOST casts=` keeps counting across a dev map switch.
 - T24 follow-up: a PlayMode test that finds a lake cell where the grid says land but CastProbe says water, drives FishingHost.HandleCastRequest there, and asserts NotWater with HostCastCounter unchanged.
 - M4: a map switch resets slot loadouts (rod, bait, stock) and the pity streak (they live in the per-scene FishingHostLedger). Real map travel must move them into session state.
+
+## T24 MERGED (2026-10-14), Sonnet review APPROVED
+- Test 8 (grid-land host reject) uses a harbour breakwater sliver cell; the lake has none. Its discrimination is shown by reading the code only: the mutation run was refused by the permission system and was not attempted again.
+- Known gaps for T25: the Esc edge detection in UiFlowController.Update (HandleBack) has no test; optional tightening: test 1 should snapshot eligibility for sub-area 2 only; FishingSoloTests.ResetDebugSettings should also reset Luck.
