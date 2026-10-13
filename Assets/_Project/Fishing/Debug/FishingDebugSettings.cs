@@ -1,6 +1,6 @@
 // Authority: host side (the host reads these statics when it rolls a cast). Local dev toggles: F6 forced bite, F7 twitchy hook (T26),
 // F10 cycles ForcedSpeciesId (the PlayMode fixture also sets it). Honoured only when Debug.isDebugBuild (checked at runtime, never #if DEBUG).
-// F6/F7 reset when the session ends (INetworkSession.Ended, hooked by FishingHost.OnEnable through ClearOnSessionEnd) and on
+// F6/F7 and Luck reset when the session ends (INetworkSession.Ended, hooked by FishingHost.OnEnable through ClearOnSessionEnd) and on
 // SubsystemRegistration, never when a Spot scene unloads (the M3 dev map switch keeps them). ForcedSpeciesId (cycled by F10 since the M2
 // final review) and ForceJunk reset only on SubsystemRegistration, so a disabled domain reload cannot leak a stale override.
 using System.Collections.Generic;
@@ -20,6 +20,15 @@ namespace FishGame.Fishing
         public static string ForcedSpeciesId { get; set; }  // null off (F10 cycles it; the PlayMode fixture sets it)
         public static bool ForceJunk { get; set; }
 
+        // M3 dev luck (T15, T22 panel): size skew only, clamped to [-1, 1], NaN -> 0. The host reads it into the cast context in debug builds
+        // only. A session toggle like F6/F7: reset when the session ends and on SubsystemRegistration, never on a Spot change.
+        public static float Luck
+        {
+            get => s_luck;
+            set => s_luck = float.IsNaN(value) ? 0f : Mathf.Clamp(value, -1f, 1f);
+        }
+
+        private static float s_luck;
         private static readonly HashSet<string> s_warned = new HashSet<string>();
         private static INetworkSession s_session;
 
@@ -30,6 +39,7 @@ namespace FishGame.Fishing
             TwitchyHook = false;
             ForcedSpeciesId = null;
             ForceJunk = false;
+            s_luck = 0f;
             s_warned.Clear();
             if (s_session != null) s_session.Ended -= OnSessionEnded;
             s_session = null;
@@ -37,18 +47,20 @@ namespace FishGame.Fishing
 
         // F6/F7 are SESSION toggles: cleared when the session ends (INetworkSession.Ended, once per attempt), never when a Spot scene unloads,
         // so the M3 dev map switch keeps them (C 7.1, CCR-A1). Idempotent; re-hooks when the app's session instance changes (a new App in tests).
+        // A null session only unhooks the current one (tests; FishingHost never passes null).
         internal static void ClearOnSessionEnd(INetworkSession session)
         {
-            if (session == null || ReferenceEquals(s_session, session)) return;
+            if (ReferenceEquals(s_session, session)) return;
             if (s_session != null) s_session.Ended -= OnSessionEnded;
             s_session = session;
-            session.Ended += OnSessionEnded;
+            if (session != null) session.Ended += OnSessionEnded;
         }
 
         private static void OnSessionEnded(EndReason reason)
         {
             ForcedBiteWait = 0f;
             TwitchyHook = false;
+            s_luck = 0f;
         }
 
         // Starts from RollOverrides.None (ForcedItemIndex -1): a default(RollOverrides) would force species 0 on every cast (ruling B-Q14).

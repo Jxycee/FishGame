@@ -1909,25 +1909,5 @@ namespace FishGame.Tests.EditMode
             Assert.That(honest.Roll.Catch.ItemIndex, Is.EqualTo(carp), "the limit is still free for an honest roll");
             Assert.That(catches.Reserved(carp), Is.EqualTo(1));
         }
-
-        // Interim (T13 compile fix; T15 deletes this test with the interim context): the real registry's lake zone, open water, Summer,
-        // Clear, Midday, worm at 1.5 m has bluegill eligible, so every M2 PlayMode cast test keeps landing. Catches a seed or zone mismatch.
-        [Test]
-        public void FishingHostLedger_InterimLakeContext_BluegillEligible()
-        {
-            var registry = UnityEditor.AssetDatabase.LoadAssetAtPath<FishGame.Data.ContentRegistry>(FishGame.EditorTools.AssetPaths.ContentRegistryAsset);
-            Assert.That(registry, Is.Not.Null, "missing " + FishGame.EditorTools.AssetPaths.ContentRegistryAsset + ": run Tools/unity.ps1 build first");
-            EcologyDatabase eco = registry.Ecology;
-            Assert.That(eco, Is.Not.Null, "the registry has no ecology database");
-            FishingContext ctx = FishGame.Fishing.FishingHost.InterimContext(registry.ZoneIndex(ContentIds.LakeDock));
-            ctx.Bait = registry.Fishing.Baits[registry.BaitIndex("bait_worm")].Mods(1);
-            ctx.Depth = 1.5f;
-            var rules = new List<int>();
-            new FishingResolver(eco).CollectEligible(in ctx, null, false, rules);
-            ushort bluegill = registry.SpeciesIndex("bluegill");
-            bool eligible = false;
-            foreach (int r in rules) if (eco.Zones[ctx.ZoneIndex].Rules[r].SpeciesIndex == bluegill) eligible = true;
-            Assert.That(eligible, Is.True, "bluegill eligible in the interim lake context (" + rules.Count + " eligible rules)");
-        }
     }
 }
