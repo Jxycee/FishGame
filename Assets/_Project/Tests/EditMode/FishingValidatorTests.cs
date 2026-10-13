@@ -85,7 +85,7 @@ namespace FishGame.Tests.EditMode
                 FishSpeciesDef d = Make<FishSpeciesDef>();
                 FishSpeciesData x = s.Data;
                 d.Configure(s.Id, s.Name, x.Rarity, x.BaseValue, x.WeightMinG, x.WeightMaxG, x.WeightSkew, x.LengthShapeK, profileById[s.ProfileId],
-                    s.BodyShape, s.ColorA, s.ColorB, x.BiteWaitMod, x.HookWindow, x.IsSpecial, x.MinBaitRating, x.MinDepth, null, x.Tags);
+                    s.BodyShape, s.ColorA, s.ColorB, x.BiteWaitMod, x.HookWindow, x.IsSpecial, null, x.Tags);
                 species.Add(d);
                 set.ById[s.Id] = d;
             }
@@ -245,8 +245,7 @@ namespace FishGame.Tests.EditMode
             // M3 T3: bluegill is the only seeded species (the M2 rows named perch).
             ("species", "bluegill", "baseValue", 1f, Open, true), ("species", "bluegill", "weightMinG", 1f, Open, true),
             ("species", "bluegill", "weightSkew", 1.2f, 3f, false), ("species", "bluegill", "lengthShapeK", 0.5f, 2f, false),
-            ("species", "bluegill", "biteWaitMod", 0.5f, 2f, false), ("species", "bluegill", "minBaitRating", 0f, 20f, true),
-            ("species", "bluegill", "minDepth", 0f, 6f, false),
+            ("species", "bluegill", "biteWaitMod", 0.5f, 2f, false),   // M3-D3 (T13): the minBaitRating/minDepth rows are gone with the fields
 
             ("junk", "old_boot", "valueCoins", 0f, 5f, true),
 
@@ -443,16 +442,7 @@ namespace FishGame.Tests.EditMode
             CollectionAssert.IsEmpty(Check(set), "other profiles may have a short calm");
         }
 
-        // Catches: reachability computed with the wrong rating or never evaluated; a species that no bait can reach.
-        [Test]
-        public void FishingValidators_UnreachableSpecies_IsReported()
-        {
-            SeedSet set = MakeSeedSet();
-            SetNum(set.ById["bluegill"], "minBaitRating", 10);   // raw meat (10) reaches it
-            CollectionAssert.IsEmpty(Check(set));
-            SetNum(set.ById["bluegill"], "minBaitRating", 11);   // above every bait's EffRating(1)
-            AssertContains(Check(set), "species bluegill: not reachable with any bait at depth <= 6 m");
-        }
+        // FishingValidators_UnreachableSpecies_IsReported was deleted in T13 (M3-D55): V3 EcologyCoverage_V3_EverySpeciesPassesSomewhereAtRodThree replaces it.
 
         // Catches (M3 T3): a tags / affinityTags value with bits outside FishTags (a typo or a stale enum) passing validation; the defined
         // bits (value 31 = every flag) being rejected.

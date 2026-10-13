@@ -3,24 +3,32 @@ using NUnit.Framework;
 
 namespace FishGame.Tests.EditMode
 {
+    // M3 T13 (M3-D55): rolls come from FishingRoller.Roll over EcologyTestData (PlaceholderRoller is gone); names kept.
     public class FishingRollValidationTests
     {
-        static RollRequest Req(int bait, float depth) =>
-            new RollRequest { BaitIndex = bait, LoadedCount = 1, Depth = depth, Luck = 0f,
-                              ForcedBiteWait = 0f, ForcedItemIndex = -1, ForceJunk = false, Twitchy = false };
+        static FishingRoll Roll(EcologyDatabase eco, FishingResolver resolver, in FishingContext ctx, in RollOverrides ov, int bait, ref Pcg32 rng)
+        {
+            FishingContext c = ctx;
+            c.Bait = eco.Fishing.Baits[bait].Mods(1);
+            return FishingRoller.Roll(eco, resolver, in c, new CatchLedger(), in ov, bait, ref rng, out _);
+        }
 
         [Test]
         public void FishingRollValidation_SaneRoll_Passes()
         {
-            FishingDatabase db = FishingTestData.Database();
-            RollRequest deep = Req(FishingTestData.BaitWorm, 3f);
-            RollRequest shallow = Req(FishingTestData.BaitBareHook, 0.5f);   // all junk
+            EcologyDatabase eco = EcologyTestData.Database();
+            FishingDatabase db = eco.Fishing;
+            var resolver = new FishingResolver(eco);
+            Season[] seasons = { Season.Spring, Season.Summer, Season.Autumn, Season.Winter };
+            RollOverrides none = RollOverrides.None;
             var rng = new Pcg32(1234);
             int junk = 0;
             for (int i = 0; i < 1000; i++)
             {
-                RollRequest req = (i % 4 == 3) ? shallow : deep;
-                FishingRoll r = PlaceholderRoller.Roll(db, in req, ref rng);
+                FishingContext ctx = EcologyTestData.Context(EcologyTestData.ZoneLake, (byte)(i % 3), seasons[(i / 3) % 4]);
+                ctx.Depth = 3f;
+                int bait = (i % 4 == 3) ? FishingTestData.BaitBareHook : FishingTestData.BaitWorm;
+                FishingRoll r = Roll(eco, resolver, in ctx, in none, bait, ref rng);
                 if (r.Catch.IsJunk) junk++;
                 if (!FishingRollValidation.IsSane(in r, db)) Assert.Fail("roll " + i + " rejected");
             }
@@ -30,13 +38,17 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void FishingRollValidation_OutOfRangeFields_Rejected()
         {
-            FishingDatabase db = FishingTestData.Database();
+            EcologyDatabase eco = EcologyTestData.Database();
+            FishingDatabase db = eco.Fishing;
+            var resolver = new FishingResolver(eco);
+            FishingContext ctx = EcologyTestData.Context();
+            ctx.Depth = 3f;
             var rng = new Pcg32(3);
 
-            RollRequest fishReq = Req(FishingTestData.BaitWorm, 3f); fishReq.ForcedItemIndex = FishingTestData.SpeciesCarp;
-            FishingRoll fish = PlaceholderRoller.Roll(db, in fishReq, ref rng);
-            RollRequest junkReq = Req(FishingTestData.BaitWorm, 3f); junkReq.ForceJunk = true;
-            FishingRoll junk = PlaceholderRoller.Roll(db, in junkReq, ref rng);
+            var fishOv = new RollOverrides { ForcedItemIndex = FishingTestData.SpeciesCarp };
+            FishingRoll fish = Roll(eco, resolver, in ctx, in fishOv, FishingTestData.BaitWorm, ref rng);
+            var junkOv = new RollOverrides { ForcedItemIndex = -1, ForceJunk = true };
+            FishingRoll junk = Roll(eco, resolver, in ctx, in junkOv, FishingTestData.BaitWorm, ref rng);
             Assert.That(fish.Catch.IsJunk, Is.False);
             Assert.That(junk.Catch.IsJunk, Is.True);
             Assert.That(FishingRollValidation.IsSane(in fish, db), Is.True, "base fish roll");
@@ -44,8 +56,8 @@ namespace FishGame.Tests.EditMode
 
             FishSpeciesData carp = db.Species[FishingTestData.SpeciesCarp];
 
-            FishingRoll m = fish; m.Catch.ItemIndex = 5;
-            Assert.That(FishingRollValidation.IsSane(in m, db), Is.False, "species index 5");
+            FishingRoll m = fish; m.Catch.ItemIndex = (ushort)db.Species.Count;   // 6 with EcologyTestData's special (was 5 with five species)
+            Assert.That(FishingRollValidation.IsSane(in m, db), Is.False, "species index = species count");
             m = junk; m.Catch.ItemIndex = 2;
             Assert.That(FishingRollValidation.IsSane(in m, db), Is.False, "junk index 2");
             m = fish; m.Catch.WeightG = carp.WeightMaxG + 1;

@@ -1,5 +1,5 @@
 // Core/Fishing/BitePlanner.cs: bite wait and nibble plan (spec 9.4, C 7.6). Pure; seeded Pcg32 only.
-// Authority: runs on the host inside the roll (PlaceholderRoller); the owner only plays the plan back.
+// Authority: runs on the host inside the roll (FishingRoller); the owner only plays the plan back.
 // Fixed draw order (seeds depend on it): waitBase (float), n (int, always drawn), then one jitter per nibble.
 using System;
 

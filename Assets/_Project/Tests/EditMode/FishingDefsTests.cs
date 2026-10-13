@@ -166,7 +166,7 @@ namespace FishGame.Tests.EditMode
             created.Add(mesh);
             FishSpeciesDef d = Make<FishSpeciesDef>();
             d.Configure("fish_x", "Fish X", FishRarity.Uncommon, 11, 222, 333, 1.7f, 1.3f, fight, BodyShape.Flat, colorA, colorB,
-                0.8f, 0.9f, true, 4, 1.6f, mesh, FishTags.Predator | FishTags.Nocturnal);
+                0.8f, 0.9f, true, mesh, FishTags.Predator | FishTags.Nocturnal);
             Assert.AreEqual("fish_x", d.Id);
             Assert.AreEqual("Fish X", d.DisplayName);
             Assert.AreEqual(FishRarity.Uncommon, d.Rarity);
@@ -182,8 +182,6 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(0.8f, d.BiteWaitMod);
             Assert.AreEqual(0.9f, d.HookWindow);
             Assert.IsTrue(d.IsSpecial);
-            Assert.AreEqual(4, d.MinBaitRating);
-            Assert.AreEqual(1.6f, d.MinDepth);
             Assert.AreSame(mesh, d.Model);
             Assert.AreEqual(FishTags.Predator | FishTags.Nocturnal, d.Tags);
 
@@ -193,18 +191,16 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(222, s.WeightMinG);
             Assert.AreEqual(333, s.WeightMaxG);
             Assert.AreEqual(11, s.BaseValue);
-            Assert.AreEqual(4, s.MinBaitRating);
             Assert.AreEqual(1.7f, s.WeightSkew);
             Assert.AreEqual(1.3f, s.LengthShapeK);
             Assert.AreEqual(0.8f, s.BiteWaitMod);
             Assert.AreEqual(0.9f, s.HookWindow);
-            Assert.AreEqual(1.6f, s.MinDepth);
             Assert.IsTrue(s.IsSpecial);
             Assert.AreEqual(FishRarity.Uncommon, s.Rarity);
             Assert.AreEqual((ushort)65535, d.ToCore(65535).FightProfileIndex);
 
             d.Configure("fish_x", "Fish X", FishRarity.Rare, 11, 222, 333, 1.7f, 1.3f, null, BodyShape.Round, colorA, colorB,
-                0.8f, 0.9f, false, 4, 1.6f, null);
+                0.8f, 0.9f, false, null);
             Assert.IsNull(d.Fight);
             Assert.IsNull(d.Model);
             Assert.IsFalse(d.ToCore(0).IsSpecial);
@@ -213,7 +209,7 @@ namespace FishGame.Tests.EditMode
 
             // Catches: Legendary misnumbered (spec 12.2 / M3-D2: Common 0, Uncommon 1, Rare 2, Legendary 3).
             d.Configure("fish_x", "Fish X", FishRarity.Legendary, 11, 222, 333, 1.7f, 1.3f, null, BodyShape.Round, colorA, colorB,
-                0.8f, 0.9f, false, 4, 1.6f, null);
+                0.8f, 0.9f, false, null);
             Assert.AreEqual((byte)3, (byte)d.Rarity);
             Assert.AreEqual(FishRarity.Legendary, d.ToCore(0).Rarity);
         }
@@ -318,7 +314,7 @@ namespace FishGame.Tests.EditMode
         [TestCase("RodDef", "id,displayName,tier,castMaxDist,reelSpeed,lineStrength,angleWindow,steerRate,relaxMult,shopCost,firstCamp")]
         [TestCase("BaitDef", "id,displayName,rating,stackMax,maxRating,biteSpeedMod,junkMult,maxNibbles,unlimited,affinityTags,affinityMult,specialMult")]
         [TestCase("FightProfileDef", "id,displayName,calmMin,calmMax,burstMin,burstMax,flipRate,diveChance,burstRamp,calmDrift,calmDriftRamp,flipMinGap,lateralJitter,strainMod,moveMult,reelInMult,wavePeriod")]
-        [TestCase("FishSpeciesDef", "id,displayName,rarity,baseValue,weightMinG,weightMaxG,weightSkew,lengthShapeK,fight,bodyShape,colorA,colorB,biteWaitMod,hookWindow,isSpecial,minBaitRating,minDepth,model,tags")]
+        [TestCase("FishSpeciesDef", "id,displayName,rarity,baseValue,weightMinG,weightMaxG,weightSkew,lengthShapeK,fight,bodyShape,colorA,colorB,biteWaitMod,hookWindow,isSpecial,model,tags")]
         [TestCase("JunkDef", "id,displayName,valueCoins,bodyShape,color")]
         [TestCase("FishingTuningDef", "TUNING")]
         [TestCase("SfxCueTableDef", "rows,seasonAmbience")]   // M3 T9 appended seasonAmbience

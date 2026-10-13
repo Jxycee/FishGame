@@ -40,6 +40,10 @@ namespace FishGame.Fishing
         private ContentRegistry _registry;
         private FishingDatabase _db;
         private ulong _runSeed = FishingConstants.DefaultDevRunSeed;
+        // T13 interim (C 7.13; T15 replaces it with the session run state and the world-built context): a local run state for this
+        // host and the lake zone index for the fixed interim context.
+        private EcologyRunState _interimRun;
+        private int _interimZone;
         private NetworkManager _nm;
         private bool _registered;
 
@@ -136,12 +140,20 @@ namespace FishGame.Fishing
                 if (_log.ShouldLog("no-db")) Debug.LogError("FishingHost: no fishing database; the ledger cannot start.", this);
                 return false;
             }
+            EcologyDatabase eco = _registry.Ecology;
+            if (eco == null)
+            {
+                if (_log.ShouldLog("no-eco")) Debug.LogError("FishingHost: no ecology database: run FishGame > Build All.", this);
+                return false;
+            }
 
             try
             {
                 ushort rod = _registry.RodIndex(DefaultRodId);
                 byte bait = (byte)_registry.BaitIndex(DefaultBaitId);
-                Ledger = new FishingHostLedger(_db, _runSeed, rod, bait);
+                _interimZone = _registry.ZoneIndex(ContentIds.LakeDock);
+                _interimRun ??= new EcologyRunState(_runSeed);
+                Ledger = new FishingHostLedger(eco, _interimRun, rod, bait);
             }
             catch (Exception e)   // KeyNotFoundException (missing default id) or a bad database: the handlers then use their fallback replies
             {
@@ -161,6 +173,7 @@ namespace FishGame.Fishing
                 return;
             }
             _runSeed = seed;
+            _interimRun = null;   // T13 interim: the next ledger gets a fresh run state with the new seed
             if (Ledger == null) return;
 
             Ledger = null;
@@ -171,6 +184,20 @@ namespace FishGame.Fishing
                 FishingRodNetwork rod = rods[i];
                 if (rod != null && rod.IsServer && rod.Player != null && rod.Player.IsServerInitialized) OnPlayerReady(rod);
             }
+        }
+
+        // T13 interim context (C 7.13; T15 replaces it with the world-built one): the lake zone, open_water (sub-area 1), Summer, Clear,
+        // Midday (minute 300), no hotspot, luck 0, neutral events and skills, one player. Bluegill is eligible there, so every M2 cast test
+        // keeps landing. Depth +Infinity, rod tier 0 and neutral bait are placeholders: the ledger overwrites all three (M3-D15).
+        internal static FishingContext InterimContext(int lakeZoneIndex)
+        {
+            return new FishingContext
+            {
+                ZoneIndex = lakeZoneIndex, SubAreaIndex = 1, Depth = float.PositiveInfinity,
+                Minute = 300, Season = Season.Summer, Weather = WeatherMask.Clear,
+                RodTier = 0, Bait = BaitMods.Neutral(1), InHotspot = false, Luck = 0f,
+                Events = EventMods.Neutral, Skills = SkillMods.Neutral, PlayersInSession = 1,
+            };
         }
 
         // ------------------------------------------------------------------ player / disconnect
@@ -242,7 +269,9 @@ namespace FishGame.Fishing
                 rod.CastResultRpc(req.CastId, false, (byte)CastRejectReason.OriginTooFar, Vector3.zero, default);
                 return;
             }
-            var view = new HostCastView { PlayerX = seen.x, PlayerY = seen.y, PlayerZ = seen.z, CastingAllowed = true };
+            // T13 interim (T15 replaces it): casting always open, every landing a grid water cell, the fixed interim context.
+            var view = new HostCastView { PlayerX = seen.x, PlayerY = seen.y, PlayerZ = seen.z, CastingAllowed = true,
+                                          GridWater = true, Context = InterimContext(_interimZone) };
             if (Ledger.TryComputeLanding(slot, in req, out float lx, out float lz)) view.Probe = CastProbe.Probe(lx, lz);
 
             CastVerdict v = Ledger.RequestCast(rod.OwnerClientId, slot, in req, in view, FishingDebugSettings.ToOverrides(_registry));

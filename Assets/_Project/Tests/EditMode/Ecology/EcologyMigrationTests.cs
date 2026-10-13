@@ -96,7 +96,7 @@ namespace FishGame.Tests.EditMode
                 // bluegill with its M2 values and gates, model = the temp mesh, no tags.
                 var bluegill = Load<FishSpeciesDef>(SpeciesPath("bluegill"));
                 bluegill.Configure("bluegill", "Bluegill", FishRarity.Common, 5, 200, 800, 2.2f, 1.0f, ProfileAsset("steady"), BodyShape.Round,
-                    new Color(0.32f, 0.50f, 0.62f, 1f), new Color(0.95f, 0.62f, 0.22f, 1f), 0.9f, 0f, false, 1, 0.8f, tempMesh, FishTags.None);
+                    new Color(0.32f, 0.50f, 0.62f, 1f), new Color(0.95f, 0.62f, 0.22f, 1f), 0.9f, 0f, false, tempMesh, FishTags.None);
                 EditorUtility.SetDirty(bluegill);
 
                 // Bait M3 fields as an M2 asset deserializes them: 0.
@@ -132,8 +132,9 @@ namespace FishGame.Tests.EditMode
             float minDepth, FishRarity rarity, BodyShape shape)
         {
             var def = ScriptableObject.CreateInstance<FishSpeciesDef>();
+            // minBaitRating / minDepth stay in the rows as the M2 values; T13 (M3-D3, M3-D55) removed the species fields they used to set.
             def.Configure(id, name, rarity, value, minG, maxG, 2.2f, 1.0f, ProfileAsset(profileId), shape, Color.red, Color.green, biteWaitMod, 0f,
-                false, minBaitRating, minDepth, tempMesh);
+                false, tempMesh);
             AssetDatabase.CreateAsset(def, SpeciesPath(id));
             AppendToRegistrySpecies(def);
         }
@@ -246,8 +247,6 @@ namespace FishGame.Tests.EditMode
             Assert.That(def.BiteWaitMod, Is.EqualTo(x.BiteWaitMod));
             Assert.That(def.HookWindow, Is.EqualTo(x.HookWindow));
             Assert.That(def.IsSpecial, Is.EqualTo(x.IsSpecial));
-            Assert.That(def.MinBaitRating, Is.EqualTo(x.MinBaitRating));
-            Assert.That(def.MinDepth, Is.EqualTo(x.MinDepth));
             Assert.That(def.Tags, Is.EqualTo(x.Tags));
 
             // The literal roster values (spec 12.6 row 2, M3-D35).
@@ -257,8 +256,6 @@ namespace FishGame.Tests.EditMode
             Assert.That(def.Rarity, Is.EqualTo(FishRarity.Common));
             Assert.That(def.Tags, Is.EqualTo(FishTags.Schooling));
             Assert.That(def.BiteWaitMod, Is.EqualTo(1.0f));
-            Assert.That(def.MinBaitRating, Is.EqualTo(0));
-            Assert.That(def.MinDepth, Is.EqualTo(0f));
             Assert.That(def.Fight.Id, Is.EqualTo("steady"));
 
             Assert.That(def.Model, Is.SameAs(tempMesh), "the model reference is kept");
@@ -312,7 +309,7 @@ namespace FishGame.Tests.EditMode
             // Gate case: with the version already 2, planted M2-shaped data is NOT touched. The version gate, not step idempotency, prevents the run.
             var planted = ScriptableObject.CreateInstance<FishSpeciesDef>();
             planted.Configure("perch", "Perch", FishRarity.Common, 8, 300, 1200, 2.2f, 1.0f, ProfileAsset("darter"), BodyShape.Long, Color.red, Color.green,
-                1.0f, 0f, false, 3, 1.2f, tempMesh);
+                1.0f, 0f, false, tempMesh);
             AssetDatabase.CreateAsset(planted, SpeciesPath("perch"));
             SetBaitFields("bait_worm", 0, 0f, 0f);
             AssetDatabase.SaveAssets();

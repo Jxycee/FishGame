@@ -223,8 +223,6 @@ namespace FishGame.Tests.EditMode
                 R(v, l + " lengthShapeK", s.LengthShapeK, 0.5f, 2f);
                 R(v, l + " biteWaitMod", s.BiteWaitMod, 0.5f, 2f);
                 Rule(v, l, s.HookWindow == 0f || (s.HookWindow >= 0.8f && s.HookWindow <= 1.2f), "hookWindow is 0 or in [0.8, 1.2]");
-                R(v, l + " minBaitRating", s.MinBaitRating, 0f, 20f);
-                R(v, l + " minDepth", s.MinDepth, 0f, FishingConstants.DepthMultFullDepth);
                 Rule(v, l, s.Fight != null && reg.FightProfiles.Contains(s.Fight), "fight is non-null and listed in fightProfiles");
             }
 
@@ -305,23 +303,8 @@ namespace FishGame.Tests.EditMode
         }
 
         // ---------------------------------------------------------------- reachability
-
-        // Catches: a species no bait can ever reach (its minBaitRating above every EffRating, or minDepth beyond the 6 m full depth).
-        [Test]
-        public void FishingData_EverySpecies_ReachableWithSomeBaitAndDepth()
-        {
-            FishingDatabase db = LoadRegistry().Fishing;
-            Assert.IsNotNull(db, "registry has no fishing database");
-            for (int s = 0; s < db.Species.Count; s++)
-            {
-                FishSpeciesData sp = db.Species[s];
-                bool reachable = false;
-                for (int b = 0; b < db.Baits.Count && !reachable; b++)
-                    reachable = PlaceholderRoller.IsEligible(in sp, db.Baits[b].EffRating(1), 6f);
-                Assert.IsTrue(reachable, "species index " + s + " is not reachable with any bait at depth 6 m");
-            }
-            // The M2 debug loadout holds every bait (C M2-D14), so "some bait" is also "some bait in the loadout".
-        }
+        // FishingData_EverySpecies_ReachableWithSomeBaitAndDepth was deleted in T13 (M3-D55): species carry no bait/depth gate any more
+        // (M3-D3); V3 EcologyCoverage_V3_EverySpeciesPassesSomewhereAtRodThree checks reachability over the zone rules.
 
         // ---------------------------------------------------------------- seeds vs spec tables
 
@@ -454,7 +437,7 @@ namespace FishGame.Tests.EditMode
             F(k + "wavePeriod", E(k + "wavePeriod", wavePeriod), p.profile.WavePeriod);
         }
 
-        static void Species(string id, string name, string profileId, int gMin, int gMax, int baseValue, float biteWaitMod, int minBait, float minDepth,
+        static void Species(string id, string name, string profileId, int gMin, int gMax, int baseValue, float biteWaitMod,
             FishRarity rarity, BodyShape shape, Color colorA, Color colorB, string modelFile)
         {
             SpeciesSeed s = SeedSpecies(id);
@@ -465,8 +448,6 @@ namespace FishGame.Tests.EditMode
             F(k + "weightMaxG", E(k + "weightMaxG", gMax), s.Data.WeightMaxG);
             F(k + "baseValue", E(k + "baseValue", baseValue), s.Data.BaseValue);
             F(k + "biteWaitMod", E(k + "biteWaitMod", biteWaitMod), s.Data.BiteWaitMod);
-            F(k + "minBaitRating", E(k + "minBaitRating", minBait), s.Data.MinBaitRating);
-            F(k + "minDepth", E(k + "minDepth", minDepth), s.Data.MinDepth);
             F(k + "weightSkew", E(k + "weightSkew", 2.2f), s.Data.WeightSkew);
             F(k + "lengthShapeK", E(k + "lengthShapeK", 1.0f), s.Data.LengthShapeK);
             F(k + "hookWindow", E(k + "hookWindow", 0f), s.Data.HookWindow);

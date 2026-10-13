@@ -100,10 +100,11 @@ namespace FishGame.Tests.EditMode
             return p;
         }
 
+        // minBait and minDepth stay in the rows as the M2 table values; M3-D3 (T13) removed the species fields they used to set.
         static FishSpeciesData Fish(int profile, int minG, int maxG, int value, int minBait, float waitMod, float minDepth) =>
             new FishSpeciesData { FightProfileIndex = (ushort)profile, WeightMinG = minG, WeightMaxG = maxG, BaseValue = value,
-                                  MinBaitRating = minBait, WeightSkew = 2.2f, LengthShapeK = 1.0f, BiteWaitMod = waitMod,
-                                  HookWindow = 0f, MinDepth = minDepth, IsSpecial = false, Rarity = FishRarity.Common };
+                                  WeightSkew = 2.2f, LengthShapeK = 1.0f, BiteWaitMod = waitMod,
+                                  HookWindow = 0f, IsSpecial = false, Rarity = FishRarity.Common };
 
         public static FishSpeciesData[] Species() => new[]
         {

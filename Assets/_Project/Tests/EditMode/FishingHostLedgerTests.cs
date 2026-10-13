@@ -20,31 +20,26 @@ namespace FishGame.Tests.EditMode
         static readonly float Tf = CastMath.FlightTime(CastMath.Distance(0.5f, 2.5f, 18f));
 
         // ---- helpers -----------------------------------------------------------------------------------------------
+        // M3 T13: the ledger rolls through FishingRoller/FishingResolver on EcologyTestData (Lake zone, open water, Summer, Clear,
+        // Midday by default); the cast counter and catch limits live in the EcologyRunState.
 
-        static FishingDatabase Db() => FishingTestData.Database();
+        static EcologyDatabase Db() => EcologyTestData.Database();
 
-        static FishingDatabase DbPity(int after)
+        static EcologyDatabase DbPity(int after)
         {
             FishingTuning t = FishingTestData.Tuning();
             t.PityAfterFailures = after;
-            return new FishingDatabase(FishingTestData.Rods(), FishingTestData.Baits(), FishingTestData.MotionProfiles(),
-                                       FishingTestData.Species(), FishingTestData.Junk(), in t);
+            return EcologyTestData.Database(null, t);
         }
 
-        static FishingHostLedger NewLedger(ulong seed = Seed, FishingDatabase db = null)
-        {
-            var l = new FishingHostLedger(db ?? Db(), seed, FishingTestData.RodHandmade, FishingTestData.BaitWorm);
-            l.EnsureSlot(0);
-            return l;
-        }
+        static FishingHostLedger NewLedger(ulong seed = Seed, EcologyDatabase db = null) => EcologyTestData.Ledger(db, null, seed);
 
         static CastRequestData Req(uint id, float charge = 0.5f, int bait = FishingTestData.BaitWorm) =>
             new CastRequestData { CastId = id, OriginX = 0f, OriginY = 0f, OriginZ = 0f, YawDeg = 0f, ChargeNorm = charge,
                                   BaitIndex = (byte)bait, Assist = false };
 
-        static HostCastView View(float depth = 3f, bool water = true, bool hasBed = true, bool allowed = true) =>
-            new HostCastView { PlayerX = 0f, PlayerY = 0f, PlayerZ = 0f, CastingAllowed = allowed,
-                               Probe = new WaterProbe { FirstHitIsWater = water, WaterY = 0f, HasBed = hasBed, Depth = depth } };
+        static HostCastView View(float depth = 3f, bool water = true, bool hasBed = true, bool allowed = true, bool gridWater = true) =>
+            EcologyTestData.View(depth, water, hasBed, allowed, gridWater);
 
         static RollOverrides Ov => new RollOverrides { ForcedBiteWait = 2f, ForcedItemIndex = FishingTestData.SpeciesCarp };
         static RollOverrides OvJunk => new RollOverrides { ForcedBiteWait = 2f, ForcedItemIndex = -1, ForceJunk = true };
@@ -149,14 +144,23 @@ namespace FishGame.Tests.EditMode
             Assert.That(got.ValueCoins, Is.EqualTo(want.ValueCoins));
         }
 
-        // What the placeholder roller makes for cast number n of a ledger seed, with the Ov overrides (forced carp, 2 s bite).
-        static FishingRoll Expected(FishingDatabase db, ulong seed, ulong n, bool overrides)
+        // What the ledger rolls for cast number n of a run seed: the view's context with the ledger's overwrites (handmade rod tier,
+        // worm Mods(1), probe depth), Rng.Stream(seed, "catch", n), FishingRoller.Roll with a fresh catch ledger (every reservation of the
+        // earlier casts was released) and the Ov overrides (forced carp, 2 s bite) when asked.
+        static FishingRoll Expected(EcologyDatabase db, ulong seed, ulong n, bool overrides, in FishingContext world, float depth = 3f,
+                                    int rod = FishingTestData.RodHandmade, int bait = FishingTestData.BaitWorm)
         {
+            FishingContext ctx = world;
+            ctx.RodTier = db.Fishing.Rods[rod].Tier;
+            ctx.Bait = db.Fishing.Baits[bait].Mods(1);
+            ctx.Depth = depth;
             Pcg32 rng = Rng.Stream(seed, "catch", n);
-            var rr = new RollRequest { BaitIndex = FishingTestData.BaitWorm, LoadedCount = 1, Depth = 3f, Luck = 0f,
-                                       ForcedBiteWait = overrides ? 2f : 0f, ForcedItemIndex = overrides ? FishingTestData.SpeciesCarp : -1 };
-            return PlaceholderRoller.Roll(db, in rr, ref rng);
+            RollOverrides ov = overrides ? Ov : RollOverrides.None;
+            return FishingRoller.Roll(db, new FishingResolver(db), in ctx, new CatchLedger(), in ov, bait, ref rng, out _);
         }
+
+        static FishingRoll Expected(EcologyDatabase db, ulong seed, ulong n, bool overrides) =>
+            Expected(db, seed, n, overrides, EcologyTestData.Context());
 
         static int Stock(FishingHostLedger l, byte slot = 0) => l.GetLoadout(slot).BaitCount;
 
@@ -304,7 +308,7 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void FishingHostLedger_Accept_ConsumesBaitAndRolls()
         {
-            FishingDatabase db = Db();
+            EcologyDatabase db = Db();
             FishingHostLedger l = NewLedger(Seed, db);
             Assert.That(l.RunSeed, Is.EqualTo(Seed));
             RollOverrides none = RollOverrides.None;
@@ -314,9 +318,7 @@ namespace FishGame.Tests.EditMode
             Assert.That(Stock(l), Is.EqualTo(19));
             Assert.That(l.HostCastCounter, Is.EqualTo(1u));
 
-            Pcg32 rng = Rng.Stream(42, "catch", 1);
-            var rr = new RollRequest { BaitIndex = FishingTestData.BaitWorm, LoadedCount = 1, Depth = 3f, Luck = 0f, ForcedItemIndex = -1 };
-            FishingRoll want = PlaceholderRoller.Roll(db, in rr, ref rng);
+            FishingRoll want = Expected(db, 42, 1, false);
             AssertSameRoll(in want, in v.Roll, true, "verdict");
 
             Assert.That(l.TryGetActive(Client, out ActiveCast a), Is.True);
@@ -372,6 +374,7 @@ namespace FishGame.Tests.EditMode
                         Assert.That(hz, Is.EqualTo(ownerZ), what + " z (bit-identical)");
 
                         HostCastView view = new HostCastView { PlayerX = ox, PlayerY = 0f, PlayerZ = oz, CastingAllowed = true,
+                            GridWater = true, Context = EcologyTestData.Context(),
                             Probe = new WaterProbe { FirstHitIsWater = true, WaterY = 0f, HasBed = true, Depth = 3f } };
                         RollOverrides ov = Ov;
                         CastVerdict v = l.RequestCast(Client, 0, req, view, in ov);
@@ -431,7 +434,7 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void FishingHostLedger_RollSeed_DerivesFromRunSeedAndCounter()
         {
-            FishingDatabase db = Db();
+            EcologyDatabase db = Db();
             FishingHostLedger l = NewLedger(42, db);
             CastVerdict first = Accept(l, 1, RollOverrides.None);
             CancelCast(l, 1);
@@ -990,7 +993,7 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void FishingHostLedger_CleanCatchAtTrophy_StaysTrophy()
         {
-            FishingDatabase db = Db();
+            EcologyDatabase db = Db();
             FishingHostLedger found = null;
             CastVerdict v = default;
             for (ulong seed = 1; seed <= 5000 && found == null; seed++)
@@ -1089,7 +1092,7 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void FishingHostLedger_ThreeFailures_NextCastPity()
         {
-            FishingDatabase db = Db();   // PityAfterFailures 3
+            EcologyDatabase db = Db();   // PityAfterFailures 3
             FishingHostLedger l = NewLedger(Seed, db);
             Assert.That(CastAndFail(l, 1, 0).Roll.Pity, Is.False, "cast 1");
             Assert.That(CastAndFail(l, 2, 1).Roll.Pity, Is.False, "cast 2");
@@ -1546,6 +1549,385 @@ namespace FishGame.Tests.EditMode
             Tick(l, 1.0);   // total running time Tf + 2.0
             bool commit = l.Hooked(Client, 1, HookDistance, out _);
             Assert.That(commit, Is.False, "paused time does not count toward the bite wait");
+        }
+
+        // ---- M3 T13: resolver roll, host context, grid and day-over checks, run-state counter, catch limits ------------------
+
+        // A 2 s bite with NO forced item: the roll goes through the resolver's gates and rules (Ov would take the forced path, ruleIndex -1).
+        static readonly RollOverrides OvBite = new RollOverrides { ForcedBiteWait = 2f, ForcedItemIndex = -1 };
+
+        static FishingContext Limited() => EcologyTestData.Context(EcologyTestData.ZoneLimited, EcologyTestData.SubShallow);
+        static FishingContext SpecialOnly() => EcologyTestData.Context(EcologyTestData.ZoneSpecialOnly, EcologyTestData.SubShallow);
+
+        static CastVerdict RequestIn(FishingHostLedger l, uint id, in FishingContext ctx, in RollOverrides ov, ulong client = Client, byte slot = 0,
+                                     int bait = FishingTestData.BaitWorm, float depth = 3f)
+        {
+            return l.RequestCast(client, slot, Req(id, 0.5f, bait), EcologyTestData.View(in ctx, depth), in ov);
+        }
+
+        static CastVerdict AcceptIn(FishingHostLedger l, uint id, in FishingContext ctx, ulong client = Client, byte slot = 0,
+                                    int bait = FishingTestData.BaitWorm, float depth = 3f)
+        {
+            RollOverrides ov = OvBite;
+            CastVerdict v = RequestIn(l, id, in ctx, in ov, client, slot, bait, depth);
+            Assert.That(v.Valid, Is.True, "cast " + id + " rejected: " + v.Reason);
+            return v;
+        }
+
+        static ZoneData SummerOnlyPerchZone()
+        {
+            SpawnRuleData perch = EcologyTestData.Rule(FishingTestData.SpeciesPerch);
+            perch.Seasons = SeasonMask.Summer;
+            return EcologyTestData.Zone(EcologyTestData.OneBand(0.1f), new[] { perch });
+        }
+
+        // Catches: the ledger building its own context (ignoring view.Context's world part), or rolling outside the resolver.
+        [Test]
+        public void FishingHostLedger_Roll_UsesResolverWithHostContext()
+        {
+            EcologyDatabase db = EcologyTestData.Database(new[] { SummerOnlyPerchZone() });
+            FishingHostLedger l = NewLedger(Seed, db);
+            RollOverrides none = RollOverrides.None;
+            for (uint id = 1; id <= 20; id++)
+            {
+                CastVerdict v = l.RequestCast(Client, 0, Req(id), View(), in none);
+                Assert.That(v.Valid, Is.True, "cast " + id + ": " + v.Reason);
+                FishingRoll want = Expected(db, Seed, id, false);
+                AssertSameRoll(in want, in v.Roll, true, "lake cast " + id);
+                CancelCast(l, id);
+            }
+
+            int zone = EcologyTestData.FirstExtraZone;
+            FishingContext winter = EcologyTestData.Context(zone, EcologyTestData.SubShallow, Season.Winter);
+            FishingContext summer = EcologyTestData.Context(zone, EcologyTestData.SubShallow, Season.Summer);
+            FishingHostLedger w = NewLedger(Seed, db);
+            int perchInWinter = 0, perchInSummer = 0;
+            for (uint id = 1; id <= 50; id++)
+            {
+                CastVerdict v = AcceptIn(w, id, in winter);
+                if (!v.Roll.Catch.IsJunk && v.Roll.Catch.ItemIndex == FishingTestData.SpeciesPerch) perchInWinter++;
+                CancelCast(w, id);
+            }
+            for (uint id = 51; id <= 100; id++)
+            {
+                CastVerdict v = AcceptIn(w, id, in summer);
+                if (!v.Roll.Catch.IsJunk && v.Roll.Catch.ItemIndex == FishingTestData.SpeciesPerch) perchInSummer++;
+                CancelCast(w, id);
+            }
+            Assert.That(perchInWinter, Is.EqualTo(0), "the Summer-only rule never passes in the view's Winter context");
+            Assert.That(perchInSummer, Is.GreaterThan(0), "control: the same zone in Summer rolls the perch");
+        }
+
+        static ZoneData GatedZone()
+        {
+            SpawnRuleData blue = EcologyTestData.Rule(FishingTestData.SpeciesBluegill);
+            SpawnRuleData carp = EcologyTestData.Rule(FishingTestData.SpeciesCarp); carp.MinRodTier = 2;
+            SpawnRuleData cat = EcologyTestData.Rule(FishingTestData.SpeciesCatfish); cat.MinBaitRating = 6;
+            SpawnRuleData trout = EcologyTestData.Rule(FishingTestData.SpeciesTrout); trout.MinDepth = 5f;
+            return EcologyTestData.Zone(EcologyTestData.OneBand(0f), new[] { blue, carp, cat, trout });
+        }
+
+        static int[] CountCasts(FishingHostLedger l, ref uint id, in FishingContext ctx, int casts, int bait, float depth)
+        {
+            var counts = new int[EcologyTestData.SpeciesSpecial + 1];
+            for (int i = 0; i < casts; i++)
+            {
+                id++;
+                CastVerdict v = AcceptIn(l, id, in ctx, Client, 0, bait, depth);
+                Assert.That(v.Roll.Catch.IsJunk, Is.False, "junk share is 0 in the gated zone");
+                counts[v.Roll.Catch.ItemIndex]++;
+                CancelCast(l, id);
+            }
+            return counts;
+        }
+
+        // Catches: trusting ctx.RodTier, ctx.Bait or ctx.Depth from the view (M3-D15): each is overwritten from the host slot's rod, the
+        // request's bait (Mods(1)) and the host probe. The forged context would open every gate; each positive control opens exactly one.
+        [Test]
+        public void FishingHostLedger_HostRodTierAndBait_OverrideContext()
+        {
+            EcologyDatabase db = EcologyTestData.Database(new[] { GatedZone() });
+            FishingHostLedger l = NewLedger(Seed, db);
+            FishingContext forged = EcologyTestData.Context(EcologyTestData.FirstExtraZone, EcologyTestData.SubShallow);
+            forged.RodTier = 3;
+            forged.Bait = BaitMods.Neutral(10);
+            forged.Depth = float.PositiveInfinity;
+            uint id = 0;
+
+            int[] host = CountCasts(l, ref id, in forged, 100, FishingTestData.BaitWorm, 3f);   // handmade tier 1, worm rating 3, depth 3
+            Assert.That(host[FishingTestData.SpeciesCarp], Is.EqualTo(0), "rod tier 2 gate: the host rod is tier 1");
+            Assert.That(host[FishingTestData.SpeciesCatfish], Is.EqualTo(0), "bait rating 6 gate: worm is 3");
+            Assert.That(host[FishingTestData.SpeciesTrout], Is.EqualTo(0), "depth 5 gate: the probe says 3 m");
+            Assert.That(host[FishingTestData.SpeciesBluegill], Is.EqualTo(100));
+
+            Assert.That(l.SelectRod(Client, 0, FishingTestData.RodCarbon), Is.True);   // tier 2
+            int[] carbon = CountCasts(l, ref id, in forged, 100, FishingTestData.BaitWorm, 3f);
+            Assert.That(carbon[FishingTestData.SpeciesCarp], Is.GreaterThan(0), "the carbon rod opens the rod gate");
+            Assert.That(carbon[FishingTestData.SpeciesCatfish] + carbon[FishingTestData.SpeciesTrout], Is.EqualTo(0));
+
+            Assert.That(l.SelectRod(Client, 0, FishingTestData.RodHandmade), Is.True);
+            int[] deep = CountCasts(l, ref id, in forged, 100, FishingTestData.BaitWorm, 6f);
+            Assert.That(deep[FishingTestData.SpeciesTrout], Is.GreaterThan(0), "a 6 m probe opens the depth gate");
+            Assert.That(deep[FishingTestData.SpeciesCarp] + deep[FishingTestData.SpeciesCatfish], Is.EqualTo(0));
+
+            Assert.That(l.SelectBait(Client, 0, (byte)FishingTestData.BaitRawMeat), Is.True);   // rating 10
+            int[] meat = CountCasts(l, ref id, in forged, 100, FishingTestData.BaitRawMeat, 3f);
+            Assert.That(meat[FishingTestData.SpeciesCatfish], Is.GreaterThan(0), "raw meat opens the bait gate");
+            Assert.That(meat[FishingTestData.SpeciesCarp] + meat[FishingTestData.SpeciesTrout], Is.EqualTo(0));
+        }
+
+        // Catches: the grid check missing, or placed before NoBait (a no-bait request on a not-water cell must say NoBait).
+        [Test]
+        public void FishingHostLedger_GridNotWater_RejectedNotWater()
+        {
+            FishingHostLedger l = NewLedger();
+            RollOverrides none = RollOverrides.None;
+            CastVerdict v = l.RequestCast(Client, 0, Req(1), View(gridWater: false), in none);
+            Assert.That(v.Valid, Is.False);
+            Assert.That(v.Reason, Is.EqualTo(CastRejectReason.NotWater));
+            Assert.That(Stock(l), Is.EqualTo(20), "no bait spent");
+            Assert.That(l.Run.HostCastCounter, Is.EqualTo(0u), "no counter step");
+            Assert.That(l.TryGetActive(Client, out _), Is.False, "no active cast");
+            Assert.That(l.RequestCast(Client, 0, Req(1, 0.5f, 99), View(gridWater: false), in none).Reason, Is.EqualTo(CastRejectReason.NoBait),
+                        "NoBait outranks the grid check");
+            Assert.That(l.RequestCast(Client, 0, Req(1), View(), in none).Valid, Is.True, "control: the same cast on a water cell");
+        }
+
+        // Catches: the casting-closed (day over) check moved after the grid or bait checks.
+        [Test]
+        public void FishingHostLedger_DayOver_RejectedNotAllowedNow()
+        {
+            FishingHostLedger l = NewLedger();
+            RollOverrides none = RollOverrides.None;
+            Assert.That(l.RequestCast(Client, 0, Req(1), View(allowed: false), in none).Reason, Is.EqualTo(CastRejectReason.NotAllowedNow));
+            CastVerdict all = l.RequestCast(Client, 0, Req(1, 0.5f, 99), View(allowed: false, gridWater: false), in none);
+            Assert.That(all.Reason, Is.EqualTo(CastRejectReason.NotAllowedNow), "with grid false and no bait too");
+            Assert.That(Stock(l), Is.EqualTo(20));
+            Assert.That(l.Run.HostCastCounter, Is.EqualTo(0u));
+            Assert.That(l.TryGetActive(Client, out _), Is.False);
+        }
+
+        // Catches: the cast counter kept per ledger (a map switch creates a new ledger and would replay catch seeds, B11 / M3-D17).
+        [Test]
+        public void FishingHostLedger_CastCounter_LivesInRunState()
+        {
+            EcologyDatabase db = Db();
+            var run = new EcologyRunState(Seed);
+            FishingHostLedger a = EcologyTestData.Ledger(db, run);
+            RollOverrides none = RollOverrides.None;
+            Accept(a, 1, none); CancelCast(a, 1);
+            Accept(a, 2, none); CancelCast(a, 2);
+            FishingHostLedger b = EcologyTestData.Ledger(db, run);
+            Assert.That(b.Run, Is.SameAs(run));
+            CastVerdict v = Accept(b, 1, none);
+            FishingRoll want = Expected(db, Seed, 3, false);
+            AssertSameRoll(in want, in v.Roll, true, "the new ledger's first cast is counter 3");
+            Assert.That(run.HostCastCounter, Is.EqualTo(3u));
+            Assert.That(b.HostCastCounter, Is.EqualTo(3u));
+            Assert.That(a.HostCastCounter, Is.EqualTo(3u), "both ledgers read the one run state");
+        }
+
+        // Catches: no reservation at roll (the second crew member's roll sees no limit), committing only on AddToCreel (ReleasedCreelFull
+        // must commit too), and LimitApplies mishandling a special-tier ruleIndex. Modes: two clients on the limited carp; the same with a
+        // full creel; the limit-1 special (the skeleton's "can't be landed twice by two concurrent casts").
+        [TestCase("twoClients")]
+        [TestCase("creelFull")]
+        [TestCase("special")]
+        public void FishingHostLedger_LimitedSpecies_ReservedThenCommittedOnLanded(string mode)
+        {
+            const ulong Other = 200;
+            bool special = mode == "special";
+            FishingHostLedger l = NewLedger();
+            l.EnsureSlot(1);
+            CatchLedger catches = l.Run.Catches;
+            FishingContext ctx = special ? SpecialOnly() : Limited();
+            ushort limited = (ushort)(special ? EcologyTestData.SpeciesSpecial : FishingTestData.SpeciesCarp);
+
+            uint id = 0;
+            CastVerdict held = default;
+            bool found = false;
+            for (int k = 0; k < 64 && !found; k++)
+            {
+                id++;
+                CastVerdict v = AcceptIn(l, id, in ctx);
+                if (!v.Roll.Catch.IsJunk) { held = v; found = true; break; }
+                Assert.That(special, Is.True, "the limited carp zone has no junk share: the first cast is carp");
+                Assert.That(catches.Reserved(limited), Is.EqualTo(0), "junk never reserves");
+                CancelCast(l, id);
+            }
+            Assert.That(found, Is.True, "a fish within 64 casts");
+            Assert.That(held.Roll.Catch.ItemIndex, Is.EqualTo(limited));
+            Assert.That(catches.Reserved(limited), Is.EqualTo(1), "reserved at roll");
+            Assert.That(catches.Caught(limited), Is.EqualTo(0));
+
+            // The other crew member: the reservation alone reaches the limit. Its last cast stays in flight across the landing.
+            int otherCasts = special ? 32 : 1;
+            uint oid = 0;
+            for (int k = 0; k < otherCasts; k++)
+            {
+                oid++;
+                CastVerdict o = AcceptIn(l, oid, in ctx, Other, 1);
+                Assert.That(o.Roll.Catch.IsJunk, Is.True, "other cast " + oid + " while the limited fish is reserved");
+                if (k < otherCasts - 1) CancelCast(l, oid, Other);
+            }
+
+            HookAt(l, id);
+            Tick(l, 10.0);
+            CreelSnapshot creel = mode == "creelFull" ? new CreelSnapshot(12, 5000, 12, 15000) : Creel();
+            FightReport report = NotClean(10f);
+            CommitDecision d = l.Result(Client, id, FightOutcome.Landed, EscapeReason.None, in report, in creel);
+            Assert.That(d.Outcome, Is.EqualTo(FightOutcome.Landed));
+            Assert.That(d.Announce, Is.EqualTo(mode == "creelFull" ? AnnounceKind.ReleasedCreelFull : AnnounceKind.Landed));
+            Assert.That(catches.Caught(limited), Is.EqualTo(1), "committed on the first resolution");
+            Assert.That(catches.Reserved(limited), Is.EqualTo(0));
+
+            CommitDecision oc = CancelCast(l, oid, Other);
+            Assert.That(oc.Outcome, Is.EqualTo(FightOutcome.Cancelled));
+            Assert.That(catches.Reserved(limited), Is.EqualTo(0), "a junk cast settles nothing");
+            Assert.That(AcceptIn(l, oid + 1, in ctx, Other, 1).Roll.Catch.IsJunk, Is.True, "caught once: the limit holds for the crew");
+            Assert.That(AcceptIn(l, id + 1, in ctx).Roll.Catch.IsJunk, Is.True, "and for the catcher");
+        }
+
+        // Catches: a commit on any non-Landed outcome, no release in Disconnect, a double settle (Release on an unreserved index throws),
+        // an owner Timeout accepted before 118 s or refused after it, or a path left holding the reservation. The two host-timeout paths
+        // also prove the settle does not allocate inside Tick.
+        [TestCase("CancelWaiting", 0.0)]
+        [TestCase("CancelHooked", 0.0)]
+        [TestCase("Snapped", 0.0)]
+        [TestCase("EscapedPinned", 0.0)]
+        [TestCase("Missed", 0.0)]
+        [TestCase("EarlyHook", 0.0)]
+        [TestCase("LandedTooFast", 0.0)]
+        [TestCase("StuckWaitingTimeout", 0.0)]
+        [TestCase("HookedTimeout", 0.0)]
+        [TestCase("HookedOwnerTimeoutAccepted", 118.01)]
+        [TestCase("HookedOwnerTimeoutAccepted", 120.0)]
+        [TestCase("HookedOwnerTimeoutTooEarly", 117.99)]
+        [TestCase("Disconnect", 0.0)]
+        public void FishingHostLedger_LimitedSpecies_ReleasedOnLossCancelAndDisconnect(string path, double ownerTimeoutAt)
+        {
+            FishingHostLedger l = NewLedger();
+            CatchLedger catches = l.Run.Catches;
+            ushort carp = FishingTestData.SpeciesCarp;
+            FishingContext ctx = Limited();
+            CastVerdict v = AcceptIn(l, 1, in ctx);
+            Assert.That(v.Roll.Catch.IsJunk, Is.False);
+            Assert.That(v.Roll.Catch.ItemIndex, Is.EqualTo(carp));
+            Assert.That(catches.Reserved(carp), Is.EqualTo(1), "precondition: reserved at roll");
+
+            var sink = new List<CommitDecision>(8);
+            CommitDecision d = default;
+            FightOutcome wantO = FightOutcome.Escaped;
+            EscapeReason wantR = EscapeReason.Invalid;
+            switch (path)
+            {
+                case "CancelWaiting":
+                    d = CancelCast(l, 1); wantO = FightOutcome.Cancelled; wantR = EscapeReason.None; break;
+                case "CancelHooked":
+                    HookAt(l, 1); d = CancelCast(l, 1); wantR = EscapeReason.Dropped; break;
+                case "Snapped":
+                    HookAt(l, 1); Tick(l, 3.0); d = Result(l, 1, FightOutcome.Snapped, EscapeReason.None, NotClean(3f));
+                    wantO = FightOutcome.Snapped; wantR = EscapeReason.None; break;
+                case "EscapedPinned":   // R72 removed the pinned escape: a host-side check that a forged Pinned still releases and never commits
+                    HookAt(l, 1); d = Result(l, 1, FightOutcome.Escaped, EscapeReason.Pinned, NotClean(3f)); wantR = EscapeReason.Pinned; break;
+                case "Missed":
+                    Tick(l, Tf + 2.5); d = Result(l, 1, FightOutcome.Escaped, EscapeReason.Missed, NotClean(0f)); wantR = EscapeReason.Missed; break;
+                case "EarlyHook":
+                    Tick(l, 0.1);
+                    Assert.That(l.Hooked(Client, 1, HookDistance, out d), Is.True, "too early: a commit");
+                    break;
+                case "LandedTooFast":
+                    HookAt(l, 1); Tick(l, 1.0); d = Result(l, 1, FightOutcome.Landed, EscapeReason.None, NotClean(1f)); break;
+                case "StuckWaitingTimeout":
+                    l.Tick(0.001, false, sink);   // warm-up
+                    Assert.That(sink, Is.Empty);
+                    Assert.That(() => l.Tick(Tf + 2.0 + 31.0, false, sink), Is.Not.AllocatingGCMemory(), "the timeout and its release must not allocate");
+                    Assert.That(sink.Count, Is.EqualTo(1), "the timeout resolved inside the measured Tick");
+                    d = sink[0]; wantO = FightOutcome.Cancelled; wantR = EscapeReason.None; break;
+                case "HookedTimeout":
+                    HookAt(l, 1);
+                    l.Tick(0.001, false, sink);   // warm-up
+                    Assert.That(sink, Is.Empty);
+                    Assert.That(() => l.Tick(240.1, false, sink), Is.Not.AllocatingGCMemory(), "the timeout and its release must not allocate");
+                    Assert.That(sink.Count, Is.EqualTo(1), "the timeout resolved inside the measured Tick");
+                    d = sink[0]; wantR = EscapeReason.Timeout; break;
+                case "HookedOwnerTimeoutAccepted":
+                    HookAt(l, 1); Tick(l, ownerTimeoutAt);
+                    d = Result(l, 1, FightOutcome.Escaped, EscapeReason.Timeout, NotClean(120f)); wantR = EscapeReason.Timeout; break;
+                case "HookedOwnerTimeoutTooEarly":
+                    HookAt(l, 1); Tick(l, ownerTimeoutAt);
+                    d = Result(l, 1, FightOutcome.Escaped, EscapeReason.Timeout, NotClean(120f)); break;
+                case "Disconnect":
+                    Assert.That(l.Disconnect(Client), Is.True); break;
+                default:
+                    Assert.Fail("unknown path " + path); break;
+            }
+            if (path != "Disconnect")
+            {
+                Assert.That(d.Accepted, Is.True, path);
+                Assert.That(d.Outcome, Is.EqualTo(wantO), path);
+                Assert.That(d.Reason, Is.EqualTo(wantR), path);
+            }
+            Assert.That(l.TryGetActive(Client, out _), Is.False, path + ": resolved");
+            Assert.That(catches.Reserved(carp), Is.EqualTo(0), path + ": released");
+            Assert.That(catches.Caught(carp), Is.EqualTo(0), path + ": never committed");
+
+            CastVerdict next = AcceptIn(l, 1, in ctx, 300);
+            Assert.That(next.Roll.Catch.IsJunk, Is.False, path + ": the limit is free again");
+            Assert.That(next.Roll.Catch.ItemIndex, Is.EqualTo(carp));
+            Assert.That(catches.Reserved(carp), Is.EqualTo(1));
+
+            if (path == "StuckWaitingTimeout" || path == "HookedTimeout")   // the probe must be live on this runtime
+                Assert.That(() => { for (int i = 0; i < 100; i++) s_allocSink = new object[4]; }, Is.AllocatingGCMemory(), "positive control");
+        }
+
+        // Catches: reserving by species instead of by ruleIndex: a forced (F6) roll bypasses gates and limits and never reserves (M3-D13, M3-D77).
+        [Test]
+        public void FishingHostLedger_ForcedSpecies_NeverReserves()
+        {
+            FishingHostLedger l = NewLedger();
+            CatchLedger catches = l.Run.Catches;
+            ushort carp = FishingTestData.SpeciesCarp;
+            FishingContext ctx = Limited();
+            RollOverrides ov = Ov;
+            for (uint id = 1; id <= 3; id++)
+            {
+                CastVerdict v = RequestIn(l, id, in ctx, in ov);
+                Assert.That(v.Valid, Is.True, "cast " + id + ": " + v.Reason);
+                Assert.That(v.Roll.Catch.ItemIndex, Is.EqualTo(carp));
+                Assert.That(catches.Reserved(carp), Is.EqualTo(0), "forced cast " + id + " reserves nothing");
+                if (id < 3) Assert.DoesNotThrow(() => CancelCast(l, id), "a forced cast settles nothing");
+            }
+            HookAt(l, 3);
+            Tick(l, 10.0);
+            CommitDecision d = default;
+            Assert.DoesNotThrow(() => d = Result(l, 3, FightOutcome.Landed, EscapeReason.None, NotClean(10f)));
+            Assert.That(d.Outcome, Is.EqualTo(FightOutcome.Landed));
+            Assert.That(catches.Caught(carp), Is.EqualTo(0), "a forced landing never counts against the limit");
+            Assert.That(catches.Reserved(carp), Is.EqualTo(0));
+            CastVerdict honest = AcceptIn(l, 4, in ctx);
+            Assert.That(honest.Roll.Catch.ItemIndex, Is.EqualTo(carp), "the limit is still free for an honest roll");
+            Assert.That(catches.Reserved(carp), Is.EqualTo(1));
+        }
+
+        // Interim (T13 compile fix; T15 deletes this test with the interim context): the real registry's lake zone, open water, Summer,
+        // Clear, Midday, worm at 1.5 m has bluegill eligible, so every M2 PlayMode cast test keeps landing. Catches a seed or zone mismatch.
+        [Test]
+        public void FishingHostLedger_InterimLakeContext_BluegillEligible()
+        {
+            var registry = UnityEditor.AssetDatabase.LoadAssetAtPath<FishGame.Data.ContentRegistry>(FishGame.EditorTools.AssetPaths.ContentRegistryAsset);
+            Assert.That(registry, Is.Not.Null, "missing " + FishGame.EditorTools.AssetPaths.ContentRegistryAsset + ": run Tools/unity.ps1 build first");
+            EcologyDatabase eco = registry.Ecology;
+            Assert.That(eco, Is.Not.Null, "the registry has no ecology database");
+            FishingContext ctx = FishGame.Fishing.FishingHost.InterimContext(registry.ZoneIndex(ContentIds.LakeDock));
+            ctx.Bait = registry.Fishing.Baits[registry.BaitIndex("bait_worm")].Mods(1);
+            ctx.Depth = 1.5f;
+            var rules = new List<int>();
+            new FishingResolver(eco).CollectEligible(in ctx, null, false, rules);
+            ushort bluegill = registry.SpeciesIndex("bluegill");
+            bool eligible = false;
+            foreach (int r in rules) if (eco.Zones[ctx.ZoneIndex].Rules[r].SpeciesIndex == bluegill) eligible = true;
+            Assert.That(eligible, Is.True, "bluegill eligible in the interim lake context (" + rules.Count + " eligible rules)");
         }
     }
 }

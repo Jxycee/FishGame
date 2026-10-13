@@ -161,10 +161,10 @@ namespace FishGame.Tests.EditMode
 
             FishSpeciesDef carp = MakeAsset<FishSpeciesDef>();
             carp.Configure("carp", "Carp", FishRarity.Common, 12, 1000, 4000, 2.2f, 1f, bulldog, BodyShape.Round, Color.red, Color.green,
-                1.2f, 0f, false, 1, 1.5f, null);
+                1.2f, 0f, false, null);
             FishSpeciesDef bluegill = MakeAsset<FishSpeciesDef>();
             bluegill.Configure("bluegill", "Bluegill", FishRarity.Common, 5, 200, 800, 2.2f, 1f, steady, BodyShape.Round, Color.blue, Color.white,
-                0.9f, 0f, false, 1, 0.8f, null);
+                0.9f, 0f, false, null);
             set.Species = new[] { carp, bluegill };
 
             JunkDef boot = MakeAsset<JunkDef>();
@@ -298,7 +298,7 @@ namespace FishGame.Tests.EditMode
             FishingSet more = MakeFishingSet();
             FishSpeciesDef extra = MakeAsset<FishSpeciesDef>();
             extra.Configure("perch", "Perch", FishRarity.Common, 8, 300, 1200, 2.2f, 1f, more.Profiles[0], BodyShape.Long, Color.red, Color.green,
-                1f, 0f, false, 3, 1.2f, null);
+                1f, 0f, false, null);
             more.Species = new[] { more.Species[0], more.Species[1], extra };
             Assert.AreNotEqual(fullHash, MakeFishingRegistry(more, lake).ComputeContentHash());
 
@@ -321,7 +321,7 @@ namespace FishGame.Tests.EditMode
             foreign.Configure("darter", "Darter", 0.3f, 0.8f, 0.4f, 0.9f, 1f, 0f, 0f, 0f, 0f, 0.3f, 0f, 1f, 1f, 1f, 4f);
             FishSpeciesDef perch = MakeAsset<FishSpeciesDef>();
             perch.Configure("perch", "Perch", FishRarity.Common, 8, 300, 1200, 2.2f, 1f, foreign, BodyShape.Long, Color.red, Color.green,
-                1f, 0f, false, 3, 1.2f, null);
+                1f, 0f, false, null);
             set.Species = new[] { perch };
             ContentRegistry reg = MakeFishingRegistry(set);
             IReadOnlyList<string> errors = reg.Validate();
@@ -330,7 +330,7 @@ namespace FishGame.Tests.EditMode
             Assert.Throws<InvalidOperationException>(() => reg.Build());
 
             perch.Configure("perch", "Perch", FishRarity.Common, 8, 300, 1200, 2.2f, 1f, null, BodyShape.Long, Color.red, Color.green,
-                1f, 0f, false, 3, 1.2f, null);
+                1f, 0f, false, null);
             errors = reg.Validate();
             Assert.AreEqual(1, errors.Count);
             Assert.AreEqual("species[0] 'perch' has no fight profile.", errors[0]);
@@ -340,7 +340,7 @@ namespace FishGame.Tests.EditMode
             FightProfileDef lookalike = MakeAsset<FightProfileDef>();
             lookalike.Configure("bulldog", "Bulldog copy", 1f, 3f, 2f, 4f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f, 1f, 1f, 1f, 4f);
             perch.Configure("perch", "Perch", FishRarity.Common, 8, 300, 1200, 2.2f, 1f, lookalike, BodyShape.Long, Color.red, Color.green,
-                1f, 0f, false, 3, 1.2f, null);
+                1f, 0f, false, null);
             errors = reg.Validate();
             Assert.AreEqual(1, errors.Count);
             Assert.AreEqual("species[0] 'perch' fight 'bulldog' is not listed in fightProfiles.", errors[0]);
@@ -425,7 +425,7 @@ namespace FishGame.Tests.EditMode
         private FishSpeciesDef NewSpecies(string id, FightProfileDef fight)
         {
             FishSpeciesDef d = MakeAsset<FishSpeciesDef>();
-            d.Configure(id, "x", FishRarity.Common, 5, 200, 800, 2.2f, 1f, fight, BodyShape.Round, Color.red, Color.green, 1f, 0f, false, 1, 1f, null);
+            d.Configure(id, "x", FishRarity.Common, 5, 200, 800, 2.2f, 1f, fight, BodyShape.Round, Color.red, Color.green, 1f, 0f, false, null);
             return d;
         }
 
@@ -752,7 +752,7 @@ namespace FishGame.Tests.EditMode
             // The foreign species is not listed in species.
             EcoSet e = MakeEcologySet();
             FishSpeciesDef stray = MakeAsset<FishSpeciesDef>();
-            stray.Configure("stray", "Stray", FishRarity.Common, 5, 200, 800, 2.2f, 1f, e.Fishing.Profiles[0], BodyShape.Round, Color.red, Color.green, 1f, 0f, false, 0, 0f, null);
+            stray.Configure("stray", "Stray", FishRarity.Common, 5, 200, 800, 2.2f, 1f, e.Fishing.Profiles[0], BodyShape.Round, Color.red, Color.green, 1f, 0f, false, null);
             FillZone(e.ZoneA, "zone_a", EcoRule(stray, "near"), e.Fishing.Junk[0], e.Weather);
             ContentRegistry reg = MakeEcologyRegistry(e, zoneBFirst: false);
             IReadOnlyList<string> errors = reg.Validate();

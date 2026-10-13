@@ -11,8 +11,43 @@ namespace FishGame.Tests.EditMode
             new CastRequestData { CastId = 5, OriginX = 1f, OriginY = 0f, OriginZ = 1f, YawDeg = 0f, ChargeNorm = 0.5f, BaitIndex = 1, Assist = false };
 
         static HostCastView GoodView() =>
-            new HostCastView { PlayerX = 1f, PlayerY = 0f, PlayerZ = 1f, CastingAllowed = true,
+            new HostCastView { PlayerX = 1f, PlayerY = 0f, PlayerZ = 1f, CastingAllowed = true, GridWater = true, Context = EcologyTestData.Context(),
                                Probe = new WaterProbe { FirstHitIsWater = true, WaterY = 0f, HasBed = true, Depth = 3f } };
+
+        // Catches (M3-D16): the grid check placed before the probe (a too-shallow or dry landing must keep its probe reason), before NoBait,
+        // or missing (a valid probe on a not-water grid cell must be NotWater).
+        [Test]
+        public void CatchValidator_ValidateCast_GridCheckAfterProbe()
+        {
+            CastRequestData req = GoodReq();
+            HostCastView view = GoodView();
+            view.GridWater = false;
+
+            HostCastView shallow = view;
+            shallow.Probe.Depth = 0.4f;
+            Assert.That(CatchValidator.ValidateCast(in req, 4, false, in shallow, true, 0.5f), Is.EqualTo(CastRejectReason.TooShallow), "grid false + too shallow");
+            HostCastView dry = view;
+            dry.Probe.FirstHitIsWater = false;
+            Assert.That(CatchValidator.ValidateCast(in req, 4, false, in dry, true, 0.5f), Is.EqualTo(CastRejectReason.NotWater), "grid false + probe not water");
+            Assert.That(CatchValidator.ValidateCast(in req, 4, false, in view, true, 0.5f), Is.EqualTo(CastRejectReason.NotWater), "grid false + valid probe");
+            Assert.That(CatchValidator.ValidateCast(in req, 4, false, in view, false, 0.5f), Is.EqualTo(CastRejectReason.NoBait), "grid false + no bait");
+            view.GridWater = true;
+            Assert.That(CatchValidator.ValidateCast(in req, 4, false, in view, true, 0.5f), Is.EqualTo(CastRejectReason.None), "grid true + valid");
+        }
+
+        // Catches: the casting-closed check (day over, M3-D16) moved after any other rule.
+        [Test]
+        public void CatchValidator_ValidateCast_CastingNotAllowedFirst()
+        {
+            CastRequestData req = GoodReq();
+            req.CastId = 3; req.ChargeNorm = 2f; req.OriginX = 50f;    // stale id, bad charge, far origin
+            HostCastView view = GoodView();
+            view.CastingAllowed = false;
+            view.GridWater = false;
+            view.Probe.FirstHitIsWater = false;
+            view.Probe.HasBed = false;
+            Assert.That(CatchValidator.ValidateCast(in req, 3, true, in view, false, 0.5f), Is.EqualTo(CastRejectReason.NotAllowedNow));
+        }
 
         [Test]
         public void CatchValidator_ValidateCast_RuleOrderIsFixed()
@@ -41,6 +76,8 @@ namespace FishGame.Tests.EditMode
             Assert.That(CatchValidator.ValidateCast(in req, 3, false, in view, true, minDepth), Is.EqualTo(CastRejectReason.TooShallow));
             view.Probe.Depth = 0.8f;
             Assert.That(CatchValidator.ValidateCast(in req, 3, false, in view, true, minDepth), Is.EqualTo(CastRejectReason.None));
+            view.GridWater = false;   // M3-D16: the grid cell check comes last
+            Assert.That(CatchValidator.ValidateCast(in req, 3, false, in view, true, minDepth), Is.EqualTo(CastRejectReason.NotWater));
         }
 
         [Test]

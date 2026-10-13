@@ -89,6 +89,16 @@ namespace FishGame.Tests.EditMode
             return db;
         }
 
+        // T13 (M3-D55): the three FishingRollNet tests roll with FishingRoller over EcologyTestData (lake, open water, Summer, Clear, Midday,
+        // worm at 3 m) and run the wire checks against that database's Fishing half, so roll and TryToCore see the same tables.
+        static FishingRoll EcoRoll(EcologyDatabase eco, FishingResolver resolver, ref Pcg32 rng)
+        {
+            FishingContext ctx = EcologyTestData.Context();
+            ctx.Depth = 3f;
+            ctx.Bait = eco.Fishing.Baits[FishingTestData.BaitWorm].Mods(1);
+            return FishingRoller.Roll(eco, resolver, in ctx, new CatchLedger(), in RollOverrides.None, FishingTestData.BaitWorm, ref rng, out _);
+        }
+
         static void AssertSameRoll(in FishingRoll want, in FishingRoll got, string label)
         {
             Assert.That(got.Catch.IsJunk, Is.EqualTo(want.Catch.IsJunk), label + " IsJunk");
@@ -113,13 +123,14 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void FishingRollNet_RoundTrip_PreservesRoll()
         {
-            FishingDatabase db = SeedDb(out int worm);
+            EcologyDatabase eco = EcologyTestData.Database();
+            FishingDatabase db = eco.Fishing;
+            var resolver = new FishingResolver(eco);
             Pcg32 rng = Rng.Stream(42, FishingConstants.CatchStreamId, 1);
             int fish = 0, junk = 0, pity = 0;
             for (int i = 0; i < 50; i++)
             {
-                var req = new RollRequest { BaitIndex = worm, LoadedCount = 1, Depth = 3f, ForcedItemIndex = -1 };
-                FishingRoll roll = PlaceholderRoller.Roll(db, in req, ref rng);
+                FishingRoll roll = EcoRoll(eco, resolver, ref rng);
                 roll.Pity = (i % 2) == 1;
                 if (roll.Pity) pity++;
                 if (roll.Catch.IsJunk) junk++; else fish++;
@@ -137,10 +148,10 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void FishingRollNet_Flags_OnlyBitZeroIsPity()
         {
-            FishingDatabase db = SeedDb(out int worm);
+            EcologyDatabase eco = EcologyTestData.Database();
+            FishingDatabase db = eco.Fishing;
             Pcg32 rng = Rng.Stream(42, FishingConstants.CatchStreamId, 2);
-            var req = new RollRequest { BaitIndex = worm, LoadedCount = 1, Depth = 3f, ForcedItemIndex = -1 };
-            FishingRoll roll = PlaceholderRoller.Roll(db, in req, ref rng);
+            FishingRoll roll = EcoRoll(eco, new FishingResolver(eco), ref rng);
             roll.Pity = false;
 
             FishingRollNet wire = FishingRollNet.From(in roll);
@@ -161,12 +172,13 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void FishingRollNet_InsaneRoll_TryToCoreFalse()
         {
-            FishingDatabase db = SeedDb(out int worm);
+            EcologyDatabase eco = EcologyTestData.Database();
+            FishingDatabase db = eco.Fishing;
+            var resolver = new FishingResolver(eco);
             Pcg32 rng = Rng.Stream(42, FishingConstants.CatchStreamId, 3);
-            var req = new RollRequest { BaitIndex = worm, LoadedCount = 1, Depth = 3f, ForcedItemIndex = -1 };
             FishingRoll fishRoll;
             int guard = 0;
-            do { fishRoll = PlaceholderRoller.Roll(db, in req, ref rng); } while (fishRoll.Catch.IsJunk && ++guard < 100);
+            do { fishRoll = EcoRoll(eco, resolver, ref rng); } while (fishRoll.Catch.IsJunk && ++guard < 100);
             Assert.That(fishRoll.Catch.IsJunk, Is.False, "need a fish roll");
 
             FishingRollNet good = FishingRollNet.From(in fishRoll);

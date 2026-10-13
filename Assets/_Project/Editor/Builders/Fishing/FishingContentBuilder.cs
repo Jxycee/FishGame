@@ -91,7 +91,7 @@ namespace FishGame.EditorTools
                     if (fight == null) throw new InvalidOperationException("species '" + s.Id + "': missing fight profile asset " + profilePath);
                     FishSpeciesData x = s.Data;
                     d.Configure(s.Id, s.Name, x.Rarity, x.BaseValue, x.WeightMinG, x.WeightMaxG, x.WeightSkew, x.LengthShapeK, fight, s.BodyShape,
-                        s.ColorA, s.ColorB, x.BiteWaitMod, x.HookWindow, x.IsSpecial, x.MinBaitRating, x.MinDepth, null, x.Tags);
+                        s.ColorA, s.ColorB, x.BiteWaitMod, x.HookWindow, x.IsSpecial, null, x.Tags);
                 }));
             }
 

@@ -3,6 +3,9 @@
 // Keys (M2-D20): rod, selected bait, bait stock and the bad-luck FailStreak by SLOT (survive rejoin); lastAcceptedCastId, ActiveCast
 // and the last 16 stored resolutions by CLIENT ID (reset on disconnect, since castIds restart per connection).
 // Bad-luck nudge (R65 / M2-D23): host-decided and deterministic, no RNG. See Resolve and RequestCast.
+// M3: rolls through FishingRoller/FishingResolver with the host context (view.Context world part; rod tier, bait and depth overwritten
+// here, M3-D15); the cast counter and catch limits live in the session's EcologyRunState (M3-D17); limited species are reserved at roll
+// and committed or released on the first resolution (M3-D14).
 using System;
 using System.Collections.Generic;
 
@@ -38,7 +41,9 @@ namespace FishGame.Core
             public readonly List<Resolution> Resolved = new List<Resolution>(ResolutionHistory + 1);
         }
 
-        private readonly FishingDatabase _db;
+        private readonly EcologyDatabase _eco;
+        private readonly FishingDatabase _db;          // == _eco.Fishing; every M2 use of _db is unchanged
+        private readonly FishingResolver _resolver;
         private readonly Dictionary<byte, SlotState> _slots = new Dictionary<byte, SlotState>();
         private readonly Dictionary<ulong, ClientState> _clients = new Dictionary<ulong, ClientState>();
         private readonly List<ulong> _clientOrder = new List<ulong>();   // ascending clientId (kept sorted on add/remove): deterministic Tick order, no per-frame allocation
@@ -46,18 +51,21 @@ namespace FishGame.Core
         private readonly ushort _defaultRod;
         private readonly byte _defaultBait;
 
-        public FishingHostLedger(FishingDatabase db, ulong runSeed, ushort defaultRodIndex, byte defaultBaitIndex)
+        public FishingHostLedger(EcologyDatabase db, EcologyRunState run, ushort defaultRodIndex, byte defaultBaitIndex)
         {
-            _db = db ?? throw new ArgumentNullException(nameof(db));
-            if (defaultRodIndex >= db.Rods.Count) throw new ArgumentOutOfRangeException(nameof(defaultRodIndex));
-            if (defaultBaitIndex >= db.Baits.Count) throw new ArgumentOutOfRangeException(nameof(defaultBaitIndex));
-            RunSeed = runSeed;
+            _eco = db ?? throw new ArgumentNullException(nameof(db));
+            Run = run ?? throw new ArgumentNullException(nameof(run));
+            _db = db.Fishing;
+            if (defaultRodIndex >= _db.Rods.Count) throw new ArgumentOutOfRangeException(nameof(defaultRodIndex));
+            if (defaultBaitIndex >= _db.Baits.Count) throw new ArgumentOutOfRangeException(nameof(defaultBaitIndex));
+            _resolver = new FishingResolver(db);
             _defaultRod = defaultRodIndex;
             _defaultBait = defaultBaitIndex;
         }
 
-        public ulong RunSeed { get; }
-        public uint HostCastCounter { get; private set; }
+        public EcologyRunState Run { get; }                            // session run state: seed, cast counter, catch ledger (M3-D17)
+        public ulong RunSeed => Run.RunSeed;
+        public uint HostCastCounter => Run.HostCastCounter;
         public double Now { get; private set; }                          // pause-aware ledger clock
         public IReadOnlyList<CatchResult> CatchLog => _catchLog;         // landed catches this session (dev overlay)
 
@@ -144,16 +152,19 @@ namespace FishGame.Core
             if (reason != CastRejectReason.None)
                 return new CastVerdict { Valid = false, Reason = reason };
 
-            // Roll first: a bad override throws before any state changes.
-            uint counter = HostCastCounter + 1;
-            Pcg32 rng = Rng.Stream(RunSeed, FishingConstants.CatchStreamId, counter);
-            var rr = new RollRequest
-            {
-                BaitIndex = req.BaitIndex, LoadedCount = 1, Depth = view.Probe.Depth, Luck = 0f,
-                ForcedBiteWait = overrides.ForcedBiteWait, ForcedItemIndex = overrides.ForcedItemIndex,
-                ForceJunk = overrides.ForceJunk, Twitchy = overrides.Twitchy,
-            };
-            FishingRoll roll = PlaceholderRoller.Roll(_db, in rr, ref rng);
+            // M3-D15: the world part is the host's (view.Context); rod tier, bait and depth are the ledger's own truth, never the owner's.
+            // "Slot bait" (C 7.13) is the bait this cast validated and consumes: req.BaitIndex (checked against the slot stock above).
+            FishingContext ctx = view.Context;
+            ctx.RodTier = _db.Rods[s.RodIndex].Tier;
+            ctx.Bait = _db.Baits[req.BaitIndex].Mods(1);
+            ctx.Depth = view.Probe.Depth;
+
+            // Roll first, counter assigned after (D-F2): a bad override, an invalid context or an out-of-range zone throws before any state changes.
+            uint counter = Run.HostCastCounter + 1;
+            Pcg32 rng = Rng.Stream(Run.RunSeed, FishingConstants.CatchStreamId, counter);
+            FishingRoll roll = FishingRoller.Roll(_eco, _resolver, in ctx, Run.Catches, in overrides, req.BaitIndex, ref rng, out int ruleIndex);
+            bool reserve = LimitApplies(ctx.ZoneIndex, ruleIndex, in roll);
+
             roll.Pity = t.PityAfterFailures > 0 && s.FailStreak >= t.PityAfterFailures;   // R65: ledger decision, no extra draw
             bool announcePity = roll.Pity && !s.PityAnnounced;   // once per streak: a cancelled Pity cast leaves the streak, so the recast is Pity again
             if (roll.Pity) s.PityAnnounced = true;
@@ -161,8 +172,10 @@ namespace FishGame.Core
             float distance = CastMath.Distance(req.ChargeNorm, t.CastMinDist, _db.Rods[s.RodIndex].CastMaxDist);
             CastMath.Landing(req.OriginX, req.OriginZ, req.YawDeg, distance, out float lx, out float lz);
 
+            // ---- state changes from here on (nothing below throws) ----
             if (!_db.Baits[req.BaitIndex].Unlimited) s.Stock[req.BaitIndex]--;
-            HostCastCounter = counter;
+            Run.HostCastCounter = counter;
+            if (reserve) Run.Catches.Reserve(roll.Catch.ItemIndex);   // the next roll of ANY client now sees Caught + Reserved >= limit
             c.Slot = slot;
             c.LastAccepted = req.CastId;
             c.HasActive = true;
@@ -170,9 +183,27 @@ namespace FishGame.Core
             {
                 CastId = req.CastId, Roll = roll, Phase = CastPhase.Waiting, TAccepted = Now, THooked = 0.0,
                 LineLength0 = 0f, TFlight = CastMath.FlightTime(distance), CastDistance = distance, Assist = req.Assist,
-                RodIndex = s.RodIndex, BaitIndex = req.BaitIndex, LandingX = lx, LandingZ = lz,
+                RodIndex = s.RodIndex, BaitIndex = req.BaitIndex, LandingX = lx, LandingZ = lz, LimitReserved = reserve,
             };
             return new CastVerdict { Valid = true, Reason = CastRejectReason.None, Roll = roll, LandingX = lx, LandingZ = lz, AnnouncePity = announcePity };
+        }
+
+        // A limit applies only to a fish rolled THROUGH a rule whose CatchLimitPerRun >= 0. Junk and forced rolls (ruleIndex -1: debug overrides
+        // bypass gates and limits, M3-D13) never reserve. Never re-derived from the species: Commit/Release on an unreserved index throw.
+        private bool LimitApplies(int zoneIndex, int ruleIndex, in FishingRoll roll)
+        {
+            if (ruleIndex < 0 || roll.Catch.IsJunk) return false;
+            SpawnRuleData rule = _eco.Zones[zoneIndex].Rules[ruleIndex];
+            return rule.CatchLimitPerRun >= 0 && rule.SpeciesIndex == roll.Catch.ItemIndex;
+        }
+
+        // M3-D14: the first resolution settles the reservation exactly once. Landed (which also covers the ReleasedCreelFull announcement:
+        // the outcome stays Landed) commits; every other outcome (Cancelled, Snapped, Escaped incl. Invalid, Missed, Timeout) releases.
+        private void SettleLimit(in ActiveCast a, bool landed)
+        {
+            if (!a.LimitReserved) return;
+            if (landed) Run.Catches.Commit(a.Roll.Catch.ItemIndex);
+            else Run.Catches.Release(a.Roll.Catch.ItemIndex);
         }
 
         // Waiting + match -> Cancelled, refund (CancelRefundsBait), cleared. Hooked + match -> Escaped(Dropped), announced Lost, no refund
@@ -312,9 +343,11 @@ namespace FishGame.Core
 
         // Removes the client entry: ActiveCast, last accepted id and stored resolutions. No commit and no refund of a Waiting cast
         // (B-Q11). Slot data (stock, rod, bait, FailStreak) is untouched. True if the client held an active cast.
+        // M3-D14: the one clear that bypasses Resolve (D-F1), so a held catch-limit reservation is released here (never committed).
         public bool Disconnect(ulong clientId)
         {
             if (!_clients.TryGetValue(clientId, out ClientState c)) return false;
+            if (c.HasActive) SettleLimit(in c.Active, false);
             _clients.Remove(clientId);
             int at = _clientOrder.BinarySearch(clientId);
             if (at >= 0) _clientOrder.RemoveAt(at);
@@ -400,6 +433,7 @@ namespace FishGame.Core
         private void Resolve(ClientState c, FightOutcome outcome, EscapeReason reason)
         {
             ActiveCast a = c.Active;
+            SettleLimit(in a, outcome == FightOutcome.Landed);    // first line: every first resolution passes here (D-F1, M3-D14)
             if (outcome != FightOutcome.Cancelled && _slots.TryGetValue(c.Slot, out SlotState s))
             {
                 if (a.Roll.Pity || outcome == FightOutcome.Landed)

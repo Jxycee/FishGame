@@ -56,7 +56,7 @@ namespace FishGame.Tests.EditMode
             {
                 f.Species[i] = Make<FishSpeciesDef>();
                 f.Species[i].Configure(speciesIds[i], speciesIds[i], FishRarity.Common, 5, 200, 800, 2.2f, 1f, steady, BodyShape.Round,
-                    Color.blue, Color.white, 1f, 0f, false, 0, 0f, null);
+                    Color.blue, Color.white, 1f, 0f, false, null);
             }
             JunkDef boot = Make<JunkDef>();
             boot.Configure("old_boot", "Old Boot", 2, BodyShape.Long, Color.gray);

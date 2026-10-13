@@ -112,7 +112,7 @@ namespace FishGame.EditorTools
             if (fight == null) throw new InvalidOperationException("bluegill: missing fight profile asset " + profilePath);
             FishSpeciesData x = seed.Data;
             def.Configure(seed.Id, seed.Name, x.Rarity, x.BaseValue, x.WeightMinG, x.WeightMaxG, x.WeightSkew, x.LengthShapeK, fight, seed.BodyShape,
-                seed.ColorA, seed.ColorB, x.BiteWaitMod, x.HookWindow, x.IsSpecial, x.MinBaitRating, x.MinDepth, def.Model, x.Tags);
+                seed.ColorA, seed.ColorB, x.BiteWaitMod, x.HookWindow, x.IsSpecial, def.Model, x.Tags);
             EditorUtility.SetDirty(def);
             Debug.Log("FG MIGRATION step 2: bluegill overwritten with its roster values (model kept)");
         }

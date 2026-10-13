@@ -181,7 +181,7 @@ namespace FishGame.EditorTools
             foreach (RodDef rod in registry.Rods) if (rod != null) CheckRod(errors, rod, tuning);
             CheckBaits(errors, registry.Baits);
             foreach (FightProfileDef profile in registry.FightProfiles) if (profile != null) CheckProfile(errors, profile);
-            foreach (FishSpeciesDef species in registry.Species) if (species != null) CheckSpecies(errors, species, registry.Baits);
+            foreach (FishSpeciesDef species in registry.Species) if (species != null) CheckSpecies(errors, species);
             foreach (JunkDef junk in registry.Junk) if (junk != null) Range(errors, "junk " + junk.Id, "valueCoins", junk.ValueCoins, 0f, 5f);
             if (registry.ArtPalette != null) CheckPalette(errors, registry.ArtPalette);
             if (registry.WaterSettings != null) CheckWater(errors, registry.WaterSettings);
@@ -305,7 +305,7 @@ namespace FishGame.EditorTools
             if (p.Id == "thrasher") Rule(e, l, p.CalmMin >= 1.0f, "calmMin >= 1.0");
         }
 
-        private static void CheckSpecies(List<string> e, FishSpeciesDef s, IReadOnlyList<BaitDef> baits)
+        private static void CheckSpecies(List<string> e, FishSpeciesDef s)
         {
             string l = "species " + s.Id;
             AtLeast(e, l, "baseValue", s.BaseValue, 1f);
@@ -315,19 +315,8 @@ namespace FishGame.EditorTools
             Range(e, l, "lengthShapeK", s.LengthShapeK, 0.5f, 2f);
             Range(e, l, "biteWaitMod", s.BiteWaitMod, 0.5f, 2f);
             Rule(e, l, s.HookWindow == 0f || (s.HookWindow >= 0.8f && s.HookWindow <= 1.2f), "hookWindow is 0 or in [0.8, 1.2]");
-            Range(e, l, "minBaitRating", s.MinBaitRating, 0f, 20f);
-            Range(e, l, "minDepth", s.MinDepth, 0f, FishingConstants.DepthMultFullDepth);
             Rule(e, l, (s.Tags & ~DefinedTags) == 0, "tags has undefined bits");   // M3 T3
-
-            // Reachable: some bait reaches the species at the full depth (a null fight is reported by ContentRegistry.Validate).
-            FishSpeciesData data = s.ToCore(0);
-            bool reachable = false;
-            foreach (BaitDef b in baits)
-            {
-                if (b == null) continue;
-                if (PlaceholderRoller.IsEligible(in data, b.ToCore().EffRating(1), FishingConstants.DepthMultFullDepth)) { reachable = true; break; }
-            }
-            if (!reachable) e.Add(l + ": not reachable with any bait at depth <= 6 m");
+            // M3-D3 (T13): no species-level bait/depth gates any more; reachability is V3 (EcologyCoverage) over the zone rules.
         }
 
         private static void CheckPalette(List<string> e, ArtPaletteDef a)

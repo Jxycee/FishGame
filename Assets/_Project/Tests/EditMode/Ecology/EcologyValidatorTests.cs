@@ -67,7 +67,7 @@ namespace FishGame.Tests.EditMode
         private static void FillSpecies(FishSpeciesDef d, string id, int minG, int maxG, int value, FightProfileDef fight, bool special)
         {
             d.Configure(id, id, special ? FishRarity.Legendary : FishRarity.Common, value, minG, maxG, 2.2f, 1f, fight, BodyShape.Round, Color.blue, Color.white,
-                1f, 0f, special, 0, 0f, null);
+                1f, 0f, special, null);
         }
 
         private Rig MakeRig()

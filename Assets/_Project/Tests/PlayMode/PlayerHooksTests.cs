@@ -530,7 +530,8 @@ namespace FishGame.Tests.PlayMode
             byte otherBait = (byte)((fresh.BaitIndex + 1) % registry.Fishing.Baits.Count);
             const ulong standIn = 9001;
             var water = new WaterProbe { FirstHitIsWater = true, WaterY = 0f, HasBed = true, Depth = 3f };
-            var view = new HostCastView { CastingAllowed = true, Probe = water };
+            var view = new HostCastView { CastingAllowed = true, Probe = water, GridWater = true,   // T13: every view sets GridWater and Context
+                                          Context = FishingHost.InterimContext(registry.ZoneIndex(ContentIds.LakeDock)) };
             RollOverrides none = RollOverrides.None;
             var report = new FightReport();
             var emptyCreel = new CreelSnapshot(0, 0, 12, 15000);
