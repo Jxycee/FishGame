@@ -4,7 +4,7 @@
 
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
-_Last updated: 2026-10-14. M3 at eaab0aa: every task T1-T24 merged (T22 dev panel + clock just landed; PlayMode 137, EditMode 1378 incl. 1 skip). In flight: T25 acceptance doc + README + final check (worktree -t20, m3-t25). Then the Opus xhigh branch review, then merge M3 into main. Board re-checks: RL1, RS1, RF1, RL2, RG1, H1, J1, DP1._
+_Last updated: 2026-10-14. ALL M3 tasks merged (m3-fish-ecology af95354; check PASS: EditMode 1378 incl. 1 skip, PlayMode 137; two-build ContentHash 54AA263BB84936CE identical). Acceptance doc: docs/superpowers/plans/2026-10-13-m3-acceptance.md. In flight: Opus xhigh branch review. Then merge M3 into main (no PR; merge commit). Board now has the M3 sign-off rows ME1-ME8, DC1-DC5, DN1-DN5, JE8-JE9 plus the re-checks._
 
 ## 1. Read these next (in order)
 1. `C:\Dev\FishGame-m3\CLAUDE.md`: project rules (Git: no PRs; merge yourself when reviewed and green; PlayMode guard).
@@ -19,7 +19,8 @@ _Last updated: 2026-10-14. M3 at eaab0aa: every task T1-T24 merged (T22 dev pane
   - Also done: T17 (harbour; Blender art + code builder), fix batches A/B/C from the board.
   - Also done: T21 (journal UI + FishIconBaker atlas, M3-D96), T24 (EcologySoloTests).
   - Also done: T22 (dev panel + HUD clock).
-  - Remaining: T25 (in flight), then an Opus xhigh branch review, then merge into main.
+  - Also done: T25 (acceptance doc + README).
+  - Remaining: the Opus xhigh branch review (in flight), its fixes, then merge into main.
 - **Idle worktree** `C:\Dev\FishGame-lookdev` (merged): delete only with the user's OK.
 
 ## 3. Next action
