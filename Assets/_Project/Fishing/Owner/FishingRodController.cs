@@ -59,7 +59,7 @@ namespace FishGame.Fishing
         private bool _setUp;
         private bool _suppressSends;
         private bool _draining, _redrain;
-        private bool _wasSwimming, _swimStowed;
+        private bool _wasAway, _awayStowed;
         private bool _hasLanding;
         private Vector3 _landing, _lastPoint, _hookRoot, _castOrigin;
         private float _castYaw;
@@ -111,8 +111,8 @@ namespace FishGame.Fishing
             _hasLanding = false;
             _lastPoint = Vector3.zero;
             _fightAccumulator = 0f;
-            _swimStowed = false;
-            _wasSwimming = _locomotion.IsSwimming;
+            _awayStowed = false;
+            _wasAway = RodControllerRules.IsAway(_locomotion.IsSwimming, _locomotion.IsClimbing);
             _recorder.Reset();
             ApplyRod(true);
 
@@ -233,23 +233,20 @@ namespace FishGame.Fishing
             _net.RaiseLocalCue(RodCue.Stow, 0);
         }
 
+        // Swimming or climbing a ladder (R70) puts the rod away (remembered; a line out is recalled by ForceEnd) and brings it back once both
+        // are over (spec 7.3, contract M2-D31). Entry onto a ladder is blocked while RodFighting, so a fight never reaches this from a ladder.
         private void HandleSwim()
         {
             bool swimming = _locomotion.IsSwimming;
-            if (swimming == _wasSwimming) return;
-            _wasSwimming = swimming;
-            if (swimming)
+            bool away = RodControllerRules.IsAway(swimming, _locomotion.IsClimbing);
+            switch (RodControllerRules.AwayStep(ref _wasAway, ref _awayStowed, away, RodOut))
             {
-                if (RodOut)
-                {
-                    Stow(RodForceReason.Swim);
-                    _swimStowed = true;
-                }
-            }
-            else if (_swimStowed)
-            {
-                Equip();
-                _swimStowed = false;
+                case RodAwayAction.Stow:
+                    Stow(swimming ? RodForceReason.Swim : RodForceReason.Stow);
+                    break;
+                case RodAwayAction.Equip:
+                    Equip();
+                    break;
             }
         }
 

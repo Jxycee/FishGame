@@ -4,8 +4,34 @@ using UnityEngine;
 
 namespace FishGame.Fishing
 {
+    // What swimming or climbing asks the owner controller to do this frame (R70, M2-D31).
+    internal enum RodAwayAction : byte { None = 0, Stow = 1, Equip = 2 }
+
     internal static class RodControllerRules
     {
+        // Swimming or on a ladder: the rod is put away (spec 7.3, R70).
+        public static bool IsAway(bool swimming, bool climbing)
+        {
+            return swimming || climbing;
+        }
+
+        // Edge-driven: Stow when going away with the rod out (remembered), Equip when coming back if it was put away by this rule.
+        public static RodAwayAction AwayStep(ref bool wasAway, ref bool stowedByAway, bool away, bool rodOut)
+        {
+            if (away == wasAway) return RodAwayAction.None;
+            wasAway = away;
+            if (away)
+            {
+                if (!rodOut) return RodAwayAction.None;
+                stowedByAway = true;
+                return RodAwayAction.Stow;
+            }
+
+            if (!stowedByAway) return RodAwayAction.None;
+            stowedByAway = false;
+            return RodAwayAction.Equip;
+        }
+
         // C 7.18 table. Free when the rod is stowed.
         public static InputContext ContextFor(RodState state, bool rodOut)
         {
