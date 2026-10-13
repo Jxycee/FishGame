@@ -4,7 +4,7 @@
 
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
-_Last updated: 2026-10-13, late. Fun-formula doc added, review tiers scaled to risk, Ideas box on the Test Notes board._
+_Last updated: 2026-10-14, early. New checks board for this round; T20 started ahead of T15 in its own worktree while W1 is pending._
 
 ## 1. Read these next (in order)
 1. `C:\Dev\FishGame-m3\CLAUDE.md`: project rules (Git: no PRs; merge yourself when reviewed and green; PlayMode guard).
@@ -20,12 +20,13 @@ _Last updated: 2026-10-13, late. Fun-formula doc added, review tiers scaled to r
 - **Idle worktree** `C:\Dev\FishGame-lookdev` (merged): delete only with the user's OK.
 
 ## 3. Next action
-1. Point the user to the **Test Notes board** https://claude.ai/artifact/NAcGRrYJYuPs2Rw6SBa93C. Read their results with ArtifactData:
+1. Point the user to the **M3 Checks board** https://claude.ai/artifact/LaUKFoiQZ3SYC24BCG1V1P (new 2026-10-14; same 50 checks and collections as the old Test Notes board, which had no results). Read their results with ArtifactData:
    - `results/{checkId}`: PASS/FAIL/SKIP plus a note;
    - `notes/general`.
 
    Summarise them, turn each FAIL or note into a task or a question, and reply under each check via its `reply` field.
 2. If **W1** (two-window WorldState sync) passed, start **T15**. If it failed, do the M3-D18 prefab fallback first. If it isn't done yet, do what doesn't need it and remind the user.
+   - **In flight (2026-10-14):** T20 (save + journal recorder) runs ahead of T15, in worktree `C:\Dev\FishGame-t20`, branch `m3-t20` (from m3-fish-ecology 070609d, copied Library), so the user can test W1 in `C:\Dev\FishGame-m3`. After Opus high review, merge `m3-t20` into `m3-fish-ecology`. T20 changes `Spot_LakeDock.unity`: whichever of T20/T15 lands second regenerates the scene from the builders, never a hand-merge of the .unity text.
 3. As tasks land, add their new checks to the board (for example M6 after T17/T21/T22).
 
 ## 4. After M3
@@ -37,7 +38,7 @@ Then write the M4 handoff: the R76 river run, starfish god camp, boat ride, mafi
 
 ## 5. Boards
 - Progress: https://claude.ai/artifact/SSE5uoZ7ELPyZP5A11qdXR. Keep `status/now`, `tasks`, `todos` and `agents` current.
-- Test notes (the user writes here): https://claude.ai/artifact/NAcGRrYJYuPs2Rw6SBa93C. Collections: `checks`, `results/{id}`, `notes/general`, and `notes/ideas` (game ideas; each has a `text` and a Claude `reply`).
+- M3 Checks (the user writes here): https://claude.ai/artifact/LaUKFoiQZ3SYC24BCG1V1P. The old Test Notes board NAcGRrYJYuPs2Rw6SBa93C is retired (no results on it). Collections: `checks`, `results/{id}`, `notes/general`, and `notes/ideas` (game ideas; each has a `text` and a Claude `reply`).
 
 ## 6. Working rules (short)
 - **Roles:** the controller delegates. Sonnet implements; Opus high reviews integration work; Sonnet reviews Core/data/docs; Opus xhigh does the branch review.
