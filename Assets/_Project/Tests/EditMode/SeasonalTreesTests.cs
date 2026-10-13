@@ -27,9 +27,15 @@ namespace FishGame.Tests.EditMode
             SeasonalVisibility.SetSeason(SeasonalVisibility.DefaultSeason);
         }
 
+        bool _pushedPaletteGlobals;
+
         [TearDown]
         public void TearDown()
         {
+            // A test that pushed a palette through PaletteGlobals leaves its season in the shader globals (and in SeasonalVisibility): put the
+            // real ArtPalette asset's M2 season (Summer) back before anything else renders in this editor session.
+            if (_pushedPaletteGlobals) RestoreAssetPaletteGlobals();
+            _pushedPaletteGlobals = false;
             // SeasonalVisibility.CurrentSeason is static: never leak a test season into later tests, builds or validators.
             SeasonalVisibility.SetSeason(SeasonalVisibility.DefaultSeason);
             foreach (UnityEngine.Object o in _created) if (o != null) UnityEngine.Object.DestroyImmediate(o);
@@ -187,8 +193,6 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void SeasonalVisibility_FollowsThePaletteGlobalsPush()
         {
-            Type globalsType = Type.GetType("FishGame.Presentation.PaletteGlobals, FishGame.Presentation");
-            Assert.IsNotNull(globalsType, "FishGame.Presentation.PaletteGlobals");
             var palette = Track(ScriptableObject.CreateInstance<ArtPaletteDef>());
             palette.Configure(FishingSeedData.PaletteSlotNames, FishingSeedData.PaletteSeasons(), FishingSeedData.PaletteFaceJitter,
                 FishingSeedData.PaletteSkinTone, FishingSeedData.PalettePhases(), FishingSeedData.PaletteUiAccent, FishingSeedData.PaletteUiGood,
@@ -203,16 +207,69 @@ namespace FishGame.Tests.EditMode
             });
             AssertShown("before the push", canopy, true, null, false, branches, false);
 
+            PushThroughPaletteGlobals(palette);   // OnEnable -> Apply -> the winter palette push
+
+            Assert.AreEqual(Winter, SeasonalVisibility.CurrentSeason, "PaletteGlobals.Apply hands the pushed season on");
+            AssertShown("after the winter push", canopy, false, null, false, branches, true);
+        }
+
+        // Catches: a test that pushes the winter palette and leaves it in the shader globals (white ground and bare palette in every later
+        // editor render / look-dev capture of the session). TearDown must put the ArtPalette asset's M2 season (Summer) back.
+        [Test]
+        public void PaletteGlobalsPush_IsUndoneByTearDown()
+        {
+            var palette = Track(ScriptableObject.CreateInstance<ArtPaletteDef>());
+            palette.Configure(FishingSeedData.PaletteSlotNames, FishingSeedData.PaletteSeasons(), FishingSeedData.PaletteFaceJitter,
+                FishingSeedData.PaletteSkinTone, FishingSeedData.PalettePhases(), FishingSeedData.PaletteUiAccent, FishingSeedData.PaletteUiGood,
+                FishingSeedData.PaletteUiWarn, FishingSeedData.PaletteUiBad, FishingSeedData.PaletteUiPanel, FishingSeedData.PaletteUiText, Winter);
+            PushThroughPaletteGlobals(palette);
+            Vector4 winterGrass = Shader.GetGlobalVectorArray(ShaderGlobals.Palette)[LakeDockLayout.SlotGrass];
+            Assert.That(winterGrass.y > winterGrass.x && winterGrass.y > winterGrass.z, Is.False, "the pushed winter ground is snow, not green: " + winterGrass);
+
+            TearDown();   // the same restore NUnit runs after the test; idempotent
+
+            Vector4 after = Shader.GetGlobalVectorArray(ShaderGlobals.Palette)[LakeDockLayout.SlotGrass];
+            Assert.That(after.y > after.x && after.y > after.z, Is.True, "the summer ground is green again after TearDown, got " + after);
+            Assert.AreEqual(SeasonalVisibility.DefaultSeason, SeasonalVisibility.CurrentSeason);
+        }
+
+        // Pushes a palette exactly as the Presentation root does: PaletteGlobals.OnEnable -> Apply (shader globals + SeasonalVisibility). Marks the
+        // test so TearDown restores the asset's season afterwards.
+        void PushThroughPaletteGlobals(ArtPaletteDef palette)
+        {
+            Type globalsType = Type.GetType("FishGame.Presentation.PaletteGlobals, FishGame.Presentation");
+            Assert.IsNotNull(globalsType, "FishGame.Presentation.PaletteGlobals");
+            _pushedPaletteGlobals = true;
             var host = Track(new GameObject("Presentation"));
             host.SetActive(false);
             Component globals = host.AddComponent(globalsType);
             var so = new SerializedObject(globals);
             so.FindProperty("palette").objectReferenceValue = palette;
             so.ApplyModifiedPropertiesWithoutUndo();
-            host.SetActive(true);   // OnEnable -> Apply -> the winter palette push
+            host.SetActive(true);
+        }
 
-            Assert.AreEqual(Winter, SeasonalVisibility.CurrentSeason, "PaletteGlobals.Apply hands the pushed season on");
-            AssertShown("after the winter push", canopy, false, null, false, branches, true);
+        // Pushes the real ArtPalette asset through a throwaway PaletteGlobals: the asset's M2 season (Summer) goes back into the shader globals.
+        static void RestoreAssetPaletteGlobals()
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
+            Assert.IsNotNull(asset, "ArtPalette asset " + AssetPaths.ArtPaletteAsset);
+            Type globalsType = Type.GetType("FishGame.Presentation.PaletteGlobals, FishGame.Presentation");
+            Assert.IsNotNull(globalsType, "FishGame.Presentation.PaletteGlobals");
+            var host = new GameObject("PaletteRestore");
+            try
+            {
+                host.SetActive(false);
+                Component globals = host.AddComponent(globalsType);
+                var so = new SerializedObject(globals);
+                so.FindProperty("palette").objectReferenceValue = asset;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                host.SetActive(true);   // OnEnable -> Apply: the asset's M2 season
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
         }
 
         // ---- the built lake dock ----
@@ -286,6 +343,40 @@ namespace FishGame.Tests.EditMode
             finally
             {
                 SeasonalVisibility.SetSeason(SeasonalVisibility.DefaultSeason);
+                EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        // Catches: a visual restyle (R74 smooth props, seasonal trees, new world objects) adding, dropping or swapping a physics collider in the lake
+        // scene: the player, the fish casts and the shore-grid bake all depend on this exact collider set.
+        // Source of truth: the colliders LakeDockBuilder authors from LakeDockLayout (the M1 physics numbers, unchanged by the R74 visuals), as
+        // saved in Spot_LakeDock.unity; counts read from the saved scene on 2026-10-13 (YAML component types !u!65 BoxCollider 22, !u!135
+        // SphereCollider 44, !u!136 CapsuleCollider 30, !u!64 MeshCollider 2; no collider lives in a prefab instance). T16 added World/StandPoints,
+        // which carries no collider, so it changes nothing here. Change these numbers only on purpose, in the commit that changes the physics.
+        [Test]
+        public void LakeDock_ColliderSet_IsUnchanged()
+        {
+            Scene scene = EditorSceneManager.OpenScene(AssetPaths.LakeDockScene, OpenSceneMode.Additive);
+            try
+            {
+                int box = 0, sphere = 0, capsule = 0, mesh = 0, all = 0;
+                foreach (GameObject root in scene.GetRootGameObjects())
+                    foreach (Collider c in root.GetComponentsInChildren<Collider>(true))
+                    {
+                        all++;
+                        if (c is BoxCollider) box++;
+                        else if (c is SphereCollider) sphere++;
+                        else if (c is CapsuleCollider) capsule++;
+                        else if (c is MeshCollider) mesh++;
+                    }
+                Assert.AreEqual(22, box, "BoxCollider count");
+                Assert.AreEqual(44, sphere, "SphereCollider count");
+                Assert.AreEqual(30, capsule, "CapsuleCollider count");
+                Assert.AreEqual(2, mesh, "MeshCollider count");
+                Assert.AreEqual(22 + 44 + 30 + 2, all, "no other collider type (terrain, wheel) in the scene");
+            }
+            finally
+            {
                 EditorSceneManager.CloseScene(scene, true);
             }
         }

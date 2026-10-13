@@ -155,6 +155,7 @@ Colours are RGB with alpha 1. Reachability (validator + test): a species is reac
 - `slotNames[16]`: Grass, Foliage, FoliageDark, Wood, WoodDark, Sand, Rock, Reed, Dock, Roof, Accent, Snow, Reserved12, Reserved13, Reserved14, Reserved15.
 - `faceJitter` 0.04; `skinTone` = `SlotPalette.GetSkinRgb` (0.96, 0.80, 0.66); `m2Season` 1 (Summer).
 - `seasons[4]` = Spring, Summer, Autumn, Winter; each `colors[16]` RGB, alpha 1. Summer is the base; the other seasons copy Summer and override slots 0, 1, 2, 7. Slots 12-15 are (0.5,0.5,0.5).
+- Note: superseded by spec 10.2 (2026-10-13): slots 12-15 are PineLight/PineDark/Blossom/FoliageAlt, slot 2 is the second round-tree variant.
 
 | Slot | Summer | Spring | Autumn | Winter |
 |---|---|---|---|---|
