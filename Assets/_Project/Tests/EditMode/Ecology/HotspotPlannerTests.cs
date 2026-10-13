@@ -208,6 +208,29 @@ namespace FishGame.Tests.EditMode
             Assert.IsTrue(differs, "day 2 draws from its own stream");
         }
 
+        // extra (T14 hardening, asked by the T5-T8 review): Advance(minute) clamps the minute to HotspotPlanner.MaxAdvanceMinute (a day plus
+        // a day of margin), so a huge minute neither spins through ~10^7 spawn cycles nor overflows EndMinute into an endless loop.
+        // Catches: no clamp (Advance(100000) walks past the clamp and ends in another state; Advance(int.MaxValue) would never return).
+        [Test]
+        public void HotspotPlanner_Advance_HugeMinuteClampedAndReturns()
+        {
+            EcologyTuning t = Tuning();
+            ShoreGrid g = OpenGrid();
+            Assert.That(HotspotPlanner.MaxAdvanceMinute, Is.GreaterThanOrEqualTo(DayClock.DayLengthMinutes), "a whole day still catches up");
+            var clamped = new HotspotPlanner(in t, g, 5UL, 1);
+            clamped.Advance(HotspotPlanner.MaxAdvanceMinute);
+            foreach (int huge in new[] { 100000, int.MaxValue })   // 100000 first: on an unclamped planner it terminates and differs
+            {
+                var p = new HotspotPlanner(in t, g, 5UL, 1);
+                p.Advance(huge);
+                Assert.AreEqual(clamped.Current.Active, p.Current.Active, "active at " + huge);
+                Assert.AreEqual(clamped.Current.StartMinute, p.Current.StartMinute, "start at " + huge);
+                Assert.AreEqual(clamped.Current.EndMinute, p.Current.EndMinute, "end at " + huge);
+                Assert.AreEqual(clamped.NextSpawnMinute, p.NextSpawnMinute, "next at " + huge);
+                Assert.AreEqual(clamped.DrawCount, p.DrawCount, "draws at " + huge);
+            }
+        }
+
         // extra: pins the draw order of M3-D49 with a replica stream (delay, then cell, then duration; the next gap after the end).
         [Test]
         public void HotspotPlanner_DrawOrder_DelayThenCellThenDuration_HandReplayed()

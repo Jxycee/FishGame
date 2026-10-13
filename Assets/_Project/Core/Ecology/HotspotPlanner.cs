@@ -11,6 +11,10 @@ namespace FishGame.Core
     public sealed class HotspotPlanner
     {
         private const int MaxTiming = 100000;
+
+        // T14 hardening (T5-T8 review): Advance clamps its minute here, a day plus a day of margin, so a huge minute (int.MaxValue) can
+        // neither spin through millions of spawn cycles nor overflow EndMinute. DevWorldDriver passes 0..1199.
+        internal const int MaxAdvanceMinute = DayClock.DayLengthMinutes * 2;
         private readonly EcologyTuning _t;
         private readonly ShoreGrid _grid;
         private readonly List<int> _cells = new List<int>();
@@ -33,6 +37,7 @@ namespace FishGame.Core
 
         public bool Advance(int minute)
         {
+            if (minute > MaxAdvanceMinute) minute = MaxAdvanceMinute;   // T14 hardening: bounded loop, no EndMinute overflow
             HotspotData before = Current;
             while (true)
             {
