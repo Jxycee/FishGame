@@ -546,10 +546,10 @@ namespace FishGame.EditorTools
             Debug.Log("FG LOOKDEV sheet " + sheetPath);
         }
 
-        static void PushPalette(ArtPaletteDef palette) => PushPalette(palette, palette.M2Season);
+        internal static void PushPalette(ArtPaletteDef palette) => PushPalette(palette, palette.M2Season);   // internal: FishIconBaker reuses the globals
 
         // Same push as PaletteGlobals.Apply: the linearised palette, then the season for the seasonal scenery.
-        static void PushPalette(ArtPaletteDef palette, int season)
+        internal static void PushPalette(ArtPaletteDef palette, int season)
         {
             Vector4[] authored = palette.PaletteVectors(season);
             var linear = new Vector4[ShaderGlobals.PaletteLength];
@@ -571,7 +571,7 @@ namespace FishGame.EditorTools
             Shader.SetGlobalVectorArray(ShaderGlobals.Ripples, new Vector4[8]);
         }
 
-        static void ApplyPhase(ArtPaletteDef palette, int index, Light sun, Quaternion sunRotation)
+        internal static void ApplyPhase(ArtPaletteDef palette, int index, Light sun, Quaternion sunRotation)
         {
             DayPhaseAmbient p = palette.Phases[index];
             sun.color = p.lightColor;

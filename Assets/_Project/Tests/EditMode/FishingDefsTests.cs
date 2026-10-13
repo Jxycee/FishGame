@@ -318,7 +318,7 @@ namespace FishGame.Tests.EditMode
         [TestCase("JunkDef", "id,displayName,valueCoins,bodyShape,color")]
         [TestCase("FishingTuningDef", "TUNING")]
         [TestCase("SfxCueTableDef", "rows,seasonAmbience")]   // M3 T9 appended seasonAmbience
-        [TestCase("ArtPaletteDef", "slotNames,seasons,faceJitter,skinTone,phases,uiAccent,uiGood,uiWarn,uiBad,uiPanel,uiText,m2Season,sunMoon,weatherLooks")]   // M3 T9 appended sunMoon, weatherLooks
+        [TestCase("ArtPaletteDef", "slotNames,seasons,faceJitter,skinTone,phases,uiAccent,uiGood,uiWarn,uiBad,uiPanel,uiText,m2Season,sunMoon,weatherLooks,fishIconAtlas,fishIconTiles")]   // M3 T9 appended sunMoon, weatherLooks; T21 appended the baked journal icon atlas and its tiles
         [TestCase("WaterSettingsDef", "dirAmpLenSpeed,shallowColor,deepColor,depthRange,foamWidth")]
         [TestCase("ContentRegistry", "dataVersion,spots,rods,baits,fightProfiles,species,junk,fishingTuning,sfxCueTable,artPalette,waterSettings,zones,ecologyTuning")]   // M3 T9 appended zones, ecologyTuning
         public void FishingDefs_SerializedNames_MatchContract(string typeName, string csv)
