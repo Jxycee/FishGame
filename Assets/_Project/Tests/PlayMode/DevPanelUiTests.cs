@@ -29,6 +29,7 @@ namespace FishGame.Tests.PlayMode
         private ServiceRegistry _services;
         private DevOverlayPresenter _overlay;
         private DevPanelPresenter _panel;
+        private FishingRig _rig;
 
         [UnityTearDown]
         public IEnumerator TearDown()
@@ -42,7 +43,10 @@ namespace FishGame.Tests.PlayMode
             _ui = null;
             _root = null;
             EcologySession.Clear();           // the seed test replaces the session's run state
-            yield return PlayModeHarness.TearDownApp();
+            FishingRig rig = _rig;
+            _rig = null;
+            if (rig != null) yield return FishingPlayModeDriver.TearDown(rig);
+            else yield return PlayModeHarness.TearDownApp();
         }
 
         private IEnumerator BootMenu()
@@ -276,6 +280,77 @@ namespace FishGame.Tests.PlayMode
             Assert.That(_ui.ModalOpen, Is.False);
             log.AssertNoWarnings("dev panel host");
             yield return PlayModeHarness.LeaveAndWaitForMenu();
+        }
+
+        // Catches: the "Day over" button missing (ME8 could not be run: the slider stops at 1190 and a running clock wraps at 1200), not stopping
+        // the clock, not landing on minute 1200, or casting staying open on the WORLD line.
+        [UnityTest]
+        public IEnumerator DevPanel_DayOverButton_StopsTheClockAtTwoAm_AndTheWorldLineSaysClosed()
+        {
+            yield return BootSolo();
+            BindPair();
+            using var log = new PlayModeHarness.LogCapture();
+            WorldState world = WorldState.Current;
+            DevWorldDriver driver = world.GetComponent<DevWorldDriver>();
+            _overlay.SetMode(DevHudMode.Panel);
+            yield return PlayModeHarness.WaitFrames(3, 0.2f);
+            _panel.Tick(0.3f);
+
+            Button dayOver = _root.Q<Button>("DevDayOver");
+            Assert.That(dayOver, Is.Not.Null, "the Clock row has a Day over button");
+            Assert.That(dayOver.text, Is.EqualTo("Day over (stop at 2:00 AM)"));
+            driver.DevSetClockRunning(true);
+            driver.DevSetMinute(600);
+            Assert.That(world.CastingOpen, Is.True, "casting is open at 600");
+
+            Press(dayOver);
+            Assert.That(driver.ClockRunning, Is.False, "Day over stops the clock");
+            yield return PlayModeHarness.WaitUntil(() => !WorldState.Current.CastingOpen, 3f, "Day over never closed casting");
+            Assert.That(world.MinuteF, Is.EqualTo(1200f).Within(0.01f), "and parks it at minute 1200");
+            yield return PlayModeHarness.WaitFrames(3, 0.2f);
+            Assert.That(world.MinuteF, Is.EqualTo(1200f).Within(0.01f), "the stopped clock stays at 1200 (no new day)");
+            _overlay.Tick(0.2f);
+            Assert.That(_root.Q<Label>("DevOverlay").text, Does.Contain("open=no"), "the WORLD line shows casting closed");
+
+            Press(_root.Q<Button>("DevNewDay"));
+            yield return PlayModeHarness.WaitUntil(() => WorldState.Current.CastingOpen, 3f, "New day never reopened casting");
+
+            Press(_root.Q<Button>("DevClose"));
+            log.AssertNoWarnings("dev panel day over");
+            yield return PlayModeHarness.LeaveAndWaitForMenu();
+        }
+
+        // Catches: the panel staying open (the owner stuck behind a modal, the fight unreachable) when the local bite lands, like the journal.
+        [UnityTest]
+        public IEnumerator DevPanel_ClosesWhenTheLocalBiteLands()
+        {
+            FishingDebugSettings.ForcedBiteWait = 2.5f;
+            FishingDebugSettings.ForcedSpeciesId = "bluegill";
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            Resolve();
+            BindPair();
+            IInputService adapter = AppBootstrap.Current.GetComponentInChildren<PlayerInputAdapter>(true);   // the UI's own input (the rod uses the rig's fake)
+
+            yield return FishingPlayModeDriver.EquipAndReady(rig);
+            yield return FishingPlayModeDriver.ChargeAndRelease(rig);
+            yield return FishingPlayModeDriver.WaitForState(rig, RodState.Waiting, 5f);
+
+            _overlay.SetMode(DevHudMode.Panel);
+            yield return PlayModeHarness.WaitFrames(3, 0.1f);
+            Assert.That(_panel.PanelShown, Is.True, "the panel opens over a waiting bobber");
+            Assert.That(adapter.MenuOpen, Is.True);
+            _panel.Tick(0.016f);
+            Assert.That(_panel.PanelShown, Is.True, "no bite yet: the tick leaves it open");
+
+            yield return PlayModeHarness.WaitUntil(
+                () => rig.Machine.State == RodState.Bite || rig.Machine.State == RodState.Hooked, 8f, "the forced bite never came");
+            _panel.Tick(0.016f);                                // the same frame: the rod is still biting
+            Assert.That(_overlay.Mode, Is.EqualTo(DevHudMode.Off), "the bite sets the HUD mode Off");
+            Assert.That(_panel.PanelShown, Is.False, "the bite closes the panel");
+            Assert.That(_ui.ModalOpen, Is.False, "and releases the modal seam");
+            Assert.That(adapter.MenuOpen, Is.False, "gameplay input is back for the fight");
         }
 
         // Catches: a label rewritten inside a 10-minute step (a sentinel survives it), a wrong step floor, a season or weather name that does not

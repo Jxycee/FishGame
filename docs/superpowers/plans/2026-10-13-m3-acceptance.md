@@ -164,14 +164,14 @@ Host plus 1-3 clients, dev-direct (README, "Local multiplayer testing"), Auto So
   - **Result:** ______
 - [ ] **ME6 - Clients are read-only.** A client's dev panel (F3 twice) shows the host's values with the title "Dev panel (client: read-only)" and disabled rows. The client's F8 does nothing to the clock. Nothing a client does changes the world: the WORLD lines match the host's. (Known gap: the client side of this was only checked in code and the fake-input tests; this is its first real run.)
   - **Result:** ______
-- [ ] **ME7 - Map switch with a client.** The host loads the harbour from the panel. The client follows, respawns, and its WORLD line matches the host's (day, season). Switch back to the lake.
+- [ ] **ME7 - Map switch with a client.** The host loads the harbour from the panel. The client follows, respawns, and its WORLD line matches the host's (season and spot; the client's WORLD line has no day field, the host's does). Switch back to the lake.
   - **Result:** ______
-- [ ] **ME8 - Day over.** On the host panel drag the time slider to its maximum (1:50 AM) and let the clock run past 2:00 AM (about 8 real seconds, or hold F8). The WORLD line shows `open=no`. Both peers' cast markers are invalid and a client cast is refused (the cast does nothing, bait unchanged). **New day** reopens casting on both and the markers turn valid again.
+- [ ] **ME8 - Day over.** On the host panel press **Day over (stop at 2:00 AM)** in the Clock row (it stops the clock and sets the minute to 1200; the slider itself stops at 1:50 AM, and a running clock that reaches 2:00 AM starts a new day at once, so the slider cannot be used for this). The WORLD line shows `open=no`. Both peers' cast markers turn red and a client cast is refused (the cast does nothing, bait unchanged). **New day** reopens casting on both and the markers turn valid again.
   - **Result:** ______
 
 ## C. Dev-panel direction checks (17.3 bullet 4)
 
-For each lever: set the panel as shown (F3 twice; the other values fixed, the dev clock stopped), turn **F6 forced bite** on (host only; **no forced species**, F10 on None) and cast about 15 times per setting, writing down the species of each toast. Use the lake unless stated. The predictions were re-read from the roster seed (`EcologySeedData.Roster.cs`, which carries the T12 retunes) on 2026-10-13 and they hold.
+For each lever: set the panel as shown (F3 twice; the other values fixed, the dev clock stopped), turn **F6 forced bite** on (host only; **no forced species**, F10 on None) and cast about 15 times per setting, writing down the species of each toast. **Exception: for DC5 turn F6 OFF**, because F6 overwrites the bite wait (`FishingRoller.cs:50-54`) and would hide the x0.6 change. Use the lake unless stated. The predictions were re-read from the roster seed (`EcologySeedData.Roster.cs`, which carries the T12 retunes) on 2026-10-13 and they hold.
 
 | ID | Lever | Setting A -> B (other values fixed) | Predicted change (from the data) |
 |---|---|---|---|
@@ -179,9 +179,9 @@ For each lever: set the panel as shown (F3 twice; the other values fixed, the de
 | DC2 | Band | open water, Summer, Clear: Midday -> Night | Midday gives `mirror_minnow`, bluegill, `sunny_trout` and `grumpy_carp`. Night gives `grumpy_carp`, `bucketmouth_bass` and `silver_mullet`. |
 | DC3 | Weather | Summer, Dusk, reeds or open water: Clear -> Rain | `mudcat` appears only in Rain (and Fog). Bluegill, `grumpy_carp`, `bucketmouth_bass` and `silver_mullet` stay. |
 | DC4 | Rod tier | Summer, Dusk, Rain, deep water: tier 0 -> tier 1 | `glimmer_eel` (Rare, rod 1) appears only at tier 1 or more. |
-| DC5 | Hotspot | same spot, 20 casts without and with a hotspot at the landing | Junk about halves (x0.5). The bite wait drops by about 40% (x0.6; read it on the F3 `BITE` line). |
+| DC5 | Hotspot | same spot, 20 casts without and with a hotspot at the landing | Junk about halves (x0.5). The bite wait drops by about 40% (x0.6; read it on the F3 `BITE` line; F6 must be OFF for this row). |
 
-- **Notes.** The Legendary lake special `gilded_carp` can turn up in any row at a low rate. That is not a miss. The rod-tier row depends on a Rare fish, so 15 casts may show no eel at all: use about 30 casts, or set **Luck** to 1.0 for bigger fish. A direct check for DC4 is the journal: open it (J) with the rod waiting, and the `glimmer_eel` card shows the "! Biting now" badge at tier 1 and loses it at tier 0 (toggle the rod tier in the panel while Idle).
+- **Notes.** The Legendary lake special `gilded_carp` can turn up in any row at a low rate. That is not a miss. The rod-tier row depends on a Rare fish, so 15 casts may show no eel at all: use about 30 casts, or set **Luck** to 1.0 for bigger fish. A direct check for DC4 is the journal: open it (J) with the rod waiting, and the `glimmer_eel` card shows the "! Biting now" badge at tier 1 and loses it at tier 0 (toggle the rod tier in the panel while Idle). The badge needs journal level 2 or higher for that species, so first land or watch one land (F10 can force the species).
 - **Record per row:** species tally at A: ______. At B: ______. As predicted: yes / no.
 - **DC1 Result:** ______ **DC2 Result:** ______ **DC3 Result:** ______ **DC4 Result:** ______ **DC5 Result:** ______
 
@@ -216,7 +216,7 @@ The journal path is `%USERPROFILE%\AppData\LocalLow\<companyName>\<productName>\
   - **Result:** ______
 - [ ] **JE5 - J does nothing when it should not.** Press J while charging a cast, fighting a fish, swimming and climbing a ladder: nothing opens.
   - **Result:** ______
-- [ ] **JE6 - Biting now.** With the panel change the season, weather and clock band and see the badges follow the rules. Switch rods with F4 and see a rod-gated species (for example `glimmer_eel`, rod 1, Summer Dusk Rain) appear and disappear. "Biting now only" shows only badged cards. The badge reads against the HUD clock and the WORLD line.
+- [ ] **JE6 - Biting now.** With the panel change the season, weather and clock band and see the badges follow the rules. Switch rods with F4 and see a rod-gated species (for example `glimmer_eel`, rod 1, Summer Dusk Rain) appear and disappear. The "Biting now" badge needs journal level 2 or higher for the species, so first land or watch one land (F10 can force the species). "Biting now only" shows only badged cards. The badge reads against the HUD clock and the WORLD line.
   - **Result:** ______
 - [ ] **JE7 - Layout.** At a 1280 x 720 Game view with UI scale 150%: nothing clips and the grid scrolls. The filters, the completion count and the Close button are all reachable.
   - **Result:** ______
@@ -304,7 +304,7 @@ Expected earnings grow only 1.14-1.38 times from day 1 to day 7 (the day 4 / day
 | 4 | Reeds depth conflict | Resolved: `minLandDepth` 0.5; the lake has 294 reeds cells. |
 | 5 | Fightability and balance on the Rust-faithful baseline | Resolved: all pass, no tuning items. |
 | 6 | Two players rolling one special | Covered by the catch-limit reservation tests; ME2 and board P4 check it live. |
-| 7 | Map switching is dev-only | Still true. The slot loadout, bait stock, creel and pity streak reset on a switch; M4 must move them into session state (section H.3). |
+| 7 | Map switching is dev-only | Still true. The slot loadout, bait stock and pity streak reset on a switch; M4 must move them into session state (section H.3). The creel does not reset: it lives in SessionState (`destroyWithScene: false`, `App/AppBootstrap.cs:199`). |
 | 8 | Scope / hotspot cut-line | Not needed: hotspots shipped. |
 
 ## G. Art status per species (R74)
@@ -408,7 +408,7 @@ The T20, T21 and T22 plan lists are folded into sections E (JE1-JE9), B and thes
 - Online cancel on a real join code shows "Cancelling..." for about a frame, then the menu with greyed buttons for up to 30 s (board P6).
 - A join "snap" is really up to three snaps within about 0.5 s (light and fog, then palette and trees after at most 0.25 s, then wind), hidden behind the loading screen.
 - The day wrap at minute 1200 pops (moon 0.25 -> 0, Night -> Dawn, cool -> warm, fog 0.014 -> 0.01). It is reachable only with the dev clock.
-- **M4:** loadout (rod, bait stock) and the pity streak reset on a map switch, because the per-scene ledger owns them; the creel too. A real map travel needs them in session state.
+- **M4:** loadout (rod, bait stock) and the pity streak reset on a map switch, because the per-scene ledger owns them. The creel does not reset (SessionState is `destroyWithScene: false`). A real map travel needs the loadout and the streak in session state.
 - **M4:** quota calibration (section F.4: earnings grow only 1.14-1.38 times in 7 days, the spec assumes about 2.35 times).
 - **M4:** the journal's level 1 shows the species' sub-areas in the spots seen, not the sub-areas actually seen; a v2 save could record the latter (G open question 1).
 - **M4:** the R76 river run, starfish god camp, boat ride, mafia escalation, cutscenes and the Hub's map board.

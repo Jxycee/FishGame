@@ -17,26 +17,24 @@ namespace FishGame.Tests.EditMode
     {
         private const string RealContentRoot = "Assets/_Project/Content";
         private const string TempParent = "Assets/_Project/Tests/__Temp";
-        private const string Root = TempParent + "/EcologyContentBuilderTests";
-        private const string WrongTypeRoot = Root + "/WrongType";
-        private const string MissingRoot = Root + "/NoSpecies";
+        // A unique folder per run: fixtures share the gitignored __Temp parent, and recreating one fixed folder (or deleting the shared
+        // parent) flakes on Windows ("Cannot open file ... for write"). Only this fixture's own folder is ever deleted.
+        private static readonly string Root = TempParent + "/EcologyContentBuilderTests_" + Guid.NewGuid().ToString("N").Substring(0, 8);
+        private static readonly string WrongTypeRoot = Root + "/WrongType";
+        private static readonly string MissingRoot = Root + "/NoSpecies";
 
         private ContentRegistry _registry;
 
         // The temp-root twin of a real AssetPaths constant.
-        private static string T(string realPath, string root = Root)
+        private static string T(string realPath, string root = null)
         {
             Assert.IsTrue(realPath.StartsWith(RealContentRoot + "/", StringComparison.Ordinal), realPath);
-            return root + realPath.Substring(RealContentRoot.Length);
+            return (root ?? Root) +realPath.Substring(RealContentRoot.Length);
         }
 
         private static void DeleteTempFolders()
         {
-            if (AssetDatabase.IsValidFolder(Root)) AssetDatabase.DeleteAsset(Root);
-            if (AssetDatabase.IsValidFolder(TempParent)
-                && AssetDatabase.GetSubFolders(TempParent).Length == 0
-                && AssetDatabase.FindAssets("", new[] { TempParent }).Length == 0)
-                AssetDatabase.DeleteAsset(TempParent);
+            if (AssetDatabase.IsValidFolder(Root)) AssetDatabase.DeleteAsset(Root);   // never the shared __Temp parent
         }
 
         private static ContentRegistry NewRegistry(string root)

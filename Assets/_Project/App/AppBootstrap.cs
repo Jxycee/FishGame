@@ -127,7 +127,7 @@ namespace FishGame.App
             services.Register<ISettings>(settings);
 
             // Graphics tab (playtest S6/S3): applies the saved quality settings now and live on every change. Registered so the registry disposes
-            // it with the app, which puts the project's URP asset and QualitySettings back (the applier works on a runtime copy).
+            // it with the app, which puts the project's URP asset and QualitySettings back (the applier edits the URP asset in place and restores it).
             services.Register(new GraphicsApplier(settings));
 
             var meta = SaveService.CreateForThisInstance(); // meta{profile suffix}.json: the journal (spec 12.10)
