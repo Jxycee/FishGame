@@ -81,5 +81,8 @@ namespace FishGame.EditorTools
         public const string WeatherTableAsset = WeatherFolder + "/weather_temperate.asset";
         public const string ShoreGridsFolder = EcologyFolder + "/ShoreGrids";
         public const string EcologyTuningAsset = EcologyFolder + "/EcologyTuning.asset";
+
+        // T16 additions (M3 lake grid; C 6.2). ShoreGridsFolder is T10's; do not redeclare it.
+        public const string LakeDockGridAsset = ShoreGridsFolder + "/lake_dock_grid.asset";
     }
 }

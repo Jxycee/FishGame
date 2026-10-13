@@ -4,6 +4,7 @@
 // MeshBuilder props on M_Toon_Base (collider-only primitives underneath), the FishGame/Water grid, ApplySceneLighting (sky + fog) and the two volumes.
 // Order in Build(): meshes, NewScene, load assets (C 2.8 #14), roots in M1 order, ApplySceneLighting, volumes, both hooks, stats line, save.
 // Never name SessionState in this file: with "using UnityEditor;" it would be ambiguous (CS0104).
+// T16 (M3): World (in-scene NetworkObject), StandPoints, shore-grid bake; whole-scene commits from here on (C 2.8 #24).
 using FishGame.App;
 using FishGame.Core;
 using FishGame.Data;
@@ -64,6 +65,15 @@ namespace FishGame.EditorTools
                 CoolProfile = LoadProfile(AssetPaths.CoolVolumeProfile),
                 Palette = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset),
             };
+            // T16: the lake's zone grid (baked in place below) and the cast gate's minLandDepth, loaded after NewScene too (C2 #14).
+            var registry = AssetDatabase.LoadAssetAtPath<ContentRegistry>(AssetPaths.ContentRegistryAsset);
+            if (registry == null) throw new System.InvalidOperationException("Missing " + AssetPaths.ContentRegistryAsset);
+            var lakeSpot = AssetDatabase.LoadAssetAtPath<SpotDef>(AssetPaths.LakeDockSpotAsset);
+            if (lakeSpot == null) throw new System.InvalidOperationException("Missing " + AssetPaths.LakeDockSpotAsset);
+            if (lakeSpot.Zone == null) throw new System.InvalidOperationException("lake_dock spot has no zone (run EcologyContentBuilder)");
+            ShoreGridDef lakeGrid = lakeSpot.Zone.ShoreGrid;
+            if (lakeGrid == null) throw new System.InvalidOperationException("lake_dock zone has no shoreGrid");
+            float minLandDepth = registry.FishingTuning.MinLandDepth;
 
             Root("GameScope", Layers.Default).AddComponent<GameScope>();
             AddSpawner(playerPrefab);
@@ -85,9 +95,16 @@ namespace FishGame.EditorTools
             AddVolume("CoolVolume", art.CoolProfile);
             FishingSceneObjects.AddTo(scene);
             PresentationSceneObjects.AddTo(scene);
+            WorldSceneObjects.AddTo(scene, ContentIds.LakeDock);                      // T16 (C 6.3): World root, in-scene NetworkObject
+            WorldSceneObjects.AddStandPoints(scene, LakeDockLayout.StandPoints);      // T16 (C 7.16, M3-D47)
             LogStats(scene);
 
             BuilderUtil.SaveScene(scene, AssetPaths.LakeDockScene);
+            WorldSceneObjects.FinalizeAfterSave(scene, AssetPaths.LakeDockScene);     // T16 (E-CCR-1): GlobalObjectIdHash needs the saved scene
+            // T16: the bake runs on the SAVED scene, whose name it records as bakedFromScene (an untitled scene has no name). It writes only the
+            // grid asset, never the scene.
+            Physics.SyncTransforms();                                                  // T16: colliders where the transforms say before any bake ray
+            ShoreGridBaker.BakeOpenScene(scene, lakeGrid, minLandDepth);               // T16 (spec 12.5): grid written in place
         }
 
         static Mesh LoadMesh(string path)

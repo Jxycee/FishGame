@@ -4,13 +4,17 @@
 //              EcologyDatabase, plus two structural checks the resolver trusts (rules sorted by species, junk weights > 0).
 //   Variety:   the 13.3 variety rules (M3-D65 / M3-D66 wording).
 // All messages are InvariantCulture and ASCII. Reads the generated assets only; never the seeds (plan 0.4). Allocation is not a concern here.
+//   MapChecks (T16, C 11.3): reachability per registered spot, the Water-layer rule, the WorldState object and the lake layer split.
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using FishGame.Core;
 using FishGame.Data;
+using FishGame.Gameplay;          // T16 (MapChecks): WorldState, DevWorldDriver, WaterVolume
 using UnityEditor;
+using UnityEditor.SceneManagement;   // T16 (MapChecks)
 using UnityEngine;
+using UnityEngine.SceneManagement;   // T16 (MapChecks)
 
 namespace FishGame.EditorTools
 {
@@ -551,6 +555,188 @@ namespace FishGame.EditorTools
             if (v < min || v > max)
                 e.Add(subject + ": " + field + " = " + v.ToString(CultureInfo.InvariantCulture) + " outside [" + min.ToString(CultureInfo.InvariantCulture) + ", "
                       + max.ToString(CultureInfo.InvariantCulture) + "]");
+        }
+
+        // ---- T16: map checks (C 11.3; M3-D83) - appended by T16; T11's methods above are unchanged --------------------------------------
+        // Every message is prefixed "EcologyMaps: ". Reads the persisted assets and opens build scenes read-only, one at a time (the
+        // Validators.ForEachSceneObject pattern, copied privately). Zones are built fresh with ToCore, never from the cached registry.Ecology.
+
+        public static List<string> MapChecks()
+        {
+            var errors = new List<string>();
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                errors.Add("EcologyMaps: scene checks need edit mode");
+                return errors;
+            }
+            var registry = AssetDatabase.LoadAssetAtPath<ContentRegistry>(AssetPaths.ContentRegistryAsset);
+            if (registry == null)
+            {
+                errors.Add("EcologyMaps: ContentRegistry missing at " + AssetPaths.ContentRegistryAsset);
+                return errors;
+            }
+            var found = new List<string>(ReachabilityErrors(registry));
+            var hashes = new Dictionary<uint, string>();
+            foreach (string sceneName in SceneNames.BuildOrder)
+            {
+                string path = AssetPaths.ScenesFolder + "/" + sceneName + ".unity";
+                if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null) continue;
+                WithSceneOpen(path, scene =>
+                {
+                    found.AddRange(WaterLayerErrors(scene, path));
+                    if (SceneNames.IsGameplay(sceneName))
+                    {
+                        found.AddRange(WorldStateErrors(scene, path, registry));
+                        uint hash = WorldHash(scene);
+                        if (hash != 0u)
+                        {
+                            if (hashes.TryGetValue(hash, out string other)) found.Add(path + ": World GlobalObjectIdHash " + hash + " equals the one in " + other);
+                            else hashes[hash] = path;
+                        }
+                    }
+                    if (sceneName == SceneNames.SpotLakeDock) found.AddRange(LakeLayerSplitErrors(scene, path));
+                });
+            }
+            foreach (string e in found) errors.Add("EcologyMaps: " + e);
+            return errors;
+        }
+
+        // 11.3 reachability (E-CCR-2): each sub-area of the zone of each REGISTERED spot has >= 25 castable reachable water cells; the grid
+        // must be baked from that spot's scene.
+        private static List<string> ReachabilityErrors(ContentRegistry registry)
+        {
+            var e = new List<string>();
+            foreach (SpotDef spot in registry.Spots)
+            {
+                if (spot == null) continue;
+                if (spot.Zone == null) { e.Add(spot.Id + " has no zone"); continue; }
+                ShoreGridDef grid = spot.Zone.ShoreGrid;
+                if (grid == null) { e.Add(spot.Id + " zone has no shoreGrid"); continue; }
+                if (grid.Width == 0) { e.Add(spot.Id + " grid " + grid.Id + " is not baked (run build)"); continue; }
+                if (grid.BakedFromScene != spot.SceneName)
+                {
+                    e.Add(spot.Id + " grid baked from '" + grid.BakedFromScene + "', expected " + spot.SceneName);
+                    continue;
+                }
+                ZoneData zone = spot.Zone.ToCore(registry);
+                int[] counts = ShoreGridMath.CountReachablePerSubArea(zone.Grid, zone);
+                for (int i = 0; i < counts.Length; i++)
+                {
+                    if (counts[i] < EcologyConstants.MinReachableCellsPerSubArea)
+                        e.Add(spot.Id + " sub-area " + spot.Zone.SubAreas[i].id + " has " + counts[i] + " reachable castable cells (need "
+                              + EcologyConstants.MinReachableCellsPerSubArea + ")");
+                }
+            }
+            return e;
+        }
+
+        // 11.3 water layer: the only colliders on layer Water belong to WaterVolume objects (inactive included); every WaterVolume has a
+        // trigger BoxCollider. Pure over an open scene (the negative tests use temporary in-memory scenes).
+        internal static List<string> WaterLayerErrors(Scene scene, string label)
+        {
+            var e = new List<string>();
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                foreach (Collider c in root.GetComponentsInChildren<Collider>(true))
+                {
+                    if (c.gameObject.layer == Layers.Water && c.GetComponent<WaterVolume>() == null)
+                        e.Add(label + ": " + PathOf(c.gameObject) + " has a collider on layer Water (only WaterVolume may)");
+                }
+                foreach (WaterVolume v in root.GetComponentsInChildren<WaterVolume>(true))
+                {
+                    var box = v.GetComponent<BoxCollider>();
+                    if (box == null || !box.isTrigger) e.Add(label + ": " + PathOf(v.gameObject) + " WaterVolume needs a trigger BoxCollider");
+                }
+            }
+            return e;
+        }
+
+        // 11.3 WorldState: exactly one, on a root "World" that also has a NetworkObject and a DevWorldDriver, a spotId that resolves to a
+        // registry spot of this scene and a non-zero serialized GlobalObjectIdHash. registry may be null (then the spot check is skipped).
+        internal static List<string> WorldStateErrors(Scene scene, string label, ContentRegistry registry)
+        {
+            var e = new List<string>();
+            var states = new List<WorldState>();
+            foreach (GameObject root in scene.GetRootGameObjects()) states.AddRange(root.GetComponentsInChildren<WorldState>(true));
+            if (states.Count != 1)
+            {
+                e.Add(label + ": " + states.Count + " WorldState objects (expected exactly 1)");
+                return e;
+            }
+            WorldState ws = states[0];
+            GameObject go = ws.gameObject;
+            if (go.transform.parent != null || go.name != WorldSceneObjects.WorldRootName)
+                e.Add(label + ": WorldState sits on '" + PathOf(go) + "', expected the root '" + WorldSceneObjects.WorldRootName + "'");
+            if (go.GetComponent<DevWorldDriver>() == null) e.Add(label + ": World has no DevWorldDriver");
+            var no = go.GetComponent<Unity.Netcode.NetworkObject>();
+            if (no == null) e.Add(label + ": World has no NetworkObject");
+            else if (WorldSceneObjects.HashOf(no) == 0u) e.Add(label + ": World GlobalObjectIdHash is 0 (run build: FinalizeAfterSave)");
+            if (registry != null)
+            {
+                SpotDef spot = null;
+                foreach (SpotDef s in registry.Spots) if (s != null && s.Id == ws.SpotId) spot = s;
+                if (spot == null || spot.SceneName != scene.name)
+                    e.Add(label + ": " + scene.name + " WorldState spotId '" + ws.SpotId + "' does not resolve to a spot of this scene");
+            }
+            return e;
+        }
+
+        private static uint WorldHash(Scene scene)
+        {
+            GameObject world = WorldSceneObjects.FindRoot(scene, WorldSceneObjects.WorldRootName);
+            var no = world != null ? world.GetComponent<Unity.Netcode.NetworkObject>() : null;
+            return no != null ? WorldSceneObjects.HashOf(no) : 0u;
+        }
+
+        // 11.3 lake layer split: Lakebed Ground; Shore and every descendant Shore; Dock and every descendant Structure; Reeds, Exits, Ladders,
+        // StandPoints and World (and their children) Default; WaterVolume and WaterVisual Water. A missing root is a message, not an exception.
+        private static List<string> LakeLayerSplitErrors(Scene scene, string label)
+        {
+            var e = new List<string>();
+            RequireLayer(e, scene, label, "Lakebed", Layers.Ground, false);
+            RequireLayer(e, scene, label, "Shore", Layers.Shore, true);
+            RequireLayer(e, scene, label, "Dock", Layers.Structure, true);
+            RequireLayer(e, scene, label, "Reeds", Layers.Default, true);
+            RequireLayer(e, scene, label, "Exits", Layers.Default, true);
+            RequireLayer(e, scene, label, "Ladders", Layers.Default, true);
+            RequireLayer(e, scene, label, WorldSceneObjects.StandPointsRootName, Layers.Default, true);
+            RequireLayer(e, scene, label, WorldSceneObjects.WorldRootName, Layers.Default, true);
+            RequireLayer(e, scene, label, "WaterVolume", Layers.Water, false);
+            RequireLayer(e, scene, label, "WaterVisual", Layers.Water, false);
+            return e;
+        }
+
+        private static void RequireLayer(List<string> e, Scene scene, string label, string rootName, int layer, bool descendants)
+        {
+            GameObject root = WorldSceneObjects.FindRoot(scene, rootName);
+            if (root == null) { e.Add(label + ": missing root " + rootName); return; }
+            if (!descendants)
+            {
+                if (root.layer != layer) e.Add(label + ": " + rootName + " is on layer " + LayerMask.LayerToName(root.layer) + ", expected " + LayerMask.LayerToName(layer));
+                return;
+            }
+            foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.gameObject.layer != layer)
+                    e.Add(label + ": " + PathOf(t.gameObject) + " is on layer " + LayerMask.LayerToName(t.gameObject.layer) + ", expected " + LayerMask.LayerToName(layer));
+            }
+        }
+
+        private static void WithSceneOpen(string scenePath, Action<Scene> visit)
+        {
+            Scene scene = SceneManager.GetSceneByPath(scenePath);
+            bool wasValid = scene.IsValid();
+            bool opened = !(wasValid && scene.isLoaded);
+            if (opened) scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
+            try { visit(scene); }
+            finally { if (opened) EditorSceneManager.CloseScene(scene, !wasValid); }
+        }
+
+        private static string PathOf(GameObject go)
+        {
+            string path = go.name;
+            for (Transform t = go.transform.parent; t != null; t = t.parent) path = t.name + "/" + path;
+            return path;
         }
     }
 }

@@ -23,6 +23,7 @@ namespace FishGame.EditorTools
             all.AddRange(FishingValidators.All());
             Add(all, "Render", RenderValidators.All());
             all.AddRange(EcologyValidators.All());   // M3 T11 (already prefixed "Ecology: "); T16 adds its MapChecks line after this one
+            all.AddRange(EcologyValidators.MapChecks());   // M3 T16 (already prefixed "EcologyMaps: "; C 11.3, M3-D83)
             return all;
         }
 
