@@ -148,3 +148,8 @@ The user asked for the map to be modelled in Blender instead of code-generated m
 - **Replaces T17.3 rules** "no new texture / no LFS growth / SmoothMeshBuilder everywhere" for the Blender meshes (FBX are LFS; report the size). New checks for the FBX: an EditMode bounds test against `HarbourPierLayout` (deck top 1.5, deck and T-head footprints, ladder rails inside their rail boxes, breakwater top 1.5, posts from TerrainY to the deck underside), uv1 on every vertex with a defined layer, vertex colours, <= 21,000 triangles per mesh, no imported materials. Budget: harbour total near the lake's triangle count (user's GTX 900-class target, S3).
 - The Blender script mirrors the T17.2 table by hand, with a comment pointing at it; the bounds test is what keeps the two in step.
 - The user's look check uses Unity screenshots after phase 2 (Blender renders don't use the toon shader).
+
+## T15 MERGED (2026-10-14), Opus high review APPROVED WITH FIXES (fixes 4caca5d)
+- Owed manual check (the plan's T15 step 5, now on the board): the marker turns red over a dock-shadowed cell (no automated test covers the host's GridWater wiring); the F3 overlay `HOST casts=` keeps counting across a dev map switch.
+- T24 follow-up: a PlayMode test that finds a lake cell where the grid says land but CastProbe says water, drives FishingHost.HandleCastRequest there, and asserts NotWater with HostCastCounter unchanged.
+- M4: a map switch resets slot loadouts (rod, bait, stock) and the pity streak (they live in the per-scene FishingHostLedger). Real map travel must move them into session state.
