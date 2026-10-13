@@ -4,7 +4,7 @@
 
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
-_Last updated: 2026-10-14. W1 PASSED. T15 and T20 run in parallel in their own worktrees. First board notes logged for the fix round._
+_Last updated: 2026-10-14 (user asleep; asked to fix what the checks found, then stop when waiting on more checks). W1 PASSED. T15, T20 and fix batch B run in parallel worktrees._
 
 ## 1. Read these next (in order)
 1. `C:\Dev\FishGame-m3\CLAUDE.md`: project rules (Git: no PRs; merge yourself when reviewed and green; PlayMode guard).
@@ -29,6 +29,14 @@ _Last updated: 2026-10-14. W1 PASSED. T15 and T20 run in parallel in their own w
    - **W1 PASSED (2026-10-13).** T15 is in flight in worktree `C:\Dev\FishGame-t15`, branch `m3-t15` (Sonnet; Opus high review next). T15 changes no scene and no file T20 owns.
    - **In flight (2026-10-14):** T20 (save + journal recorder) runs ahead of T15, in worktree `C:\Dev\FishGame-t20`, branch `m3-t20` (from m3-fish-ecology 070609d, copied Library), so the user can test W1 in `C:\Dev\FishGame-m3`. After Opus high review, merge `m3-t20` into `m3-fish-ecology`. T20 changes `Spot_LakeDock.unity`: whichever of T20/T15 lands second regenerates the scene from the builders, never a hand-merge of the .unity text.
 3. As tasks land, add their new checks to the board (for example M6 after T17/T21/T22).
+
+## 3b. Fix round pulled forward (user, 2026-10-14: "fix what you can according to the checks")
+Board results so far: 23 checks done. FAIL: none. SKIP: F5 (no audio), S15 (no gamepad). Notes turned into fixes:
+- **Batch B (in flight):** worktree `C:\Dev\FishGame-fixb`, branch `m3-fix-look`. F6 painted red/white bobber plus rod idle life; F9 a clearer bobber dive. Sonnet implements, Sonnet reviews.
+- **Batch A (after T15 merges; T15 owns FishingRodController):** F1 reel stalls for ~1 s after the hook-set (check `HookBeat`; bug or design); F7 inactivity escape 30 s with no input (a new idle timer; `FightTimeout` 120 stays the overall cap; spec delta); S10 shorten the wait between a catch and the next cast; F10 shorter fights at the same difficulty (lower stamina/distance, same snap window; Rhythm-bot medians before/after; re-run EcologyBalanceReports V4/V5, cliff on minnow/snapper). The host `LandedFloorSeconds` is distance/reel speed, so it's safe unless reel speed changes; still test that an honest short catch is never rejected. Opus review (host validation).
+- **Batch C (after T20 merges; T20 owns UiStrings):** S4 arcade ladder climb with momentum (R70 delta; tests pin ~1.25 s); S6 Graphics settings tab with quality presets (S3 minimum-spec target GTX 900 class, 60 fps at 1080p, can't be measured here). Sonnet review.
+- Design session: the ice chest (S10), the modern menu redesign (S6). Both are in board `notes/ideas`.
+- After each batch: update the board check texts that quote changed numbers (F2, F4, F7, F10, S4, S11), add re-check rows, and post an F10 before/after duration table.
 
 ## 4. After M3
 Merge M3 into main. Then the fix round from the user's board notes (including the friendlier fight tuning; re-run EcologyBalanceReports after any fight retune). Logged so far from the board:
