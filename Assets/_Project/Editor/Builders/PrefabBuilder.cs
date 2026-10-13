@@ -117,12 +117,14 @@ namespace FishGame.EditorTools
             UseMesh(Prim(t, PlayerRigPaths.Torso, PrimitiveType.Cube, new Vector3(0f, 1.2f, 0f), new Vector3(0.42f, 0.55f, 0.24f), body), unitBox);
             Empty(t, PlayerRigPaths.ArmL, new Vector3(-0.27f, 1.42f, 0f));
             Empty(t, PlayerRigPaths.ArmR, new Vector3(0.27f, 1.42f, 0f));
-            UseMesh(Prim(t, PlayerRigPaths.ArmLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.25f, 0f), new Vector3(0.12f, 0.25f, 0.12f), body), unitCapsule);
-            UseMesh(Prim(t, PlayerRigPaths.ArmRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.25f, 0f), new Vector3(0.12f, 0.25f, 0.12f), body), unitCapsule);
+            // R74 floppy proportions (mesh children only; the pivots are the M1 ones): longer, slightly thicker arms that overlap the shoulder, and
+            // chunkier legs that reach up into the torso (no gap at the hip).
+            UseMesh(Prim(t, PlayerRigPaths.ArmLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.24f, 0f), new Vector3(0.13f, 0.29f, 0.13f), body), unitCapsule);
+            UseMesh(Prim(t, PlayerRigPaths.ArmRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.24f, 0f), new Vector3(0.13f, 0.29f, 0.13f), body), unitCapsule);
             Empty(t, PlayerRigPaths.LegL, new Vector3(-0.11f, 0.8f, 0f));
             Empty(t, PlayerRigPaths.LegR, new Vector3(0.11f, 0.8f, 0f));
-            UseMesh(Prim(t, PlayerRigPaths.LegLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.4f, 0f), new Vector3(0.16f, 0.4f, 0.16f), body), unitCapsule);
-            UseMesh(Prim(t, PlayerRigPaths.LegRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.4f, 0f), new Vector3(0.16f, 0.4f, 0.16f), body), unitCapsule);
+            UseMesh(Prim(t, PlayerRigPaths.LegLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.33f, 0f), new Vector3(0.19f, 0.47f, 0.19f), body), unitCapsule);
+            UseMesh(Prim(t, PlayerRigPaths.LegRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.33f, 0f), new Vector3(0.19f, 0.47f, 0.19f), body), unitCapsule);
             Empty(t, PlayerRigPaths.NameplateAnchor, new Vector3(0f, 2.05f, 0f));
 
             // T19 hook (C 2.6): the fishing rig, its components after the M1 list, then the presentation hook. RefreshNetworkObjectHash follows in BuildPlayer.
@@ -158,24 +160,32 @@ namespace FishGame.EditorTools
 
         // T20 unit body meshes (plan T20.6). Default face jitter, slot 0 (unused in vertex-colour mode). No colour pass: the half-scale grey
         // stays as built and the body materials set _JitterEncoded 1 (BF-7). Sizes equal Unity's primitives: sphere diameter 1, cube 1, capsule height 2.
+        // R74 (look-dev 2026-10-12): the same unit volumes, now SMOOTH (SmoothMeshBuilder): a sphere, a pillowy rounded box (torso and nose) and a
+        // smooth capsule. Cloth detail layer for the slot materials (M_Skin is untextured), ao a little darker underneath. Transforms unchanged.
         static Mesh BuildUnitSphere()
         {
-            var builder = new MeshBuilder(0xB0D10001u);
-            builder.Icosphere(Vector3.zero, 0.5f, 1, 0);
+            var builder = new SmoothMeshBuilder();
+            // The head: the +Z cube face carries the face decal (one tile: dot eyes and a smile around the nose); every other face is neutral.
+            builder.Radial(Vector3.zero, d => 0.5f, 8, Quaternion.identity, Vector3.one, 0, EnvTextureLayers.None, SmoothMeshBuilder.MappingUv,
+                d => 0.82f + 0.18f * (d.y * 0.5f + 0.5f), 0.5f, f => f.z > 0.5f ? EnvTextureLayers.Face : EnvTextureLayers.None, new Vector2(0.5f, 0.5f));
             return builder.ToMesh("Body_UnitSphere");
         }
 
         static Mesh BuildUnitBox()
         {
-            var builder = new MeshBuilder(0xB0D10002u);
-            builder.Box(Vector3.zero, Vector3.one, Quaternion.identity, 0);
+            var builder = new SmoothMeshBuilder();
+            builder.RoundedBox(Vector3.zero, Vector3.one, 0.42f, Quaternion.identity, 0, EnvTextureLayers.Cloth, 0.25f, 2);
             return builder.ToMesh("Body_UnitBox");
         }
 
         static Mesh BuildUnitCapsule()
         {
-            var builder = new MeshBuilder(0xB0D10003u);
-            builder.Capsule(Vector3.zero, 0.5f, 2f, 8, 2, Quaternion.identity, 0);
+            var builder = new SmoothMeshBuilder();
+            builder.Lathe(Vector3.zero, t =>
+            {
+                float y = Mathf.Abs(-1f + 2f * t);
+                return y <= 0.5f ? 0.5f : Mathf.Sqrt(Mathf.Max(0f, 0.25f - (y - 0.5f) * (y - 0.5f)));
+            }, 2f, 16, 24, Quaternion.identity, 0, EnvTextureLayers.Cloth, SmoothMeshBuilder.MappingUv, t => 0.8f + 0.2f * t, 0.5f);
             return builder.ToMesh("Body_UnitCapsule");
         }
 
