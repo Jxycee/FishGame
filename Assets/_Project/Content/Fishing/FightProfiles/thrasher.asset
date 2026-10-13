@@ -29,3 +29,7 @@ MonoBehaviour:
   calmDriftRamp: 0
   flipMinGap: 0.5
   lateralJitter: 0.3
+  strainMod: 1
+  moveMult: 1
+  reelInMult: 1
+  wavePeriod: 1.5

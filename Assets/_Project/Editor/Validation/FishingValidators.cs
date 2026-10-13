@@ -234,6 +234,26 @@ namespace FishGame.EditorTools
             Range(e, L, "pityStrainMult", t.PityStrainMult, 0.5f, 1f);
             Range(e, L, "pityGraceMult", t.PityGraceMult, 1f, 3f);
             Range(e, L, "pityHookWindowBonus", t.PityHookWindowBonus, 0f, 1f);
+            // R72 Rust fight baseline
+            Range(e, L, "strainBarFull", t.StrainBarFull, 1f, 20f);
+            Range(e, L, "strainSnap", t.StrainSnap, 1f, 30f);
+            Rule(e, L, t.StrainSnap > t.StrainBarFull, "strainSnap > strainBarFull");
+            Range(e, L, "strainRestInput", t.StrainRestInput, 0f, 3f);
+            Range(e, L, "strainReelRun", t.StrainReelRun, 0f, 6f);
+            Range(e, L, "strainReelBack", t.StrainReelBack, 0f, 6f);
+            Range(e, L, "strainCounterSteer", t.StrainCounterSteer, 0f, 3f);
+            Range(e, L, "strainOtherSteer", t.StrainOtherSteer, 0f, 3f);
+            Range(e, L, "sideMoveSpeed", t.SideMoveSpeed, 0f, 5f);
+            Range(e, L, "backMoveSpeed", t.BackMoveSpeed, 0f, 5f);
+            Range(e, L, "tireSteerRate", t.TireSteerRate, 0f, 5f);
+            Range(e, L, "tireCounterRate", t.TireCounterRate, 0f, 5f);
+            Range(e, L, "tireDecayRate", t.TireDecayRate, 0f, 1f);
+            Range(e, L, "tireRunFull", t.TireRunFull, 1f, 100f);
+            Range(e, L, "tireReelFull", t.TireReelFull, 0.5f, 50f);
+            Range(e, L, "tireReelMaxMult", t.TireReelMaxMult, 1f, 5f);
+            Range(e, L, "backPullMargin", t.BackPullMargin, 0f, 10f);
+            Range(e, L, "fightTimeout", t.FightTimeout, 30f, 300f);
+            Rule(e, L, t.MaxFightTime > t.FightTimeout, "maxFightTime > fightTimeout");
         }
 
         private static void CheckRod(List<string> e, RodDef r, FishingTuningDef tuning)
@@ -288,6 +308,10 @@ namespace FishGame.EditorTools
             Range(e, l, "calmDriftRamp", p.CalmDriftRamp, 0f, 5f);
             Range(e, l, "flipMinGap", p.FlipMinGap, 0.2f, 2f);
             Range(e, l, "lateralJitter", p.LateralJitter, 0f, 0.5f);
+            Range(e, l, "strainMod", p.StrainMod, 0.1f, 3f);
+            Range(e, l, "moveMult", p.MoveMult, 0f, 3f);
+            Range(e, l, "reelInMult", p.ReelInMult, 0.1f, 5f);
+            Range(e, l, "wavePeriod", p.WavePeriod, 0.5f, 8f);
             if (p.Id == "thrasher") Rule(e, l, p.CalmMin >= 1.0f, "calmMin >= 1.0");
         }
 

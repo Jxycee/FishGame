@@ -154,9 +154,9 @@ namespace FishGame.Tests.EditMode
             set.Baits = new[] { worm, bare };
 
             FightProfileDef steady = MakeAsset<FightProfileDef>();
-            steady.Configure("steady", "Steady", 0.3f, 0.6f, 0.3f, 0.08f, 1f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0.6f, 0f, 0f, 0.5f, 0f);
+            steady.Configure("steady", "Steady", 0.3f, 0.6f, 0.3f, 0.08f, 1f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0.6f, 0f, 0f, 0.5f, 0f, 1f, 1f, 1f, 4f);
             FightProfileDef bulldog = MakeAsset<FightProfileDef>();
-            bulldog.Configure("bulldog", "Bulldog", 0.6f, 0.6f, 0.5f, 0.06f, 1f, 3f, 2f, 4f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f);
+            bulldog.Configure("bulldog", "Bulldog", 0.6f, 0.6f, 0.5f, 0.06f, 1f, 3f, 2f, 4f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f, 1f, 1f, 1f, 4f);
             set.Profiles = new[] { steady, bulldog };
 
             FishSpeciesDef carp = MakeAsset<FishSpeciesDef>();
@@ -318,7 +318,7 @@ namespace FishGame.Tests.EditMode
         {
             FishingSet set = MakeFishingSet();
             FightProfileDef foreign = MakeAsset<FightProfileDef>();
-            foreign.Configure("darter", "Darter", 0.45f, 0.7f, 0.4f, 0.07f, 0.3f, 0.8f, 0.4f, 0.9f, 1f, 0f, 0f, 0f, 0f, 0.3f, 0f);
+            foreign.Configure("darter", "Darter", 0.45f, 0.7f, 0.4f, 0.07f, 0.3f, 0.8f, 0.4f, 0.9f, 1f, 0f, 0f, 0f, 0f, 0.3f, 0f, 1f, 1f, 1f, 4f);
             FishSpeciesDef perch = MakeAsset<FishSpeciesDef>();
             perch.Configure("perch", "Perch", FishRarity.Common, 8, 300, 1200, 2.2f, 1f, foreign, BodyShape.Long, Color.red, Color.green,
                 1f, 0f, false, 3, 1.2f, null);
@@ -338,7 +338,7 @@ namespace FishGame.Tests.EditMode
 
             // A different Def object that merely shares the id of a listed profile is still foreign (reference containment).
             FightProfileDef lookalike = MakeAsset<FightProfileDef>();
-            lookalike.Configure("bulldog", "Bulldog copy", 0.6f, 0.6f, 0.5f, 0.06f, 1f, 3f, 2f, 4f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f);
+            lookalike.Configure("bulldog", "Bulldog copy", 0.6f, 0.6f, 0.5f, 0.06f, 1f, 3f, 2f, 4f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f, 1f, 1f, 1f, 4f);
             perch.Configure("perch", "Perch", FishRarity.Common, 8, 300, 1200, 2.2f, 1f, lookalike, BodyShape.Long, Color.red, Color.green,
                 1f, 0f, false, 3, 1.2f, null);
             errors = reg.Validate();
@@ -418,7 +418,7 @@ namespace FishGame.Tests.EditMode
         private FightProfileDef NewProfile(string id)
         {
             FightProfileDef d = MakeAsset<FightProfileDef>();
-            d.Configure(id, "x", 0.3f, 0.6f, 0.3f, 0.08f, 1f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0f, 0f, 0f, 0.5f, 0f);
+            d.Configure(id, "x", 0.3f, 0.6f, 0.3f, 0.08f, 1f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0f, 0f, 0f, 0.5f, 0f, 1f, 1f, 1f, 4f);
             return d;
         }
 

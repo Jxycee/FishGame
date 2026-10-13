@@ -25,6 +25,11 @@ namespace FishGame.Tests.EditMode
             MaxFightTime = 240f, RodStateHz = 15, CancelRefundsBait = true,
             CreelMaxEntries = 12, CreelMaxWeightG = 15000, CleanCatchMaxTension = 0.8f,
             PityAfterFailures = 3, PityStrainMult = 0.85f, PityGraceMult = 1.5f, PityHookWindowBonus = 0.3f,   // R65 / M2-D23 seeds
+            // R72 Rust fight baseline (spec 9.12): additive in F1, read by the new FightSim from F2.
+            StrainBarFull = 6f, StrainSnap = 7f, StrainRestInput = 0.5f, StrainReelRun = 2.2f, StrainReelBack = 2.5f,
+            StrainCounterSteer = 0.8f, StrainOtherSteer = 0.5f, SideMoveSpeed = 1.2f, BackMoveSpeed = 1.3f,
+            TireSteerRate = 0.8f, TireCounterRate = 1.25f, TireDecayRate = 0.1f, TireRunFull = 20f, TireReelFull = 5f,
+            TireReelMaxMult = 3f, BackPullMargin = 2f, FightTimeout = 120f,
         };
 
         static RodStats Rod(byte tier, float cast, float reel, float strength, float window, float steer, float relax) =>
@@ -60,14 +65,30 @@ namespace FishGame.Tests.EditMode
                                    FlipRate = flip, DiveChance = dive, FlipMinGap = 0.5f };
 
         // Spec 9.6 columns; every motion field 0 and FlipMinGap 0.5 (the base spec 9.5 model; FightSimTests).
-        public static FishFightProfile[] BaseProfiles() => new[]
+        public static FishFightProfile[] BaseProfiles()
         {
-            Profile(0.60f, 0.60f, 0.50f, 0.06f, 1.0f, 3.0f, 2.0f, 4.0f, 0.0f, 0.35f),   // bulldog
-            Profile(0.45f, 0.70f, 0.40f, 0.07f, 1.0f, 2.5f, 1.5f, 3.0f, 0.2f, 0.00f),   // darter
-            Profile(0.85f, 0.80f, 0.80f, 0.05f, 1.0f, 2.0f, 2.5f, 4.0f, 0.1f, 0.25f),   // runner
-            Profile(0.30f, 0.60f, 0.30f, 0.08f, 1.0f, 2.5f, 1.5f, 2.5f, 0.0f, 0.00f),   // steady
-            Profile(0.70f, 1.00f, 0.60f, 0.09f, 1.0f, 2.5f, 1.5f, 3.0f, 0.5f, 0.00f),   // thrasher
-        };
+            FishFightProfile[] p =
+            {
+                Profile(0.60f, 0.60f, 0.50f, 0.06f, 1.0f, 3.0f, 2.0f, 4.0f, 0.0f, 0.35f),   // bulldog
+                Profile(0.45f, 0.70f, 0.40f, 0.07f, 1.0f, 2.5f, 1.5f, 3.0f, 0.2f, 0.00f),   // darter
+                Profile(0.85f, 0.80f, 0.80f, 0.05f, 1.0f, 2.0f, 2.5f, 4.0f, 0.1f, 0.25f),   // runner
+                Profile(0.30f, 0.60f, 0.30f, 0.08f, 1.0f, 2.5f, 1.5f, 2.5f, 0.0f, 0.00f),   // steady
+                Profile(0.70f, 1.00f, 0.60f, 0.09f, 1.0f, 2.5f, 1.5f, 3.0f, 0.5f, 0.00f),   // thrasher
+            };
+            // R72 Rust tiers (spec 9.6): small 0.8 / 0.8 / 1.2, medium 1 / 1 / 1, large 1.25 / 1.25 / 0.9. Nothing reads them before F2.
+            Tier(ref p[ProfileSteady], 0.8f, 0.8f, 1.2f);
+            Tier(ref p[ProfileDarter], 1f, 1f, 1f);
+            Tier(ref p[ProfileThrasher], 1f, 1f, 1f);
+            Tier(ref p[ProfileBulldog], 1.25f, 1.25f, 0.9f);
+            Tier(ref p[ProfileRunner], 1.25f, 1.25f, 0.9f);
+            for (int i = 0; i < p.Length; i++) p[i].WavePeriod = 4f;
+            return p;
+        }
+
+        static void Tier(ref FishFightProfile p, float strainMod, float moveMult, float reelInMult)
+        {
+            p.StrainMod = strainMod; p.MoveMult = moveMult; p.ReelInMult = reelInMult;
+        }
 
         // C 7.7 motion seeds on top of the base columns (FightMotionTests; machine and ledger tests).
         public static FishFightProfile[] MotionProfiles()
@@ -78,7 +99,7 @@ namespace FishGame.Tests.EditMode
             p[ProfileDarter].BurstMin = 0.4f; p[ProfileDarter].BurstMax = 0.9f;
             p[ProfileDarter].FlipRate = 1.0f; p[ProfileDarter].FlipMinGap = 0.3f;
             p[ProfileBulldog].CalmDrift = 0.12f; p[ProfileBulldog].CalmDriftRamp = 2.5f;
-            p[ProfileThrasher].LateralJitter = 0.3f;
+            p[ProfileThrasher].LateralJitter = 0.3f; p[ProfileThrasher].WavePeriod = 1.5f;
             p[ProfileRunner].BurstRamp = 0.8f;
             return p;
         }

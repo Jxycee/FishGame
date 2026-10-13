@@ -19,5 +19,15 @@ namespace FishGame.Core
         public float PityStrainMult;         // FightSim strain/tension gain multiplier on a Pity cast
         public float PityGraceMult;          // FightSim snap grace multiplier on a Pity cast
         public float PityHookWindowBonus;    // seconds added to a real bite hook window (HookWindow > 0) on a Pity cast
+
+        // R72 Rust fight baseline (spec 9.5, 9.12; research note 8). Strain is in Rust units: the bar is full at StrainBarFull and the
+        // line snaps above StrainSnap. Per-second strain gains k by situation, before x StrainMod x StrainScale / LineStrength:
+        public float StrainBarFull, StrainSnap;
+        public float StrainRestInput, StrainReelRun, StrainReelBack, StrainCounterSteer, StrainOtherSteer;
+        public float SideMoveSpeed, BackMoveSpeed;                                   // m/s at pull wave 1, x MoveMult
+        public float TireSteerRate, TireCounterRate, TireDecayRate;                  // /s
+        public float TireRunFull, TireReelFull, TireReelMaxMult;                     // run/rest scaling saturates at TireRunFull; reel x1..x3 over 0..TireReelFull
+        public float BackPullMargin;                                                 // m: no back pull while lineLength >= castMaxDist - margin
+        public float FightTimeout;                                                   // s: Escaped(Timeout)
     }
 }

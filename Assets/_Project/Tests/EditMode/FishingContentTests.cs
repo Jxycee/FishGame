@@ -159,6 +159,25 @@ namespace FishGame.Tests.EditMode
             R(v, "tuning pityStrainMult", t.PityStrainMult, 0.5f, 1f);
             R(v, "tuning pityGraceMult", t.PityGraceMult, 1f, 3f);
             R(v, "tuning pityHookWindowBonus", t.PityHookWindowBonus, 0f, 1f);
+            R(v, "tuning strainBarFull", t.StrainBarFull, 1f, 20f);
+            R(v, "tuning strainSnap", t.StrainSnap, 1f, 30f);
+            Rule(v, "tuning", t.StrainSnap > t.StrainBarFull, "strainSnap > strainBarFull");
+            R(v, "tuning strainRestInput", t.StrainRestInput, 0f, 3f);
+            R(v, "tuning strainReelRun", t.StrainReelRun, 0f, 6f);
+            R(v, "tuning strainReelBack", t.StrainReelBack, 0f, 6f);
+            R(v, "tuning strainCounterSteer", t.StrainCounterSteer, 0f, 3f);
+            R(v, "tuning strainOtherSteer", t.StrainOtherSteer, 0f, 3f);
+            R(v, "tuning sideMoveSpeed", t.SideMoveSpeed, 0f, 5f);
+            R(v, "tuning backMoveSpeed", t.BackMoveSpeed, 0f, 5f);
+            R(v, "tuning tireSteerRate", t.TireSteerRate, 0f, 5f);
+            R(v, "tuning tireCounterRate", t.TireCounterRate, 0f, 5f);
+            R(v, "tuning tireDecayRate", t.TireDecayRate, 0f, 1f);
+            R(v, "tuning tireRunFull", t.TireRunFull, 1f, 100f);
+            R(v, "tuning tireReelFull", t.TireReelFull, 0.5f, 50f);
+            R(v, "tuning tireReelMaxMult", t.TireReelMaxMult, 1f, 5f);
+            R(v, "tuning backPullMargin", t.BackPullMargin, 0f, 10f);
+            R(v, "tuning fightTimeout", t.FightTimeout, 30f, 300f);
+            Rule(v, "tuning", t.MaxFightTime > t.FightTimeout, "maxFightTime > fightTimeout");
 
             foreach (RodDef r in reg.Rods)
             {
@@ -208,6 +227,10 @@ namespace FishGame.Tests.EditMode
                 R(v, l + " calmDriftRamp", p.CalmDriftRamp, 0f, 5f);
                 R(v, l + " flipMinGap", p.FlipMinGap, 0.2f, 2f);
                 R(v, l + " lateralJitter", p.LateralJitter, 0f, 0.5f);
+                R(v, l + " strainMod", p.StrainMod, 0.1f, 3f);
+                R(v, l + " moveMult", p.MoveMult, 0f, 3f);
+                R(v, l + " reelInMult", p.ReelInMult, 0.1f, 5f);
+                R(v, l + " wavePeriod", p.WavePeriod, 0.5f, 8f);
                 if (p.Id == "thrasher") Rule(v, l, p.CalmMin >= 1.0f, "calmMin >= 1.0");
             }
 
@@ -280,6 +303,26 @@ namespace FishGame.Tests.EditMode
 
             CollectionAssert.IsEmpty(v, string.Join("\n", v));
             Assert.DoesNotThrow(() => FishingSeedData.BuildDatabase(), "FishingSeedData.BuildDatabase");
+        }
+
+        // Catches (R72): an asset whose new field was never written (the builder is create-if-missing, so a missing YAML line loads as 0 and
+        // the fish would never strain or move), or any asset value drifting from its seed. Compares every public field of the Core structs.
+        [Test]
+        public void FishingData_AssetValuesEqualSeeds()
+        {
+            ContentRegistry reg = LoadRegistry();
+            AssertFieldsEqual("tuning", FishingSeedData.Tuning, reg.FishingTuning.ToCore());
+            foreach (var r in FishingSeedData.Rods)
+                AssertFieldsEqual("rod " + r.id, r.stats, AssetDatabase.LoadAssetAtPath<RodDef>(AssetPaths.RodsFolder + "/" + r.id + ".asset").ToCore());
+            foreach (var p in FishingSeedData.Profiles)
+                AssertFieldsEqual("profile " + p.id, p.profile,
+                    AssetDatabase.LoadAssetAtPath<FightProfileDef>(AssetPaths.FightProfilesFolder + "/" + p.id + ".asset").ToCore());
+        }
+
+        static void AssertFieldsEqual<T>(string what, T seed, T asset) where T : struct
+        {
+            foreach (System.Reflection.FieldInfo f in typeof(T).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+                Assert.AreEqual(f.GetValue(seed), f.GetValue(asset), what + " " + f.Name + " (asset vs seed)");
         }
 
         // ---------------------------------------------------------------- reachability
@@ -373,9 +416,11 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(unlimited, b.stats.Unlimited, id + " unlimited");
         }
 
-        // pull, lateral, run, drain, calmMin, calmMax, burstMin, burstMax, flipRate, dive, burstRamp, calmDrift, calmDriftRamp, flipMinGap, lateralJitter
+        // pull, lateral, run, drain, calmMin, calmMax, burstMin, burstMax, flipRate, dive, burstRamp, calmDrift, calmDriftRamp, flipMinGap, lateralJitter,
+        // then the R72 tier (strainMod, moveMult, reelInMult) and wavePeriod
         static void Profile(string id, string name, float pull, float lat, float run, float drain, float calmMin, float calmMax,
-            float burstMin, float burstMax, float flip, float dive, float ramp, float drift, float driftRamp, float gap, float jitter)
+            float burstMin, float burstMax, float flip, float dive, float ramp, float drift, float driftRamp, float gap, float jitter,
+            float strainMod, float moveMult, float reelInMult, float wavePeriod)
         {
             var p = SeedProfile(id);
             string k = "profile." + id + ".";
@@ -395,6 +440,10 @@ namespace FishGame.Tests.EditMode
             F(k + "calmDriftRamp", E(k + "calmDriftRamp", driftRamp), p.profile.CalmDriftRamp);
             F(k + "flipMinGap", E(k + "flipMinGap", gap), p.profile.FlipMinGap);
             F(k + "lateralJitter", E(k + "lateralJitter", jitter), p.profile.LateralJitter);
+            F(k + "strainMod", E(k + "strainMod", strainMod), p.profile.StrainMod);
+            F(k + "moveMult", E(k + "moveMult", moveMult), p.profile.MoveMult);
+            F(k + "reelInMult", E(k + "reelInMult", reelInMult), p.profile.ReelInMult);
+            F(k + "wavePeriod", E(k + "wavePeriod", wavePeriod), p.profile.WavePeriod);
         }
 
         static void Species(string id, string name, string profileId, int gMin, int gMax, int baseValue, float biteWaitMod, int minBait, float minDepth,
@@ -471,6 +520,24 @@ namespace FishGame.Tests.EditMode
             Tn("pityStrainMult", 0.85f, t.PityStrainMult);
             Tn("pityGraceMult", 1.5f, t.PityGraceMult);
             Tn("pityHookWindowBonus", 0.3f, t.PityHookWindowBonus);
+            // R72 Rust fight baseline (spec 9.12)
+            Tn("strainBarFull", 6f, t.StrainBarFull);
+            Tn("strainSnap", 7f, t.StrainSnap);
+            Tn("strainRestInput", 0.5f, t.StrainRestInput);
+            Tn("strainReelRun", 2.2f, t.StrainReelRun);
+            Tn("strainReelBack", 2.5f, t.StrainReelBack);
+            Tn("strainCounterSteer", 0.8f, t.StrainCounterSteer);
+            Tn("strainOtherSteer", 0.5f, t.StrainOtherSteer);
+            Tn("sideMoveSpeed", 1.2f, t.SideMoveSpeed);
+            Tn("backMoveSpeed", 1.3f, t.BackMoveSpeed);
+            Tn("tireSteerRate", 0.8f, t.TireSteerRate);
+            Tn("tireCounterRate", 1.25f, t.TireCounterRate);
+            Tn("tireDecayRate", 0.1f, t.TireDecayRate);
+            Tn("tireRunFull", 20f, t.TireRunFull);
+            Tn("tireReelFull", 5f, t.TireReelFull);
+            Tn("tireReelMaxMult", 3f, t.TireReelMaxMult);
+            Tn("backPullMargin", 2f, t.BackPullMargin);
+            Tn("fightTimeout", 120f, t.FightTimeout);
 
             Assert.AreEqual(4, FishingSeedData.Rods.Count, "rod count");
             Rod("rod_twig", "Twig Rod", 0, 14f, 0.9f, 0.8f, 0.50f, 0.50f, 0.9f, 0, 0);
@@ -489,11 +556,12 @@ namespace FishGame.Tests.EditMode
             // Spec 9.6 columns, with the C 7.7 motion seeds (bold in plan 1.4): Darter calm 0.3-0.8, burst 0.4-0.9, flipRate 1.0, gap 0.3;
             // Steady burstRamp 0.6; Bulldog drift 0.12 / 2.5; Thrasher jitter 0.3; Runner burstRamp 0.8; every other motion field 0, gap 0.5.
             Assert.AreEqual(5, FishingSeedData.Profiles.Count, "profile count");
-            Profile("steady", "Steady", 0.30f, 0.60f, 0.30f, 0.08f, 1.0f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0.6f, 0f, 0f, 0.5f, 0f);
-            Profile("darter", "Darter", 0.45f, 0.70f, 0.40f, 0.07f, 0.3f, 0.8f, 0.4f, 0.9f, 1.0f, 0f, 0f, 0f, 0f, 0.3f, 0f);
-            Profile("bulldog", "Bulldog", 0.60f, 0.60f, 0.50f, 0.06f, 1.0f, 3.0f, 2.0f, 4.0f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f);
-            Profile("thrasher", "Thrasher", 0.70f, 1.00f, 0.60f, 0.09f, 1.0f, 2.5f, 1.5f, 3.0f, 0.5f, 0f, 0f, 0f, 0f, 0.5f, 0.3f);
-            Profile("runner", "Runner", 0.85f, 0.80f, 0.80f, 0.05f, 1.0f, 2.0f, 2.5f, 4.0f, 0.1f, 0.25f, 0.8f, 0f, 0f, 0.5f, 0f);
+            // R72 tiers (spec 9.6): small 0.8 / 0.8 / 1.2, medium 1 / 1 / 1, large 1.25 / 1.25 / 0.9; wavePeriod 4 s (Thrasher 1.5 s).
+            Profile("steady", "Steady", 0.30f, 0.60f, 0.30f, 0.08f, 1.0f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0.6f, 0f, 0f, 0.5f, 0f, 0.8f, 0.8f, 1.2f, 4f);
+            Profile("darter", "Darter", 0.45f, 0.70f, 0.40f, 0.07f, 0.3f, 0.8f, 0.4f, 0.9f, 1.0f, 0f, 0f, 0f, 0f, 0.3f, 0f, 1.0f, 1.0f, 1.0f, 4f);
+            Profile("bulldog", "Bulldog", 0.60f, 0.60f, 0.50f, 0.06f, 1.0f, 3.0f, 2.0f, 4.0f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f);
+            Profile("thrasher", "Thrasher", 0.70f, 1.00f, 0.60f, 0.09f, 1.0f, 2.5f, 1.5f, 3.0f, 0.5f, 0f, 0f, 0f, 0f, 0.5f, 0.3f, 1.0f, 1.0f, 1.0f, 1.5f);
+            Profile("runner", "Runner", 0.85f, 0.80f, 0.80f, 0.05f, 1.0f, 2.0f, 2.5f, 4.0f, 0.1f, 0.25f, 0.8f, 0f, 0f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f);
 
             Assert.AreEqual(5, FishingSeedData.Species.Count, "species count");
             Species("bluegill", "Bluegill", "steady", 200, 800, 5, 0.9f, 1, 0.8f, FishRarity.Common, BodyShape.Round,

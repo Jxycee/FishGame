@@ -60,6 +60,11 @@ namespace FishGame.EditorTools
                 CreelMaxEntries = 12, CreelMaxWeightG = 15000,
                 CleanCatchMaxTension = 0.8f,
                 PityAfterFailures = 3, PityStrainMult = 0.85f, PityGraceMult = 1.5f, PityHookWindowBonus = 0.3f,
+                // R72 Rust fight baseline (spec 9.12; research note 8). Read by the new FightSim from F2.
+                StrainBarFull = 6f, StrainSnap = 7f, StrainRestInput = 0.5f, StrainReelRun = 2.2f, StrainReelBack = 2.5f,
+                StrainCounterSteer = 0.8f, StrainOtherSteer = 0.5f, SideMoveSpeed = 1.2f, BackMoveSpeed = 1.3f,
+                TireSteerRate = 0.8f, TireCounterRate = 1.25f, TireDecayRate = 0.1f, TireRunFull = 20f, TireReelFull = 5f,
+                TireReelMaxMult = 3f, BackPullMargin = 2f, FightTimeout = 120f,
             };
 
             // Spec 9.7 rods.
@@ -87,11 +92,12 @@ namespace FishGame.EditorTools
             // Spec 9.6 profile columns with the C 7.7 motion seeds (they override the spec Darter row).
             var profiles = new List<(string id, string name, FishFightProfile profile)>
             {
-                ("steady", "Steady", Profile(0.30f, 0.60f, 0.30f, 0.08f, 1.0f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0.6f, 0f, 0f, 0.5f, 0f)),
-                ("darter", "Darter", Profile(0.45f, 0.70f, 0.40f, 0.07f, 0.3f, 0.8f, 0.4f, 0.9f, 1.0f, 0f, 0f, 0f, 0f, 0.3f, 0f)),
-                ("bulldog", "Bulldog", Profile(0.60f, 0.60f, 0.50f, 0.06f, 1.0f, 3.0f, 2.0f, 4.0f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f)),
-                ("thrasher", "Thrasher", Profile(0.70f, 1.00f, 0.60f, 0.035f, 1.0f, 2.5f, 1.5f, 3.0f, 0.5f, 0f, 0f, 0f, 0f, 0.5f, 0.3f)),
-                ("runner", "Runner", Profile(0.85f, 0.80f, 0.80f, 0.035f, 1.0f, 2.0f, 2.5f, 4.0f, 0.1f, 0.25f, 0.8f, 0f, 0f, 0.5f, 0f)),
+                // The last four columns are the R72 tier (strainMod, moveMult, reelInMult) and wavePeriod; the old sim ignores them until F2.
+                ("steady", "Steady", Profile(0.30f, 0.60f, 0.30f, 0.08f, 1.0f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0.6f, 0f, 0f, 0.5f, 0f, 0.8f, 0.8f, 1.2f, 4f)),
+                ("darter", "Darter", Profile(0.45f, 0.70f, 0.40f, 0.07f, 0.3f, 0.8f, 0.4f, 0.9f, 1.0f, 0f, 0f, 0f, 0f, 0.3f, 0f, 1.0f, 1.0f, 1.0f, 4f)),
+                ("bulldog", "Bulldog", Profile(0.60f, 0.60f, 0.50f, 0.06f, 1.0f, 3.0f, 2.0f, 4.0f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f)),
+                ("thrasher", "Thrasher", Profile(0.70f, 1.00f, 0.60f, 0.035f, 1.0f, 2.5f, 1.5f, 3.0f, 0.5f, 0f, 0f, 0f, 0f, 0.5f, 0.3f, 1.0f, 1.0f, 1.0f, 1.5f)),
+                ("runner", "Runner", Profile(0.85f, 0.80f, 0.80f, 0.035f, 1.0f, 2.0f, 2.5f, 4.0f, 0.1f, 0.25f, 0.8f, 0f, 0f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f)),
             };
             s_profiles = new ReadOnlyCollection<(string, string, FishFightProfile)>(profiles);
 
@@ -140,13 +146,15 @@ namespace FishGame.EditorTools
         }
 
         private static FishFightProfile Profile(float pull, float lateral, float run, float drain, float calmMin, float calmMax, float burstMin, float burstMax,
-            float flipRate, float dive, float burstRamp, float calmDrift, float calmDriftRamp, float flipMinGap, float lateralJitter)
+            float flipRate, float dive, float burstRamp, float calmDrift, float calmDriftRamp, float flipMinGap, float lateralJitter,
+            float strainMod, float moveMult, float reelInMult, float wavePeriod)
         {
             return new FishFightProfile
             {
                 PullStrength = pull, LateralSpeed = lateral, RunSpeed = run, StaminaDrain = drain,
                 CalmMin = calmMin, CalmMax = calmMax, BurstMin = burstMin, BurstMax = burstMax, FlipRate = flipRate, DiveChance = dive,
                 BurstRamp = burstRamp, CalmDrift = calmDrift, CalmDriftRamp = calmDriftRamp, FlipMinGap = flipMinGap, LateralJitter = lateralJitter,
+                StrainMod = strainMod, MoveMult = moveMult, ReelInMult = reelInMult, WavePeriod = wavePeriod,
             };
         }
 

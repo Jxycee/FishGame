@@ -73,7 +73,8 @@ namespace FishGame.Tests.EditMode
                 FightProfileDef d = Make<FightProfileDef>();
                 FishFightProfile f = p.profile;
                 d.Configure(p.id, p.name, f.PullStrength, f.LateralSpeed, f.RunSpeed, f.StaminaDrain, f.CalmMin, f.CalmMax, f.BurstMin, f.BurstMax,
-                    f.FlipRate, f.DiveChance, f.BurstRamp, f.CalmDrift, f.CalmDriftRamp, f.FlipMinGap, f.LateralJitter);
+                    f.FlipRate, f.DiveChance, f.BurstRamp, f.CalmDrift, f.CalmDriftRamp, f.FlipMinGap, f.LateralJitter,
+                    f.StrainMod, f.MoveMult, f.ReelInMult, f.WavePeriod);
                 profiles.Add(d);
                 profileById[p.id] = d;
                 set.ById[p.id] = d;
@@ -216,6 +217,16 @@ namespace FishGame.Tests.EditMode
             ("tuning", "", "cleanCatchMaxTension", 0.5f, 0.95f, false), ("tuning", "", "pityAfterFailures", 0f, 10f, true),
             ("tuning", "", "pityStrainMult", 0.5f, 1f, false), ("tuning", "", "pityGraceMult", 1f, 3f, false),
             ("tuning", "", "pityHookWindowBonus", 0f, 1f, false),
+            // R72 Rust fight baseline
+            ("tuning", "", "strainBarFull", 1f, 20f, false), ("tuning", "", "strainSnap", 1f, 30f, false),
+            ("tuning", "", "strainRestInput", 0f, 3f, false), ("tuning", "", "strainReelRun", 0f, 6f, false),
+            ("tuning", "", "strainReelBack", 0f, 6f, false), ("tuning", "", "strainCounterSteer", 0f, 3f, false),
+            ("tuning", "", "strainOtherSteer", 0f, 3f, false), ("tuning", "", "sideMoveSpeed", 0f, 5f, false),
+            ("tuning", "", "backMoveSpeed", 0f, 5f, false), ("tuning", "", "tireSteerRate", 0f, 5f, false),
+            ("tuning", "", "tireCounterRate", 0f, 5f, false), ("tuning", "", "tireDecayRate", 0f, 1f, false),
+            ("tuning", "", "tireRunFull", 1f, 100f, false), ("tuning", "", "tireReelFull", 0.5f, 50f, false),
+            ("tuning", "", "tireReelMaxMult", 1f, 5f, false), ("tuning", "", "backPullMargin", 0f, 10f, false),
+            ("tuning", "", "fightTimeout", 30f, 300f, false),
 
             ("rod", "rod_handmade", "tier", 0f, 3f, true), ("rod", "rod_handmade", "castMaxDist", 8f, 40f, false),
             ("rod", "rod_handmade", "reelSpeed", 0.5f, 2f, false), ("rod", "rod_handmade", "lineStrength", 0.5f, 2.5f, false),
@@ -234,6 +245,8 @@ namespace FishGame.Tests.EditMode
             ("profile", "steady", "burstRamp", 0f, 2f, false), ("profile", "steady", "calmDrift", 0f, 0.5f, false),
             ("profile", "steady", "calmDriftRamp", 0f, 5f, false), ("profile", "steady", "flipMinGap", 0.2f, 2f, false),
             ("profile", "steady", "lateralJitter", 0f, 0.5f, false),
+            ("profile", "steady", "strainMod", 0.1f, 3f, false), ("profile", "steady", "moveMult", 0f, 3f, false),
+            ("profile", "steady", "reelInMult", 0.1f, 5f, false), ("profile", "steady", "wavePeriod", 0.5f, 8f, false),
 
             ("species", "perch", "baseValue", 1f, Open, true), ("species", "perch", "weightMinG", 1f, Open, true),
             ("species", "perch", "weightSkew", 1.2f, 3f, false), ("species", "perch", "lengthShapeK", 0.5f, 2f, false),
@@ -304,6 +317,8 @@ namespace FishGame.Tests.EditMode
         [TestCase("minBiteWait")]
         [TestCase("snapGrace")]
         [TestCase("strainScale")]
+        [TestCase("strainSnap")]
+        [TestCase("fightTimeout")]
         [TestCase("castMaxDist")]
         [TestCase("angleWindow")]
         [TestCase("weightMax")]
@@ -341,6 +356,20 @@ namespace FishGame.Tests.EditMode
                     CollectionAssert.IsEmpty(Check(set), "assist == base passes");
                     SetNum(set.Tuning, "strainScaleAssist", 0.95);
                     AssertContains(Check(set), "tuning: strainScaleAssist <= strainScale");
+                    break;
+                case "strainSnap":
+                    SetNum(set.Tuning, "strainBarFull", 6);
+                    SetNum(set.Tuning, "strainSnap", 6.5);
+                    CollectionAssert.IsEmpty(Check(set), "snap above the full bar passes");
+                    SetNum(set.Tuning, "strainSnap", 6);
+                    AssertContains(Check(set), "tuning: strainSnap > strainBarFull");
+                    break;
+                case "fightTimeout":
+                    SetNum(set.Tuning, "fightTimeout", 120);
+                    SetNum(set.Tuning, "maxFightTime", 180);
+                    CollectionAssert.IsEmpty(Check(set), "120 < 180 passes");
+                    SetNum(set.Tuning, "fightTimeout", 180);
+                    AssertContains(Check(set), "tuning: maxFightTime > fightTimeout");
                     break;
                 case "castMaxDist":
                     SetNum(set.ById["rod_handmade"], "castMaxDist", 2);   // below castMinDist 2.5 (and outside [8, 40])

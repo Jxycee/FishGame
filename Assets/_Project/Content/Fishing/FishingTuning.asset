@@ -55,3 +55,20 @@ MonoBehaviour:
   pityStrainMult: 0.85
   pityGraceMult: 1.5
   pityHookWindowBonus: 0.3
+  strainBarFull: 6
+  strainSnap: 7
+  strainRestInput: 0.5
+  strainReelRun: 2.2
+  strainReelBack: 2.5
+  strainCounterSteer: 0.8
+  strainOtherSteer: 0.5
+  sideMoveSpeed: 1.2
+  backMoveSpeed: 1.3
+  tireSteerRate: 0.8
+  tireCounterRate: 1.25
+  tireDecayRate: 0.1
+  tireRunFull: 20
+  tireReelFull: 5
+  tireReelMaxMult: 3
+  backPullMargin: 2
+  fightTimeout: 120

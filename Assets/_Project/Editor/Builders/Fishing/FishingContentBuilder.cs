@@ -50,7 +50,8 @@ namespace FishGame.EditorTools
                 FishFightProfile f = p.profile;
                 profiles.Add(Ensure<FightProfileDef>(Rooted(AssetPaths.FightProfilesFolder) + "/" + p.id + ".asset", d =>
                     d.Configure(p.id, p.name, f.PullStrength, f.LateralSpeed, f.RunSpeed, f.StaminaDrain, f.CalmMin, f.CalmMax, f.BurstMin, f.BurstMax,
-                        f.FlipRate, f.DiveChance, f.BurstRamp, f.CalmDrift, f.CalmDriftRamp, f.FlipMinGap, f.LateralJitter)));
+                        f.FlipRate, f.DiveChance, f.BurstRamp, f.CalmDrift, f.CalmDriftRamp, f.FlipMinGap, f.LateralJitter,
+                        f.StrainMod, f.MoveMult, f.ReelInMult, f.WavePeriod)));
             }
 
             var rods = new List<RodDef>();

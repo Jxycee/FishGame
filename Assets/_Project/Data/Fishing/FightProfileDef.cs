@@ -23,6 +23,11 @@ namespace FishGame.Data
         [SerializeField] private float calmDriftRamp;
         [SerializeField] private float flipMinGap;
         [SerializeField] private float lateralJitter;
+        // R72 Rust tier (spec 9.6) and the pull-wave period quirk.
+        [SerializeField] private float strainMod;
+        [SerializeField] private float moveMult;
+        [SerializeField] private float reelInMult;
+        [SerializeField] private float wavePeriod;
 
         public string Id => id;
         public string DisplayName => displayName;
@@ -41,11 +46,16 @@ namespace FishGame.Data
         public float CalmDriftRamp => calmDriftRamp;
         public float FlipMinGap => flipMinGap;
         public float LateralJitter => lateralJitter;
+        public float StrainMod => strainMod;
+        public float MoveMult => moveMult;
+        public float ReelInMult => reelInMult;
+        public float WavePeriod => wavePeriod;
 
         // Used by the content builder and by tests.
         public void Configure(string id, string displayName, float pullStrength, float lateralSpeed, float runSpeed, float staminaDrain,
             float calmMin, float calmMax, float burstMin, float burstMax, float flipRate, float diveChance, float burstRamp,
-            float calmDrift, float calmDriftRamp, float flipMinGap, float lateralJitter)
+            float calmDrift, float calmDriftRamp, float flipMinGap, float lateralJitter,
+            float strainMod, float moveMult, float reelInMult, float wavePeriod)
         {
             this.id = id;
             this.displayName = displayName;
@@ -64,6 +74,10 @@ namespace FishGame.Data
             this.calmDriftRamp = calmDriftRamp;
             this.flipMinGap = flipMinGap;
             this.lateralJitter = lateralJitter;
+            this.strainMod = strainMod;
+            this.moveMult = moveMult;
+            this.reelInMult = reelInMult;
+            this.wavePeriod = wavePeriod;
         }
 
         public FishFightProfile ToCore()
@@ -85,6 +99,10 @@ namespace FishGame.Data
                 CalmDriftRamp = calmDriftRamp,
                 FlipMinGap = flipMinGap,
                 LateralJitter = lateralJitter,
+                StrainMod = strainMod,
+                MoveMult = moveMult,
+                ReelInMult = reelInMult,
+                WavePeriod = wavePeriod,
             };
         }
     }
