@@ -3,8 +3,9 @@
 // M1: joins are NOT closed before the Spot load. The dock is the in-world lobby (spec 11.2) and SessionState.NetJoinsOpen stays true.
 // Ended arrives after the Offline StateChanged (which already returned to Menu), so Ended only publishes a toast and never navigates.
 // M3 dev map switch (M3-D31): the host loads a spot's scene through NetworkSceneManager (Single) on DevLoadSpotRequested, debug builds only;
-// clients ignore the message and follow NGO scene sync. Session state is kept (run state in EcologySession, creels in SessionState);
-// players respawn through PlayerSpawner's OnLoadEventCompleted / OnLoadComplete paths (the late-joiner path is unchanged).
+// clients ignore the message and follow NGO scene sync. What survives a switch: the run seed, season, day, cast counter and catch ledger
+// (EcologySession) and the creels and wallets (SessionState). Slot loadouts (rod, bait, bait stock) and the pity streak live in the
+// per-scene FishingHostLedger and reset (to fix in M4); players respawn through PlayerSpawner's OnLoadEventCompleted / OnLoadComplete paths (the late-joiner path is unchanged).
 using System;
 using System.Threading.Tasks;
 using FishGame.Core;

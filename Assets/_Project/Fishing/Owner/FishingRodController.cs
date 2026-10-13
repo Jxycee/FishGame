@@ -371,21 +371,17 @@ namespace FishGame.Fishing
 
         // The same two gates the host adds (C 2.8 #26): grid water through SpotEcology on the same baked asset, CastingOpen from the replicated
         // clock. Missing world/state/zone/grid -> false, mirroring the host's NotAllowedNow (a red marker instead of a cast the host would
-        // refuse). The zone is resolved once per world instance (no per-frame registry scans, no allocation).
+        // refuse). The zone is resolved once per world instance, success or failure (no per-frame registry scans, no allocation).
         private bool OwnerWorldGates(float x, float z)
         {
             WorldState world = WorldState.Current;
             if (world == null || !world.HasState) return false;
-            if (!ReferenceEquals(world, _gateWorld) || _gateZone == null)
+            if (!ReferenceEquals(world, _gateWorld))
             {
                 _gateWorld = world;
-                if (!SpotEcology.TryResolve(_registry, world, out _, out _gateZone))
-                {
-                    _gateZone = null;
-                    return false;
-                }
+                if (!SpotEcology.TryResolve(_registry, world, out _, out _gateZone)) _gateZone = null;
             }
-            return world.CastingOpen && SpotEcology.GridWater(_gateZone, x, z);
+            return _gateZone != null && SpotEcology.CastGatesOpen(world, _gateZone, x, z);
         }
 
         // The only writer of MarkerVisible / MarkerValid / MarkerPosition besides OnDisable (C2 16.1 carry): the drawn marker shows the

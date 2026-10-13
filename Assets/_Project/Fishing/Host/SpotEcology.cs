@@ -19,8 +19,15 @@ namespace FishGame.Fishing
             if (registry == null || world == null || !world.HasState || string.IsNullOrEmpty(world.SpotId)) return false;
             EcologyDatabase eco = registry.Ecology;
             if (eco == null || !registry.TryGetSpot(world.SpotId, out _)) return false;
-            ushort spotIndex = registry.SpotIndex(world.SpotId);
-            if (spotIndex >= eco.Spots.Count) return false;
+            return ResolveZone(eco, registry.SpotIndex(world.SpotId), out zoneIndex, out zone);
+        }
+
+        // The database half of TryResolve: a spot index outside EcologyDatabase.Spots, a zone index outside Zones or an unbaked grid is false.
+        public static bool ResolveZone(EcologyDatabase eco, int spotIndex, out int zoneIndex, out ZoneData zone)
+        {
+            zoneIndex = -1;
+            zone = null;
+            if (eco == null || spotIndex < 0 || spotIndex >= eco.Spots.Count) return false;
             int zi = eco.Spots[spotIndex].ZoneIndex;
             if (zi < 0 || zi >= eco.Zones.Count || eco.Zones[zi].Grid == null) return false;
             zoneIndex = zi;
@@ -31,6 +38,13 @@ namespace FishGame.Fishing
         public static bool GridWater(ZoneData zone, float x, float z)
         {
             return zone != null && zone.Grid != null && zone.Grid.IsWater(x, z);
+        }
+
+        // The owner marker's two world gates in one place (C 2.8 #26): casting open from the replicated clock AND the landing on a grid water
+        // cell. The host applies the same two terms separately in its cast view (CastingAllowed first, GridWater after the probe in ValidateCast).
+        public static bool CastGatesOpen(IWorldContext world, ZoneData zone, float x, float z)
+        {
+            return world != null && world.CastingOpen && GridWater(zone, x, z);
         }
 
         // The world part of the host context (M3-D15). Rod tier, bait and depth are placeholders the ledger always overwrites.

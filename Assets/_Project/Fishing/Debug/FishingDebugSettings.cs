@@ -47,12 +47,13 @@ namespace FishGame.Fishing
 
         // F6/F7 are SESSION toggles: cleared when the session ends (INetworkSession.Ended, once per attempt), never when a Spot scene unloads,
         // so the M3 dev map switch keeps them (C 7.1, CCR-A1). Idempotent; re-hooks when the app's session instance changes (a new App in tests).
+        // A null session only unhooks the current one (tests; FishingHost never passes null).
         internal static void ClearOnSessionEnd(INetworkSession session)
         {
-            if (session == null || ReferenceEquals(s_session, session)) return;
+            if (ReferenceEquals(s_session, session)) return;
             if (s_session != null) s_session.Ended -= OnSessionEnded;
             s_session = session;
-            session.Ended += OnSessionEnded;
+            if (session != null) session.Ended += OnSessionEnded;
         }
 
         private static void OnSessionEnded(EndReason reason)

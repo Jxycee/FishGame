@@ -253,6 +253,8 @@ namespace FishGame.Tests.PlayMode
             Season season = run.Season;
             uint n = run.HostCastCounter;
             Assert.That(n, Is.EqualTo(start + 1), "one accepted cast so far");
+            WorldState.Current.GetComponent<DevWorldDriver>().DevNewDay();   // day 2, so "the same day" below is not just day 1
+            Assert.That(run.Day, Is.EqualTo(2));
             WorldState oldWorld = WorldState.Current;
             FishingHost oldHost = FishingHost.Current;
             PlayerNetState oldPlayer = PlayerNetState.Local;
@@ -262,11 +264,14 @@ namespace FishGame.Tests.PlayMode
 
             Assert.That(ReferenceEquals(EcologySession.Current, run), Is.True, "the session run state survives the switch");
             Assert.That(run.Season, Is.EqualTo(season));
+            Assert.That(run.Day, Is.EqualTo(2), "the day survives the switch");
             Assert.That(run.HostCastCounter, Is.EqualTo(n));
             Assert.That(FishingHost.Current.Ledger, Is.Not.Null);
             Assert.That(FishingHost.Current.Ledger.Run, Is.SameAs(run), "the new host's ledger runs on the same run state");
             Assert.That(FishingDebugSettings.Luck, Is.EqualTo(0.5f), "dev overrides survive a Spot load");
-            Assert.That(WorldState.Current.Minute, Is.LessThan(30), "the clock restarted at minute 0 of the same day");
+            ClockAnchor anchor = WorldState.Current.NetClock.Value;
+            Assert.That(anchor.AnchorMinute, Is.EqualTo(0f), "the clock was re-anchored at minute 0 (no timing dependence)");
+            Assert.That(anchor.Running, Is.EqualTo((byte)1), "and runs");
             Assert.That(WorldState.Current.NetSeason.Value, Is.EqualTo((byte)season), "the new world shows the kept season");
 
             Pin();   // the new driver starts a running clock, rolled weather and a hotspot planner

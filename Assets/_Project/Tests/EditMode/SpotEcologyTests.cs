@@ -20,6 +20,8 @@ namespace FishGame.Tests.EditMode
         public void TearDown()
         {
             FishingDebugSettings.Luck = 0f;
+            FishingDebugSettings.ForcedBiteWait = 0f;
+            FishingDebugSettings.ClearOnSessionEnd(null);   // unhook a fake session left by the Luck test
         }
 
         // 6 x 6, cell 1 m, origin (0, 0): the left 3 columns are land, the right 3 water with shore distance 2, 7 and 12 m.
@@ -73,45 +75,56 @@ namespace FishGame.Tests.EditMode
             public event Action Changed { add { } remove { } }
         }
 
-        static CastRejectReason HostVerdict(bool castingOpen, ZoneData zone, float x, float z)
+        // The host's view terms as FishingHost.HandleCastRequest builds them (CastingAllowed from the world clock, GridWater from SpotEcology),
+        // run through the production validator.
+        static CastRejectReason HostVerdict(FakeWorld world, ZoneData zone, float x, float z)
         {
             var req = new CastRequestData { CastId = 1, ChargeNorm = 0.5f, YawDeg = 0f, OriginX = 0f, OriginZ = 0f, BaitIndex = 0 };
             var view = new HostCastView
             {
-                PlayerX = 0f, PlayerY = 0f, PlayerZ = 0f, CastingAllowed = castingOpen,
+                PlayerX = 0f, PlayerY = 0f, PlayerZ = 0f, CastingAllowed = world.CastingOpen,
                 GridWater = SpotEcology.GridWater(zone, x, z),
                 Probe = new WaterProbe { FirstHitIsWater = true, WaterY = 0f, HasBed = true, Depth = 3f },
             };
             return CatchValidator.ValidateCast(in req, 0, false, in view, true, 0.5f);
         }
 
-        static bool OwnerMarker(bool probeOk, bool castingOpen, ZoneData zone, float x, float z)
+        // The owner's marker as FishingRodController.ProbeMarker combines it: the physics probe, then the production SpotEcology.CastGatesOpen
+        // (the function OwnerWorldGates returns).
+        static bool OwnerMarker(bool probeOk, FakeWorld world, ZoneData zone, float x, float z)
         {
-            return probeOk && castingOpen && SpotEcology.GridWater(zone, x, z);
+            return probeOk && SpotEcology.CastGatesOpen(world, zone, x, z);
         }
 
-        // Catches: the host using a different lookup than the owner (for example the cell centre or a rounded cell) or the owner skipping a gate:
-        // an honest cast at a grid edge would then be host-rejected (C 2.8 #26).
+        // Catches: SpotEcology.CastGatesOpen (the owner's gate function) dropping the grid-water or the casting-open term, or using a different
+        // lookup than the host's GridWater (for example the cell centre or a rounded cell), so that an honest cast at a grid edge is
+        // host-rejected (C 2.8 #26). It does not prove FishingRodController calls CastGatesOpen (the PlayMode day-over test covers the casting-open wiring only; the manual dock-shadow marker check covers the grid term).
         [Test]
         public void SpotEcology_OwnerAndHostGates_AgreeAcrossGridEdge()
         {
             ZoneData zone = Zone(Grid());
+            var world = new FakeWorld();
             foreach (bool open in new[] { true, false })
             {
+                world.CastingOpenValue = open;
                 for (int i = 0; i <= 200; i++)
                 {
                     float x = 2f + i / 100f;
-                    bool owner = OwnerMarker(true, open, zone, x, 2.5f);
-                    bool host = HostVerdict(open, zone, x, 2.5f) == CastRejectReason.None;
+                    bool owner = OwnerMarker(true, world, zone, x, 2.5f);
+                    bool host = HostVerdict(world, zone, x, 2.5f) == CastRejectReason.None;
                     Assert.That(owner, Is.EqualTo(host), "x=" + x + " open=" + open);
                 }
-                Assert.That(OwnerMarker(true, open, zone, 2.999f, 2.5f), Is.False, "2.999 is the last land cell (open=" + open + ")");
-                Assert.That(OwnerMarker(true, open, zone, 3.0f, 2.5f), Is.EqualTo(open), "3.0 is the first water cell (open=" + open + ")");
+                Assert.That(OwnerMarker(true, world, zone, 2.999f, 2.5f), Is.False, "2.999 is the last land cell (open=" + open + ")");
+                Assert.That(OwnerMarker(true, world, zone, 3.0f, 2.5f), Is.EqualTo(open), "3.0 is the first water cell (open=" + open + ")");
             }
-            Assert.That(HostVerdict(true, zone, 2.999f, 2.5f), Is.EqualTo(CastRejectReason.NotWater));
-            Assert.That(HostVerdict(true, zone, 3.0f, 2.5f), Is.EqualTo(CastRejectReason.None));
-            Assert.That(HostVerdict(false, zone, 3.0f, 2.5f), Is.EqualTo(CastRejectReason.NotAllowedNow), "casting closed is checked first");
-            Assert.That(HostVerdict(false, zone, 1f, 2.5f), Is.EqualTo(CastRejectReason.NotAllowedNow), "even over land");
+            world.CastingOpenValue = true;
+            Assert.That(HostVerdict(world, zone, 2.999f, 2.5f), Is.EqualTo(CastRejectReason.NotWater));
+            Assert.That(HostVerdict(world, zone, 3.0f, 2.5f), Is.EqualTo(CastRejectReason.None));
+            Assert.That(SpotEcology.CastGatesOpen(null, zone, 3.5f, 2.5f), Is.False, "no world: closed");
+            Assert.That(SpotEcology.CastGatesOpen(world, null, 3.5f, 2.5f), Is.False, "no zone: closed");
+            world.CastingOpenValue = false;
+            Assert.That(HostVerdict(world, zone, 3.0f, 2.5f), Is.EqualTo(CastRejectReason.NotAllowedNow), "casting closed is checked first");
+            Assert.That(HostVerdict(world, zone, 1f, 2.5f), Is.EqualTo(CastRejectReason.NotAllowedNow), "even over land");
             Assert.That(SpotEcology.GridWater(zone, 7f, 2.5f), Is.False, "outside the grid is not water");
             Assert.That(SpotEcology.GridWater(null, 3.5f, 2.5f), Is.False, "no zone is not water");
         }
@@ -182,6 +195,25 @@ namespace FishGame.Tests.EditMode
             world.SpotIdValue = ContentIds.LakeDock;
             Assert.That(SpotEcology.TryResolve(null, world, out _, out _), Is.False, "no registry");
             Assert.That(SpotEcology.TryResolve(registry, null, out _, out _), Is.False, "no world");
+        }
+
+        // Catches: an unbaked grid (ZoneData.Grid null), an out-of-range spot index and a missing database resolving to a zone, which would let
+        // the owner marker and the host skip the grid gate instead of closing casting.
+        [Test]
+        public void SpotEcology_ResolveZone_FalseForNullGridAndBadIndex()
+        {
+            EcologyDatabase noGrids = EcologyTestData.Database();   // its zones are built with a null grid; spot 0 is the lake
+            Assert.That(noGrids.Zones[noGrids.Spots[0].ZoneIndex].Grid, Is.Null, "precondition: the fixture zone has no grid");
+            Assert.That(SpotEcology.ResolveZone(noGrids, 0, out int zoneIndex, out ZoneData zone), Is.False, "null grid");
+            Assert.That(zone, Is.Null);
+            Assert.That(zoneIndex, Is.EqualTo(-1));
+            Assert.That(SpotEcology.ResolveZone(noGrids, 1, out _, out _), Is.False, "spot index past the end");
+            Assert.That(SpotEcology.ResolveZone(noGrids, -1, out _, out _), Is.False, "negative spot index");
+            Assert.That(SpotEcology.ResolveZone(null, 0, out _, out _), Is.False, "no database");
+
+            ContentRegistry registry = LoadRegistry();
+            Assert.That(SpotEcology.ResolveZone(registry.Ecology, registry.SpotIndex(ContentIds.LakeDock), out _, out ZoneData lake), Is.True, "the baked lake");
+            Assert.That(lake.Grid, Is.Not.Null);
         }
 
         // Catches: the new world gates closing the M2 deck-end casts (the baked grid calling the dock shadow land): every PlayMode cast test
