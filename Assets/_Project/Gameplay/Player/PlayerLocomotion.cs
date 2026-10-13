@@ -8,7 +8,7 @@ namespace FishGame.Gameplay
 {
     // Authority: owner only. PlayerNetState enables this component (after the CharacterController) on the owning peer.
     // Moves the owner's CharacterController from the routed PlayerIntent; NetworkTransform (AuthorityMode Owner) replicates
-    // the result to everyone. The host never moves players. Rules: spec 7.3; contract 7.12, D25, D26, D36, M2-D29.
+    // the result to everyone. The host never moves players. Rules: spec 7.3; contract 7.12, D25, D26, D36 (ramp foot only since R70), M2-D29, M2-D30.
     // Ladders (R70): the owner alone decides a climb from the static LadderVolumes; no RPC, no ladder state on the wire (no NetClimbing in M2,
     // M2-D32). Entering a ladder writes NetSwimming false. While climbing there is no gravity and Move goes along the camera look.
     // No RequireComponent on purpose: PrefabBuilder (T15) adds the CharacterController itself (contract 6.3).
@@ -38,13 +38,10 @@ namespace FishGame.Gameplay
         private PlayerCamera _camera;   // pitch for the ladder climb; null on test rigs (pitch 0 then)
         private ClimbGate _climbGate;
         private LadderVolume _ladder;   // the volume that held the capsule centre on the last climbing frame
-        private bool _exitLerp;         // the M1 WaterExit lerp is running (only the ramp has an exit after L5); removed in L7
+        private RampAssist _rampAssist;   // R70 shore-ramp foot: wade not swim, one kick on entry
         private float _vx, _vz;   // horizontal velocity, accelerated toward the wish velocity
         private float _kx, _kz;   // knockback (decays)
         private float _vy;        // vertical velocity
-        private float _climbT;
-        private Vector3 _climbFrom;
-        private Vector3 _climbTo;
         private bool _warnedNoSpawn;
         private IPlayerContextSource[] _contextSources = Array.Empty<IPlayerContextSource>();
 
@@ -73,9 +70,9 @@ namespace FishGame.Gameplay
             IsGrounded = false;
             IsSwimming = false;
             IsClimbing = false;
-            _exitLerp = false;
             _ladder = null;
             _climbGate.Reset();
+            _rampAssist = RampAssist.Create();
             IsSprinting = false;
             SecondsInWater = 0f;
             _warnedNoSpawn = false;
@@ -84,14 +81,9 @@ namespace FishGame.Gameplay
 
         private void OnDisable()
         {
-            if (IsClimbing && _exitLerp && _cc != null)
-            {
-                _cc.enabled = true;
-            }
-
-            _exitLerp = false;
             _ladder = null;
             _climbGate.Reset();
+            _rampAssist = RampAssist.Create();
 
             IsClimbing = false;
             IsSwimming = false;
@@ -136,14 +128,6 @@ namespace FishGame.Gameplay
             PlayerIntent intent = _input.Intent;
             transform.Rotate(0f, intent.LookYawDeg, 0f);
 
-            // M1 WaterExit lerp (the CharacterController is off while it runs). Deleted in L7.
-            if (IsClimbing && _exitLerp)
-            {
-                UpdateExitLerp(dt);
-                SetContext();
-                return;
-            }
-
             if (!_cc.enabled)
             {
                 return;
@@ -179,13 +163,20 @@ namespace FishGame.Gameplay
             float surfaceY = WaterSurface.HeightAt(pos.x, pos.z);
             bool inVolume = WaterVolume.FindContaining(pos) != null;
             bool inWater = inVolume && MovementMath.IsInWater(pos.y, surfaceY);
-            bool swimming = SwimmingAt(pos);
+            bool swimDepth = SwimmingAt(pos);
 
-            if (inWater && !locked && TryBeginClimb(pos, intent))
+            // R70 shore-ramp foot (the Ramp WaterExit; D36: wading or swimming): in water there the player wades instead of swimming, and a
+            // swimmer arriving while pushing toward the ramp Top (DA7's facing rule) gets one small upward kick. No lerp, no pull.
+            WaterExit foot = inWater ? WaterExit.FindContaining(pos) : null;
+            bool towardTop = false;
+            if (foot != null && !locked)
             {
-                SetContext();
-                return;
+                Vector3 toTop = foot.TopPoint - pos;
+                Vector3 forward = transform.forward;
+                towardTop = MovementMath.PushingToward(intent.MoveY, forward.x, forward.z, toTop.x, toTop.z);
             }
+
+            bool swimming = _rampAssist.Step(foot != null, inWater, swimDepth, towardTop, out float kickVy);
 
             if (swimming != IsSwimming)
             {
@@ -232,6 +223,11 @@ namespace FishGame.Gameplay
                     _vy = MovementMath.GroundedStickVelocity;
                 }
 
+                if (kickVy > 0f)
+                {
+                    _vy = Mathf.Max(_vy, kickVy);   // R70 ramp foot: one small upward help out of the water
+                }
+
                 // A jump buffered just before the lock must not fire on landing while locked (RodFighting); same reset as swimming.
                 if (locked)
                 {
@@ -273,7 +269,7 @@ namespace FishGame.Gameplay
                 return;
             }
 
-            bool restoreController = _cc.enabled || (IsClimbing && _exitLerp);
+            bool restoreController = _cc.enabled;
             _cc.enabled = false;
             Quaternion rotation = Quaternion.Euler(0f, yaw, 0f);
             if (_nt != null && _nt.IsSpawned && _nt.CanCommitToTransform)
@@ -287,9 +283,9 @@ namespace FishGame.Gameplay
 
             ResetMotion();
             IsClimbing = false;
-            _exitLerp = false;
             _ladder = null;
             _climbGate.Reset();
+            _rampAssist = RampAssist.Create();
             IsGrounded = false;
             SecondsInWater = 0f;
             _cc.enabled = restoreController;
@@ -320,6 +316,8 @@ namespace FishGame.Gameplay
                     _net.OwnerSetSwimming(false);
                 }
             }
+
+            _rampAssist = RampAssist.Create();
         }
 
         // R70: no gravity, no acceleration ramp. Move goes along the camera look (PlayerCamera.PitchDeg, 0 without a camera) at ClimbSpeed;
@@ -382,73 +380,6 @@ namespace FishGame.Gameplay
         private Vector3 CapsuleCenter()
         {
             return transform.TransformPoint(_cc.center);
-        }
-
-        // M1 WaterExit lerp: the ramp only after L5; deleted in L7.
-        // Inside a WaterExit: Jump or Interact always climbs; holding forward climbs only when facing the exit's Top,
-        // so walking down the ramp into the lake (inside the ramp volume) does not yank the player back out.
-        private bool TryBeginClimb(Vector3 pos, PlayerIntent intent)
-        {
-            WaterExit exit = WaterExit.FindContaining(pos);
-            if (exit == null)
-            {
-                return false;
-            }
-
-            Vector3 top = exit.TopPoint;
-            bool pressed = intent.JumpPressed || intent.InteractPressed;
-            bool pushingToward = false;
-            if (intent.MoveY > 0.5f)
-            {
-                Vector3 toTop = top - pos;
-                toTop.y = 0f;
-                pushingToward = toTop.sqrMagnitude < 0.0001f || Vector3.Dot(transform.forward, toTop) > 0f;
-            }
-
-            if (!pressed && !pushingToward)
-            {
-                return false;
-            }
-
-            BeginExitLerp(top);
-            return true;
-        }
-
-        private void BeginExitLerp(Vector3 target)
-        {
-            _climbFrom = transform.position;
-            _climbTo = target;
-            _climbT = 0f;
-            ResetMotion();
-            IsClimbing = true;
-            _exitLerp = true;
-            IsSprinting = false;
-            IsGrounded = false;
-            _cc.enabled = false;
-        }
-
-        private void UpdateExitLerp(float dt)
-        {
-            Vector3 before = transform.position;
-            _climbT = Mathf.Min(1f, _climbT + dt / MovementMath.ClimbDuration);
-            transform.position = Vector3.Lerp(_climbFrom, _climbTo, Mathf.SmoothStep(0f, 1f, _climbT));
-            Velocity = (transform.position - before) / dt;
-            if (_climbT < 1f)
-            {
-                return;
-            }
-
-            IsClimbing = false;
-            _exitLerp = false;
-            IsSwimming = false;
-            if (_net != null)
-            {
-                _net.OwnerSetSwimming(false);
-            }
-
-            ResetMotion();
-            SecondsInWater = 0f;
-            _cc.enabled = true;
         }
 
         private void TeleportToSpawn()

@@ -314,13 +314,13 @@ namespace FishGame.EditorTools
             volume.sharedProfile = profile;
         }
 
-        // Contract 6.5 exits. R70: only the shore ramp keeps a WaterExit; the ladders are LadderVolumes (AddLadders). L7 turns this into the
-        // ramp foot.
+        // Contract 6.5 exits since R70: only the shore-ramp foot (M2-D30). Layer Default, so CastProbe's water mask (Water layer, triggers
+        // collide) never reads the box top as the water surface.
         static void AddExits()
         {
-            GameObject exits = Root("Exits", Layers.Water);
-            AddExit(exits.transform, "Ramp", new Vector3(12f, -0.9f, -44f), new Vector3(3f, 2.4f, 4f), new Vector3(12f, 0.45f, -50.5f));
-            BuilderUtil.SetLayerRecursive(exits, Layers.Water);
+            GameObject exits = Root("Exits", Layers.Default);
+            AddExit(exits.transform, "Ramp", LakeDockLayout.RampFootCenter, LakeDockLayout.RampFootSize, LakeDockLayout.RampTopPoint);
+            BuilderUtil.SetLayerRecursive(exits, Layers.Default);
         }
 
         // R70 (contract M2-D29): one walk-in LadderVolume per ladder, mirrored in x, on layer Default so CastProbe's water mask never sees it.

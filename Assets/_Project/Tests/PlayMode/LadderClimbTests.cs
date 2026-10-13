@@ -3,6 +3,7 @@
 // Input is scripted through FakeInputService; the real owner locomotion runs. Times are game time (Time.time).
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using FishGame.Core;
 using FishGame.Fishing;
 using FishGame.Gameplay;
@@ -16,6 +17,7 @@ namespace FishGame.Tests.PlayMode
     public class LadderClimbTests
     {
         private const float LadderZ = -41.5f, DeckTopY = 0.6f, DeckEdgeX = 1.5f;
+        private const float RiseWindow = 0.03f, KickRiseRate = 1.2f;   // the 2 m/s kick averages ~1.7 m/s over its first 0.03 s
         private FishingRig _rig;
 
         // A movement lock the test can switch (as FishingRodController does while RodFighting): PlayerLocomotion caches the sources in OnEnable.
@@ -67,6 +69,11 @@ namespace FishGame.Tests.PlayMode
             Assert.That(left && right, Is.True, "one volume on each side of the dock");
             Assert.That(WaterExit.All.Count, Is.EqualTo(1), "only the ramp keeps a WaterExit");
             Assert.That(WaterExit.All[0].name, Is.EqualTo("Ramp"));
+            WaterExit ramp = WaterExit.All[0];
+            Assert.That(ramp.gameObject.layer, Is.EqualTo(Layers.Default), "the ramp foot is off the Water layer (CastProbe)");
+            Bounds rb = ramp.GetComponent<BoxCollider>().bounds;
+            Assert.That(rb.min.z, Is.EqualTo(-46f).Within(1e-3f), "ramp foot landward end");
+            Assert.That(rb.max.z, Is.EqualTo(-39f).Within(1e-3f), "ramp foot seaward end");
 
             WaterProbe probe = CastProbe.Probe(2.05f, LadderZ);
             Assert.That(probe.FirstHitIsWater, Is.True, "a cast beside the ladder still lands on water");
@@ -421,6 +428,77 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("line out onto a ladder");
         }
 
+        // Catches (R70 ramp): a pull or lerp (the player must walk), no kick at the foot, swimming inside the foot, or a ramp that cannot be
+        // walked out of the lake.
+        [UnityTest]
+        public IEnumerator Ramp_SwimmerHoldingForward_KicksAtTheFootAndWalksOut()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+
+            rig.Locomotion.ApplyTeleport(new Vector3(12f, -1.45f, -37f), 180f);   // swimming 2 m seaward of the foot, facing the shore (-z)
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsSwimming, PlayModeHarness.DefaultTimeoutSeconds, "precondition: swimming");
+
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            var heights = new List<Vector2>();   // (game time, root y) per frame; CharacterController.velocity is noise at headless frame rates
+            Vector3 prev = rig.Player.transform.position;
+            double until = Time.realtimeSinceStartupAsDouble + 10.0;
+            while (!(rig.Player.transform.position.z < -50f && rig.Player.transform.position.y > 0.2f && rig.Locomotion.IsGrounded))
+            {
+                Assert.That(Time.realtimeSinceStartupAsDouble < until, Is.True, "never walked out up the ramp (at " + rig.Player.transform.position + ")");
+                yield return null;
+                if (WaterExit.FindContaining(rig.Player.transform.position) != null)   // only from the foot on: swimming up to it also bobs
+                    heights.Add(new Vector2(Time.time, rig.Player.transform.position.y));
+                // IsSwimming was decided from the position at the START of this frame (= prev), not from where the move ended.
+                bool prevInFootWater = WaterExit.FindContaining(prev) != null
+                                       && prev.y < WaterSurface.HeightAt(prev.x, prev.z) - MovementMath.WadeDepth - 0.05f;
+                if (prevInFootWater)
+                    Assert.That(rig.Locomotion.IsSwimming, Is.False, "nobody swims in the ramp foot (from " + prev + ")");
+                prev = rig.Player.transform.position;
+            }
+
+            rig.Fake.Frame = default;
+            float maxUp = MaxRiseRate(heights, RiseWindow);
+            TestContext.WriteLine($"ramp walk-out: max rise rate over {RiseWindow:F2} s = {maxUp:F2} m/s");
+            Assert.That(maxUp, Is.GreaterThan(KickRiseRate), "the foot kick (2 m/s) fired; slope walking alone stays well under it");
+            Assert.That(rig.Locomotion.IsClimbing, Is.False, "no lerp: the ramp is walked");
+            rig.Log.AssertEmpty("ramp walk-out");
+        }
+
+        // Catches: the assist pushing back a player who walks DOWN the ramp into the lake (the facing rule inverted, or a kick without push).
+        [UnityTest]
+        public IEnumerator Ramp_WalkingDownIntoTheLake_IsNotPushedBack()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+
+            rig.Locomotion.ApplyTeleport(new Vector3(12f, 0.5f, -50.5f), 0f);   // on the ramp top, facing the lake (+z)
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsGrounded, PlayModeHarness.DefaultTimeoutSeconds, "never grounded on the ramp");
+
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            float lastZ = rig.Player.transform.position.z;
+            var heights = new List<Vector2>();
+            double until = Time.realtimeSinceStartupAsDouble + 10.0;
+            while (rig.Player.transform.position.z < -38.5f)
+            {
+                Assert.That(Time.realtimeSinceStartupAsDouble < until, Is.True, "never walked down past the foot (at " + rig.Player.transform.position + ")");
+                float z = rig.Player.transform.position.z;
+                Assert.That(z, Is.GreaterThan(lastZ - 0.02f), "pushed back toward the shore at z " + z);
+                lastZ = z;
+                heights.Add(new Vector2(Time.time, rig.Player.transform.position.y));
+                yield return null;
+            }
+
+            rig.Fake.Frame = default;
+            float maxUp = MaxRiseRate(heights, RiseWindow);
+            TestContext.WriteLine($"ramp walk-down: max rise rate over {RiseWindow:F2} s = {maxUp:F2} m/s");
+            Assert.That(maxUp, Is.LessThan(KickRiseRate), "no kick when walking down");
+            Assert.That(SwimInteractGateTests.InWater(rig), Is.True, "ended in the lake");
+            rig.Log.AssertEmpty("ramp walk-down");
+        }
+
         // Shared body of the three climb-out tests. Starts in the water 0.45 m outside LadderR, facing the dock, with the given look pitch.
         private IEnumerator ClimbUpFromWater(float pitchDeg, float limitSeconds)
         {
@@ -451,6 +529,22 @@ namespace FishGame.Tests.PlayMode
             Assert.That(rig.Locomotion.IsSwimming, Is.False);
             Assert.That(rig.Fake.GameplayContext, Is.EqualTo(InputContext.Free), "back to Free on the deck");
             rig.Log.AssertEmpty("climb out at pitch " + pitchDeg);
+        }
+
+        // Largest average rise rate (m/s) of root y over any stretch at least `window` seconds long. samples = (game time, y) per frame.
+        // CharacterController.velocity is useless for this: at the headless frame rate (over 1000 fps) it reads hundreds of m/s from skin jitter.
+        private static float MaxRiseRate(List<Vector2> samples, float window)
+        {
+            float best = float.NegativeInfinity;
+            int i = 0;
+            for (int j = 0; j < samples.Count; j++)
+            {
+                while (i + 1 < j && samples[j].x - samples[i + 1].x >= window) i++;
+                float dt = samples[j].x - samples[i].x;
+                if (dt >= window) best = Mathf.Max(best, (samples[j].y - samples[i].y) / dt);
+            }
+
+            return best;
         }
 
         private static bool OnDeck(FishingRig rig)

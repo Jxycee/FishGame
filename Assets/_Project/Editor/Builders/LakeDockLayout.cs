@@ -81,6 +81,11 @@ namespace FishGame.EditorTools
         public static readonly Vector3 RampLow = new Vector3(12f, -0.9f, -43f);
         public static readonly Vector3 RampHigh = new Vector3(12f, 0.4f, -51f);
         public const float RampWidth = 3f, RampThickness = 0.1f;
+        // R70 shore-ramp foot (the only WaterExit, contract M2-D30): x 10.5..13.5, y -2.4..0.4, z -46..-39 (seaward to where swimmers find
+        // their feet, bed about -1.38 m). Top is the old climb-out point, used only for "pushing toward the ramp".
+        public static readonly Vector3 RampFootCenter = new Vector3(12f, -1.0f, -42.5f);
+        public static readonly Vector3 RampFootSize = new Vector3(3f, 2.8f, 7f);
+        public static readonly Vector3 RampTopPoint = new Vector3(12f, 0.45f, -50.5f);
 
         // Spawns 1.5 m apart on the deck, facing +z.
         public const int SpawnCount = 4;

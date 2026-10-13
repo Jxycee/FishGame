@@ -3,9 +3,10 @@ using UnityEngine;
 
 namespace FishGame.Gameplay
 {
-    // Authority: none (static world geometry). A trigger box at a ladder or the shore ramp. Inside one, a wading or swimming
-    // owner may climb out to TopPoint (PlayerLocomotion, contract D36). Needs exactly one trigger BoxCollider and a child
-    // named "Top" (added by SceneBuilder; no RequireComponent on purpose, see WaterVolume).
+    // Authority: none (static world geometry). Since R70 only the shore ramp has one: the ramp foot (PlayerLocomotion, contract D36 and
+    // M2-D30). Inside it a player in water wades instead of swimming, and a swimmer arriving while pushing toward TopPoint gets one small
+    // upward kick (Core RampAssist). Needs exactly one trigger BoxCollider and a child named "Top" (added by LakeDockBuilder; no
+    // RequireComponent on purpose, see WaterVolume). Ladders are LadderVolumes.
     public sealed class WaterExit : MonoBehaviour
     {
         public const string TopChildName = "Top";
