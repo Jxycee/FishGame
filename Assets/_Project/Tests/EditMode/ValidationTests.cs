@@ -1,6 +1,7 @@
 // Project-level invariants from spec 4.7, checked in EditMode against persisted state. Owned by T15.
 using System.Collections.Generic;
 using FishGame.EditorTools;
+using FishGame.Runtime;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -13,6 +14,7 @@ namespace FishGame.Tests.EditMode
         const string TempMissingMeshPrefab = TempFolder + "/__TestMissingMesh.prefab";
         const string TempToonPrefab = TempFolder + "/__TestToonMesh.prefab";
         const string TempToonMaterial = TempFolder + "/__TestToonJitter.mat";
+        const string TempToonMesh = TempFolder + "/__TestToonMapping.asset";
         GameObject tempObject;
 
         // A crashed earlier run may have left its temp assets behind; they would be counted by the validators.
@@ -22,6 +24,7 @@ namespace FishGame.Tests.EditMode
             AssetDatabase.DeleteAsset(TempMissingMeshPrefab);
             AssetDatabase.DeleteAsset(TempToonPrefab);
             AssetDatabase.DeleteAsset(TempToonMaterial);
+            AssetDatabase.DeleteAsset(TempToonMesh);
             BuilderUtil.EnsureFolder(TempFolder);
         }
 
@@ -33,6 +36,7 @@ namespace FishGame.Tests.EditMode
             AssetDatabase.DeleteAsset(TempMissingMeshPrefab);
             AssetDatabase.DeleteAsset(TempToonPrefab);
             AssetDatabase.DeleteAsset(TempToonMaterial);
+            AssetDatabase.DeleteAsset(TempToonMesh);
             if (AssetDatabase.IsValidFolder(TempFolder)) AssetDatabase.DeleteAsset(TempFolder);
         }
 
@@ -132,6 +136,69 @@ namespace FishGame.Tests.EditMode
 
             Assert.That(errors.Count, Is.EqualTo(1), string.Join("\n", errors));
             StringAssert.Contains("has the wrong _JitterEncoded", errors[0]);
+        }
+
+        [Test] public void Validation_ToonMeshMapping_Pass() => AssertNoErrors(RenderValidators.ToonMeshMappingMatchesMaterial());
+
+        // Builds a temp prefab: a SmoothMeshBuilder radial mesh built for `meshMapping` on a textured (or untextured) Toon material with the
+        // _FG_TRIPLANAR keyword `triplanarMaterial`, then runs the mapping check over the temp folder.
+        List<string> RunMappingCheck(byte meshMapping, bool triplanarMaterial, float texWeight)
+        {
+            var builder = new SmoothMeshBuilder();
+            builder.Radial(Vector3.zero, d => 0.5f, 2, Quaternion.identity, Vector3.one, 0, 3, meshMapping, d => 1f, 1f);
+            Mesh mesh = builder.ToMesh("__TestToonMapping");
+            AssetDatabase.CreateAsset(mesh, TempToonMesh);
+
+            var material = new Material(Shader.Find("FishGame/Toon")) { name = "__TestToonJitter" };
+            material.SetFloat("_FGTexWeight", texWeight);
+            if (triplanarMaterial) material.EnableKeyword("_FG_TRIPLANAR");
+            AssetDatabase.CreateAsset(material, TempToonMaterial);
+
+            tempObject = new GameObject("__TestToonMesh");
+            tempObject.AddComponent<MeshFilter>().sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(TempToonMesh);
+            tempObject.AddComponent<MeshRenderer>().sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>(TempToonMaterial);
+            PrefabUtility.SaveAsPrefabAsset(tempObject, TempToonPrefab);
+            return RenderValidators.ToonMeshMappingMatchesMaterial(TempFolder);   // scans the temp prefab folder, not Prefabs/
+        }
+
+        // Catches: a validator that skips the mapping rule (a rock built for world triplanar on a uv0 material gets a stretched texture, and the
+        // reverse puts uv-metre coordinates through the triplanar blend). Both mismatches must be reported, with a message that says what to do.
+        [Test]
+        public void Validation_ToonMeshMapping_ReportsTriplanarMeshOnUv0Material()
+        {
+            List<string> errors = RunMappingCheck(SmoothMeshBuilder.MappingTriplanar, false, 1f);
+
+            Assert.That(errors.Count, Is.EqualTo(1), string.Join("\n", errors));
+            StringAssert.Contains(TempToonPrefab, errors[0]);
+            StringAssert.Contains("uv1.z", errors[0]);
+            StringAssert.Contains("uv0-mapped", errors[0]);
+        }
+
+        [Test]
+        public void Validation_ToonMeshMapping_ReportsUv0MeshOnTriplanarMaterial()
+        {
+            List<string> errors = RunMappingCheck(SmoothMeshBuilder.MappingUv, true, 1f);
+
+            Assert.That(errors.Count, Is.EqualTo(1), string.Join("\n", errors));
+            StringAssert.Contains("uv1.z", errors[0]);
+            StringAssert.Contains("triplanar", errors[0]);
+        }
+
+        // Catches: a validator that is simply always red, or that fires on materials that never sample the array (_FGTexWeight 0).
+        [Test]
+        public void Validation_ToonMeshMapping_AcceptsMatchingPairsAndUntexturedMaterials()
+        {
+            Assert.That(RunMappingCheck(SmoothMeshBuilder.MappingUv, false, 1f), Is.Empty, "uv0 mesh on a uv0 material");
+            AssetDatabase.DeleteAsset(TempToonPrefab);
+            AssetDatabase.DeleteAsset(TempToonMesh);
+            AssetDatabase.DeleteAsset(TempToonMaterial);
+            Object.DestroyImmediate(tempObject);
+            Assert.That(RunMappingCheck(SmoothMeshBuilder.MappingTriplanar, true, 1f), Is.Empty, "triplanar mesh on a triplanar material");
+            AssetDatabase.DeleteAsset(TempToonPrefab);
+            AssetDatabase.DeleteAsset(TempToonMesh);
+            AssetDatabase.DeleteAsset(TempToonMaterial);
+            Object.DestroyImmediate(tempObject);
+            Assert.That(RunMappingCheck(SmoothMeshBuilder.MappingTriplanar, false, 0f), Is.Empty, "mismatch on an untextured material is never sampled");
         }
     }
 }
