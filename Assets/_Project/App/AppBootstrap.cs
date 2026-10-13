@@ -125,6 +125,10 @@ namespace FishGame.App
             settings.EnsureLocalPlayerId();
             services.Register<ISettings>(settings);
 
+            var meta = SaveService.CreateForThisInstance(); // meta{profile suffix}.json: the journal (spec 12.10)
+            meta.Load();
+            services.Register(meta);
+
             input.Initialize(inputActions, settings);
             services.Register<IInputService>(input);
             services.Register<IInputBindings>(input);
@@ -196,6 +200,7 @@ namespace FishGame.App
 
         private void HandleQuitting()
         {
+            if (services != null && services.TryGet(out SaveService save)) save.Save(); // spec 12.10: save on quit
             if (session == null) return;
             try
             {
