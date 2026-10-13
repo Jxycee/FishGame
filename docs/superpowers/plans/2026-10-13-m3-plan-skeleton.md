@@ -68,7 +68,7 @@ Owned files are exactly C 12 (shared edits per C 2.6). "Deps" means the task mus
 | T1 | Carry: fishing minors | C2 16.1 final-row carry list. The marker is drawn after the machine tick; F6/F7 reset only at session end (needed by map switching); test and comment fixes; HUD null check | gate | Sonnet | Sonnet |
 | T2 | Carry: hash, names, cancel | `ContentHash` rejects duplicate categories; one name-truncation helper; online Cancel shows "Cancelling..." at once | gate | Sonnet | Opus high (cancel flow) |
 | T3 | Migration | Spec 12.6 step 1: `FishTags`, `Legendary`, species `tags`, bait M3 fields; delete perch/carp/trout/catfish; overwrite bluegill; write bait fields on the 6 existing assets; `dataVersion` 2; `minLandDepth` per Q1 | T1 | Sonnet | Sonnet (+ controller asset diff) |
-| T4 | Look-dev adoption and M2 restyle | Owned by the R74 look-dev result, not an M3 section. Style guide, shader/material/texture standard, dock/props/body/five fish restyled, validators adjusted, a season-tint hook. M3 fixes only what it needs (C 7.4) | user approves `m2-lookdev` | per look-dev plan | per look-dev plan |
+| T4 | Look-dev adoption and M2 restyle - **done by R74 adoption d660ee9** | **DONE (2026-10-13), by the R74 adoption d660ee9.** Owned by the R74 look-dev result, not an M3 section. Style guide, shader/material/texture standard, dock/props/body/five fish restyled, validators adjusted. The season tint needs no hook of its own: the `_FGPalette` season swap IS the tint on textured environment albedo (M3-D78; T18 adds no shader term). The fish skin sheet holds layers 0-5 (bluegill 1, perch/carp/trout/catfish 2-5), so the M3 species layers are 6-25 (M3-D91) | user approves `m2-lookdev` (approved) | per look-dev plan | per look-dev plan |
 | T5 | Core: ecology types and clock | Masks, `DayClock`, `ClockMath`, structs, `IWorldContext`, `ZoneData`, `EcologyDatabase`, `CatchLedger`, `EcologyRunState`, `BaitStats.Mods` | T3 | Haiku if complete code, else Sonnet | Sonnet |
 | T6 | Core: resolver and roller | `FishingResolver` (12.4 gate and algorithm, fixed draws), `FishingRoller` (replaces `PlaceholderRoller`'s role) + the spec 12.9 resolver tests | T5 | Sonnet | Sonnet |
 | T7 | Core: grid, weather, hotspot | `DistanceField`, `ShoreGrid`, `ShoreGridMath`, `WeatherDirector` (35-segment Markov, infinite continuation, season roll), `HotspotPlanner` | T5 | Sonnet | Sonnet |
@@ -82,7 +82,7 @@ Owned files are exactly C 12 (shared edits per C 2.6). "Deps" means the task mus
 | T15 | Fishing integration | `FishingHost` builds the context from `WorldState` and the zone grid (replacing T13's interim context); owner marker runs the same gates (`CastingOpen`, grid water); `FishingDebugSettings.Luck`; `DevLoadSpotRequested` -> `SceneFlow` map switch | T13, T14, T16 | Sonnet | Opus high |
 | T16 | Lake world and bake (NOT LD; runs before T15) | `StandPoint`s, `ShoreGridBaker` (castable + reachable bits), `WorldSceneObjects` (first in-scene NetworkObject: MPPM sync check, fallback C M3-D18), map validators (reachability, water layer, layer split, WorldState hash) | T11, T14 | Sonnet | Opus high |
 | T17 | Harbour Pier map (LD) | `HarbourPierBuilder/Layout/Meshes` in the R74 style (C M3-D40 starting layout), every per-scene hook (C 6.3), build order index 3, grid bake | T4, T15, T16 | Sonnet | Opus high (+ user look check) |
-| T18 | Day-night and seasonal tint (LD) | `DayNightController` (phases, sun/moon flip, fog, volumes, sky globals); `PaletteGlobals` season from the world and the `_FGSeasonTint` tint on textured albedo (C M3-D23) | T4, T8, T14 | Sonnet | Opus high |
+| T18 | Day-night and seasonal tint (LD) | `DayNightController` (phases, sun/moon flip, fog, volumes, sky globals); `PaletteGlobals` season from the world (the palette season swap IS the tint on textured albedo, no shader edit; `_FGSeasonTint` is pushed as a dormant hook; C M3-D23, M3-D78) | T4, T8, T14 | Sonnet | Opus high |
 | T19 | Weather looks, hotspot VFX, ambience (LD) | `WeatherFx` (rain, fog), `HotspotFx` (every peer), seasonal `AmbienceBed` sets, `Rain_Patter` recipe + cue row | T18 | Sonnet | Opus high |
 | T20 | Save and journal recorder | `SaveService` (meta.json v1, atomic, `.bak`, Newtonsoft); `JournalRecorder` on every peer; journal toasts; save on quit | T8, T15 | Sonnet | Opus high |
 | T21 | Journal UI (LD) | 25-card journal, levels 0-3, biting now, filters, completion; `IconFactory` in the R74 icon style; J key routing; bite closes it; main-menu Journal button and summary line | T4, T20 | Sonnet | Opus high |
@@ -153,10 +153,10 @@ Only one implementer runs at a time (the Unity lock). Reviewers are read-only an
 | C Data, content and coverage | `docs/superpowers/plans/2026-10-13-m3-plan-data-coverage.md` | T9, T10, T11, T12 | Seeds reference spec 12.6 rows, never re-derive them. Bots and reports load assets, never seeds. Fightability and V5 read R72's bots and F8 numbers. The `EcologyTunedDeviations` and `EcologyTuningItems` maps follow C2's D-Q2 and D-Q6. |
 | D Host, world and network | `docs/superpowers/plans/2026-10-13-m3-plan-host-world.md` | T13, T14, T15 | Writes the reservation lifecycle, the `DevWorldDriver` re-anchoring (pause, scrub, auto new day, map switch) and the host context build as code. T15 is integration (the C 2.6 integration-fix rule). Each T14 class opens with its authority comment. |
 | E Maps | `docs/superpowers/plans/2026-10-13-m3-plan-maps.md` | T16, T17 | T16 runs between section D's T14 and T15 and does not wait for look-dev; T17 does. The bake loop is code. The in-scene NetworkObject MPPM check is a T16 step with the C M3-D18 fallback. Harbour layout starts from C M3-D40 and follows the R74 style guide. Every per-scene hook (C 6.3) gets an assertion. |
-| F Presentation | `docs/superpowers/plans/2026-10-13-m3-plan-presentation.md` | T18, T19 | The tint goes on textured albedo (C M3-D23; check the T4 shader hook first). No per-frame allocation. Fog density stays readable (`DayNightMath.IsReadable`). Every loop passes `follow` and stops in `OnDisable` (C2 16.2). |
+| F Presentation | `docs/superpowers/plans/2026-10-13-m3-plan-presentation.md` | T18, T19 | The season reaches textured albedo through the palette swap (C M3-D23, M3-D78; T4 is done, T18 step 0 re-checks the merged shader). No per-frame allocation. Fog density stays readable (`DayNightMath.IsReadable`). Every loop passes `follow` and stops in `OnDisable` (C2 16.2). |
 | G Journal, UI, art and acceptance | `docs/superpowers/plans/2026-10-13-m3-plan-journal-ui.md` | T20, T21, T22, T23, T24, T25 | T23 is a controller checklist (Blender MCP steps per the R74 guide, batches, LFS size report, user look check), not a subagent brief. T21/T22 are manual-check UI tasks, built on Core helpers that have tests. T25 holds the acceptance doc and the branch-review hand-off. |
 
-**Section status (2026-10-12):**
+**Section status (updated 2026-10-13):**
 
 | Section | Status |
 |---|---|
@@ -164,11 +164,11 @@ Only one implementer runs at a time (the Unity lock). Reviewers are read-only an
 | B Core ecology | **Written** (`2026-10-13-m3-plan-core.md`); contract change requests accepted and applied |
 | C Data, content and coverage | **Written** (`2026-10-13-m3-plan-data-coverage.md`); contract change requests accepted and applied |
 | D Host, world and network | **Written** (`2026-10-13-m3-plan-host-world.md`); contract change requests accepted and applied |
-| E Maps | Not written: waiting for the R74 look-dev approval (authoring waits so that T17 can follow the style guide; T16 itself is not look-dev-gated in the contract, 3 and section 1) |
-| F Presentation | Not written: waiting for the R74 look-dev approval |
-| G Journal, UI, art and acceptance | Not written: waiting for the R74 look-dev approval |
+| E Maps | **Written** (`2026-10-13-m3-plan-maps.md`); contract change requests accepted and applied 2026-10-13 (M3-D82..D86) |
+| F Presentation | **Written** (`2026-10-13-m3-plan-presentation.md`); contract change requests accepted and applied 2026-10-13 (M3-D78..D81; CCR-F4 conditional) |
+| G Journal, UI, art and acceptance | **Written** (`2026-10-13-m3-plan-journal-ui.md`); contract change requests accepted and applied 2026-10-13 (M3-D87..D91) |
 
-The contract change requests of A-D were collected and ruled on 2026-10-12 (all accepted as proposed): see the "Section-author CCR resolution (2026-10-12)" note and M3-D55..D77 in the contract section 13. Authors of E-G read the amended contract (in particular M3-D56..D59 for `WorldState`/`DevWorldDriver`/`EcologySession` and M3-D76 for the serializable helper field names).
+The contract change requests of A-D were collected and ruled on 2026-10-12 (all accepted as proposed): see the "Section-author CCR resolution (2026-10-12)" note and M3-D55..D77 in the contract section 13. Authors of E-G read the amended contract (in particular M3-D56..D59 for `WorldState`/`DevWorldDriver`/`EcologySession` and M3-D76 for the serializable helper field names). The E-G requests were ruled on 2026-10-13 (all accepted as ruled): see the "Section E-G CCR resolution (2026-10-13)" note and M3-D78..D91. All seven section plans are written.
 
 Authors may run in parallel (each writes only its own plan file). Cross-section questions go to the controller, who answers against the contract.
 
