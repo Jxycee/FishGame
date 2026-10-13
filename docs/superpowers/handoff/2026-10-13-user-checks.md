@@ -1,6 +1,6 @@
 # FishGame - Every manual check owed by the user (2026-10-13)
 
-The single source for the next session's opening: the agent walks the user through this list and records results. Results go on a db-backed notes board, one row per check: PASS / FAIL / SKIP plus free text, saved server-side so nothing blanks.
+The single source for the user's hands-on checks. The user records results on the **FishGame Test Notes** board: https://claude.ai/artifact/NAcGRrYJYuPs2Rw6SBa93C. It is db-backed. Collections: `checks` (Claude seeds and updates them, and can add a `reply` per check); `results/{checkId}` (the user's status pass/fail/skip plus a note); `notes/general` (free text, with a Claude `reply`). Read them with ArtifactData.
 
 **Where to test:** use the M3 worktree `C:\Dev\FishGame-m3` (branch `m3-fish-ecology`). It has all of M2 (merged into main) plus M3 so far.
 - In Unity Hub: "Add project from disk", then pick that folder.
