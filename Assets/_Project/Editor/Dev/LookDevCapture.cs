@@ -11,6 +11,7 @@ using System.IO;
 using System.Text;
 using FishGame.Core;
 using FishGame.Data;
+using FishGame.Gameplay;
 using FishGame.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -188,6 +189,92 @@ namespace FishGame.EditorTools
             if (!string.IsNullOrEmpty(sheet) && !string.IsNullOrEmpty(before)) ComposeSheet(before, outDir, sheet, AdoptionShots);
         }
 
+        // M3 T23 (2026-10-13): all 25 species as wired on the species assets (FishSpeciesDef.Model, so the content build's model fill is part of the check),
+        // five per shot in FishingSeedData.Species order (the roster order; a species without a model is skipped and logged as "fallback"), side on,
+        // each scaled so its longest bounds axis is 0.30 m. Writes species_0..4.png to -fgLookOut and, with -fgLookSheet <abs png>, one single-column sheet.
+        // Logs one "FG LOOKDEV species <row>.<col> <id> <model> tris=<n> uv1y=<layer>" line per fish. Needs a graphics device (no -nographics).
+        public static void CaptureSpecies()
+        {
+            string outDir = Arg("-fgLookOut");
+            if (string.IsNullOrEmpty(outDir)) throw new System.ArgumentException("-fgLookOut <dir> is required");
+            Directory.CreateDirectory(outDir);
+
+            EditorSceneManager.OpenScene(AssetPaths.LakeDockScene, OpenSceneMode.Single);
+            var palette = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
+            var water = AssetDatabase.LoadAssetAtPath<WaterSettingsDef>(AssetPaths.WaterSettingsAsset);
+            PushPalette(palette);
+            PushWaves(water);
+            Light sun = FindSun();
+            ApplyPhase(palette, DayPhase, sun, sun.transform.rotation);
+
+            var cameraGo = new GameObject("LookDevCamera");
+            Camera camera = cameraGo.AddComponent<Camera>();
+            camera.nearClipPlane = MovementMath.NearClip;
+            camera.farClipPlane = MovementMath.FarClip;
+            cameraGo.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = true;
+            Camera sceneCamera = GameObject.Find("SceneCamera")?.GetComponent<Camera>();
+            if (sceneCamera != null) sceneCamera.enabled = false;
+
+            var fishMaterial = AssetDatabase.LoadAssetAtPath<Material>(AssetPaths.MaterialsFolder + "/M_Toon_Fish.mat");
+            Vector3 lineEye = new Vector3(0f, 1.78f, -47.9f), lineAt = new Vector3(0f, 1.62f, -46.4f);
+            Vector3 view = (lineAt - lineEye).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, view).normalized;
+            Quaternion rot = Quaternion.LookRotation(Vector3.Cross(view, Vector3.up).normalized, Vector3.up);
+
+            const int perRow = 5;
+            int rows = 0, withModel = 0;
+            var row = new List<GameObject>();
+            foreach (SpeciesSeed seed in FishingSeedData.Species)
+            {
+                var def = AssetDatabase.LoadAssetAtPath<FishSpeciesDef>(AssetPaths.SpeciesFolder + "/" + seed.Id + ".asset");
+                Mesh mesh = def != null ? def.Model : null;
+                if (mesh == null) { Debug.Log("FG LOOKDEV species " + seed.Id + " fallback (no model)"); continue; }
+                withModel++;
+                int col = row.Count;
+                var uv1 = new List<Vector4>();
+                mesh.GetUVs(1, uv1);
+                long tris = 0;
+                for (int s = 0; s < mesh.subMeshCount; s++) tris += mesh.GetIndexCount(s) / 3;
+                Debug.Log("FG LOOKDEV species " + rows + "." + col + " " + seed.Id + " " + seed.ModelFile + " tris=" + tris + " submeshes=" + mesh.subMeshCount
+                          + " uv1y=" + (uv1.Count > 0 ? uv1[0].y.ToString("0") : "none"));
+
+                var go = new GameObject("LookDevFish_" + seed.Id);
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var r = go.AddComponent<MeshRenderer>();
+                var mats = new Material[Mathf.Max(1, mesh.subMeshCount)];
+                for (int k = 0; k < mats.Length; k++) mats[k] = fishMaterial;
+                r.sharedMaterials = mats;
+                r.shadowCastingMode = ShadowCastingMode.Off;
+                r.receiveShadows = false;
+                Vector3 size = mesh.bounds.size;
+                float scale = 0.30f / Mathf.Max(1e-5f, Mathf.Max(size.x, Mathf.Max(size.y, size.z)));
+                go.transform.localScale = Vector3.one * scale;
+                go.transform.rotation = rot;
+                Vector3 centre = lineAt + right * ((col - 2) * 0.36f);
+                go.transform.position = centre - rot * (mesh.bounds.center * scale);
+                row.Add(go);
+
+                if (row.Count == perRow)
+                {
+                    Shoot(camera, lineEye, lineAt, 42f, outDir, "species_" + rows);
+                    foreach (GameObject g in row) Object.DestroyImmediate(g);
+                    row.Clear();
+                    rows++;
+                }
+            }
+            if (row.Count > 0)
+            {
+                Shoot(camera, lineEye, lineAt, 42f, outDir, "species_" + rows);
+                foreach (GameObject g in row) Object.DestroyImmediate(g);
+                rows++;
+            }
+            Object.DestroyImmediate(cameraGo);
+            Debug.Log("FG LOOKDEV species captured " + withModel + " of " + FishingSeedData.Species.Count + " rows=" + rows);
+
+            string sheet = Arg("-fgLookSheet");
+            if (!string.IsNullOrEmpty(sheet)) ComposeGrid(outDir, rows, new[] { "species" }, sheet);
+        }
+
         // Batch entry (no graphics needed): only the collider dump of the scene on disk, colliders_<tag>.txt in -fgLookOut.
         public static void DumpCollidersBatch()
         {
@@ -198,6 +285,159 @@ namespace FishGame.EditorTools
             Scene scene = EditorSceneManager.OpenScene(AssetPaths.LakeDockScene, OpenSceneMode.Single);
             File.WriteAllText(Path.Combine(outDir, "colliders_" + tag + ".txt"), DumpColliders(scene));
             Debug.Log("FG LOOKDEV colliders tag=" + tag);
+        }
+
+        // Bobber and rod look check (playtest F6/F9, 2026-10-13). Same batch arguments as Capture (-fgLookOut; run WITHOUT -nographics).
+        // BobberView and RodPresenter do not run in the editor, so this places the prefab's bobber by hand: floating (the Waiting spot, h + 0.02),
+        // at the Bite plunge (h - 0.25) and at a strong dive (h - diveDepth), close (0.5 m), at hand range (4 m) and at a typical cast (14 m, the
+        // game's own field of view), plus the rod in the rest pose from a three-quarter view. -fgRigDive <metres> and -fgRigScale off
+        // override the dive depth (default FightViewMath.DiveDepth) and switch the distance scale off (the "before" run used 0.35 and off).
+        public static void CaptureRig()
+        {
+            string outDir = Arg("-fgLookOut");
+            if (string.IsNullOrEmpty(outDir)) throw new System.ArgumentException("-fgLookOut <dir> is required");
+            Directory.CreateDirectory(outDir);
+            float dive = float.Parse(Arg("-fgRigDive") ?? FightViewMath.DiveDepth.ToString(System.Globalization.CultureInfo.InvariantCulture), System.Globalization.CultureInfo.InvariantCulture);
+            bool scaleOn = Arg("-fgRigScale") != "off";
+
+            EditorSceneManager.OpenScene(AssetPaths.LakeDockScene, OpenSceneMode.Single);
+            var palette = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
+            var water = AssetDatabase.LoadAssetAtPath<WaterSettingsDef>(AssetPaths.WaterSettingsAsset);
+            PushPalette(palette);
+            PushWaves(water);
+            Light sun = FindSun();
+            ApplyPhase(palette, DayPhase, sun, sun.transform.rotation);
+
+            GameObject player = SpawnPlayer();
+            Vector3 playerAt = new Vector3(0f, LakeDockLayout.DeckTopY, -47f);
+            player.transform.SetPositionAndRotation(playerAt, Quaternion.identity);   // faces +z, down the dock toward the water
+            Transform bobber = player.transform.Find(PlayerRigPaths.Bobber);
+            bobber.GetComponent<MeshRenderer>().enabled = true;
+
+            var cameraGo = new GameObject("LookDevCamera");
+            Camera camera = cameraGo.AddComponent<Camera>();
+            camera.nearClipPlane = 0.02f;
+            camera.farClipPlane = MovementMath.FarClip;
+            cameraGo.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = true;
+            Camera sceneCamera = GameObject.Find("SceneCamera")?.GetComponent<Camera>();
+            if (sceneCamera != null) sceneCamera.enabled = false;
+            float wideFov = Camera.HorizontalToVerticalFieldOfView(MovementMath.DefaultHorizontalFov, Width / (float)Height);
+
+            // The camera is a little ahead of the player's head (the model would fill the frame), at eye height; the scale follows the distance from
+            // the rod tip about 1.5 m ahead of the player, as BobberView does it. Close shots sit 0.2 m above the water, so a plunged bobber is seen
+            // through the surface, never from under it.
+            Vector3 eyeAtPlayer = playerAt + new Vector3(0f, 1.7f, 0.6f);
+            Vector3 at;
+            at = RigBobber(bobber, 14f, 0.02f, eyeAtPlayer, scaleOn);
+            Shoot(camera, eyeAtPlayer, at, wideFov, outDir, "bobber_float_far");
+            at = RigBobber(bobber, 4f, 0.02f, eyeAtPlayer, scaleOn);
+            Shoot(camera, eyeAtPlayer, at, 30f, outDir, "bobber_float_mid");
+            Shoot(camera, CloseEye(at, 0.02f), at, 30f, outDir, "bobber_float_close");
+            at = RigBobber(bobber, 4f, -0.25f, eyeAtPlayer, false);
+            Shoot(camera, CloseEye(at, -0.25f), at, 30f, outDir, "bobber_bite_close");
+            at = RigBobber(bobber, 4f, -dive, eyeAtPlayer, false);
+            Shoot(camera, CloseEye(at, -dive), at, 30f, outDir, "bobber_dive_close");
+            at = RigBobber(bobber, 4f, -dive, eyeAtPlayer, scaleOn);
+            Shoot(camera, eyeAtPlayer, at, 30f, outDir, "bobber_dive_mid");
+            at = RigBobber(bobber, 14f, -dive, eyeAtPlayer, scaleOn);
+            Shoot(camera, eyeAtPlayer, at, wideFov, outDir, "bobber_dive_far");
+
+            bobber.GetComponent<MeshRenderer>().enabled = false;
+
+            // The rod poses, side on (the bend plane): RodPresenter.Awake and ApplyPose are driven by reflection (the component does not run in the
+            // editor), the rod is set 35 degrees up in front of the camera and the rest of the player is hidden. The four poses are the rest pose, the
+            // biggest idle pose (the sag plus the breath plus the lag at their limits, RodIdleMath.MaxIdleDeg), the bend at tension 0.5 and at 0.9:
+            // the idle pose has to stay a small fraction of a mid strain (S12).
+            foreach (MeshRenderer r in player.GetComponentsInChildren<MeshRenderer>(true)) r.enabled = false;
+            Transform rod = player.transform.Find(PlayerRigPaths.Rod);
+            rod.SetPositionAndRotation(new Vector3(-0.8f, 1.2f, -46.2f), Quaternion.Euler(-35f, 0f, 0f));
+            for (int i = 0; i < PlayerRigPaths.RodSegmentCount; i++)
+                player.transform.Find(PlayerRigPaths.RodSegmentPrefix + i).GetComponent<MeshRenderer>().enabled = true;
+            var presenter = player.GetComponent<Presentation.RodPresenter>();
+            const System.Reflection.BindingFlags nonPublic = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            typeof(Presentation.RodPresenter).GetMethod("Awake", nonPublic).Invoke(presenter, null);
+            System.Reflection.MethodInfo applyPose = typeof(Presentation.RodPresenter).GetMethod("ApplyPose", nonPublic);
+            foreach (MeshRenderer r in rod.GetComponentsInChildren<MeshRenderer>(true)) r.enabled = true;   // Awake hides them
+            Vector3 rodEye = new Vector3(1.9f, 1.75f, -45.6f), rodAt = new Vector3(-0.2f, 1.75f, -45.6f);
+            float strain05 = 50f * TensionCues.Evaluate(0.5f, false, 1f, 1f).RodBend01, strain09 = 50f * TensionCues.Evaluate(0.9f, false, 1f, 1f).RodBend01;
+            float idleBend = RodIdleMath.SagDeg, idleExtra = RodIdleMath.BreathXDeg + RodIdleMath.LagMaxDeg;
+            applyPose.Invoke(presenter, new object[] { 0f, Vector3.right, 0f, 0f, 0f, 0f });
+            Shoot(camera, rodEye, rodAt, 40f, outDir, "rod_rest");
+            applyPose.Invoke(presenter, new object[] { idleBend, Vector3.right, idleExtra, 0f, 0f, 0f });
+            Shoot(camera, rodEye, rodAt, 40f, outDir, "rod_idle_max");
+            applyPose.Invoke(presenter, new object[] { strain05, Vector3.right, 0f, 0f, 0f, 0f });
+            Shoot(camera, rodEye, rodAt, 40f, outDir, "rod_strain_t05");
+            applyPose.Invoke(presenter, new object[] { strain09, Vector3.right, 0f, 0f, 0f, 0f });
+            Shoot(camera, rodEye, rodAt, 40f, outDir, "rod_strain_t09");
+            Debug.Log("FG LOOKDEV rod poses: idle max bend " + idleBend + " + " + idleExtra + " deg, strain t0.5 " + strain05 + " deg, t0.9 " + strain09 + " deg");
+
+            Object.DestroyImmediate(cameraGo);
+            Debug.Log("FG LOOKDEV captured rig shots out=" + outDir);
+
+            string sheet = Arg("-fgLookSheet");
+            string before = Arg("-fgLookBefore");
+            if (!string.IsNullOrEmpty(sheet) && !string.IsNullOrEmpty(before))
+                ComposeSheet(before, outDir, sheet, new[] { "bobber_float_close", "bobber_float_mid", "bobber_float_far", "bobber_dive_close", "bobber_dive_mid", "bobber_dive_far" });
+        }
+
+        // Puts the bobber `ahead` metres past the dock end on the water (flat in the editor), yOffset from the surface.
+        static Vector3 RigBobber(Transform bobber, float ahead, float yOffset, Vector3 eye, bool scaleOn)
+        {
+            var at = new Vector3(0f, WaterSurface.HeightAt(0f, -41f + ahead) + yOffset, -41f + ahead);
+            bobber.SetPositionAndRotation(at, Quaternion.identity);
+            bobber.localScale = Vector3.one * (scaleOn ? FightViewMath.DistanceScale(Vector3.Distance(at, eye)) : 1f);
+            return at;
+        }
+
+        // 0.5 m from the bobber, to one side, 0.2 m above the water surface.
+        static Vector3 CloseEye(Vector3 at, float yOffset)
+        {
+            return new Vector3(at.x + 0.28f, at.y - yOffset + 0.2f, at.z - 0.36f);
+        }
+
+        // M3 T17 (2026-10-14): fixed views of Spot_HarbourPier as the real scene draws them (toon shader, palette and wave globals pushed like the runtime
+        // does): overview from above the hut, deck level looking out, the T-head looking back, the breakwater, the beach, and a dusk view. 1280 x 720
+        // PNGs named harbour_<shot>.png in -fgLookOut. Opens the scene and never saves it. Needs a graphics device (no -nographics).
+        public static readonly string[] HarbourShots = { "overview", "deck", "thead", "breakwater", "beach", "ladder", "coast", "dusk" };
+        const int HarbourWidth = 1280, HarbourHeight = 720;
+
+        public static void CaptureHarbour()
+        {
+            string outDir = Arg("-fgLookOut");
+            if (string.IsNullOrEmpty(outDir)) throw new System.ArgumentException("-fgLookOut <dir> is required");
+            Directory.CreateDirectory(outDir);
+
+            EditorSceneManager.OpenScene(AssetPaths.HarbourPierScene, OpenSceneMode.Single);
+            var palette = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
+            var water = AssetDatabase.LoadAssetAtPath<WaterSettingsDef>(AssetPaths.WaterSettingsAsset);
+            if (palette == null || water == null) throw new System.InvalidOperationException("palette or water settings missing");
+            PushPalette(palette);
+            PushWaves(water);
+            Light sun = FindSun();
+            Quaternion daySun = sun.transform.rotation;
+            ApplyPhase(palette, DayPhase, sun, daySun);
+
+            var cameraGo = new GameObject("LookDevCamera");
+            Camera camera = cameraGo.AddComponent<Camera>();
+            camera.nearClipPlane = MovementMath.NearClip;
+            camera.farClipPlane = MovementMath.FarClip;
+            cameraGo.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = true;
+            Camera sceneCamera = GameObject.Find("SceneCamera")?.GetComponent<Camera>();
+            if (sceneCamera != null) sceneCamera.enabled = false;
+
+            Shoot(camera, new Vector3(-16f, 14f, -80f), new Vector3(4f, 0.5f, -32f), 52f, outDir, "harbour_overview", 1024, 576);   // the wave-heavy sea makes this one the biggest PNG, so it is rendered smaller
+            Shoot(camera, new Vector3(0f, 3.2f, -54f), new Vector3(0f, 1.2f, -6f), 62f, outDir, "harbour_deck", HarbourWidth, HarbourHeight);
+            Shoot(camera, new Vector3(0.5f, 3.2f, -5.6f), new Vector3(0f, 1.6f, -52f), 62f, outDir, "harbour_thead", HarbourWidth, HarbourHeight);
+            Shoot(camera, new Vector3(13f, 4.5f, -18f), new Vector3(30f, 0.6f, -40f), 55f, outDir, "harbour_breakwater", HarbourWidth, HarbourHeight);
+            Shoot(camera, new Vector3(-12f, 2.6f, -30f), new Vector3(-30f, 0.8f, -52f), 62f, outDir, "harbour_beach", HarbourWidth, HarbourHeight);
+            // After the T17 review: the mid ladder seen from the water, and the coast seen past the old x +-120 edge of the land and the sea.
+            Shoot(camera, new Vector3(6f, 0.9f, -21.5f), new Vector3(1.9f, 0.7f, -25f), 55f, outDir, "harbour_ladder", HarbourWidth, HarbourHeight);
+            Shoot(camera, new Vector3(55f, 5f, -38f), new Vector3(-120f, 0f, -52f), 60f, outDir, "harbour_coast", HarbourWidth, HarbourHeight);
+            ApplyPhase(palette, DuskPhase, sun, daySun);
+            Shoot(camera, new Vector3(4.5f, 3.2f, -40f), new Vector3(-1f, 1.4f, -8f), 62f, outDir, "harbour_dusk", HarbourWidth, HarbourHeight);
+
+            Object.DestroyImmediate(cameraGo);
+            Debug.Log("FG LOOKDEV harbour captured " + HarbourShots.Length + " shots");
         }
 
         static string Arg(string name)
@@ -306,10 +546,10 @@ namespace FishGame.EditorTools
             Debug.Log("FG LOOKDEV sheet " + sheetPath);
         }
 
-        static void PushPalette(ArtPaletteDef palette) => PushPalette(palette, palette.M2Season);
+        internal static void PushPalette(ArtPaletteDef palette) => PushPalette(palette, palette.M2Season);   // internal: FishIconBaker reuses the globals
 
         // Same push as PaletteGlobals.Apply: the linearised palette, then the season for the seasonal scenery.
-        static void PushPalette(ArtPaletteDef palette, int season)
+        internal static void PushPalette(ArtPaletteDef palette, int season)
         {
             Vector4[] authored = palette.PaletteVectors(season);
             var linear = new Vector4[ShaderGlobals.PaletteLength];
@@ -331,7 +571,7 @@ namespace FishGame.EditorTools
             Shader.SetGlobalVectorArray(ShaderGlobals.Ripples, new Vector4[8]);
         }
 
-        static void ApplyPhase(ArtPaletteDef palette, int index, Light sun, Quaternion sunRotation)
+        internal static void ApplyPhase(ArtPaletteDef palette, int index, Light sun, Quaternion sunRotation)
         {
             DayPhaseAmbient p = palette.Phases[index];
             sun.color = p.lightColor;
@@ -438,20 +678,20 @@ namespace FishGame.EditorTools
             Debug.Log("FG LOOKDEV STATS " + name + " visibleRenderers=" + renderers + " visibleTris=" + triangles + " materials=" + materials.Count);
         }
 
-        static void Shoot(Camera camera, Vector3 eye, Vector3 target, float verticalFov, string outDir, string name)
+        static void Shoot(Camera camera, Vector3 eye, Vector3 target, float verticalFov, string outDir, string name, int width = Width, int height = Height)
         {
             camera.transform.position = eye;
             camera.transform.rotation = Quaternion.LookRotation(target - eye, Vector3.up);
             camera.fieldOfView = verticalFov;
-            var rt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 };
+            var rt = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 };
             camera.targetTexture = rt;
             camera.Render();
             camera.Render();   // second frame: shadow and depth history settled
             LogStats(camera, name);
             RenderTexture previous = RenderTexture.active;
             RenderTexture.active = rt;
-            var tex = new Texture2D(Width, Height, TextureFormat.RGB24, false);
-            tex.ReadPixels(new Rect(0, 0, Width, Height), 0, 0);
+            var tex = new Texture2D(width, height, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
             tex.Apply();
             RenderTexture.active = previous;
             camera.targetTexture = null;

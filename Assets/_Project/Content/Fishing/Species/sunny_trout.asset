@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd68fce454b2574ba54dbe488b07cd0, type: 3}
+  m_Name: sunny_trout
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FishSpeciesDef
+  id: sunny_trout
+  displayName: Sunny Trout
+  rarity: 1
+  baseValue: 30
+  weightMinG: 500
+  weightMaxG: 3000
+  weightSkew: 2.2
+  lengthShapeK: 1
+  fight: {fileID: 11400000, guid: d4dc0e4ff28dbfb4eb31b037d3677bee, type: 2}
+  bodyShape: 1
+  colorA: {r: 0.55, g: 0.62, b: 0.55, a: 1}
+  colorB: {r: 0.88, g: 0.45, b: 0.48, a: 1}
+  biteWaitMod: 1
+  hookWindow: 0
+  isSpecial: 0
+  minBaitRating: 0
+  minDepth: 0
+  model: {fileID: -479743434086081303, guid: d1106471e18de3b4aaf75470b1f77bba, type: 3}
+  tags: 16

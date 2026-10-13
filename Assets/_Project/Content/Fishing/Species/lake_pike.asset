@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd68fce454b2574ba54dbe488b07cd0, type: 3}
+  m_Name: lake_pike
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FishSpeciesDef
+  id: lake_pike
+  displayName: Lake Pike
+  rarity: 0
+  baseValue: 20
+  weightMinG: 1500
+  weightMaxG: 9000
+  weightSkew: 2.2
+  lengthShapeK: 1
+  fight: {fileID: 11400000, guid: d4dc0e4ff28dbfb4eb31b037d3677bee, type: 2}
+  bodyShape: 1
+  colorA: {r: 0.4, g: 0.52, b: 0.3, a: 1}
+  colorB: {r: 0.86, g: 0.84, b: 0.52, a: 1}
+  biteWaitMod: 1
+  hookWindow: 0
+  isSpecial: 0
+  model: {fileID: 6672879428696838355, guid: efbd45f6cc9eff349beadd9a49b81346, type: 3}
+  tags: 2

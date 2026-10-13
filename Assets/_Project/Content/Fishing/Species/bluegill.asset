@@ -15,18 +15,19 @@ MonoBehaviour:
   id: bluegill
   displayName: Bluegill
   rarity: 0
-  baseValue: 5
+  baseValue: 8
   weightMinG: 200
-  weightMaxG: 800
+  weightMaxG: 600
   weightSkew: 2.2
   lengthShapeK: 1
   fight: {fileID: 11400000, guid: 8ae05f71db6755d4bb061b9a172bc485, type: 2}
   bodyShape: 0
   colorA: {r: 0.32, g: 0.5, b: 0.62, a: 1}
   colorB: {r: 0.95, g: 0.62, b: 0.22, a: 1}
-  biteWaitMod: 0.9
+  biteWaitMod: 1
   hookWindow: 0
   isSpecial: 0
-  minBaitRating: 1
-  minDepth: 0.8
+  minBaitRating: 0
+  minDepth: 0
   model: {fileID: 7912541481652983713, guid: 409bddfc688633648874880c64df8349, type: 3}
+  tags: 8

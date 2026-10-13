@@ -16,7 +16,7 @@ namespace FishGame.Tests.EditMode
 
         public static FishingTuning Tuning() => new FishingTuning
         {
-            CastChargeTime = 1f, ChargePingPong = true, CastMinDist = 2.5f, MinLandDepth = 0.8f,
+            CastChargeTime = 1f, ChargePingPong = true, CastMinDist = 2.5f, MinLandDepth = 0.5f,   // M3-D52 (was 0.8 in M2)
             BiteWaitMin = 4f, BiteWaitMax = 18f, MinBiteWait = 1f, HookBeat = 0.25f, LandDistance = 1f,
             SpoolExtra = 12f, RelaxRate = 1.5f, StrainScale = 0.75f, StrainScaleAssist = 0.45f, SlackEscapeTime = 12f,
             LateralMaxDeg = 60f, HookedLeash = 3f,
@@ -29,6 +29,9 @@ namespace FishGame.Tests.EditMode
             StrainCounterSteer = 0.8f, StrainOtherSteer = 0.5f, SideMoveSpeed = 1.2f, BackMoveSpeed = 1.3f,
             TireSteerRate = 0.8f, TireCounterRate = 1.25f, TireDecayRate = 0.1f, TireRunFull = 20f, TireReelFull = 5f,
             TireReelMaxMult = 3f, BackPullMargin = 2f, FightTimeout = 120f,
+            // User playtest 2026-10-13: the shipped 30 s idle escape. The opening reel surge is OFF here (ReelOpenMult 1) so the Rust hand checks
+            // (FightSimTests, RodStateMachineTests) keep their exact reel maths; FightOpeningAndIdleTests turns it on (Surge()).
+            IdleEscapeTime = 30f, ReelOpenMult = 1f, ReelOpenSeconds = 1.0f,
         };
 
         static RodStats Rod(byte tier, float cast, float reel, float strength, float window, float steer, float relax) =>
@@ -100,10 +103,11 @@ namespace FishGame.Tests.EditMode
             return p;
         }
 
+        // minBait and minDepth stay in the rows as the M2 table values; M3-D3 (T13) removed the species fields they used to set.
         static FishSpeciesData Fish(int profile, int minG, int maxG, int value, int minBait, float waitMod, float minDepth) =>
             new FishSpeciesData { FightProfileIndex = (ushort)profile, WeightMinG = minG, WeightMaxG = maxG, BaseValue = value,
-                                  MinBaitRating = minBait, WeightSkew = 2.2f, LengthShapeK = 1.0f, BiteWaitMod = waitMod,
-                                  HookWindow = 0f, MinDepth = minDepth, IsSpecial = false, Rarity = FishRarity.Common };
+                                  WeightSkew = 2.2f, LengthShapeK = 1.0f, BiteWaitMod = waitMod,
+                                  HookWindow = 0f, IsSpecial = false, Rarity = FishRarity.Common };
 
         public static FishSpeciesData[] Species() => new[]
         {

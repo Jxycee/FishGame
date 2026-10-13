@@ -8,7 +8,7 @@ namespace FishGame.Core
     // Noise loops get a 20 ms crossfade, then a tiny linear seam correction so s[last] == s[0].
     // Every recipe is peak-normalized to 0.9.
     // Partial (ruling C-Q11): this file holds M1, All, TryGet, Generate dispatch and the M1 generators; SfxRecipes.M2.cs holds the M2 table
-    // and generators. Static initializers of a partial class run in an unspecified file order, so All is built lazily, never from a field
+    // and generators; SfxRecipes.M3.cs the M3 table (Rain_Patter) and its generator. Static initializers of a partial class run in an unspecified file order, so All is built lazily, never from a field
     // initializer that reads the other file.
     public static partial class SfxRecipes
     {
@@ -48,7 +48,7 @@ namespace FishGame.Core
         private static SfxRecipe[] _allTable;
         private static IReadOnlyList<SfxRecipe> _allReadOnly;
 
-        // M1 rows then M2 rows (19), one cached read-only list. TryGet and Generate cover every row.
+        // M1 rows, then M2 (13), then M3 (1): 20 rows, one cached read-only list. TryGet and Generate cover every row.
         public static IReadOnlyList<SfxRecipe> All
         {
             get
@@ -60,9 +60,10 @@ namespace FishGame.Core
 
         private static void BuildAll()
         {
-            var table = new SfxRecipe[M1Table.Length + M2Table.Length];
+            var table = new SfxRecipe[M1Table.Length + M2Table.Length + M3Table.Length];
             Array.Copy(M1Table, 0, table, 0, M1Table.Length);
             Array.Copy(M2Table, 0, table, M1Table.Length, M2Table.Length);
+            Array.Copy(M3Table, 0, table, M1Table.Length + M2Table.Length, M3Table.Length);
             _allTable = table;
             _allReadOnly = Array.AsReadOnly(table);
         }
@@ -109,6 +110,7 @@ namespace FishGame.Core
                 case SfxIds.WindAmbient: samples = WindLoop(n, sampleRate, ref rng); break;
                 case SfxIds.WaterLap: samples = LapBurst(n, ref rng); break;
                 case SfxIds.BellRing: samples = Bell(n, sampleRate); break;
+                case SfxIds.RainPatter: samples = GenerateM3(id, n, sampleRate, ref rng); break;
                 default: samples = GenerateM2(id, n, sampleRate, ref rng); break;
             }
 

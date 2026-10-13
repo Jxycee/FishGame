@@ -54,7 +54,8 @@ namespace FishGame.Tests.EditMode
         [TestCase(true)]
         public void FishFallbackMesh_MissingRegistryResult_DoesNotPoisonTheCache(bool isJunk)
         {
-            ushort index = isJunk ? _real.JunkIndex("old_boot") : _real.SpeciesIndex("perch");   // both are Long: not the Round default
+            // A Long item on both sides (old_boot; mirror_minnow from the M3 roster, T10) so the vertex count tells the shaped mesh from the plain Round fish.
+            ushort index = isJunk ? _real.JunkIndex("old_boot") : _real.SpeciesIndex("mirror_minnow");
 
             Mesh plainNull = Get(null, isJunk, index);
             Assert.That(plainNull, Is.Not.Null, "a null registry still gives a mesh");

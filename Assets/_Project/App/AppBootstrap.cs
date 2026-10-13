@@ -6,6 +6,7 @@ using System.Collections;
 using FishGame.Core;
 using FishGame.Data;
 using FishGame.Networking;
+using FishGame.Presentation;
 using FishGame.Runtime;
 using FishGame.UI;
 using Unity.Netcode;
@@ -36,6 +37,8 @@ namespace FishGame.App
 
         public static AppBootstrap Current { get; private set; }
         public static bool SuppressDevAutoStart { get; set; }
+        // Test seam (PlayMode UiFlowCancelTests): null in production; read lazily when the first online attempt creates the backend.
+        public static Func<INetworkSession> OnlineSessionFactoryOverride { get; set; }
         public ServiceRegistry Services => services;
         public NetworkManager NetworkManager { get; private set; }
         public ulong ContentHashValue { get; private set; }
@@ -52,6 +55,7 @@ namespace FishGame.App
         private static void ResetStatics()
         {
             Current = null;
+            OnlineSessionFactoryOverride = null;
         }
 
         private void Awake()
@@ -122,6 +126,14 @@ namespace FishGame.App
             settings.EnsureLocalPlayerId();
             services.Register<ISettings>(settings);
 
+            // Graphics tab (playtest S6/S3): applies the saved quality settings now and live on every change. Registered so the registry disposes
+            // it with the app, which puts the project's URP asset and QualitySettings back (the applier edits the URP asset in place and restores it).
+            services.Register(new GraphicsApplier(settings));
+
+            var meta = SaveService.CreateForThisInstance(); // meta{profile suffix}.json: the journal (spec 12.10)
+            meta.Load();
+            services.Register(meta);
+
             input.Initialize(inputActions, settings);
             services.Register<IInputService>(input);
             services.Register<IInputBindings>(input);
@@ -147,7 +159,8 @@ namespace FishGame.App
             var sessionConfig = new NetworkSessionConfig(NetworkManager, bridge, settings, protocolVersion, ContentHashValue, longTimeout);
             var local = new LocalNetworkSession(sessionConfig);
             services.Register(local);
-            session = new CompositeNetworkSession(local, () => new UgsNetworkSession(sessionConfig));
+            session = new CompositeNetworkSession(local,
+                () => OnlineSessionFactoryOverride != null ? OnlineSessionFactoryOverride() : new UgsNetworkSession(sessionConfig));
             services.Register<INetworkSession>(session);
 
             ServiceRoots.SetApp(services);
@@ -192,6 +205,17 @@ namespace FishGame.App
 
         private void HandleQuitting()
         {
+            if (services != null && services.TryGet(out SaveService save))
+            {
+                try
+                {
+                    save.Save(); // spec 12.10: save on quit
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e); // LeaveAsync below must always run
+                }
+            }
             if (session == null) return;
             try
             {

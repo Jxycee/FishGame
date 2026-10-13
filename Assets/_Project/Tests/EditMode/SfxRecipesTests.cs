@@ -214,11 +214,12 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void SfxRecipes_AllIds_Unique()
         {
-            Assert.AreEqual(19, SfxRecipes.All.Count);
+            Assert.AreEqual(20, SfxRecipes.All.Count);   // M1 (6), M2 (13), M3 (1: Rain_Patter, T19)
             Assert.AreEqual(6, SfxRecipes.M1.Count);
             Assert.AreEqual(13, SfxRecipes.M2.Count);
             for (int i = 0; i < 6; i++) Assert.AreEqual(SfxRecipes.M1[i].Id, SfxRecipes.All[i].Id, "M1 first, index " + i);
             for (int i = 0; i < 13; i++) Assert.AreEqual(SfxRecipes.M2[i].Id, SfxRecipes.All[6 + i].Id, "then M2, index " + i);
+            Assert.AreEqual(SfxIds.RainPatter, SfxRecipes.All[19].Id, "then M3, index 19");
             var seen = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
             foreach (SfxRecipe recipe in SfxRecipes.All)
             {
@@ -227,6 +228,48 @@ namespace FishGame.Tests.EditMode
                 Assert.AreEqual(recipe.Id, found.Id);
             }
             Assert.AreSame(SfxRecipes.All, SfxRecipes.All, "All is one cached list");
+        }
+
+        // T19 (C 10.4): the M3 Rain_Patter loop. Catches: the seam correction dropped; a length of 3.9 s; a fade envelope copied from a one-shot
+        // (a loop must not fade in or out); NaN or Inf; a non-deterministic stream. A draw-order change does not fail this test by design
+        // (determinism is per build).
+        [Test]
+        public void SfxRecipes_RainPatter_SampleCountPeakNaNAndSeam()
+        {
+            Assert.IsTrue(SfxRecipes.TryGet(SfxIds.RainPatter, out SfxRecipe recipe), "Rain_Patter is a recipe");
+            Assert.IsTrue(recipe.Loop, "loop");
+            Assert.AreEqual(AudioCategory.Ambience, recipe.Category);
+            Assert.IsFalse(recipe.Spatial, "2D");
+            Assert.AreEqual(0.45f, recipe.BaseVolume, 1e-6f);
+            Assert.AreEqual(4.0f, recipe.LengthSeconds, 1e-6f);
+
+            float[] s = SfxRecipes.Generate(SfxIds.RainPatter, SfxRecipes.SampleRate, Seed);
+            Assert.AreEqual(176400, SfxRecipes.SampleCount(recipe, SfxRecipes.SampleRate), "4 s at 44.1 kHz");
+            Assert.AreEqual(176400, s.Length);
+            float peak = Peak(s);
+            Assert.GreaterOrEqual(peak, 0.5f, "almost silent");
+            Assert.LessOrEqual(peak, 0.9f + 1e-6f, "peak normalised to 0.9");
+            for (int i = 0; i < s.Length; i++)
+            {
+                if (float.IsNaN(s[i]) || float.IsInfinity(s[i])) Assert.Fail("NaN or Inf at sample " + i);
+            }
+            Assert.Less(Math.Abs(s[s.Length - 1] - s[0]), 0.05f, "loop seam");
+
+            float[] again = SfxRecipes.Generate(SfxIds.RainPatter, SfxRecipes.SampleRate, Seed);
+            CollectionAssert.AreEqual(s, again, "same seed, same samples");
+            float[] other = SfxRecipes.Generate(SfxIds.RainPatter, SfxRecipes.SampleRate, Seed + 1UL);
+            int differs = 0;
+            for (int i = 0; i < 1000; i++) if (s[i] != other[i]) differs++;
+            Assert.Greater(differs, 500, "a different seed gives different samples");
+
+            // No fade-in or fade-out on a loop: the mean |s| of the first and the last second agree within 25 %.
+            double first = 0.0, last = 0.0;
+            for (int i = 0; i < 44100; i++)
+            {
+                first += Math.Abs(s[i]);
+                last += Math.Abs(s[s.Length - 44100 + i]);
+            }
+            Assert.Less(Math.Abs(first - last) / Math.Max(first, last), 0.25, "mean level of the first and last second (" + first + " vs " + last + ")");
         }
 
         // Extra: pins the mixing seeds that the T14 cue table copies (T11.2 table). Catches a transposed column or a wrong id order.

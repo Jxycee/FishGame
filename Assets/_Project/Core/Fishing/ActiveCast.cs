@@ -14,5 +14,6 @@ namespace FishGame.Core
         public ushort RodIndex;
         public byte BaitIndex;
         public float LandingX, LandingZ;
+        public bool LimitReserved;             // a CatchLedger reservation is held for Roll.Catch.ItemIndex; settled exactly once (Resolve or Disconnect)
     }
 }

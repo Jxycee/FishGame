@@ -222,9 +222,13 @@ namespace FishGame.UI
 
             var owner = PlayerNetState.Local;
             // An owner without a PlayerCreel is looked up once per owner (_creelLookedUp), not on every Tick; a destroyed creel is looked up again.
-            if (!ReferenceEquals(_creelOwner, owner) || (_creel == null && owner != null && (!_creelLookedUp || !ReferenceEquals(_creel, null))))
+            bool ownerChanged = !ReferenceEquals(_creelOwner, owner);
+            bool neverFound = ReferenceEquals(_creel, null) && !_creelLookedUp;   // a missing creel is looked up at most once per owner
+            bool destroyed = !ReferenceEquals(_creel, null) && _creel == null;    // a Unity-destroyed component: look it up again
+            if (ownerChanged || (owner != null && (neverFound || destroyed)))
             {
-                PlayerCreel creel = owner != null ? owner.GetComponent<PlayerCreel>() : null;
+                PlayerCreel creel = null;
+                if (owner != null) owner.TryGetComponent(out creel);   // TryGetComponent gives a real null when missing, never the editor's fake-null object
                 SetCreel(owner, creel);
             }
         }

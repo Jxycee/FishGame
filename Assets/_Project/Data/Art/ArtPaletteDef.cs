@@ -16,6 +16,7 @@ namespace FishGame.Data
         private static readonly string[] NoStrings = new string[0];
         private static readonly PaletteSeason[] NoSeasons = new PaletteSeason[0];
         private static readonly DayPhaseAmbient[] NoPhases = new DayPhaseAmbient[0];
+        private static readonly FishIconTile[] NoTiles = new FishIconTile[0];
 
         [SerializeField] private string[] slotNames;
         [SerializeField] private PaletteSeason[] seasons;
@@ -29,6 +30,40 @@ namespace FishGame.Data
         [SerializeField] private Color uiPanel;
         [SerializeField] private Color uiText;
         [SerializeField] private int m2Season = 1;   // Summer; the only initialiser (C 7.13)
+        [SerializeField] private SunMoonSettings sunMoon;           // M3 (T9): set by ConfigureM3
+        [SerializeField] private WeatherAmbient[] weatherLooks;     // M3 (T9): index Clear 0, Rain 1, Fog 2
+
+        [SerializeField] private Texture2D fishIconAtlas;           // M3 (T21): the baked journal icons (Editor/Dev/FishIconBaker); null until baked
+        [SerializeField] private FishIconTile[] fishIconTiles;      // M3 (T21): one tile per species id
+
+        public Texture2D FishIconAtlas => fishIconAtlas;
+        public IReadOnlyList<FishIconTile> FishIconTiles => fishIconTiles ?? NoTiles;
+
+        // The tile of a species in FishIconAtlas; false for a null id, an unknown id or while no atlas is assigned.
+        public bool TryGetFishIconTile(string id, out FishIconTile tile)
+        {
+            tile = default;
+            if (fishIconAtlas == null || fishIconTiles == null || id == null) return false;
+            for (int i = 0; i < fishIconTiles.Length; i++)
+            {
+                if (string.Equals(fishIconTiles[i].id, id, StringComparison.Ordinal))
+                {
+                    tile = fishIconTiles[i];
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Used by the icon baker. The tile array is copied (null stays null). Configure and ConfigureM3 leave both fields alone.
+        public void ConfigureFishIcons(Texture2D atlas, FishIconTile[] tiles)
+        {
+            fishIconAtlas = atlas;
+            fishIconTiles = tiles == null ? null : (FishIconTile[])tiles.Clone();
+        }
+
+        public SunMoonSettings SunMoon => sunMoon;
+        public IReadOnlyList<WeatherAmbient> WeatherLooks => weatherLooks ?? new WeatherAmbient[0];
 
         public IReadOnlyList<string> SlotNames => slotNames ?? NoStrings;
         public IReadOnlyList<PaletteSeason> Seasons => seasons ?? NoSeasons;
@@ -60,6 +95,13 @@ namespace FishGame.Data
             this.uiPanel = uiPanel;
             this.uiText = uiText;
             this.m2Season = m2Season;
+        }
+
+        // M3 (T9): the sun/moon settings and the three weather looks. The array is copied (null stays null). The M2 Configure leaves both alone.
+        public void ConfigureM3(in SunMoonSettings sunMoon, WeatherAmbient[] weatherLooks)
+        {
+            this.sunMoon = sunMoon;
+            this.weatherLooks = weatherLooks == null ? null : (WeatherAmbient[])weatherLooks.Clone();
         }
 
         private static PaletteSeason[] CopySeasons(IEnumerable<PaletteSeason> source)

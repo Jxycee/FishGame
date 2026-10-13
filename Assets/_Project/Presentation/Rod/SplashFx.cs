@@ -1,7 +1,10 @@
 // Authority: local only (every peer; CastMarkerView renders on the owner only). Reads FishingRodNetwork.ViewState; never writes gameplay state.
 // Splash particles (spec 9.11 phase cues, 10.5, C 7.24) on every peer.
 //  - One-shot bursts come only from Cue, at the bobber's x/z on the water: Landing 12, Nibble 4 small, Bite 30 + 10 droplets, HookSet 10 droplets,
-//    Snapped 25, LineLanded 15, Escaped (not the recall's own) 10 slow rising bubbles.
+//    Snapped 25, LineLanded 15, Escaped (not the recall's own) 10 slow rising bubbles. Dive (F9, 2026-10-13): the bobber's plunge, a tall crown of
+//    34 big droplets, 16 bubbles, and a water ring (RippleMath.Dive) followed by two weaker ones 0.2 s and 0.4 s later. SideRun adds NOTHING here
+//    (S12: a side run is the side column only; the plunge cues belong to the dive).
+//    While Hooked + FlagDive (and not spent) a trail of bubbles rises from under the bobber, polled, 18 per second.
 //  - State-driven effects are POLLED, so a late joiner sees them without a replay (F6): the side-run column (20/s at the fish point, up 2.5 m/s plus
 //    1.5 m/s sideways, signed by the change of ViewState.Lateral) while Hooked and FlagBurst, whether or not FlagDive is set (R72: a back pull also
 //    pulls to a side, so the column stays; the dive keeps its own plunge: bobber dip, thrum and the Dive cue); and
@@ -20,6 +23,8 @@ namespace FishGame.Presentation
         private const string ChildName = "SplashFx", BubblesName = "Bubbles";
         private const float SideRunPerSecond = 20f, ExhaustedPeriod = 0.6f;
         private const int MaxEmitPerFrame = 8;
+        private const int DiveCrownDrops = 34;
+        private const float DiveDropSize = 0.1f, DiveBubbleSize = 0.06f, DiveBubblesPerSecond = 18f, DiveRingGap = 0.2f;
         private static readonly Color DropletColor = new Color(0.85f, 0.93f, 1f, 0.9f);
 
         [SerializeField] private Material particleMaterial;   // M_Particle
@@ -31,6 +36,10 @@ namespace FishGame.Presentation
         private float _sideAcc, _lastLateral, _sideSign = 1f;
         private bool _haveLateral;
         private float _exhaustedAt = float.NegativeInfinity;
+        private float _bubbleAcc;
+        private int _diveRingsDue;
+        private float _diveRingAt;
+        private Vector3 _diveRingPos;
 
         private void Awake()
         {
@@ -86,6 +95,8 @@ namespace FishGame.Presentation
             _sideAcc = 0f;
             _haveLateral = false;
             _exhaustedAt = float.NegativeInfinity;
+            _bubbleAcc = 0f;
+            _diveRingsDue = 0;
         }
 
         private void OnDisable()
@@ -122,6 +133,14 @@ namespace FishGame.Presentation
                     break;
                 case RodCue.LineLanded:
                     Drops(at, 15, 1.5f, 3f);
+                    break;
+                case RodCue.Dive:
+                    Drops(at, DiveCrownDrops, 2.4f, 4.6f, DiveDropSize);
+                    DiveBubbles(at, 16);
+                    SpawnRing(at, RippleMath.Dive);
+                    _diveRingsDue = 2;
+                    _diveRingAt = Time.time + DiveRingGap;
+                    _diveRingPos = at;
                     break;
                 case RodCue.Escaped:
                     if ((vs.Flags & RodWireQuant.FlagRecall) == 0) Bubbles(at, 10);
@@ -180,6 +199,34 @@ namespace FishGame.Presentation
                 _sideAcc = 0f;
             }
 
+            // F9: the dive's follow-up rings (one-shot timers started by the Dive cue).
+            if (_diveRingsDue > 0 && now >= _diveRingAt)
+            {
+                SpawnRing(_diveRingPos, RippleMath.DiveFollow);
+                _diveRingsDue--;
+                _diveRingAt = now + DiveRingGap;
+            }
+
+            // F9: a bubble trail rises from under the bobber for as long as the fish pulls back (polled: a late joiner sees it too).
+            bool diving = hooked && (vs.Flags & (RodWireQuant.FlagDive | RodWireQuant.FlagExhausted)) == RodWireQuant.FlagDive;
+            if (diving && IsFinite(vs.BobberPos))
+            {
+                _bubbleAcc += DiveBubblesPerSecond * dt;
+                Vector3 at = WaterPoint(vs.BobberPos);
+                int emitted = 0;
+                while (_bubbleAcc >= 1f && emitted < MaxEmitPerFrame)
+                {
+                    _bubbleAcc -= 1f;
+                    emitted++;
+                    DiveBubbles(at, 1);
+                }
+                if (_bubbleAcc > 1f) _bubbleAcc = 1f;
+            }
+            else
+            {
+                _bubbleAcc = 0f;
+            }
+
             if (hooked && (vs.Flags & RodWireQuant.FlagExhausted) != 0 && IsFinite(vs.BobberPos))
             {
                 if (now - _exhaustedAt >= ExhaustedPeriod)
@@ -213,6 +260,24 @@ namespace FishGame.Presentation
                 Vector3 v = new Vector3(Random.Range(-0.15f, 0.15f), Random.Range(0.3f, 0.6f), Random.Range(-0.15f, 0.15f));
                 Emit(_bubbles, at + new Vector3(Random.Range(-0.2f, 0.2f), 0f, Random.Range(-0.2f, 0.2f)), v);
             }
+        }
+
+        // Bubbles that start 0.4 m under the surface and rise through it (the dive's trail and crown).
+        private void DiveBubbles(Vector3 at, int count)
+        {
+            if (_bubbles == null) return;
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 v = new Vector3(Random.Range(-0.2f, 0.2f), Random.Range(0.5f, 0.9f), Random.Range(-0.2f, 0.2f));
+                Vector3 from = at + new Vector3(Random.Range(-0.15f, 0.15f), -0.4f, Random.Range(-0.15f, 0.15f));
+                Emit(_bubbles, from, v, DiveBubbleSize);
+            }
+        }
+
+        private static void SpawnRing(Vector3 at, float strength)
+        {
+            RippleField field = RippleField.Current;
+            if (field != null) field.Spawn(at.x, at.z, strength);
         }
 
         private static void Emit(ParticleSystem ps, Vector3 position, Vector3 velocity, float startSize = 0f)

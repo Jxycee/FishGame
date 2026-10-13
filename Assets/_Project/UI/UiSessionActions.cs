@@ -26,6 +26,7 @@ namespace FishGame.UI
 
         private CancellationTokenSource _attempt;
         private bool _leaving;
+        private bool _cancelPending;   // a Cancel was pressed for the current attempt and the session has not reported it yet (M3 T2)
 
         internal UiSessionActions(INetworkSession session, EventBus bus, MainMenuPresenter menu, BusyPresenter busy,
             PausePresenter pause, Action<UiScreen> show, Func<UiScreen> currentScreen, Action<bool, bool> setMenuActions,
@@ -107,6 +108,17 @@ namespace FishGame.UI
             }
             finally
             {
+                // An attempt that ended without a reporting state change (for example the D8 already-cancelled throw) still leaves the Busy screen.
+                // A cancel that lost the race to Connected changes nothing (A-Q3): the attempt succeeded, Busy stays up and the game loads.
+                if (_cancelPending && _attempt == cts)
+                {
+                    if (succeeded)
+                    {
+                        StopCancelWatch();
+                        _busyPresenter.SetMessage(UiStrings.Get("busy.loading"));
+                    }
+                    else ReturnToMenuAfterCancel();
+                }
                 if (_attempt == cts) _attempt = null;
                 cts.Dispose();
             }
@@ -137,11 +149,42 @@ namespace FishGame.UI
         {
             if (_attempt != null)
             {
+                if (_cancelPending) return;                                  // a second press while cancelling: nothing more to do
+                _cancelPending = true;
+                _busyPresenter.SetMessage(UiStrings.Get("busy.cancelling")); // at once, before the SDK returns (M2 handoff item)
+                _session.StateChanged += OnStateAfterCancel;                 // subscribe BEFORE Cancel: a session may report inside Cancel()
                 _attempt.Cancel();
+                if (_cancelPending && CancelReported(_session.State)) ReturnToMenuAfterCancel();
                 return;
             }
             // Already connected and waiting for the scene load: Cancel leaves instead.
-            if (_session.State != ConnState.Offline) LeaveSession();
+            if (_session.State != ConnState.Offline)
+            {
+                _busyPresenter.SetMessage(UiStrings.Get("busy.cancelling"));
+                LeaveSession();
+            }
+        }
+
+        // The session has acted on the cancel once it leaves Connecting/Connected (UGS: Failed then ShuttingDown fire before its up-to-30 s teardown).
+        private static bool CancelReported(ConnState s) => s == ConnState.Failed || s == ConnState.ShuttingDown || s == ConnState.Offline;
+
+        private void OnStateAfterCancel(ConnState previous, ConnState current)
+        {
+            if (CancelReported(current)) ReturnToMenuAfterCancel();
+        }
+
+        // Clears the pending flag and stops watching the session for the cancel report (nothing else).
+        private void StopCancelWatch()
+        {
+            _cancelPending = false;
+            _session.StateChanged -= OnStateAfterCancel;
+        }
+
+        private void ReturnToMenuAfterCancel()
+        {
+            if (!_cancelPending) return;
+            StopCancelWatch();
+            if (_isLive() && _currentScreen() == UiScreen.Busy) _show(UiScreen.MainMenu);   // menu actions stay off: HasAttempt is still true
         }
 
         private async void LeaveSession()

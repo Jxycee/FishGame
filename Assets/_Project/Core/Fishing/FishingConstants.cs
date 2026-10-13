@@ -8,7 +8,7 @@ namespace FishGame.Core
         public const int MaxFightStepsPerFrame = 5;          // extra accumulated time is dropped
         public const float ReadyHoldSeconds = 0.25f;         // Readying -> Ready
         public const float MinChargeNorm = 0.1f;             // below: thunk
-        public const float FeedbackBeatSeconds = 1.5f;       // terminal / unsolicited-commit beat
+        public const float FeedbackBeatSeconds = 0.6f;       // terminal / unsolicited-commit beat (was 1.5 s; user playtest 2026-10-13 S10: recast sooner)
         public const float CleanClaimClockSlackSeconds = 2.0f;  // |owner fight seconds - host hooked-to-result seconds| bound (clean-catch claim)
         public const float PinnedLateral = 0.95f;            // parked (R72): only the angleWindow validator rule reads it
         public const float NearSnapHigh = 1.0f, NearSnapLow = 0.5f;   // over the full bar (R72)
@@ -35,7 +35,7 @@ namespace FishGame.Core
         public const float HostOriginSlack = 3.0f;           // cast origin vs host view, horizontal metres
         public const float HostWaitSlackSeconds = 30f;       // stuck-Waiting refund after tFlight + biteWait + 30
         // Landed floor (CatchValidator.LandedFloorSeconds). Do not shave 0.8 / 0.5: lag when walking toward the bobber is absorbed by the floor's
-        // 0.8 factor plus the 0.5 s slack (delta <= 0.625 * reel).
+        // 0.8 factor plus the 0.5 s slack; the speed is MaxReelSpeed for a fish (R72) and JunkDragSpeed for junk.
         public const float LandedFloorFactor = 0.8f, LandedFloorSlackSeconds = 0.5f;
         public const float HookedLineSlack = 3.1f;           // lineLength0 = hostDistance - slack, floor landDistance; derived from the rig's max tip reach (2.52 m) + 0.5 m margin, T19-R1. Unchanged by R67: hostDistance is root -> landing and the owner's line is tip -> landing, both measured to the same (CastTipReach-shifted) landing
         // R67 (spec 3.2 / 9.3): a cast's distance is measured from the rod tip. The landing is origin + yawForward * (CastTipReach + distance).

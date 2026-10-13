@@ -201,20 +201,27 @@ namespace FishGame.EditorTools
             return builder.ToMesh("Rod_Seg" + index);
         }
 
-        // R74 adoption: a round float, red top and white bottom (two smooth hemispheres, so the colour edge stays crisp), a thin red stem with a ball.
+        // R74 adoption, playtest F6 revision (2026-10-13: "just an all white ball"): a classic fishing float, an orange (Accent) dome over a white (Snow)
+        // dome (two smooth hemispheres, so the colour edge stays crisp) with a thin dark (WoodDark) waterline band between them so the split reads at a
+        // distance, and a white stem topped by an orange ball. Radius 4.5 cm (was 3.5 cm); BobberView also scales it up with distance
+        // (FightViewMath.DistanceScale). The stem ball's top is FightViewMath.StemTipHeight (0.135) above the centre. Palette slots only, no new material.
         static Mesh BuildBobber()
         {
-            const float r = 0.035f;
+            const float r = 0.045f;
+            const float band = 0.012f, bandR = r * 1.04f;
             var builder = new SmoothMeshBuilder();
             System.Func<float, float> half = t => r * Mathf.Sqrt(Mathf.Max(0f, 1f - t * t));
-            builder.Lathe(new Vector3(0f, r * 0.5f, 0f), t => half(t), r, 16, 6, Quaternion.identity, SlotAccent, EnvTextureLayers.None,
+            builder.Lathe(new Vector3(0f, r * 0.5f, 0f), t => half(t), r, 20, 8, Quaternion.identity, SlotAccent, EnvTextureLayers.None,
                 SmoothMeshBuilder.MappingUv, t => 1f, r);
-            builder.Lathe(new Vector3(0f, -r * 0.5f, 0f), t => half(1f - t), r, 16, 6, Quaternion.identity, SlotSnow, EnvTextureLayers.None,
+            builder.Lathe(new Vector3(0f, -r * 0.5f, 0f), t => half(1f - t), r, 20, 8, Quaternion.identity, SlotSnow, EnvTextureLayers.None,
                 SmoothMeshBuilder.MappingUv, t => 0.82f + 0.18f * t, r);
-            // The float's top is y = r (0.035); the stem runs y 0.03..0.09 so it overlaps the float by 5 mm and ends inside the ball (centre 0.092).
-            builder.Lathe(new Vector3(0f, 0.06f, 0f), t => 0.004f, 0.06f, 8, 1, Quaternion.identity, SlotAccent, EnvTextureLayers.None,
-                SmoothMeshBuilder.MappingUv, t => 1f, 0.004f);
-            builder.Radial(new Vector3(0f, 0.092f, 0f), d => 0.008f, 3, Quaternion.identity, Vector3.one, SlotAccent, EnvTextureLayers.None,
+            // The band is centred on the equator, a little proud of the domes; its rounded edges (radius 0.88 bandR at both ends) tuck inside them.
+            builder.Lathe(Vector3.zero, t => bandR * (0.88f + 0.12f * Mathf.Sqrt(Mathf.Max(0f, 1f - (2f * t - 1f) * (2f * t - 1f)))), band, 20, 4,
+                Quaternion.identity, SlotWoodDark, EnvTextureLayers.None, SmoothMeshBuilder.MappingUv, t => 1f, bandR);
+            // The float's top is y = r (0.045); the stem runs y 0.04..0.125 so it overlaps the float by 5 mm and ends inside the ball (centre 0.125, r 0.01).
+            builder.Lathe(new Vector3(0f, 0.0825f, 0f), t => 0.0045f, 0.085f, 8, 1, Quaternion.identity, SlotSnow, EnvTextureLayers.None,
+                SmoothMeshBuilder.MappingUv, t => 1f, 0.0045f);
+            builder.Radial(new Vector3(0f, 0.125f, 0f), d => 0.01f, 3, Quaternion.identity, Vector3.one, SlotAccent, EnvTextureLayers.None,
                 SmoothMeshBuilder.MappingUv, d => 1f, 0.01f);
             return builder.ToMesh("Bobber");
         }

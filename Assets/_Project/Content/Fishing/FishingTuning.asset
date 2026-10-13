@@ -15,7 +15,7 @@ MonoBehaviour:
   castChargeTime: 1
   chargePingPong: 1
   castMinDist: 2.5
-  minLandDepth: 0.8
+  minLandDepth: 0.5
   biteWaitMin: 4
   biteWaitMax: 18
   minBiteWait: 1
@@ -50,12 +50,15 @@ MonoBehaviour:
   strainCounterSteer: 0.8
   strainOtherSteer: 0.5
   sideMoveSpeed: 1.2
-  backMoveSpeed: 1.3
-  tireSteerRate: 0.8
+  backMoveSpeed: 1
+  tireSteerRate: 1.2
   tireCounterRate: 1.25
   tireDecayRate: 0.1
-  tireRunFull: 20
+  tireRunFull: 12
   tireReelFull: 5
   tireReelMaxMult: 3
   backPullMargin: 2
   fightTimeout: 120
+  idleEscapeTime: 30
+  reelOpenMult: 2.5
+  reelOpenSeconds: 0.8

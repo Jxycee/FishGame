@@ -57,6 +57,41 @@ namespace FishGame.Tests.EditMode
             Assert.That(layers, Is.EquivalentTo(new float[] { EnvTextureLayers.Wood, EnvTextureLayers.Foliage, EnvTextureLayers.Rock }));
         }
 
+        // Catches: the zero-normal bug. Radial's finite-difference cross product scales with radius^2, so below r ~ 0.158 m its length falls under
+        // Vector3.normalized's 1e-5 threshold and the normal came out (0,0,0), rendering the part black (the bobber stem ball r 0.008, the bell
+        // crown knob r 0.07, the first blossom specks). Every normal must be unit length and point away from the centre, at any radius.
+        [Test]
+        public void Radial_SmallRadius_NormalsAreUnitAndOutward([Values(0.008f, 0.03f, 0.07f, 0.15f, 0.5f)] float radius)
+        {
+            Vector3 centre = new Vector3(0.1f, 0.2f, -0.3f);
+            var b = new SmoothMeshBuilder();
+            b.Radial(centre, d => radius, 3, Quaternion.identity, Vector3.one, 0, 0, 0, d => 1f, 0.5f);
+            Mesh m = b.ToMesh("Knob");
+            Vector3[] v = m.vertices, n = m.normals;
+            Assert.That(n.Length, Is.GreaterThan(0));
+            for (int i = 0; i < n.Length; i++)
+            {
+                Assert.That(n[i].magnitude, Is.EqualTo(1f).Within(1e-3f), "r " + radius + ": unit normal at vertex " + i);
+                Assert.That(Vector3.Dot(n[i], (v[i] - centre).normalized), Is.GreaterThan(0.99f), "r " + radius + ": a sphere's normal points away from its centre, vertex " + i);
+            }
+        }
+
+        // Catches: a saved mesh asset built before the zero-normal fix (the Bobber and Bell_Bell knobs) or any later mesh builder whose normals
+        // collapse; reads the saved assets because those are what the prefabs render.
+        [Test]
+        public void SavedMeshes_BobberAndBell_HaveUnitNormals()
+        {
+            foreach (string path in new[] { AssetPaths.MeshesFolder + "/Bobber.asset", AssetPaths.MeshesFolder + "/Bell_Bell.asset" })
+            {
+                var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+                Assert.IsNotNull(mesh, "missing " + path);
+                Vector3[] n = mesh.normals;
+                Assert.That(n.Length, Is.EqualTo(mesh.vertexCount), path + ": normals on every vertex");
+                for (int i = 0; i < n.Length; i++)
+                    Assert.That(n[i].magnitude, Is.EqualTo(1f).Within(1e-3f), path + ": unit normal at vertex " + i + " (a zero normal renders black)");
+            }
+        }
+
         // Catches: inward-facing triangles (culled from outside): every triangle of a closed radial surface faces away from its centre.
         [Test]
         public void Radial_TrianglesFaceOutward()
@@ -145,8 +180,9 @@ namespace FishGame.Tests.EditMode
             Assert.That(env.width, Is.EqualTo(512));
             var skin = AssetDatabase.LoadAssetAtPath<Texture2DArray>(AssetPaths.FishSkinArray);
             Assert.That(skin, Is.Not.Null, AssetPaths.FishSkinArray);
-            Assert.That(skin.depth, Is.EqualTo(8));
-            Assert.That(skin.width, Is.EqualTo(512));
+            Assert.That(skin.depth, Is.EqualTo(32), "4 x 8 sheet: 26 used layers (0-25) plus 6 white spares (M3-D91)");
+            Assert.That(skin.width, Is.EqualTo(512), "the 4096 max size keeps the 512 x 512 tiles");
+            Assert.That(skin.height, Is.EqualTo(512));
             var envImporter = (TextureImporter)AssetImporter.GetAtPath(AssetPaths.EnvDetailArray);
             var skinImporter = (TextureImporter)AssetImporter.GetAtPath(AssetPaths.FishSkinArray);
             Assert.That(envImporter.sRGBTexture, Is.False, "the env detail array is linear");

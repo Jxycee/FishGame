@@ -530,7 +530,12 @@ namespace FishGame.Tests.PlayMode
             byte otherBait = (byte)((fresh.BaitIndex + 1) % registry.Fishing.Baits.Count);
             const ulong standIn = 9001;
             var water = new WaterProbe { FirstHitIsWater = true, WaterY = 0f, HasBed = true, Depth = 3f };
-            var view = new HostCastView { CastingAllowed = true, Probe = water };
+            // T15: the world-built context (the host's own builder) at the deck-end water, not the T13 interim; GridWater and Context are always set.
+            yield return PlayModeHarness.WaitUntil(() => WorldState.Current != null && WorldState.Current.HasState, 10f,
+                "WorldState.Current did not spawn with state");
+            Assert.That(SpotEcology.TryResolve(registry, WorldState.Current, out int lakeZoneIndex, out ZoneData lakeZone), Is.True);
+            var view = new HostCastView { CastingAllowed = true, Probe = water, GridWater = true,
+                                          Context = SpotEcology.WorldContext(WorldState.Current, lakeZone, lakeZoneIndex, 0f, -36f, 0f, 1) };
             RollOverrides none = RollOverrides.None;
             var report = new FightReport();
             var emptyCreel = new CreelSnapshot(0, 0, 12, 15000);

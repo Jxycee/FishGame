@@ -55,6 +55,8 @@ namespace FishGame.Fishing
         private PlayerNetState _player;
         private PlayerLocomotion _locomotion;
         private Transform _tip;
+        private WorldState _gateWorld;   // the world instance _gateZone was resolved for (OwnerWorldGates)
+        private ZoneData _gateZone;
 
         private bool _setUp;
         private bool _suppressSends;
@@ -151,6 +153,8 @@ namespace FishGame.Fishing
             _locomotion.Teleported -= HandleTeleported;
             MarkerVisible = false;
             MarkerValid = false;
+            _gateWorld = null;
+            _gateZone = null;
 
             if (Local == this)
             {
@@ -202,6 +206,7 @@ namespace FishGame.Fishing
                 _fightAccumulator = 0f;
             }
 
+            RefreshDrawnMarker();   // C2 16.1 carry: the drawn marker shows the post-tick charge (and hides on the release frame), never a frame behind
             PublishView();
         }
 
@@ -336,7 +341,7 @@ namespace FishGame.Fishing
                 f.SecondaryPressed = intent.SecondaryPressed; f.SecondaryReleased = intent.SecondaryReleased; f.SecondaryHeld = intent.SecondaryHeld;
             }
 
-            f.MarkerValid = UpdateMarker();   // Ready/Charging only; false otherwise
+            f.MarkerValid = ProbeMarker(out _);   // the cast gate: THIS frame's pose and the pre-tick charge; Ready/Charging only; writes no public property
             Vector3 root = transform.position;
             f.PlayerToBobber = _hasLanding ? Flat(root, _landing) : 0f;
             f.TipToBobber = _hasLanding ? Flat(RodTipPosition, _landing) : 0f;
@@ -344,25 +349,48 @@ namespace FishGame.Fishing
             return f;
         }
 
-        // Spec 9.3: the landing the cast would make right now, probed every frame. On a disagreement the host wins (recall).
+        // Spec 9.3: the landing the cast would make right now. On a disagreement the host wins (recall).
         // R67: dist is measured from the rod tip; CastMath.Landing adds the fixed FishingConstants.CastTipReach, exactly as the host does.
-        private bool UpdateMarker()
+        // A pure probe (no field writes). BuildFrame uses it before the machine tick as the cast gate (M-4: marker == cast == host landing);
+        // RefreshDrawnMarker uses it after the tick for what is drawn.
+        // M3 (T15, M3-D16, C 2.8 #26): the marker is valid only when the physics probe AND the two world gates pass, because this same result
+        // is the cast gate (BuildFrame): an owner that could cast where the host would refuse NotWater / NotAllowedNow is a bug.
+        private bool ProbeMarker(out Vector3 position)
         {
-            MarkerVisible = Machine.MarkerOn && RodOut;
-            if (!MarkerVisible)
-            {
-                MarkerValid = false;
-                return false;
-            }
-
+            position = Vector3.zero;
+            if (!(Machine.MarkerOn && RodOut)) return false;
             float charge = Machine.State == RodState.Charging ? Machine.ChargeNorm : 0f;
             float dist = CastMath.Distance(charge, _tuning.CastMinDist, Rod.CastMaxDist);
             Vector3 root = transform.position;
             CastMath.Landing(root.x, root.z, transform.eulerAngles.y, dist, out float lx, out float lz);
             WaterProbe probe = CastProbe.Probe(lx, lz);
-            MarkerValid = CastMath.IsValidLanding(in probe, _tuning.MinLandDepth);
-            MarkerPosition = new Vector3(lx, probe.FirstHitIsWater ? probe.WaterY : WaterSurface.HeightAt(lx, lz), lz);
-            return MarkerValid;
+            position = new Vector3(lx, probe.FirstHitIsWater ? probe.WaterY : WaterSurface.HeightAt(lx, lz), lz);
+            bool probeOk = CastMath.IsValidLanding(in probe, _tuning.MinLandDepth);
+            return probeOk && OwnerWorldGates(lx, lz);
+        }
+
+        // The same two gates the host adds (C 2.8 #26): grid water through SpotEcology on the same baked asset, CastingOpen from the replicated
+        // clock. Missing world/state/zone/grid -> false, mirroring the host's NotAllowedNow (a red marker instead of a cast the host would
+        // refuse). The zone is resolved once per world instance, success or failure (no per-frame registry scans, no allocation).
+        private bool OwnerWorldGates(float x, float z)
+        {
+            WorldState world = WorldState.Current;
+            if (world == null || !world.HasState) return false;
+            if (!ReferenceEquals(world, _gateWorld))
+            {
+                _gateWorld = world;
+                if (!SpotEcology.TryResolve(_registry, world, out _, out _gateZone)) _gateZone = null;
+            }
+            return _gateZone != null && SpotEcology.CastGatesOpen(world, _gateZone, x, z);
+        }
+
+        // The only writer of MarkerVisible / MarkerValid / MarkerPosition besides OnDisable (C2 16.1 carry): the drawn marker shows the
+        // post-tick charge, hides on the release frame, and is never a frame behind the machine.
+        private void RefreshDrawnMarker()
+        {
+            MarkerVisible = Machine.MarkerOn && RodOut;
+            MarkerValid = ProbeMarker(out Vector3 p);   // false when the marker is off
+            if (MarkerVisible) MarkerPosition = p;
         }
 
         // ------------------------------------------------------------------ effects

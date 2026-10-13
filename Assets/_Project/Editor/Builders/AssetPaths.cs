@@ -72,5 +72,22 @@ namespace FishGame.EditorTools
         public const string TexturesFolder = "Assets/_Project/Content/Textures";
         public const string EnvDetailArray = TexturesFolder + "/T_EnvDetailArray.png";
         public const string FishSkinArray = TexturesFolder + "/T_FishSkinArray.png";
+        public const string FishIconAtlas = TexturesFolder + "/T_FishIcons.png";    // T21: the baked journal icons (FishIconBaker)
+
+        // T10 additions (M3 ecology data; C 6.2). T16/T17 reuse ShoreGridsFolder; do not redeclare it.
+        public const string HarbourPierSpotAsset = "Assets/_Project/Content/Spots/harbour_pier.asset";
+        public const string EcologyFolder = "Assets/_Project/Content/Ecology";
+        public const string ZonesFolder = EcologyFolder + "/Zones";
+        public const string WeatherFolder = EcologyFolder + "/Weather";
+        public const string WeatherTableAsset = WeatherFolder + "/weather_temperate.asset";
+        public const string ShoreGridsFolder = EcologyFolder + "/ShoreGrids";
+        public const string EcologyTuningAsset = EcologyFolder + "/EcologyTuning.asset";
+
+        // T16 additions (M3 lake grid; C 6.2). ShoreGridsFolder is T10's; do not redeclare it.
+        public const string LakeDockGridAsset = ShoreGridsFolder + "/lake_dock_grid.asset";
+
+        // T17 additions (M3 harbour map; C 6.2). ShoreGridsFolder and HarbourPierSpotAsset are T10's; do not redeclare them.
+        public const string HarbourPierScene = "Assets/_Project/Scenes/Spot_HarbourPier.unity";
+        public const string HarbourPierGridAsset = ShoreGridsFolder + "/harbour_pier_grid.asset";
     }
 }

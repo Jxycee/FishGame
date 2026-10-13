@@ -132,5 +132,32 @@ namespace FishGame.EditorTools
 
         public static bool Blocked(float x, float z, float clearance) =>
             z <= ClearanceMaxZ && (Mathf.Abs(x) <= clearance || Mathf.Abs(x - RampX) <= clearance);
+
+        // T16 (C 7.16, M3-D47): the lake's stand points (x, y, z, facingDeg), in the fixed StandPoint_<n> / grid standPoints order:
+        // dock end facing 0; dock middle facing 90 and 270; ramp top facing 0; six bank points at r 51.5, angles 30, 90, 150, 210, 290, 330 deg
+        // from +x toward +z (290, not 270, keeps clear of the dock), on the bank (ShoreY + 0.05), facing the lake centre. Facing is Unity yaw
+        // (0 = +z, 90 = +x): atan2(-x, -z), normalised to [0, 360). The bank rows are computed, never hand-typed.
+        public const float BankStandRadius = 51.5f, BankStandLift = 0.05f;
+        public static readonly Vector4[] StandPoints = BuildStandPoints();
+
+        static Vector4[] BuildStandPoints()
+        {
+            float[] bankAnglesDeg = { 30f, 90f, 150f, 210f, 290f, 330f };
+            var points = new Vector4[4 + bankAnglesDeg.Length];
+            points[0] = new Vector4(0f, 0.65f, -40.5f, 0f);      // dock end
+            points[1] = new Vector4(0f, 0.65f, -46f, 90f);       // dock middle, east side
+            points[2] = new Vector4(0f, 0.65f, -46f, 270f);      // dock middle, west side
+            points[3] = new Vector4(12f, 0.45f, -50.5f, 0f);     // ramp top
+            float y = ShoreY(BankStandRadius) + BankStandLift;
+            for (int i = 0; i < bankAnglesDeg.Length; i++)
+            {
+                float a = bankAnglesDeg[i] * Mathf.Deg2Rad;
+                float x = BankStandRadius * Mathf.Cos(a), z = BankStandRadius * Mathf.Sin(a);
+                float facing = Mathf.Atan2(-x, -z) * Mathf.Rad2Deg;
+                if (facing < 0f) facing += 360f;
+                points[4 + i] = new Vector4(x, y, z, facing);
+            }
+            return points;
+        }
     }
 }

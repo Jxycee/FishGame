@@ -192,7 +192,7 @@ Junk colours move to `EcologySeedData` (internal `JunkColor(string id)` for all 
 - `EcologyTuning`: 60 / 120 / 60 / 120 / 45 / 60 minutes, radius 3 m (spec 12.7, C 7.10).
 - Zones: `lake_dock` "Lake Dock" and `harbour_pier` "Harbour Pier"; sub-areas, shore distances and junk chances spec 12.5 (last band `maxShoreM` 0 = open-ended); junk lists 1.2.
 - Rules: one per (roster row, zone) (row 6 gives two: lake reeds+open_water, harbour shallows+channel); sub-area ids, seasons, weather ("Any" = `WeatherMask.All`), bands, `weight` (Sw), `minRodTier` (Rod) from the row; `minBaitRating` 0, `minDepth` 0 (M3-D3, no column), `minPlayersInSession` 0 (M3-D36), `special` false, `specialChance` 0, `catchLimitPerRun` -1. Specials (spec 12.6): one rule each (gilded_carp lake `deep_water`, old_barnacle harbour `open_sea`), all masks `All`, rod 0, `special` true, `specialChance` 0.02 / 0.015, `catchLimitPerRun` 1, `weight` 0 (ignored for specials; 0 makes a wrongly cleared `special` flag fail the "non-special weight > 0" rule); species Bulldog, Legendary, `isSpecial` true, values and kg per 12.6.
-- Spots: `harbour_pier` "Harbour Pier", scene `"Spot_HarbourPier"` (literal; T17 adds `SceneNames.SpotHarbourPier` with the same value), `mapOrder` 1, zone harbour_pier; `lake_dock` keeps `mapOrder` 0 and gets zone lake_dock.
+- Spots: `harbour_pier` "Harbour Pier", scene `"Spot_HarbourPier"` (T10 used a literal; the cleanup round replaced it with `SceneNames.SpotHarbourPier`, same value, added early and still not in `BuildOrder`; T17 only appends the `BuildOrder` entry), `mapOrder` 1, zone harbour_pier; `lake_dock` keeps `mapOrder` 0 and gets zone lake_dock.
 
 ### 1.7 Ranges for the T11 data rules (plan ranges unless the spec gives them)
 

@@ -4,6 +4,7 @@ namespace FishGame.Core
     public static class ContentIds
     {
         public const string LakeDock = "lake_dock";
+        public const string HarbourPier = "harbour_pier";
 
         // Matches ^[a-z0-9]+(_[a-z0-9]+)*$ with an allocation-free character scan.
         public static bool IsValidId(string id)

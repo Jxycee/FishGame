@@ -8,6 +8,38 @@ namespace FishGame.Core
         public const float TiltMaxDeg = 30f;
         public const float CreakFadeSeconds = 0.25f;
 
+        // Bobber plunge (playtest F9, 2026-10-13: "make it easier to tell when the bobber is diving"). Offsets are metres from the water height.
+        // A back pull (dive) sinks the float 0.75 m, out of sight: its stem ball tops out StemTipHeight above the float centre, so even the biggest,
+        // far-away bobber (DistanceScale) is more than 0.15 m under the highest wave. The old 0.35 m left the float visible through shallow water and
+        // was too close to the 0.25 m Bite plunge. The plunge also eases at PlungeEaseRate (a yank); the way back up keeps the normal EaseRate.
+        public const float HookedDepth = 0.10f, DiveDepth = 0.75f, ExhaustedLift = 0.03f;
+        public const float StemTipHeight = 0.135f;   // top of the stem ball above the float centre (PlayerFishingRigBuilder.BuildBobber)
+        public const float EaseRate = 20f, PlungeEaseRate = 50f;
+        // A 7-10 cm float is a 4 pixel dot at cast distance (F6: "just a white ball"): it grows in step with the distance to the rod tip beyond
+        // FarScaleStart metres, up to MaxDistanceScale. Pure scale, no gameplay meaning.
+        public const float FarScaleStart = 5f, MaxDistanceScale = 3.5f;
+
+        // Where a hooked fish's bobber sits relative to the water: a spent fish floats, a back pull plunges, otherwise the fish point just under.
+        public static float HookedDepthOffset(bool dive, bool exhausted)
+        {
+            if (exhausted) return ExhaustedLift;
+            return dive ? -DiveDepth : -HookedDepth;
+        }
+
+        // The vertical easing rate: fast only for a downward move while diving.
+        public static float YEaseRate(bool diving, float currentY, float targetY)
+        {
+            return diving && targetY < currentY ? PlungeEaseRate : EaseRate;
+        }
+
+        // 1 up to FarScaleStart metres, then distance / FarScaleStart, capped at MaxDistanceScale. NaN and negative distances give 1.
+        public static float DistanceScale(float distance)
+        {
+            if (!(distance > FarScaleStart)) return 1f;
+            float s = distance / FarScaleStart;
+            return s > MaxDistanceScale ? MaxDistanceScale : s;
+        }
+
         // shown += (target - shown) * clamp01(dt * 10). A non-finite or negative dt keeps shown.
         public static float SmoothBar(float shown, float target, float dt)
         {
@@ -50,5 +82,18 @@ namespace FishGame.Core
         }
 
         private static float Clamp01(float v) => v < 0f ? 0f : (v > 1f ? 1f : v);
+
+        // States in which the bobber is on the water (BobberView).
+        public static bool IsLineOut(RodState state)
+        {
+            return state == RodState.Casting || state == RodState.Waiting || state == RodState.Bite || state == RodState.Hooked || state == RodState.Escaped;
+        }
+
+        // BobberView: a recall arc starts when a shown bobber's observed state leaves the line-out set. With an aim held, the owner passes through
+        // Idle for a single frame after a terminal beat (S10 carry), so a remote usually observes Escaped -> Readying and never sees Idle.
+        public static bool RecallOnLeavingLineOut(RodState from, RodState to)
+        {
+            return !IsLineOut(to) && IsLineOut(from);   // any exit, not only Idle: Landed and Snapped are forced Hidden by the caller before this runs
+        }
     }
 }

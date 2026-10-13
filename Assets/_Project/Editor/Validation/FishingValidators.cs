@@ -21,6 +21,9 @@ namespace FishGame.EditorTools
         private const float DefaultMaxDistance = 30f;   // AudioBus default when a cue's maxDistance is 0
         private const float MaxFogDensity = 0.033f;     // spec 10.3 readability rule
 
+        // M3 T3: the FishTags bits that exist (spec 12.2); a species `tags` or a bait `affinityTags` outside them is a data bug.
+        private const FishTags DefinedTags = FishTags.Nocturnal | FishTags.Predator | FishTags.Bottom | FishTags.Schooling | FishTags.Surface;
+
         public static List<string> All()
         {
             return Prefixed(FishingContent(), SpeciesModels());
@@ -178,7 +181,7 @@ namespace FishGame.EditorTools
             foreach (RodDef rod in registry.Rods) if (rod != null) CheckRod(errors, rod, tuning);
             CheckBaits(errors, registry.Baits);
             foreach (FightProfileDef profile in registry.FightProfiles) if (profile != null) CheckProfile(errors, profile);
-            foreach (FishSpeciesDef species in registry.Species) if (species != null) CheckSpecies(errors, species, registry.Baits);
+            foreach (FishSpeciesDef species in registry.Species) if (species != null) CheckSpecies(errors, species);
             foreach (JunkDef junk in registry.Junk) if (junk != null) Range(errors, "junk " + junk.Id, "valueCoins", junk.ValueCoins, 0f, 5f);
             if (registry.ArtPalette != null) CheckPalette(errors, registry.ArtPalette);
             if (registry.WaterSettings != null) CheckWater(errors, registry.WaterSettings);
@@ -240,6 +243,14 @@ namespace FishGame.EditorTools
             Range(e, L, "backPullMargin", t.BackPullMargin, 0f, 10f);
             Range(e, L, "fightTimeout", t.FightTimeout, 30f, 300f);
             Rule(e, L, t.MaxFightTime > t.FightTimeout, "maxFightTime > fightTimeout");
+            // User playtest 2026-10-13: the 30 s idle escape (a fish only; junk keeps slackEscapeTime) and the opening reel surge.
+            Range(e, L, "idleEscapeTime", t.IdleEscapeTime, 10f, 120f);
+            Rule(e, L, t.IdleEscapeTime < t.FightTimeout, "idleEscapeTime < fightTimeout");
+            Range(e, L, "reelOpenMult", t.ReelOpenMult, 1f, 5f);
+            Range(e, L, "reelOpenSeconds", t.ReelOpenSeconds, 0.2f, 3f);
+            // The host's Landed floor divides by MaxReelSpeed = reelSpeed x reelInMult x tireReelMaxMult. The surge replaces the tire multiplier
+            // (max, never a product), so it must not exceed it or an honest reel could beat the floor.
+            Rule(e, L, t.ReelOpenMult <= t.TireReelMaxMult, "reelOpenMult <= tireReelMaxMult");
         }
 
         private static void CheckRod(List<string> e, RodDef r, FishingTuningDef tuning)
@@ -273,6 +284,9 @@ namespace FishGame.EditorTools
                 Range(e, l, "biteSpeedMod", b.BiteSpeedMod, 0.5f, 1.5f);
                 Range(e, l, "junkMult", b.JunkMult, 0f, 2f);
                 Range(e, l, "maxNibbles", b.MaxNibbles, 0f, FishingConstants.MaxNibbleSlots);
+                Range(e, l, "affinityMult", b.AffinityMult, 1f, 3f);       // M3-D4
+                Range(e, l, "specialMult", b.SpecialMult, 0.5f, 3f);
+                Rule(e, l, (b.AffinityTags & ~DefinedTags) == 0, "affinityTags has undefined bits");
                 if (b.Unlimited) unlimited++;
             }
             Rule(e, "baits", unlimited == 1, "exactly one bait must be unlimited (found " + unlimited + ")");
@@ -299,7 +313,7 @@ namespace FishGame.EditorTools
             if (p.Id == "thrasher") Rule(e, l, p.CalmMin >= 1.0f, "calmMin >= 1.0");
         }
 
-        private static void CheckSpecies(List<string> e, FishSpeciesDef s, IReadOnlyList<BaitDef> baits)
+        private static void CheckSpecies(List<string> e, FishSpeciesDef s)
         {
             string l = "species " + s.Id;
             AtLeast(e, l, "baseValue", s.BaseValue, 1f);
@@ -309,18 +323,8 @@ namespace FishGame.EditorTools
             Range(e, l, "lengthShapeK", s.LengthShapeK, 0.5f, 2f);
             Range(e, l, "biteWaitMod", s.BiteWaitMod, 0.5f, 2f);
             Rule(e, l, s.HookWindow == 0f || (s.HookWindow >= 0.8f && s.HookWindow <= 1.2f), "hookWindow is 0 or in [0.8, 1.2]");
-            Range(e, l, "minBaitRating", s.MinBaitRating, 0f, 20f);
-            Range(e, l, "minDepth", s.MinDepth, 0f, FishingConstants.DepthMultFullDepth);
-
-            // Reachable: some bait reaches the species at the full depth (a null fight is reported by ContentRegistry.Validate).
-            FishSpeciesData data = s.ToCore(0);
-            bool reachable = false;
-            foreach (BaitDef b in baits)
-            {
-                if (b == null) continue;
-                if (PlaceholderRoller.IsEligible(in data, b.ToCore().EffRating(1), FishingConstants.DepthMultFullDepth)) { reachable = true; break; }
-            }
-            if (!reachable) e.Add(l + ": not reachable with any bait at depth <= 6 m");
+            Rule(e, l, (s.Tags & ~DefinedTags) == 0, "tags has undefined bits");   // M3 T3
+            // M3-D3 (T13): no species-level bait/depth gates any more; reachability is V3 (EcologyCoverage) over the zone rules.
         }
 
         private static void CheckPalette(List<string> e, ArtPaletteDef a)

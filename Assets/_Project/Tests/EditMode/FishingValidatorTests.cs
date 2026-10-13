@@ -62,7 +62,7 @@ namespace FishGame.Tests.EditMode
             {
                 BaitDef d = Make<BaitDef>();
                 d.Configure(b.id, b.name, b.stats.Rating, b.stats.StackMax, b.stats.MaxRating, b.stats.BiteSpeedMod, b.stats.JunkMult,
-                    b.stats.MaxNibbles, b.stats.Unlimited);
+                    b.stats.MaxNibbles, b.stats.Unlimited, b.stats.AffinityTags, b.stats.AffinityMult, b.stats.SpecialMult);
                 baits.Add(d);
                 set.ById[b.id] = d;
             }
@@ -85,7 +85,7 @@ namespace FishGame.Tests.EditMode
                 FishSpeciesDef d = Make<FishSpeciesDef>();
                 FishSpeciesData x = s.Data;
                 d.Configure(s.Id, s.Name, x.Rarity, x.BaseValue, x.WeightMinG, x.WeightMaxG, x.WeightSkew, x.LengthShapeK, profileById[s.ProfileId],
-                    s.BodyShape, s.ColorA, s.ColorB, x.BiteWaitMod, x.HookWindow, x.IsSpecial, x.MinBaitRating, x.MinDepth, null);
+                    s.BodyShape, s.ColorA, s.ColorB, x.BiteWaitMod, x.HookWindow, x.IsSpecial, null, x.Tags);
                 species.Add(d);
                 set.ById[s.Id] = d;
             }
@@ -149,6 +149,7 @@ namespace FishGame.Tests.EditMode
                 case SerializedPropertyType.Float: p.floatValue = (float)value; break;
                 case SerializedPropertyType.Integer: p.intValue = (int)value; break;
                 case SerializedPropertyType.Boolean: p.boolValue = value != 0.0; break;
+                case SerializedPropertyType.Enum: p.intValue = (int)value; break;   // flags enums (FishTags): the raw bits, never an index
                 default: Assert.Fail("property '" + path + "' is not numeric"); break;
             }
         }
@@ -221,6 +222,9 @@ namespace FishGame.Tests.EditMode
             ("tuning", "", "tireRunFull", 1f, 100f, false), ("tuning", "", "tireReelFull", 0.5f, 50f, false),
             ("tuning", "", "tireReelMaxMult", 1f, 5f, false), ("tuning", "", "backPullMargin", 0f, 10f, false),
             ("tuning", "", "fightTimeout", 30f, 300f, false),
+            // User playtest 2026-10-13: idle escape and opening reel surge.
+            ("tuning", "", "idleEscapeTime", 10f, 120f, false), ("tuning", "", "reelOpenMult", 1f, 5f, false),
+            ("tuning", "", "reelOpenSeconds", 0.2f, 3f, false),
 
             ("rod", "rod_handmade", "tier", 0f, 3f, true), ("rod", "rod_handmade", "castMaxDist", 8f, 40f, false),
             ("rod", "rod_handmade", "reelSpeed", 0.3f, 2f, false), ("rod", "rod_handmade", "lineStrength", 0.5f, 2.5f, false),
@@ -231,6 +235,7 @@ namespace FishGame.Tests.EditMode
             ("bait", "bait_worm", "rating", 1f, 10f, true), ("bait", "bait_worm", "stackMax", 1f, 5f, true),
             ("bait", "bait_worm", "biteSpeedMod", 0.5f, 1.5f, false), ("bait", "bait_worm", "junkMult", 0f, 2f, false),
             ("bait", "bait_worm", "maxNibbles", 0f, 3f, true),
+            ("bait", "bait_worm", "affinityMult", 1f, 3f, false), ("bait", "bait_worm", "specialMult", 0.5f, 3f, false),   // M3-D4
 
             ("profile", "steady", "calmMin", 0.2f, 5f, false), ("profile", "steady", "burstMin", 0.3f, 6f, false),
             ("profile", "steady", "flipRate", 0f, 2f, false), ("profile", "steady", "diveChance", 0f, 1f, false),
@@ -240,10 +245,10 @@ namespace FishGame.Tests.EditMode
             ("profile", "steady", "strainMod", 0.1f, 3f, false), ("profile", "steady", "moveMult", 0f, 3f, false),
             ("profile", "steady", "reelInMult", 0.1f, 5f, false), ("profile", "steady", "wavePeriod", 0.5f, 8f, false),
 
-            ("species", "perch", "baseValue", 1f, Open, true), ("species", "perch", "weightMinG", 1f, Open, true),
-            ("species", "perch", "weightSkew", 1.2f, 3f, false), ("species", "perch", "lengthShapeK", 0.5f, 2f, false),
-            ("species", "perch", "biteWaitMod", 0.5f, 2f, false), ("species", "perch", "minBaitRating", 0f, 20f, true),
-            ("species", "perch", "minDepth", 0f, 6f, false),
+            // M3 T3: bluegill is the only seeded species (the M2 rows named perch).
+            ("species", "bluegill", "baseValue", 1f, Open, true), ("species", "bluegill", "weightMinG", 1f, Open, true),
+            ("species", "bluegill", "weightSkew", 1.2f, 3f, false), ("species", "bluegill", "lengthShapeK", 0.5f, 2f, false),
+            ("species", "bluegill", "biteWaitMod", 0.5f, 2f, false),   // M3-D3 (T13): the minBaitRating/minDepth rows are gone with the fields
 
             ("junk", "old_boot", "valueCoins", 0f, 5f, true),
 
@@ -310,6 +315,8 @@ namespace FishGame.Tests.EditMode
         [TestCase("strainScale")]
         [TestCase("strainSnap")]
         [TestCase("fightTimeout")]
+        [TestCase("idleEscape")]
+        [TestCase("reelOpen")]
         [TestCase("castMaxDist")]
         [TestCase("angleWindow")]
         [TestCase("weightMax")]
@@ -355,6 +362,20 @@ namespace FishGame.Tests.EditMode
                     SetNum(set.Tuning, "fightTimeout", 180);
                     AssertContains(Check(set), "tuning: maxFightTime > fightTimeout");
                     break;
+                case "idleEscape":
+                    SetNum(set.Tuning, "fightTimeout", 100);
+                    SetNum(set.Tuning, "idleEscapeTime", 60);
+                    CollectionAssert.IsEmpty(Check(set), "60 < 100 passes");
+                    SetNum(set.Tuning, "idleEscapeTime", 100);
+                    AssertContains(Check(set), "tuning: idleEscapeTime < fightTimeout");
+                    break;
+                case "reelOpen":
+                    SetNum(set.Tuning, "tireReelMaxMult", 3);
+                    SetNum(set.Tuning, "reelOpenMult", 3);
+                    CollectionAssert.IsEmpty(Check(set), "surge == tire max passes (the host Landed floor still bounds the reel)");
+                    SetNum(set.Tuning, "reelOpenMult", 3.5);
+                    AssertContains(Check(set), "tuning: reelOpenMult <= tireReelMaxMult");
+                    break;
                 case "castMaxDist":
                     SetNum(set.ById["rod_handmade"], "castMaxDist", 2);   // below castMinDist 2.5 (and outside [8, 40])
                     AssertContains(Check(set), "rod rod_handmade: castMaxDist > castMinDist");
@@ -364,20 +385,20 @@ namespace FishGame.Tests.EditMode
                     AssertContains(Check(set), "rod rod_handmade: angleWindow < PinnedLateral");
                     break;
                 case "weightMax":
-                    SetNum(set.ById["perch"], "weightMaxG", 300);   // == weightMinG 300
-                    AssertContains(Check(set), "species perch: weightMaxG > weightMinG");
-                    SetNum(set.ById["perch"], "weightMaxG", 301);
-                    CollectionAssert.IsEmpty(Check(set), "301 > 300");
+                    SetNum(set.ById["bluegill"], "weightMaxG", 200);   // == weightMinG 200 (M3 T3: bluegill is the seeded species)
+                    AssertContains(Check(set), "species bluegill: weightMaxG > weightMinG");
+                    SetNum(set.ById["bluegill"], "weightMaxG", 201);
+                    CollectionAssert.IsEmpty(Check(set), "201 > 200");
                     break;
                 case "hookWindow":
                     foreach (double bad in new[] { 0.5, 0.79, 1.3, double.NaN })
                     {
-                        SetNum(set.ById["perch"], "hookWindow", bad);
-                        AssertContains(Check(set), "species perch: hookWindow is 0 or in [0.8, 1.2]");
+                        SetNum(set.ById["bluegill"], "hookWindow", bad);
+                        AssertContains(Check(set), "species bluegill: hookWindow is 0 or in [0.8, 1.2]");
                     }
                     foreach (double ok in new[] { 0.8, 1.0, 1.2, 0.0 })
                     {
-                        SetNum(set.ById["perch"], "hookWindow", ok);
+                        SetNum(set.ById["bluegill"], "hookWindow", ok);
                         CollectionAssert.IsEmpty(Check(set), "hookWindow " + ok + " is allowed");
                     }
                     break;
@@ -440,15 +461,22 @@ namespace FishGame.Tests.EditMode
             CollectionAssert.IsEmpty(Check(set), "other profiles may have a short calm");
         }
 
-        // Catches: reachability computed with the wrong rating or never evaluated; a species that no bait can reach.
+        // FishingValidators_UnreachableSpecies_IsReported was deleted in T13 (M3-D55): V3 EcologyCoverage_V3_EverySpeciesPassesSomewhereAtRodThree replaces it.
+
+        // Catches (M3 T3): a tags / affinityTags value with bits outside FishTags (a typo or a stale enum) passing validation; the defined
+        // bits (value 31 = every flag) being rejected.
         [Test]
-        public void FishingValidators_UnreachableSpecies_IsReported()
+        public void FishingValidators_UndefinedTagBits_AreReported()
         {
             SeedSet set = MakeSeedSet();
-            SetNum(set.ById["perch"], "minBaitRating", 10);      // raw meat (10) reaches it
-            CollectionAssert.IsEmpty(Check(set));
-            SetNum(set.ById["perch"], "minBaitRating", 11);      // above every bait's EffRating(1)
-            AssertContains(Check(set), "species perch: not reachable with any bait at depth <= 6 m");
+            SetNum(set.ById["bait_worm"], "affinityTags", 32);
+            AssertContains(Check(set), "bait bait_worm: affinityTags has undefined bits");
+            SetNum(set.ById["bluegill"], "tags", 64);
+            AssertContains(Check(set), "species bluegill: tags has undefined bits");
+
+            SetNum(set.ById["bait_worm"], "affinityTags", 31);
+            SetNum(set.ById["bluegill"], "tags", 31);
+            CollectionAssert.IsEmpty(Check(set), "value 31 uses only defined bits");
         }
 
         // Catches: a missing singleton throwing (registry.Validate already reports it) or duplicating that message.
@@ -611,14 +639,15 @@ namespace FishGame.Tests.EditMode
             return -1;
         }
 
-        // Catches: the seed cue rows (five with maxDistance 0) failing because the raw maxDistance was compared with minDistance.
+        // Catches: the seed cue rows (six with maxDistance 0) failing because the raw maxDistance was compared with minDistance.
+        // T19: the count is six now, the five M1 2D/ambience rows plus the 2D Rain_Patter loop (default max distance).
         [Test]
         public void FishingValidators_CueRowsWithZeroMaxDistance_UseTheDefault30()
         {
             SeedSet set = MakeSeedSet();
             int zero = 0;
             foreach (SfxCueRow r in set.Cues.Rows) if (r.maxDistance == 0f) zero++;
-            Assert.AreEqual(5, zero, "the five M1 2D/ambience rows have maxDistance 0");
+            Assert.AreEqual(6, zero, "the five M1 2D/ambience rows and Rain_Patter have maxDistance 0");
             CollectionAssert.IsEmpty(Check(set));
         }
 

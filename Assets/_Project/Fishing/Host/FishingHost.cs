@@ -3,6 +3,9 @@
 // clock (IPauseState) and routes every host decision back through the sender's FishingRodNetwork: CommitRpc, creel add, CatchAnnouncedRpc,
 // FishCaught. All decisions are made by the ledger (Core); this class is the Physics / NGO / EventBus adapter around it (spec 9.9).
 // The ledger is created lazily on first server use, so it exists before the first player's OnPlayerReady regardless of scene/spawn order.
+// M3 (T15): the cast view's world part comes from WorldState and the spot's zone grid via SpotEcology (the owner marker runs the same
+// functions); the ledger runs on the session run state (EcologySession), so a Spot load keeps the cast counter and catch limits. No world,
+// zone or baked grid -> CastingAllowed false -> NotAllowedNow (never a roll without a context).
 using System;
 using System.Collections.Generic;
 using FishGame.Core;
@@ -31,7 +34,8 @@ namespace FishGame.Fishing
             get
             {
                 if (Ledger != null) return Ledger.RunSeed;
-                return _runSeed;
+                EcologyRunState run = EcologySession.Current;
+                return run != null ? run.RunSeed : _runSeed;
             }
         }
 
@@ -61,17 +65,14 @@ namespace FishGame.Fishing
             s_current = this;
             _registered = true;
 
+            ServiceRegistry app = ServiceRoots.App;
+            if (app != null && app.TryGet(out INetworkSession session)) FishingDebugSettings.ClearOnSessionEnd(session);   // F6/F7 clear when the session ends
+
             ResolveNetworkManager();   // may still be null here; resolved lazily on first server use
             FishingRodNetwork.Despawned += HandleRodDespawned;
             SessionState.SlotTakenOver += HandleSlotTakenOver;
 
-            // Rods that spawned before this host enabled.
-            var rods = FishingRodNetwork.Active;
-            for (int i = 0; i < rods.Count; i++)
-            {
-                FishingRodNetwork rod = rods[i];
-                if (rod != null && rod.IsServer && rod.Player != null && rod.Player.IsServerInitialized) OnPlayerReady(rod);
-            }
+            RemirrorAllRods();   // rods that spawned before this host enabled
         }
 
         private void OnDisable()
@@ -82,11 +83,23 @@ namespace FishGame.Fishing
             _nm = null;
             FishingRodNetwork.Despawned -= HandleRodDespawned;
             SessionState.SlotTakenOver -= HandleSlotTakenOver;
+            // Reservation-leak guard (D-F6, F2): a Spot unload may disable this host before the rods despawn. The run state (EcologySession)
+            // outlives this ledger, so release every outstanding catch-limit reservation now; Disconnect is idempotent with the later
+            // Despawned path. Must land with the EcologySession switch in EnsureLedger.
+            if (Ledger != null)
+            {
+                var rods = FishingRodNetwork.Active;
+                for (int i = 0; i < rods.Count; i++)
+                {
+                    FishingRodNetwork rod = rods[i];
+                    if (rod == null) continue;
+                    try { Ledger.Disconnect(rod.OwnerClientId); }
+                    catch (Exception e) { if (_log.ShouldLog("disable-release")) Debug.LogError("FishingHost: releasing a reservation on disable failed: " + e.Message, this); }
+                }
+            }
             Ledger = null;
             if (s_current == this) s_current = null;
-            // F6 (forced bite) and F7 (twitchy hook) are session toggles on statics: a new session must not inherit them (final review M-5).
-            FishingDebugSettings.ForcedBiteWait = 0f;
-            FishingDebugSettings.TwitchyHook = false;
+            // F6/F7 clear on INetworkSession.Ended (FishingDebugSettings.ClearOnSessionEnd), not here: a Spot load must keep them (M3 map switch).
         }
 
         private bool IsServerActive
@@ -135,12 +148,19 @@ namespace FishGame.Fishing
                 if (_log.ShouldLog("no-db")) Debug.LogError("FishingHost: no fishing database; the ledger cannot start.", this);
                 return false;
             }
+            EcologyDatabase eco = _registry.Ecology;
+            if (eco == null)
+            {
+                if (_log.ShouldLog("no-eco")) Debug.LogError("FishingHost: no ecology database: run FishGame > Build All.", this);
+                return false;
+            }
 
             try
             {
                 ushort rod = _registry.RodIndex(DefaultRodId);
                 byte bait = (byte)_registry.BaitIndex(DefaultBaitId);
-                Ledger = new FishingHostLedger(_db, _runSeed, rod, bait);
+                EcologyRunState run = EcologySession.GetOrCreate(_runSeed);   // the existing run state wins (CCR-D3): a map switch keeps it
+                Ledger = new FishingHostLedger(eco, run, rod, bait);
             }
             catch (Exception e)   // KeyNotFoundException (missing default id) or a bad database: the handlers then use their fallback replies
             {
@@ -151,19 +171,29 @@ namespace FishGame.Fishing
             return true;
         }
 
-        // Dev: only before the first accepted cast (else ignored, logged once). A new seed recreates the ledger and every loadout.
+        // Dev (T22 panel): only before the session's first accepted cast (else ignored, logged once). A new seed replaces the session run
+        // state; DevWorldDriver adopts the new instance on its next Update (season re-roll, track rebuild, clock to minute 0 of day 1).
         public void SetRunSeed(ulong seed)
         {
-            if (Ledger != null && Ledger.HostCastCounter > 0)
+            EcologyRunState cur = EcologySession.Current;
+            if (cur != null && cur.HostCastCounter > 0)
             {
                 if (_log.ShouldLog("seed-late")) Debug.LogWarning("FishingHost: SetRunSeed ignored after the first accepted cast.", this);
                 return;
             }
             _runSeed = seed;
+            if (cur != null && cur.RunSeed == seed) return;
+            EcologySession.Clear();   // HostCastCounter == 0: no accepted cast, so the dropped run state holds no reservation
+            EcologySession.GetOrCreate(seed);
             if (Ledger == null) return;
-
             Ledger = null;
             if (!EnsureLedger()) return;
+            RemirrorAllRods();
+        }
+
+        // The M2 loop: OnPlayerReady (ensure the slot, mirror the loadout) for every server-initialized rod.
+        private void RemirrorAllRods()
+        {
             var rods = FishingRodNetwork.Active;
             for (int i = 0; i < rods.Count; i++)
             {
@@ -241,8 +271,25 @@ namespace FishGame.Fishing
                 rod.CastResultRpc(req.CastId, false, (byte)CastRejectReason.OriginTooFar, Vector3.zero, default);
                 return;
             }
-            var view = new HostCastView { PlayerX = seen.x, PlayerY = seen.y, PlayerZ = seen.z, CastingAllowed = true };
-            if (Ledger.TryComputeLanding(slot, in req, out float lx, out float lz)) view.Probe = CastProbe.Probe(lx, lz);
+            // M3 (D-F3): CastingAllowed, GridWater and Context are always set together from the world. When the ecology context is missing, or
+            // the landing cannot be computed, the ledger rejects (NotAllowedNow / BadCharge / OriginTooFar) before it rolls, so the default
+            // Context (invalid Events/Skills) never reaches the resolver.
+            var view = new HostCastView { PlayerX = seen.x, PlayerY = seen.y, PlayerZ = seen.z };
+            WorldState world = WorldState.Current;
+            bool ecology = SpotEcology.TryResolve(_registry, world, out int zoneIndex, out ZoneData zone);
+            if (!ecology && _log.ShouldLog("no-ecology"))
+                Debug.LogWarning("FishingHost: no world state, spot zone or baked shore grid in this scene; casts are rejected NotAllowedNow.", this);
+            view.CastingAllowed = ecology && world.CastingOpen;   // M3-D16: day over -> NotAllowedNow (checked first)
+            if (Ledger.TryComputeLanding(slot, in req, out float lx, out float lz))
+            {
+                view.Probe = CastProbe.Probe(lx, lz);
+                if (ecology)
+                {
+                    view.GridWater = SpotEcology.GridWater(zone, lx, lz);   // M3-D16: after the probe in ValidateCast
+                    float luck = Debug.isDebugBuild ? FishingDebugSettings.Luck : 0f;
+                    view.Context = SpotEcology.WorldContext(world, zone, zoneIndex, lx, lz, luck, PlayersInSession());
+                }
+            }
 
             CastVerdict v = Ledger.RequestCast(rod.OwnerClientId, slot, in req, in view, FishingDebugSettings.ToOverrides(_registry));
             MirrorLoadout(rod, slot);   // bait consumed on accept -> NetSelectedBaitCount
@@ -252,6 +299,12 @@ namespace FishGame.Fishing
                 v.Valid ? FishingRollNet.From(in v.Roll) : default);
             if (v.Valid && v.AnnouncePity)   // R65: the crew sees the lucky line (toast.pity, T25); once per streak, not per cancel-and-recast
                 rod.CatchAnnouncedRpc(slot, default, (byte)AnnounceKind.PityCast, 0);
+        }
+
+        private static int PlayersInSession()
+        {
+            SessionState s = SessionState.Current;
+            return s != null && s.ConnectedCount > 0 ? s.ConnectedCount : 1;
         }
 
         internal void HandleCancel(FishingRodNetwork rod, uint castId)

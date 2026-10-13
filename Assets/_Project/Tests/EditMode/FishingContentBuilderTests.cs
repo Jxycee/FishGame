@@ -17,9 +17,11 @@ namespace FishGame.Tests.EditMode
     {
         private const string RealContentRoot = "Assets/_Project/Content";
         private const string TempParent = "Assets/_Project/Tests/__Temp";
-        private const string Root = TempParent + "/FishingContentBuilderTests";
-        private const string WrongTypeRoot = Root + "/WrongType";
-        private const string ForeignPalettePath = Root + "/ForeignPalette.asset";
+        // A unique folder per run: fixtures share the gitignored __Temp parent, and recreating one fixed folder (or deleting the shared
+        // parent) flakes on Windows ("Cannot open file ... for write"). Only this fixture's own folder is ever deleted.
+        private static readonly string Root = TempParent + "/FishingContentBuilderTests_" + Guid.NewGuid().ToString("N").Substring(0, 8);
+        private static readonly string WrongTypeRoot = Root + "/WrongType";
+        private static readonly string ForeignPalettePath = Root + "/ForeignPalette.asset";
 
         private ContentRegistry registry;
 
@@ -32,11 +34,7 @@ namespace FishGame.Tests.EditMode
 
         private static void DeleteTempFolders()
         {
-            if (AssetDatabase.IsValidFolder(Root)) AssetDatabase.DeleteAsset(Root);
-            if (AssetDatabase.IsValidFolder(TempParent)
-                && AssetDatabase.GetSubFolders(TempParent).Length == 0
-                && AssetDatabase.FindAssets("", new[] { TempParent }).Length == 0)
-                AssetDatabase.DeleteAsset(TempParent);
+            if (AssetDatabase.IsValidFolder(Root)) AssetDatabase.DeleteAsset(Root);   // never the shared __Temp parent
         }
 
         [OneTimeSetUp]
@@ -114,7 +112,7 @@ namespace FishGame.Tests.EditMode
             Load<RodDef>(T(AssetPaths.RodsFolder) + "/rod_twig.asset");
             Load<BaitDef>(T(AssetPaths.BaitsFolder) + "/bait_worm.asset");
             Load<FightProfileDef>(T(AssetPaths.FightProfilesFolder) + "/darter.asset");
-            Load<FishSpeciesDef>(T(AssetPaths.SpeciesFolder) + "/perch.asset");
+            Load<FishSpeciesDef>(T(AssetPaths.SpeciesFolder) + "/bluegill.asset");   // M3 T3: bluegill is the only seed species
             Load<JunkDef>(T(AssetPaths.JunkFolder) + "/tin_can.asset");
         }
 
@@ -162,7 +160,7 @@ namespace FishGame.Tests.EditMode
             var rod = Load<RodDef>(T(AssetPaths.RodsFolder) + "/rod_twig.asset");
             var bait = Load<BaitDef>(T(AssetPaths.BaitsFolder) + "/bait_worm.asset");
             var profile = Load<FightProfileDef>(T(AssetPaths.FightProfilesFolder) + "/darter.asset");
-            var species = Load<FishSpeciesDef>(T(AssetPaths.SpeciesFolder) + "/perch.asset");
+            var species = Load<FishSpeciesDef>(T(AssetPaths.SpeciesFolder) + "/bluegill.asset");   // M3 T3: bluegill is the only seed species
             var junk = Load<JunkDef>(T(AssetPaths.JunkFolder) + "/tin_can.asset");
             var cues = Load<SfxCueTableDef>(T(AssetPaths.SfxCueTableAsset));
             var palette = Load<ArtPaletteDef>(T(AssetPaths.ArtPaletteAsset));

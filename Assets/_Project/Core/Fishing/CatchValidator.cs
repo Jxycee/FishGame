@@ -6,7 +6,8 @@ namespace FishGame.Core
     {
         // Order: CastingAllowed, ActiveCast, StaleCastId (castId <= last), BadCharge (outside [MinChargeNorm, 1] or NaN: the owner's machine
         // never sends a cast below MinChargeNorm, so the host refuses one instead of computing a sub-minimum landing),
-        // OriginTooFar (> 3 m horizontal; a NaN origin or a non-finite yaw counts as too far), NoBait, then CastMath.ProbeReason.
+        // OriginTooFar (> 3 m horizontal; a NaN origin or a non-finite yaw counts as too far), NoBait, then CastMath.ProbeReason, then
+        // (M3-D16) the landing's shore-grid cell: not water -> NotWater. CastingAllowed carries the M3 day-over gate (minute < 1200).
         public static CastRejectReason ValidateCast(in CastRequestData req, uint lastAcceptedCastId, bool hasActive,
                                                     in HostCastView view, bool baitAvailable, float minLandDepth)
         {
@@ -17,7 +18,9 @@ namespace FishGame.Core
             if (!OriginWithinSlack(req.OriginX, req.OriginZ, view.PlayerX, view.PlayerZ)) return CastRejectReason.OriginTooFar;
             if (!IsFinite(req.YawDeg)) return CastRejectReason.OriginTooFar;
             if (!baitAvailable) return CastRejectReason.NoBait;
-            return CastMath.ProbeReason(in view.Probe, minLandDepth);
+            CastRejectReason probe = CastMath.ProbeReason(in view.Probe, minLandDepth);
+            if (probe != CastRejectReason.None) return probe;
+            return view.GridWater ? CastRejectReason.None : CastRejectReason.NotWater;
         }
 
         // FishingConstants.MinChargeNorm <= charge <= 1 (inclusive both ends); NaN and infinities fail.
@@ -43,8 +46,8 @@ namespace FishGame.Core
         }
 
         // max(0, 0.8 * (lineLength0 - landDistance) / speed - 0.5). A non-positive speed (a data bug) gives no floor.
-        // Lag when the player walks toward the bobber is already absorbed by the 0.8 factor plus the 0.5 s slack (delta <= 0.625 * reel distance);
-        // do not shave either constant.
+        // Lag when the player walks toward the bobber is absorbed by the 0.8 factor plus the 0.5 s slack; the speed is
+        // CatchValidator.MaxReelSpeed(rod, profile, tuning) for a fish (R72) and JunkDragSpeed for junk. Do not shave either constant.
         public static float LandedFloorSeconds(float lineLength0, float landDistance, float speed)
         {
             if (!(speed > 0f)) return 0f;

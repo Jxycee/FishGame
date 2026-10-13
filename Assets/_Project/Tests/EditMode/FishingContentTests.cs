@@ -19,8 +19,17 @@ namespace FishGame.Tests.EditMode
         // Values T15 retuned away from the spec tables. Key "<category>.<id>.<field>" (profile.thrasher.calmMin, rod.rod_twig.lineStrength,
         // bait.bait_worm.rating, species.carp.baseValue, junk.old_boot.valueCoins) or "tuning.<field>" (tuning.relaxRate). Value = the tuned seed.
         // Empty since R72 (the three pre-R72 entries belonged to fields F7 removed); T15 may edit only this map (ruling D-Q2).
+        // User playtest 2026-10-13 (F10, spec 9.12 note): Rhythm-bot fights 21-39% shorter on four profiles with the strain path untouched
+        // (Greedy snap times identical, Reckless pins intact). Value = the shipped seed.
         static readonly Dictionary<string, float> TunedDeviations = new Dictionary<string, float>
         {
+            { "tuning.backMoveSpeed", 1.0f },        // was 1.3
+            { "tuning.tireSteerRate", 1.2f },        // was 0.8
+            { "tuning.tireRunFull", 12f },           // was 20
+            { "profile.darter.reelInMult", 1.3f },   // was 1.0
+            { "profile.bulldog.reelInMult", 1.0f },  // was 0.9
+            { "profile.thrasher.reelInMult", 1.15f },// was 1.0
+            { "profile.runner.reelInMult", 0.95f },  // was 0.9
         };
 
         static float E(string key, float spec)
@@ -161,6 +170,11 @@ namespace FishGame.Tests.EditMode
             R(v, "tuning backPullMargin", t.BackPullMargin, 0f, 10f);
             R(v, "tuning fightTimeout", t.FightTimeout, 30f, 300f);
             Rule(v, "tuning", t.MaxFightTime > t.FightTimeout, "maxFightTime > fightTimeout");
+            R(v, "tuning idleEscapeTime", t.IdleEscapeTime, 10f, 120f);
+            Rule(v, "tuning", t.IdleEscapeTime < t.FightTimeout, "idleEscapeTime < fightTimeout");
+            R(v, "tuning reelOpenMult", t.ReelOpenMult, 1f, 5f);
+            R(v, "tuning reelOpenSeconds", t.ReelOpenSeconds, 0.2f, 3f);
+            Rule(v, "tuning", t.ReelOpenMult <= t.TireReelMaxMult, "reelOpenMult <= tireReelMaxMult");
 
             foreach (RodDef r in reg.Rods)
             {
@@ -223,8 +237,6 @@ namespace FishGame.Tests.EditMode
                 R(v, l + " lengthShapeK", s.LengthShapeK, 0.5f, 2f);
                 R(v, l + " biteWaitMod", s.BiteWaitMod, 0.5f, 2f);
                 Rule(v, l, s.HookWindow == 0f || (s.HookWindow >= 0.8f && s.HookWindow <= 1.2f), "hookWindow is 0 or in [0.8, 1.2]");
-                R(v, l + " minBaitRating", s.MinBaitRating, 0f, 20f);
-                R(v, l + " minDepth", s.MinDepth, 0f, FishingConstants.DepthMultFullDepth);
                 Rule(v, l, s.Fight != null && reg.FightProfiles.Contains(s.Fight), "fight is non-null and listed in fightProfiles");
             }
 
@@ -305,23 +317,8 @@ namespace FishGame.Tests.EditMode
         }
 
         // ---------------------------------------------------------------- reachability
-
-        // Catches: a species no bait can ever reach (its minBaitRating above every EffRating, or minDepth beyond the 6 m full depth).
-        [Test]
-        public void FishingData_EverySpecies_ReachableWithSomeBaitAndDepth()
-        {
-            FishingDatabase db = LoadRegistry().Fishing;
-            Assert.IsNotNull(db, "registry has no fishing database");
-            for (int s = 0; s < db.Species.Count; s++)
-            {
-                FishSpeciesData sp = db.Species[s];
-                bool reachable = false;
-                for (int b = 0; b < db.Baits.Count && !reachable; b++)
-                    reachable = PlaceholderRoller.IsEligible(in sp, db.Baits[b].EffRating(1), 6f);
-                Assert.IsTrue(reachable, "species index " + s + " is not reachable with any bait at depth 6 m");
-            }
-            // The M2 debug loadout holds every bait (C M2-D14), so "some bait" is also "some bait in the loadout".
-        }
+        // FishingData_EverySpecies_ReachableWithSomeBaitAndDepth was deleted in T13 (M3-D55): species carry no bait/depth gate any more
+        // (M3-D3); V3 EcologyCoverage_V3_EverySpeciesPassesSomewhereAtRodThree checks reachability over the zone rules.
 
         // ---------------------------------------------------------------- seeds vs spec tables
 
@@ -395,6 +392,39 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(unlimited, b.stats.Unlimited, id + " unlimited");
         }
 
+        // Catches (M3-D4, B4): a seed typo or swapped columns in the bait affinity table; real bait assets that were never migrated (the
+        // silent B4 failure: a field missing from an M2 asset loads as 0, and specialMult 0 would disable every special).
+        [Test]
+        public void FishingData_BaitAffinitySeeds_MatchContract()
+        {
+            var table = new (string id, FishTags tags, float affinity, float special)[]
+            {
+                ("bait_bare_hook", FishTags.None, 1.0f, 1.0f),
+                ("bait_worm", FishTags.Bottom, 1.3f, 1.0f),
+                ("bait_grub", FishTags.Surface, 1.3f, 1.0f),
+                ("bait_minnow", FishTags.Predator, 1.4f, 1.0f),
+                ("bait_shrimp", FishTags.Schooling, 1.3f, 1.2f),
+                ("bait_raw_meat", FishTags.Predator | FishTags.Nocturnal, 1.5f, 1.5f),
+            };
+            Assert.AreEqual(table.Length, FishingSeedData.Baits.Count, "bait count");
+            ContentRegistry reg = LoadRegistry();
+            foreach (var row in table)
+            {
+                BaitStats seed = SeedBait(row.id).stats;
+                Assert.AreEqual(row.tags, seed.AffinityTags, row.id + " seed affinityTags");
+                F(row.id + " seed affinityMult", row.affinity, seed.AffinityMult);
+                F(row.id + " seed specialMult", row.special, seed.SpecialMult);
+
+                var asset = AssetDatabase.LoadAssetAtPath<BaitDef>(AssetPaths.BaitsFolder + "/" + row.id + ".asset");
+                Assert.IsNotNull(asset, "missing bait asset " + row.id);
+                Assert.AreNotEqual(0f, asset.AffinityMult, "bait asset " + row.id + " was never migrated (B4)");
+                Assert.AreEqual(row.tags, asset.AffinityTags, row.id + " asset affinityTags");
+                F(row.id + " asset affinityMult", row.affinity, asset.AffinityMult);
+                F(row.id + " asset specialMult", row.special, asset.SpecialMult);
+                Assert.IsTrue(reg.Baits.Contains(asset), row.id + " is listed in the registry");
+            }
+        }
+
         // calmMin, calmMax, burstMin, burstMax, flipRate, dive, burstRamp, calmDrift, calmDriftRamp, flipMinGap, lateralJitter,
         // then the R72 tier (strainMod, moveMult, reelInMult) and wavePeriod
         static void Profile(string id, string name, float calmMin, float calmMax,
@@ -421,7 +451,7 @@ namespace FishGame.Tests.EditMode
             F(k + "wavePeriod", E(k + "wavePeriod", wavePeriod), p.profile.WavePeriod);
         }
 
-        static void Species(string id, string name, string profileId, int gMin, int gMax, int baseValue, float biteWaitMod, int minBait, float minDepth,
+        static void Species(string id, string name, string profileId, int gMin, int gMax, int baseValue, float biteWaitMod,
             FishRarity rarity, BodyShape shape, Color colorA, Color colorB, string modelFile)
         {
             SpeciesSeed s = SeedSpecies(id);
@@ -432,8 +462,6 @@ namespace FishGame.Tests.EditMode
             F(k + "weightMaxG", E(k + "weightMaxG", gMax), s.Data.WeightMaxG);
             F(k + "baseValue", E(k + "baseValue", baseValue), s.Data.BaseValue);
             F(k + "biteWaitMod", E(k + "biteWaitMod", biteWaitMod), s.Data.BiteWaitMod);
-            F(k + "minBaitRating", E(k + "minBaitRating", minBait), s.Data.MinBaitRating);
-            F(k + "minDepth", E(k + "minDepth", minDepth), s.Data.MinDepth);
             F(k + "weightSkew", E(k + "weightSkew", 2.2f), s.Data.WeightSkew);
             F(k + "lengthShapeK", E(k + "lengthShapeK", 1.0f), s.Data.LengthShapeK);
             F(k + "hookWindow", E(k + "hookWindow", 0f), s.Data.HookWindow);
@@ -455,7 +483,7 @@ namespace FishGame.Tests.EditMode
             Tn("castChargeTime", 1.0f, t.CastChargeTime);
             Assert.AreEqual(true, t.ChargePingPong, "tuning.chargePingPong");
             Tn("castMinDist", 2.5f, t.CastMinDist);
-            Tn("minLandDepth", 0.8f, t.MinLandDepth);
+            Tn("minLandDepth", 0.5f, t.MinLandDepth);   // M3-D52 (spec 9.3/9.12 delta, R75)
             Tn("biteWaitMin", 4f, t.BiteWaitMin);
             Tn("biteWaitMax", 18f, t.BiteWaitMax);
             Tn("minBiteWait", 1.0f, t.MinBiteWait);
@@ -500,6 +528,10 @@ namespace FishGame.Tests.EditMode
             Tn("tireReelMaxMult", 3f, t.TireReelMaxMult);
             Tn("backPullMargin", 2f, t.BackPullMargin);
             Tn("fightTimeout", 120f, t.FightTimeout);
+            // User playtest 2026-10-13 (spec 9.12 note): F7 idle escape, F1 opening reel surge.
+            Tn("idleEscapeTime", 30f, t.IdleEscapeTime);
+            Tn("reelOpenMult", 2.5f, t.ReelOpenMult);
+            Tn("reelOpenSeconds", 0.8f, t.ReelOpenSeconds);
 
             Assert.AreEqual(4, FishingSeedData.Rods.Count, "rod count");
             // R72: reelSpeed and steerRate follow Rust's rod (Handmade 0.6 / 0.8) with the pre-R72 ratios between rods.
@@ -527,32 +559,16 @@ namespace FishGame.Tests.EditMode
             Profile("thrasher", "Thrasher", 1.5f, 3f, 3f, 5f, 0.4f, 0.20f, 0f, 0f, 0f, 0.5f, 0.3f, 1.0f, 1.0f, 1.0f, 1.5f);
             Profile("runner", "Runner", 2f, 3.5f, 5f, 9f, 0f, 0.30f, 0.8f, 0f, 0f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f);
 
-            Assert.AreEqual(5, FishingSeedData.Species.Count, "species count");
-            Species("bluegill", "Bluegill", "steady", 200, 800, 5, 0.9f, 1, 0.8f, FishRarity.Common, BodyShape.Round,
-                new Color(0.32f, 0.50f, 0.62f, 1f), new Color(0.95f, 0.62f, 0.22f, 1f), "Fish_Bluegill.fbx");
-            Species("perch", "Perch", "darter", 300, 1200, 8, 1.0f, 3, 1.2f, FishRarity.Common, BodyShape.Long,
-                new Color(0.62f, 0.68f, 0.30f, 1f), new Color(0.20f, 0.24f, 0.16f, 1f), "Fish_Perch.fbx");
-            Species("carp", "Carp", "bulldog", 1000, 4000, 12, 1.2f, 1, 1.5f, FishRarity.Common, BodyShape.Round,
-                new Color(0.72f, 0.58f, 0.30f, 1f), new Color(0.45f, 0.34f, 0.18f, 1f), "Fish_Carp.fbx");
-            Species("trout", "Trout", "thrasher", 600, 2500, 20, 0.9f, 5, 2.0f, FishRarity.Uncommon, BodyShape.Long,
-                new Color(0.55f, 0.62f, 0.55f, 1f), new Color(0.88f, 0.45f, 0.48f, 1f), "Fish_Trout.fbx");
-            Species("catfish", "Catfish", "runner", 2000, 7000, 35, 1.4f, 6, 2.5f, FishRarity.Uncommon, BodyShape.Long,
-                new Color(0.36f, 0.34f, 0.30f, 1f), new Color(0.70f, 0.66f, 0.56f, 1f), "Fish_Catfish.fbx");
+            // M3 T10 (M3-D61): the species and junk seeds are the M3 roster; the roster values are checked by EcologyContentTests.EcologyData_SeedsMatchRoster.
+            Assert.That(FishingSeedData.Species, Is.SameAs(EcologySeedData.Species), "species seeds are the M3 roster (T10)");
 
             // The profile index in each species seed is the ordinal-sorted index of its profile id (0.2: bulldog, darter, runner, steady, thrasher).
             string[] sortedProfiles = { "bulldog", "darter", "runner", "steady", "thrasher" };
             foreach (SpeciesSeed s in FishingSeedData.Species)
                 Assert.AreEqual(sortedProfiles[s.Data.FightProfileIndex], s.ProfileId, s.Id + " FightProfileIndex");
 
-            Assert.AreEqual(2, FishingSeedData.Junk.Count, "junk count");
-            var boot = SeedJunk("old_boot");
-            Assert.AreEqual("Old Boot", boot.name);
-            F("junk.old_boot.valueCoins", E("junk.old_boot.valueCoins", 2), boot.value);
-            Assert.AreEqual(BodyShape.Long, boot.shape);
-            var can = SeedJunk("tin_can");
-            Assert.AreEqual("Tin Can", can.name);
-            F("junk.tin_can.valueCoins", E("junk.tin_can.valueCoins", 2), can.value);
-            Assert.AreEqual(BodyShape.Round, can.shape);
+            Assert.That(FishingSeedData.Junk, Is.SameAs(EcologySeedData.Junk), "junk seeds are the M3 junk (T10)");
+            // The two M2 junk colours are unchanged by the forwarding.
             C("old_boot color", new Color(0.30f, 0.22f, 0.16f, 1f), FishingSeedData.JunkColor("old_boot"));
             C("tin_can color", new Color(0.68f, 0.70f, 0.72f, 1f), FishingSeedData.JunkColor("tin_can"));
         }

@@ -22,6 +22,12 @@ namespace FishGame.EditorTools
         public static string Abs(string projectRelativePath) =>
             Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Application.dataPath), projectRelativePath));
 
+        // True when something already occupies assetPath: a file on disk, or a GUID the database still holds for it. OnlyExistingAssets: the
+        // default also reports recently deleted assets, which would block re-creating a deleted asset. Used by the Ensure-style builders to
+        // refuse overwriting a file that exists but did not load as the expected type.
+        public static bool AssetPathOccupied(string assetPath) =>
+            File.Exists(Abs(assetPath)) || !string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(assetPath, AssetPathToGUIDOptions.OnlyExistingAssets));
+
         public static string Folder(string assetPath) => assetPath.Substring(0, assetPath.LastIndexOf('/'));
 
         // Creates every missing level of "Assets/A/B/C" through the AssetDatabase (folder .meta files included).

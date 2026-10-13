@@ -257,8 +257,10 @@ namespace FishGame.EditorTools
         // Spring blossom specks in canopy space (the round canopy's unit sphere): BlossomCount small flattened blobs on the canopy surface over its
         // upper three quarters (a golden-angle spiral, jittered by a fixed seed), each flattened along the surface normal and half sunk into the
         // foliage, all inside the collider sphere (radius 0.5). Untextured (layer 0) on slot Blossom; shown in spring only (SeasonalVisibility).
-        // The specks are built BlossomBuildScale times larger and scaled down afterwards: Radial's finite-difference normal of a 3 cm blob is a
-        // cross product below Vector3.normalized's 1e-5 threshold, which returns a zero normal (black in the shader). A uniform scale keeps normals.
+        // The specks are built BlossomBuildScale times larger and scaled down afterwards. Originally this dodged Radial's zero normal on a 3 cm blob
+        // (cross product under Vector3.normalized's 1e-5 threshold); SmoothMeshBuilder.Radial is fixed at the root now, but the workaround is kept
+        // on purpose: building the specks at true size changes the saved mesh (float rounding in every vertex, and uv0 would no longer carry the
+        // 1/100 scale), and the specks are triplanar-mapped so this buys nothing visible. The result is byte-identical to the pre-fix asset.
         const float BlossomBuildScale = 100f;
 
         static Mesh BuildBlossoms()

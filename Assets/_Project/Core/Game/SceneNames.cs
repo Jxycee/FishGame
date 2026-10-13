@@ -8,8 +8,10 @@ namespace FishGame.Core
         public const string Bootstrap = "Bootstrap";
         public const string Menu = "Menu";
         public const string SpotLakeDock = "Spot_LakeDock";
+        public const string SpotHarbourPier = "Spot_HarbourPier";
         public const string SpotPrefix = "Spot_";
-        public static readonly string[] BuildOrder = { Bootstrap, Menu, SpotLakeDock };
+        // T17 (M3): the harbour is build index 3 (the ecology builder registers the harbour spot once the scene is listed here, CR-4).
+        public static readonly string[] BuildOrder = { Bootstrap, Menu, SpotLakeDock, SpotHarbourPier };
 
         // True when sceneName starts with SpotPrefix (ordinal, case-sensitive). Null -> false.
         public static bool IsGameplay(string sceneName)

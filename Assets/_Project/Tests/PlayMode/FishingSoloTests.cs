@@ -5,6 +5,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using FishGame.App;
 using FishGame.Core;
 using FishGame.Data;
 using FishGame.Fishing;
@@ -13,6 +15,7 @@ using FishGame.Runtime;
 using NUnit.Framework;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
 namespace FishGame.Tests.PlayMode
@@ -120,6 +123,7 @@ namespace FishGame.Tests.PlayMode
             FishingDebugSettings.ForcedSpeciesId = null;
             FishingDebugSettings.TwitchyHook = false;
             FishingDebugSettings.ForceJunk = false;
+            FishingDebugSettings.Luck = 0f;
         }
 
         // Bootstrap -> Menu -> solo host -> the Handmade loadout mirrored (rod_handmade, 20 worms) -> optionally the G9 teleport.
@@ -406,7 +410,8 @@ namespace FishGame.Tests.PlayMode
 
         // Catches (R67 follow-up, end to end): the owner's own landing prediction (the bobber it publishes the frame it sends the request,
         // before the host's reply can be adopted) differing from the host's ActiveCast landing by even one ulp: the cast-tip reach applied on one
-        // side only, a different heading or origin, a stale charge (M-4). No rod switch here, so adoption cannot hide a mismatch.
+        // side only, a different heading or origin. (A release-frame charge advance, M-4, is not visible here: owner and host derive from the
+        // same Machine.CastDistance; the RodStateMachineTests M-4 cases cover it.) No rod switch here, so adoption cannot hide a mismatch.
         [UnityTest]
         public IEnumerator SoloHost_OwnerPreAdoptionLanding_IsBitIdenticalToTheHostActiveCast()
         {
@@ -467,7 +472,7 @@ namespace FishGame.Tests.PlayMode
         }
 
         // Catches (final review M-5): the F6 forced bite and the F7 twitchy hook surviving the session (they are statics, so leaving to the
-        // menu and starting a new run would keep them on). FishingHost.OnDisable (the gameplay scene unloading) clears both.
+        // menu and starting a new run would keep them on). INetworkSession.Ended (the session ending) clears both.
         [UnityTest]
         public IEnumerator SoloHost_LeavingTheSession_ClearsF6AndF7()
         {
@@ -480,6 +485,115 @@ namespace FishGame.Tests.PlayMode
             yield return PlayModeHarness.TearDownApp();   // leaves the session and unloads the gameplay scene
             Assert.That(FishingDebugSettings.ForcedBiteWait, Is.EqualTo(0f), "F6 must not survive leaving the session");
             Assert.That(FishingDebugSettings.TwitchyHook, Is.False, "F7 must not survive leaving the session");
+        }
+
+        // Catches (C2 16.1 carry): the drawn cast marker written before Machine.Tick, so it shows the previous frame's charge (about 0.5 m
+        // behind at 30 fps on Handmade) and is still shown on the release frame. It also catches a fix that moved the whole probe after the
+        // tick: SoloHost_OwnerPreAdoptionLanding_IsBitIdenticalToTheHostActiveCast and the RodViewSoloTests marker asserts guard the gate side.
+        [UnityTest]
+        public IEnumerator FishingSolo_CastMarker_UpdatedAfterMachineTickSameFrame()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            yield return FishingPlayModeDriver.EquipAndReady(rig);
+
+            Vector3 p0 = rig.Player.transform.position;
+            float yaw = rig.Player.transform.eulerAngles.y;
+            float minDist = rig.Registry.Fishing.Tuning.CastMinDist;
+            float maxDist = rig.Controller.Rod.CastMaxDist;
+            Time.captureFramerate = 30;   // every frame's charge step is 1/30 s, so the old one-frame lag is about 0.5 m on Handmade
+            try
+            {
+                float cPrev = 0f;
+                for (int i = 0; i < 9; i++)
+                {
+                    PlayerInputFrame frame = i == 0
+                        ? new PlayerInputFrame { SecondaryHeld = true, PrimaryPressed = true, PrimaryHeld = true }
+                        : new PlayerInputFrame { SecondaryHeld = true, PrimaryHeld = true };
+                    yield return FishingPlayModeDriver.Step(rig.Fake, frame);
+
+                    float c = rig.Machine.ChargeNorm;
+                    Vector3 expected = LandingAt(p0, yaw, c, minDist, maxDist);
+                    Assert.That(rig.Controller.MarkerVisible, Is.True, "the marker is shown while charging (sample " + i + ")");
+                    Assert.That(FishingPlayModeDriver.Flat(rig.Controller.MarkerPosition, expected), Is.LessThan(1e-3f),
+                        "the drawn marker uses the post-tick charge (sample " + i + ", charge " + c + ")");
+                    if (i >= 2)
+                    {
+                        Vector3 previous = LandingAt(p0, yaw, cPrev, minDist, maxDist);
+                        Assert.That(FishingPlayModeDriver.Flat(expected, previous), Is.GreaterThan(0.1f),
+                            "the window can tell this frame's charge from the previous frame's (sample " + i + ")");
+                    }
+
+                    cPrev = c;
+                }
+
+                Assert.That(FishingPlayModeDriver.Flat(rig.Player.transform.position, p0), Is.LessThan(1e-3f), "precondition: the player must stand still");
+
+                yield return FishingPlayModeDriver.Release(rig);
+                Assert.That(rig.Machine.State, Is.EqualTo(RodState.Casting), "the release frame casts");
+                Assert.That(rig.Controller.MarkerVisible, Is.False, "the marker hides on the release frame");
+            }
+            finally
+            {
+                Time.captureFramerate = 0;
+            }
+
+            rig.Log.AssertEmpty("marker after tick");
+        }
+
+        private static Vector3 LandingAt(Vector3 origin, float yawDeg, float charge, float minDist, float maxDist)
+        {
+            float dist = CastMath.Distance(charge, minDist, maxDist);
+            CastMath.Landing(origin.x, origin.z, yawDeg, dist, out float lx, out float lz);
+            return new Vector3(lx, 0f, lz);
+        }
+
+        // Catches (C2 16.1 carry, C 7.1, CCR-A1): F6/F7 cleared in FishingHost.OnDisable (the old reset, which a Spot load fires), or on the
+        // ServiceRoots.Game teardown (GameScope.OnDestroy, which every Spot single-load fires), or only on SubsystemRegistration / App destroy
+        // (the session ending would then not clear them). The M3 dev map switch is a Spot single-load, so F6/F7 must survive it.
+        [UnityTest]
+        public IEnumerator FishingSolo_SceneReload_KeepsDevOverrides_SessionEndClears()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig, teleport: false);
+            FishingHost oldHost = FishingHost.Current;
+            ServiceRegistry oldGame = ServiceRoots.Game;
+            PlayerNetState oldPlayer = PlayerNetState.Local;
+            var capture = new PlayModeHarness.LogCapture();
+            try
+            {
+                FishingDebugSettings.ForcedBiteWait = 0.1f;   // as F6 / F7 set them mid-session
+                FishingDebugSettings.TwitchyHook = true;
+                _rig.Dispose();   // the rig's references die with the scene
+
+                SceneEventProgressStatus status = NetworkManager.Singleton.SceneManager.LoadScene(SceneNames.SpotLakeDock, LoadSceneMode.Single);
+                Assert.That(status, Is.EqualTo(SceneEventProgressStatus.Started), "the Spot reload must start");
+                yield return PlayModeHarness.WaitUntil(
+                    () => FishingHost.Current != null && !ReferenceEquals(FishingHost.Current, oldHost)
+                          && ServiceRoots.Game != null && !ReferenceEquals(ServiceRoots.Game, oldGame)
+                          && PlayerNetState.Local != null && !ReferenceEquals(PlayerNetState.Local, oldPlayer),
+                    20f, "the Spot reload never produced a new FishingHost, GameScope and local player");
+
+                Assert.That(FishingDebugSettings.ForcedBiteWait, Is.EqualTo(0.1f), "F6 survives the Spot reload");
+                Assert.That(FishingDebugSettings.TwitchyHook, Is.True, "F7 survives the Spot reload");
+
+                // A plain leave, not TearDownApp: the clear must come from the session ending, not from destroying the App.
+                INetworkSession session = AppBootstrap.Current.Services.Get<INetworkSession>();
+                Task leave = session.LeaveAsync();
+                yield return PlayModeHarness.Await(leave, 20f);
+                yield return PlayModeHarness.WaitUntil(
+                    () => session.State == ConnState.Offline && SceneManager.GetActiveScene().name == SceneNames.Menu,
+                    20f, "the session never returned to the menu after the leave");
+
+                Assert.That(FishingDebugSettings.ForcedBiteWait, Is.EqualTo(0f), "F6 is cleared at session end");
+                Assert.That(FishingDebugSettings.TwitchyHook, Is.False, "F7 is cleared at session end");
+                capture.AssertNoWarnings("scene reload");
+            }
+            finally
+            {
+                capture.Dispose();
+            }
         }
 
         // Catches (F4/F5 select race call site): HandleCastResult not adopting the host's landing when the rod was switched mid-charge. The host

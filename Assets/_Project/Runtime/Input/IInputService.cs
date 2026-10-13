@@ -11,6 +11,9 @@ namespace FishGame.Runtime
         bool MenuOpen { get; set; }                 // written by UiFlowController (any modal or main menu visible)
         PlayerIntent Intent { get; }                // routed, recomputed once per frame before gameplay Update
         FightInput Fight { get; }
+        // True the frame any control bound to the Journal action went down, in EVERY context (also Menu, where Intent.JournalPressed is
+        // routed away). Honours rebinding. Only the journal UI uses it, to close itself with the key that opens it.
+        bool JournalPressedAnyContext { get; }
         bool HasFocus { get; }
         InputDeviceKind LastDevice { get; }
         event Action<InputContext> ContextChanged;

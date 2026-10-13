@@ -8,6 +8,7 @@ namespace FishGame.Core
         public bool PrimaryHeld, PrimaryPressed, PrimaryReleased;
         public bool SecondaryHeld, SecondaryPressed, SecondaryReleased;
         public bool InteractPressed, ShovePressed, DropPressed, EquipPressed, PausePressed;
+        public bool JournalPressed;                // routed in Free, RodReady, RodWaiting only (M3-D27)
 
         public static readonly PlayerIntent None = default;
     }

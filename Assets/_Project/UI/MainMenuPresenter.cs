@@ -14,6 +14,8 @@ namespace FishGame.UI
         private readonly Button _solo;
         private readonly Button _devHost;
         private readonly Button _devJoin;
+        private readonly Button _journalButton;
+        private readonly Label _metaSummary;
         private readonly TextField _codeField;
         private readonly TextField _nameField;
         private bool _actionsEnabled = true;
@@ -22,6 +24,7 @@ namespace FishGame.UI
         public event Action<string> JoinRequested;
         public event Action SoloRequested;
         public event Action SettingsRequested;
+        public event Action JournalRequested;
         public event Action QuitRequested;
         public event Action DevHostRequested;
         public event Action DevJoinRequested;
@@ -35,6 +38,8 @@ namespace FishGame.UI
             _join = UiQuery.Req<Button>(root, "JoinButton");
             _solo = UiQuery.Req<Button>(root, "SoloButton");
             var settingsButton = UiQuery.Req<Button>(root, "SettingsButton");
+            _journalButton = UiQuery.Req<Button>(root, "JournalButton");
+            _metaSummary = UiQuery.Req<Label>(root, "MetaSummary");
             var quit = UiQuery.Req<Button>(root, "QuitButton");
             _devHost = UiQuery.Req<Button>(root, "DevHostButton");
             _devJoin = UiQuery.Req<Button>(root, "DevJoinButton");
@@ -46,6 +51,7 @@ namespace FishGame.UI
             _join.text = UiStrings.Get("menu.join");
             _solo.text = UiStrings.Get("menu.solo");
             settingsButton.text = UiStrings.Get("menu.settings");
+            _journalButton.text = UiStrings.Get("menu.journal");
             quit.text = UiStrings.Get("menu.quit");
             _devHost.text = UiStrings.Get("menu.dev_host");
             _devJoin.text = UiStrings.Get("menu.dev_join");
@@ -59,6 +65,7 @@ namespace FishGame.UI
             _join.clicked += () => JoinRequested?.Invoke(JoinCode.Normalize(_codeField.text));
             _solo.clicked += () => SoloRequested?.Invoke();
             settingsButton.clicked += () => SettingsRequested?.Invoke();
+            _journalButton.clicked += () => JournalRequested?.Invoke();
             quit.clicked += () => QuitRequested?.Invoke();
             _devHost.clicked += () => DevHostRequested?.Invoke();
             _devJoin.clicked += () => DevJoinRequested?.Invoke();
@@ -75,6 +82,17 @@ namespace FishGame.UI
             _nameField.SetValueWithoutNotify(_settings.Current.displayName);
             UpdateButtons();
         }
+
+        // "Journal n/25" under the title (spec 11.3); empty text hides the line. The Journal button reads only the local save, so it is
+        // never disabled by a pending session operation (UpdateButtons leaves it alone).
+        public void SetMetaSummary(string text)
+        {
+            var has = !string.IsNullOrEmpty(text);
+            _metaSummary.text = has ? text : string.Empty;
+            UiQuery.Show(_metaSummary, has);
+        }
+
+        public bool FocusJournal() => TryFocus(_journalButton);
 
         // Host, Join and Solo (and the dev buttons) are disabled while an operation is pending (spec 11.3).
         public void SetActionsEnabled(bool enabled)

@@ -9,5 +9,8 @@ namespace FishGame.Core
         public const string CastWhoosh = "Cast_Whoosh", SplashSmall = "Splash_Small", SplashBig = "Splash_Big", BitePlop = "Bite_Plop",
             NibbleTick = "Nibble_Tick", ReelClick = "Reel_Click", LineCreak = "Line_Creak", DiveThrum = "Dive_Thrum", Snap = "Snap",
             CatchFlop = "Catch_Flop", CatchCheer = "Catch_Cheer", RodThunk = "Rod_Thunk", LineCrack = "Line_Crack";
+
+        // M3 (T19): the weather looks' rain loop (spec 11.7, M3-D21)
+        public const string RainPatter = "Rain_Patter";
     }
 }

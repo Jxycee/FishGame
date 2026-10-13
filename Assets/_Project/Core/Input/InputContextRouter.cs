@@ -6,17 +6,23 @@ namespace FishGame.Core
     {
         public static PlayerIntent Route(InputContext context, in PlayerInputFrame frame)
         {
+            PlayerIntent i;
             switch (context)
             {
-                case InputContext.Swimming: return RouteSwimming(in frame);
-                case InputContext.Climbing: return RouteClimbing(in frame);
-                case InputContext.Menu: return RouteMenu(in frame);
-                case InputContext.RodReady: return RouteRodReady(in frame);
-                case InputContext.RodAiming: return RouteRodAiming(in frame);
-                case InputContext.RodWaiting: return RouteRodWaiting(in frame);
-                case InputContext.RodFighting: return RouteRodFighting(in frame);
-                default: return RouteFree(in frame);
+                case InputContext.Swimming: i = RouteSwimming(in frame); break;
+                case InputContext.Climbing: i = RouteClimbing(in frame); break;
+                case InputContext.Menu: i = RouteMenu(in frame); break;
+                case InputContext.RodReady: i = RouteRodReady(in frame); break;
+                case InputContext.RodAiming: i = RouteRodAiming(in frame); break;
+                case InputContext.RodWaiting: i = RouteRodWaiting(in frame); break;
+                case InputContext.RodFighting: i = RouteRodFighting(in frame); break;
+                default: i = RouteFree(in frame); break;
             }
+            // M3-D27: the journal opens only on foot or with the rod ready or waiting. Enforced once here because the contexts without
+            // their own route (Carrying, Staggered, Downed, Carried, Seated) fall through to RouteFree. CopyAll does not copy it.
+            i.JournalPressed = frame.JournalPressed
+                               && (context == InputContext.Free || context == InputContext.RodReady || context == InputContext.RodWaiting);
+            return i;
         }
 
         // RodFighting / Staggered: (Steer, Reel || PrimaryHeld). Every other context: no fight input.

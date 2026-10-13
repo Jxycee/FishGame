@@ -46,6 +46,7 @@ namespace FishGame.Tests.PlayMode
 
         public PlayerIntent Intent => InputContextRouter.Route(Context, in Frame);
         public FightInput Fight => InputContextRouter.RouteFight(Context, in Frame);
+        public bool JournalPressedAnyContext { get; set; }   // tests set it for the frames they want, and clear it themselves
         public bool HasFocus => true;
         public InputDeviceKind LastDevice => InputDeviceKind.KeyboardMouse;
 
@@ -60,6 +61,10 @@ namespace FishGame.Tests.PlayMode
         public string GetBindingDisplayString(string actionPath) => actionPath ?? "";
 
         public bool WasPressed(DevKey key) => Context != InputContext.Menu && DevPressed.Contains(key);
+
+        // G-CR3: F8 held. Empty by default, so a PlayMode run never scrubs the clock. Same Menu gating as WasPressed.
+        public readonly HashSet<DevKey> DevHeld = new HashSet<DevKey>();
+        public bool IsHeld(DevKey key) => Context != InputContext.Menu && DevHeld.Contains(key);
 
         private void RaiseIfChanged(InputContext before)
         {

@@ -520,13 +520,13 @@ namespace FishGame.Tests.PlayMode
             yield return FishingPlayModeDriver.Arrange(_rig, teleport: false);
             FishingRig rig = _rig;
 
-            ushort perch = rig.Registry.SpeciesIndex("perch");
-            ushort boot = rig.Registry.JunkIndex("old_boot");
+            // M3 T3: perch is deleted; the two-submesh model swap uses bluegill (restored in finally).
             ushort bluegill = rig.Registry.SpeciesIndex("bluegill");
-            FishSpeciesDef perchDef = rig.Registry.SpeciesAt(perch);
+            ushort boot = rig.Registry.JunkIndex("old_boot");
+            FishSpeciesDef bluegillDef = rig.Registry.SpeciesAt(bluegill);
             FieldInfo modelField = typeof(FishSpeciesDef).GetField("model", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(modelField, Is.Not.Null, "FishSpeciesDef.model");
-            Mesh original = (Mesh)modelField.GetValue(perchDef);
+            Mesh original = (Mesh)modelField.GetValue(bluegillDef);
             Mesh twoSubmeshes = MakeTwoSubmeshMesh();
             Transform reveal = rig.Player.transform.Find(RevealName);
             Transform hold = rig.Player.transform.Find(PlayerRigPaths.CatchHold);
@@ -536,8 +536,8 @@ namespace FishGame.Tests.PlayMode
             try
             {
                 // A species with a two-submesh model: both submeshes get M_Toon_Fish; scaled so +Z bounds = 0.25 m; held at CatchHold.
-                modelField.SetValue(perchDef, twoSubmeshes);
-                Announce(rig, new CatchResult { IsJunk = false, ItemIndex = perch, LengthMm = 250, Quality = CatchQuality.Trophy }, AnnounceKind.Landed, true);
+                modelField.SetValue(bluegillDef, twoSubmeshes);
+                Announce(rig, new CatchResult { IsJunk = false, ItemIndex = bluegill, LengthMm = 250, Quality = CatchQuality.Trophy }, AnnounceKind.Landed, true);
                 yield return PlayModeHarness.WaitFrames(2, 0.4f);   // past the 0.15 s scale-in
                 Assert.That(reveal.gameObject.activeSelf, Is.True, "the model reveal is shown");
                 MeshFilter filter = reveal.GetComponent<MeshFilter>();
@@ -555,7 +555,7 @@ namespace FishGame.Tests.PlayMode
                 yield return PlayModeHarness.WaitUntil(() => !reveal.gameObject.activeSelf, 3f, "the model reveal never hid");
 
                 // Lost and PityCast show nothing.
-                Announce(rig, new CatchResult { IsJunk = false, ItemIndex = perch, LengthMm = 250 }, AnnounceKind.Lost, false);
+                Announce(rig, new CatchResult { IsJunk = false, ItemIndex = bluegill, LengthMm = 250 }, AnnounceKind.Lost, false);
                 Announce(rig, default, AnnounceKind.PityCast, false);
                 yield return PlayModeHarness.WaitFrames(2, 0.1f);
                 Assert.That(reveal.gameObject.activeSelf, Is.False, "Lost and PityCast must not show a reveal");
@@ -572,7 +572,7 @@ namespace FishGame.Tests.PlayMode
                 Assert.That(junkMesh.bounds.size.z * reveal.lossyScale.z, Is.EqualTo(0.3f).Within(0.01f), "junk is 0.3 m long");
                 yield return PlayModeHarness.WaitUntil(() => !reveal.gameObject.activeSelf, 3f, "the junk reveal never hid");
 
-                // ReleasedCreelFull (a species without a model): held, then falls and splashes with a Landed ripple, then hides.
+                // ReleasedCreelFull (the same species, still on the swapped model): held, then falls and splashes with a Landed ripple, then hides.
                 int landedRipples = CountRipples(RippleMath.Landed);
                 Announce(rig, new CatchResult { IsJunk = false, ItemIndex = bluegill, LengthMm = 180 }, AnnounceKind.ReleasedCreelFull, false);
                 yield return null;
@@ -591,7 +591,7 @@ namespace FishGame.Tests.PlayMode
             }
             finally
             {
-                modelField.SetValue(rig.Registry.SpeciesAt(perch), original);
+                modelField.SetValue(rig.Registry.SpeciesAt(bluegill), original);
                 UnityEngine.Object.Destroy(twoSubmeshes);
             }
 
@@ -667,11 +667,14 @@ namespace FishGame.Tests.PlayMode
             return FindLoop(bus) != null;
         }
 
+        // With no name, the weather's Loop_Rain_Patter does not count: rain is the world's loop (CCR-F4, applied defensively), not the rod's, and it
+        // runs whenever the fixed dev seed's weather is Rain.
         private static Transform FindLoop(AudioBus bus, string name = null)
         {
+            string rain = "Loop_" + SfxIds.RainPatter;
             foreach (Transform child in bus.transform)
             {
-                if (name == null ? child.name.StartsWith("Loop_", StringComparison.Ordinal) : child.name == name) return child;
+                if (name == null ? child.name.StartsWith("Loop_", StringComparison.Ordinal) && child.name != rain : child.name == name) return child;
             }
             return null;
         }

@@ -8,7 +8,15 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void SceneNames_BuildOrder_BootstrapFirst()
         {
-            Assert.That(SceneNames.BuildOrder, Is.EqualTo(new[] { "Bootstrap", "Menu", "Spot_LakeDock" }));
+            Assert.That(SceneNames.BuildOrder, Is.EqualTo(new[] { "Bootstrap", "Menu", "Spot_LakeDock", "Spot_HarbourPier" }));
+        }
+
+        // Catches: the constant drifting from the scene file / the harbour spot asset's scene name (the ecology builder no longer holds a literal).
+        [Test]
+        public void SceneNames_SpotHarbourPier_IsTheHarbourSceneName()
+        {
+            Assert.That(SceneNames.SpotHarbourPier, Is.EqualTo("Spot_HarbourPier"));
+            Assert.That(SceneNames.IsGameplay(SceneNames.SpotHarbourPier), Is.True);
         }
 
         [Test]

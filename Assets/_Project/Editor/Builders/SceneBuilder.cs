@@ -25,6 +25,7 @@ namespace FishGame.EditorTools
             BuildBootstrap();
             BuildMenu();
             LakeDockBuilder.Build();
+            HarbourPierBuilder.Build();   // T17 (M3): harbour map
         }
 
         public static void BuildBootstrap()

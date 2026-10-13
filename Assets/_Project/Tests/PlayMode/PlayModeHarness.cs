@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using FishGame.App;
@@ -59,13 +60,46 @@ namespace FishGame.Tests.PlayMode
                 Assert.Fail(leak);
             }
 
+            // Journal isolation (T20): a test never reads leftover journal state and never touches a real player's journal.
+            // The fgtest profile (unity.ps1 passes -dev-profile fgtest) gets a clean meta file; any other profile gets a throwaway one below.
+            bool fgTestProfile = InstanceProfile.Current.Suffix == FgTestSuffix;
+            if (fgTestProfile) DeleteTestMetaFiles();
+
             AppBootstrap.SuppressDevAutoStart = true;
             SceneManager.LoadScene(SceneNames.Bootstrap, LoadSceneMode.Single);
             yield return WaitUntil(
                 () => AppBootstrap.Current != null && SceneManager.GetActiveScene().name == SceneNames.Menu,
                 SessionTimeoutSeconds,
                 "Bootstrap did not reach the Menu scene");
+            if (!fgTestProfile)
+            {
+                // No -dev-profile (Test Runner window): AppBootstrap loaded the real meta.json. Swap in a temp-path service before any catch.
+                string tempMeta = Path.Combine(Path.GetTempPath(), "fg-playmode-meta-" + Guid.NewGuid().ToString("N") + ".json");
+                AppBootstrap.Current.Services.Replace(new SaveService(tempMeta));
+            }
             yield return null; // let Menu objects and UiFlowController's activeSceneChanged handling settle
+        }
+
+        private const string FgTestSuffix = "_fgtest";
+
+        private static void DeleteTestMetaFiles()
+        {
+            string baseName = Path.Combine(Application.persistentDataPath, SaveService.MetaBaseName + FgTestSuffix + ".json");
+            foreach (string path in new[] { baseName, baseName + ".bak", baseName + ".tmp", baseName + ".corrupt" })
+            {
+                try
+                {
+                    if (File.Exists(path)) File.Delete(path);
+                }
+                catch (IOException e)
+                {
+                    TestContext.WriteLine("LoadBootstrapAndWaitForMenu: could not delete " + path + ": " + e.Message);
+                }
+                catch (UnauthorizedAccessException e)
+                {
+                    TestContext.WriteLine("LoadBootstrapAndWaitForMenu: could not delete " + path + ": " + e.Message);
+                }
+            }
         }
 
         public static IEnumerator StartSoloAndWaitForPlayer()

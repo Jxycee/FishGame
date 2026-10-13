@@ -69,5 +69,73 @@ namespace FishGame.Tests.EditMode
             Assert.That(left, Is.EqualTo(0.25f).Within(1e-6f));
             Assert.That(stop, Is.False);
         }
+
+        // ---- F9 (playtest 2026-10-13): the dive plunge must be unmistakable ----
+
+        // Catches: a dive that only dips the float (old 0.35 m: part of the stem still showed), a dive that is not deeper than the Bite plunge
+        // (0.25) and so reads as one, a dive that is not fully under at the largest distance scale, a spent fish that sinks, offsets that drifted.
+        [Test]
+        public void FightViewMath_HookedDepthOffset_DiveIsFullyUnderAndDeeperThanEverythingElse()
+        {
+            Assert.That(FightViewMath.HookedDepthOffset(false, false), Is.EqualTo(-0.10f).Within(1e-6f), "a plain hooked fish: the fish point at h - 0.1");
+            Assert.That(FightViewMath.HookedDepthOffset(true, false), Is.EqualTo(-FightViewMath.DiveDepth).Within(1e-6f), "a back pull plunges to the dive depth");
+            Assert.That(FightViewMath.HookedDepthOffset(false, true), Is.EqualTo(0.03f).Within(1e-6f), "a spent fish floats at h + 0.03");
+            Assert.That(FightViewMath.HookedDepthOffset(true, true), Is.EqualTo(0.03f).Within(1e-6f), "spent wins over a stale dive flag");
+            Assert.That(FightViewMath.DiveDepth, Is.GreaterThanOrEqualTo(0.6f), "well past the old 0.35 m and the 0.25 m Bite plunge");
+            Assert.That(FightViewMath.DiveDepth, Is.GreaterThan(FightViewMath.StemTipHeight * FightViewMath.MaxDistanceScale + 0.15f),
+                "even the largest, far-away bobber is fully under by more than a wave height");
+        }
+
+        // Catches: a plunge that is no faster than the normal easing, a resurface that is sped up too, a rate that changes when not diving.
+        [Test]
+        public void FightViewMath_YEaseRate_OnlyThePlungeIsFast()
+        {
+            Assert.That(FightViewMath.YEaseRate(true, 0f, -0.5f), Is.EqualTo(FightViewMath.PlungeEaseRate), "diving and going down: the fast plunge");
+            Assert.That(FightViewMath.EaseRate, Is.EqualTo(20f), "the bobber's normal easing, 1 - exp(-20 dt), is unchanged");
+            Assert.That(FightViewMath.PlungeEaseRate, Is.GreaterThanOrEqualTo(FightViewMath.EaseRate * 2f), "at least twice the normal easing");
+            Assert.That(FightViewMath.YEaseRate(true, -0.5f, 0f), Is.EqualTo(FightViewMath.EaseRate), "coming back up uses the normal easing");
+            Assert.That(FightViewMath.YEaseRate(false, 0f, -0.5f), Is.EqualTo(FightViewMath.EaseRate), "not diving: normal");
+            Assert.That(FightViewMath.YEaseRate(true, 0f, 0f), Is.EqualTo(FightViewMath.EaseRate), "no movement: normal");
+        }
+
+        // Catches: a bobber that stays a 7 cm dot at cast distance (F6/F9: unreadable), a scale that shrinks it, one that grows without a limit,
+        // a jump in the scale, NaN leaking into the transform.
+        [Test]
+        public void FightViewMath_DistanceScale_GrowsWithDistanceAndIsCapped()
+        {
+            Assert.That(FightViewMath.DistanceScale(0f), Is.EqualTo(1f));
+            Assert.That(FightViewMath.DistanceScale(FightViewMath.FarScaleStart), Is.EqualTo(1f).Within(1e-6f));
+            Assert.That(FightViewMath.DistanceScale(FightViewMath.FarScaleStart * 2f), Is.EqualTo(2f).Within(1e-5f));
+            Assert.That(FightViewMath.DistanceScale(1000f), Is.EqualTo(FightViewMath.MaxDistanceScale));
+            Assert.That(FightViewMath.DistanceScale(float.NaN), Is.EqualTo(1f));
+            Assert.That(FightViewMath.DistanceScale(-5f), Is.EqualTo(1f));
+            float last = 1f;
+            for (float d = 0f; d <= 30f; d += 0.25f)
+            {
+                float s = FightViewMath.DistanceScale(d);
+                Assert.That(s, Is.GreaterThanOrEqualTo(last - 1e-6f), "non-decreasing at " + d);
+                Assert.That(s, Is.InRange(1f, FightViewMath.MaxDistanceScale));
+                last = s;
+            }
+        }
+
+        // Catches (batch A review): a remote that sees Escaped -> Readying (the owner's one Idle frame after the terminal beat, S10 aim carry)
+        // never recalling the bobber, which then glides to the world origin (BobberPoint is zero for a no-line state).
+        [TestCase(RodState.Escaped, RodState.Idle, true)]
+        [TestCase(RodState.Escaped, RodState.Readying, true)]
+        [TestCase(RodState.Escaped, RodState.Ready, true)]
+        [TestCase(RodState.Waiting, RodState.Idle, true)]
+        [TestCase(RodState.Casting, RodState.Idle, true)]
+        [TestCase(RodState.Hooked, RodState.Idle, true)]
+        [TestCase(RodState.Hooked, RodState.Readying, true)]
+        [TestCase(RodState.Waiting, RodState.Bite, false)]
+        [TestCase(RodState.Hooked, RodState.Escaped, false)]   // still line-out: the Escaped beat shows the slack line
+        [TestCase(RodState.Casting, RodState.Waiting, false)]
+        [TestCase(RodState.Idle, RodState.Readying, false)]
+        [TestCase(RodState.Readying, RodState.Ready, false)]
+        public void FightViewMath_RecallOnLeavingLineOut_CoversEveryExitFromTheLine(RodState from, RodState to, bool recall)
+        {
+            Assert.That(FightViewMath.RecallOnLeavingLineOut(from, to), Is.EqualTo(recall));
+        }
     }
 }

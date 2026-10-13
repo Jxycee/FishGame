@@ -5,7 +5,11 @@
 //   T_EnvDetailArray.png  4 x 4, linear (detail centred on 0.5; the material gain is 2). Layers: 0 neutral, 1 grass, 2 foliage, 3 wood (grain
 //                         along u), 4 bark (ridges along v), 5 sand, 6 rock, 7 cloth, 8..15 neutral (reserved). Generator: Art/Blender/
 //                         fishgame_lookdev.blend, text block fg_textures.py.
-//   T_FishSkinArray.png   4 x 2, sRGB albedo. Layers: 0 white, 1 bluegill, 2 perch, 3 carp, 4 trout, 5 catfish, 6..7 white (one tile per species skin; M3 grows the sheet).
+//   T_FishSkinArray.png   4 x 8 (2048 x 4096 px, 32 layers; imported at max size 4096 so the tiles stay 512 x 512), sRGB albedo. Layers: 0 white,
+//                         1 bluegill, 2 perch, 3 carp, 4 trout, 5 catfish, 6..25 the 20 M3 species in batch order (6-10 mirror_minnow, bucketmouth_bass,
+//                         silver_mullet, lake_pike, frost_char; 11-14 glimmer_eel, sleepy_sturgeon, gilded_carp, old_barnacle; 15-20 pier_sardine,
+//                         ice_herring, grumble_mackerel, gawping_gurnard, red_snapper, grumpy_puffer; 21-25 moon_squid, sneaky_flounder, bruiser_tuna,
+//                         storm_ray, lanternfish), 26..31 white (unused). A layer is never renumbered (the FBX carries it in uv1.y; M3-D91).
 // Bump GetVersion when Apply changes, so the textures reimport.
 using UnityEditor;
 using UnityEngine;
@@ -19,16 +23,20 @@ namespace FishGame.EditorTools
             public readonly string Path;
             public readonly int Columns, Rows;
             public readonly bool Srgb;
-            public ArraySpec(string path, int columns, int rows, bool srgb) { Path = path; Columns = columns; Rows = rows; Srgb = srgb; }
+            public readonly int MaxSize;
+            public ArraySpec(string path, int columns, int rows, bool srgb, int maxSize)
+            {
+                Path = path; Columns = columns; Rows = rows; Srgb = srgb; MaxSize = maxSize;
+            }
         }
 
         internal static readonly ArraySpec[] Arrays =
         {
-            new ArraySpec(AssetPaths.EnvDetailArray, 4, 4, false),
-            new ArraySpec(AssetPaths.FishSkinArray, 4, 2, true),
+            new ArraySpec(AssetPaths.EnvDetailArray, 4, 4, false, 2048),
+            new ArraySpec(AssetPaths.FishSkinArray, 4, 8, true, 4096),
         };
 
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         void OnPreprocessTexture()
         {
@@ -54,7 +62,7 @@ namespace FishGame.EditorTools
             if (settings.aniso != 4) { settings.aniso = 4; changed = true; }
             if (changed) importer.SetTextureSettings(settings);
             if (importer.textureCompression != TextureImporterCompression.CompressedHQ) { importer.textureCompression = TextureImporterCompression.CompressedHQ; changed = true; }
-            if (importer.maxTextureSize != 2048) { importer.maxTextureSize = 2048; changed = true; }
+            if (importer.maxTextureSize != spec.MaxSize) { importer.maxTextureSize = spec.MaxSize; changed = true; }
             if (importer.isReadable) { importer.isReadable = false; changed = true; }
             return changed;
         }

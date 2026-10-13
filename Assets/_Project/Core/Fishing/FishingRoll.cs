@@ -12,6 +12,6 @@ namespace FishGame.Core
         public uint FightSeed;       // non-zero
         public byte SizeClass;       // 0..2 from WeightT thirds
         public float HookWindow;     // 0 = auto-hook
-        public bool Pity;            // R65: set by the host ledger at accept (never by PlaceholderRoller; no extra RNG draw)
+        public bool Pity;            // R65: set by the host ledger at accept (never by FishingRoller; no extra RNG draw)
     }
 }

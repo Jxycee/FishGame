@@ -11,6 +11,9 @@
         "FishGame.Fishing",
         "FishGame.App",
         "FishGame.UI",
+        "FishGame.Presentation",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime",
         "Unity.Netcode.Runtime",
         "Unity.Collections",
         "Unity.InputSystem"

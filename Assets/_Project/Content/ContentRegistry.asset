@@ -12,9 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41a701385bf63674a8a571e161803e45, type: 3}
   m_Name: ContentRegistry
   m_EditorClassIdentifier: FishGame.Data::FishGame.Data.ContentRegistry
-  dataVersion: 1
+  zones:
+  - {fileID: 11400000, guid: 24e1a83ec1fa889448abfdd97ec9c350, type: 2}
+  - {fileID: 11400000, guid: b35e6bf21b2747b40a932599ac2d1587, type: 2}
+  ecologyTuning: {fileID: 11400000, guid: 6f274356fbad05f4896537726b832ec7, type: 2}
+  dataVersion: 2
   spots:
   - {fileID: 11400000, guid: aee9431bc88ba5644bd17cfbd0798afb, type: 2}
+  - {fileID: 11400000, guid: 6ba9a321ab9e07442b307d3d575f35af, type: 2}
   rods:
   - {fileID: 11400000, guid: da0a6054a661f104c9b641070b065335, type: 2}
   - {fileID: 11400000, guid: c0cb6abbd95a810498ac23c3d02de77f, type: 2}
@@ -35,13 +40,38 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d4dc0e4ff28dbfb4eb31b037d3677bee, type: 2}
   species:
   - {fileID: 11400000, guid: b6165142528cfd945b50848c4c3433b2, type: 2}
-  - {fileID: 11400000, guid: da8de3e045334f143857d5a75b775776, type: 2}
-  - {fileID: 11400000, guid: 44a81c349e7d0f247b8432469acdae23, type: 2}
-  - {fileID: 11400000, guid: dbc2ebb35c2a97e45b2f09f575647936, type: 2}
-  - {fileID: 11400000, guid: 2ee339c4f5f30144dbe196dcee5dc100, type: 2}
+  - {fileID: 11400000, guid: 2a32ecd6efd82ae4aa754de60f924680, type: 2}
+  - {fileID: 11400000, guid: 9c93f5f0210a782449cfb57cdc489843, type: 2}
+  - {fileID: 11400000, guid: 6e68d461338725a4499d1d2a26fdf902, type: 2}
+  - {fileID: 11400000, guid: 3f6de596f42f28f4680a6c1015291606, type: 2}
+  - {fileID: 11400000, guid: 6ffc3947e4d7a38448e55a4f1da0df80, type: 2}
+  - {fileID: 11400000, guid: a17793c89716c4945a2db10b0db3502e, type: 2}
+  - {fileID: 11400000, guid: c7cdcfba761ebee4bb3cc62308346639, type: 2}
+  - {fileID: 11400000, guid: 59b2994dca2b67b4ab54571afa4facb6, type: 2}
+  - {fileID: 11400000, guid: 1e241b3b76a0c404483e91656f128cfc, type: 2}
+  - {fileID: 11400000, guid: 45191ad63e5f8fd49939bd0af955c735, type: 2}
+  - {fileID: 11400000, guid: f94ab3afa3d8bc442b4475bc5e333911, type: 2}
+  - {fileID: 11400000, guid: 3bc6003b1145edd48aac90e1fc2d9c96, type: 2}
+  - {fileID: 11400000, guid: c16bd40df9c9fea40bea536adf2d856b, type: 2}
+  - {fileID: 11400000, guid: 0c03666f8e63e55428df9a867f3e20cb, type: 2}
+  - {fileID: 11400000, guid: a02f36b3e18f66e42a624845896f3c6f, type: 2}
+  - {fileID: 11400000, guid: c01a29c0d1a54374a80239cdc714df9e, type: 2}
+  - {fileID: 11400000, guid: c60b543b88552c74a9a6160e7a2e330e, type: 2}
+  - {fileID: 11400000, guid: ec4ca5a7b554b3440ac3b0867042ffa9, type: 2}
+  - {fileID: 11400000, guid: 4501ff410bd67af46a4b5e4ec0f8aff1, type: 2}
+  - {fileID: 11400000, guid: 266d3b0bd1543d44b95655b298545e37, type: 2}
+  - {fileID: 11400000, guid: 9c519bf115d2a5f43a70f71ae2b307dc, type: 2}
+  - {fileID: 11400000, guid: b0cc32b60318bde47b12cce41c3274fd, type: 2}
+  - {fileID: 11400000, guid: fadf1d599eb3e9740b9296ff1b1dc541, type: 2}
+  - {fileID: 11400000, guid: 828a59cae8d0a334db3170f2b88877ec, type: 2}
   junk:
   - {fileID: 11400000, guid: b16740ee59c9a7e4484d2a91b7c8f237, type: 2}
   - {fileID: 11400000, guid: b6435e1ed38ea454c8ae4b0c6fa558ef, type: 2}
+  - {fileID: 11400000, guid: e36a6e7b2bdc9e245ad080d260cdaa8c, type: 2}
+  - {fileID: 11400000, guid: 535f36a18cfe7c94cbbdd0f244ce7dd7, type: 2}
+  - {fileID: 11400000, guid: e0cc0b8593a41cf49ab91175ef146597, type: 2}
+  - {fileID: 11400000, guid: 99097ad25f9c76240b8d77780f99efe1, type: 2}
+  - {fileID: 11400000, guid: d991236d84e03884294c592c9ae6c0f3, type: 2}
   fishingTuning: {fileID: 11400000, guid: 98263bff774b9bc4d89f8bb375e9e50b, type: 2}
   sfxCueTable: {fileID: 11400000, guid: 0f6248fb006fe1849952d0df046bbcff, type: 2}
   artPalette: {fileID: 11400000, guid: ef0e649100bab7e4aa956f076765b2f2, type: 2}
