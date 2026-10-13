@@ -79,27 +79,24 @@ namespace FishGame.Tests.EditMode
             Assert.IsFalse(i.SecondaryReleased, "SecondaryReleased");
         }
 
+        // R70: Move climbs along the look; nothing else acts on a ladder. Catches: Move still zeroed (the climb could never move), and Jump,
+        // Sprint, Interact or the rod buttons leaking onto a ladder (the bell could ring, a cast could start).
         [Test]
-        public void InputContextRouter_Climbing_PassesOnlyLookAndPause()
+        public void InputContextRouter_Climbing_PassesMoveLookAndPauseOnly()
         {
             PlayerIntent i = InputContextRouter.Route(InputContext.Climbing, AllActive());
-            Assert.AreEqual(5f, i.LookYawDeg, 1e-6f);
-            Assert.AreEqual(2f, i.LookPitchDeg, 1e-6f);
-            Assert.IsTrue(i.PausePressed, "Pause");
-            Assert.AreEqual(0f, i.MoveX, 0f);
-            Assert.AreEqual(0f, i.MoveY, 0f);
-            Assert.IsFalse(i.JumpPressed, "Jump");
-            Assert.IsFalse(i.SprintHeld, "Sprint");
-            Assert.IsFalse(i.InteractPressed, "Interact");
-            Assert.IsFalse(i.ShovePressed, "Shove");
-            Assert.IsFalse(i.DropPressed, "Drop");
-            Assert.IsFalse(i.EquipPressed, "Equip");
-            Assert.IsFalse(i.PrimaryHeld, "PrimaryHeld");
-            Assert.IsFalse(i.PrimaryPressed, "PrimaryPressed");
-            Assert.IsFalse(i.PrimaryReleased, "PrimaryReleased");
-            Assert.IsFalse(i.SecondaryHeld, "SecondaryHeld");
-            Assert.IsFalse(i.SecondaryPressed, "SecondaryPressed");
-            Assert.IsFalse(i.SecondaryReleased, "SecondaryReleased");
+            AssertRow(i, "Climbing", move: true, look: true, jump: false, sprint: false, primary: false, secondary: false,
+                      interact: false, shove: false, drop: false, equip: false, pause: true);
+        }
+
+        // Catches: a ladder that reaches interactables (InteractLive) or drives a fight.
+        [Test]
+        public void InputContextRouter_Climbing_NeverInteractsOrFights()
+        {
+            Assert.IsFalse(InputContextRouter.InteractLive(InputContext.Climbing), "nothing can be interacted with from a ladder");
+            FightInput fight = InputContextRouter.RouteFight(InputContext.Climbing, AllActive());
+            Assert.AreEqual(0f, fight.Steer, 0f);
+            Assert.IsFalse(fight.Reel);
         }
 
         [Test]

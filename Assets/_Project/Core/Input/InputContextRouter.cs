@@ -109,11 +109,14 @@ namespace FishGame.Core
             return i;
         }
 
-        // Climbing: Look, Pause pass. Everything else zeroed.
+        // Climbing (ladder, R70): Move, Look, Pause pass; Move climbs along the look (PlayerLocomotion). Jump, Sprint, Primary*, Secondary*,
+        // Interact, Shove, Drop, Equip zeroed: nothing on a ladder can act or interact.
         private static PlayerIntent RouteClimbing(in PlayerInputFrame f)
         {
             return new PlayerIntent
             {
+                MoveX = f.MoveX,
+                MoveY = f.MoveY,
                 LookYawDeg = f.LookYawDeg,
                 LookPitchDeg = f.LookPitchDeg,
                 PausePressed = f.PausePressed,
