@@ -101,6 +101,7 @@ class Group:
         self.name, self.tri = name, tri
         self.V, self.N, self.F, self.UV, self.SL, self.AO = [], [], [], [], [], []
         self.items = []
+        self._mark = 0
 
     def add(self, geo, slot, layer, ao=AO_PROP, fsl=None):
         V, N, F, UV = geo
@@ -113,8 +114,21 @@ class Group:
             self.SL.append(fsl[i] if fsl else (slot, layer))
             self.AO.append(ao)
 
-    def item(self, name, pos, size, collider='box', **extra):
+    def item(self, name, pos, size, collider='box', auto=True, **extra):
+        # Records a placed item for the manifest. With auto, its bounds come from the geometry added since the previous item: position =
+        # world AABB centre and footprint = world AABB size (yaw already included), so a box collider can be built from them directly.
+        # Sphere items keep their sphere centre (position) and radius, plus the AABB.
         d = dict(name=name, position=[round(p, 3) for p in pos], footprint=[round(s, 3) for s in size], collider=collider)
+        if auto and len(self.V) > self._mark:
+            vs = self.V[self._mark:]
+            lo = [min(v[i] for v in vs) for i in range(3)]
+            hi = [max(v[i] for v in vs) for i in range(3)]
+            d['bounds_min'] = [round(x, 3) for x in lo]
+            d['bounds_max'] = [round(x, 3) for x in hi]
+            if collider != 'sphere':
+                d['position'] = [round((lo[i] + hi[i]) / 2, 3) for i in range(3)]
+                d['footprint'] = [round(hi[i] - lo[i], 3) for i in range(3)]
+        self._mark = len(self.V)
         d.update(extra)
         self.items.append(d)
 
@@ -153,13 +167,22 @@ def bm_geo(bm, size=None, normals='smooth', uv='box', center=None):
         hi = Vector((max(v.co[i] for v in bm.verts) for i in range(3)))
         size = hi - lo
     V, N, F, UV = [], [], [], []
+    # Deterministic face order: bmesh ops such as triangulate may emit faces (and pick each face's first loop) in a run-dependent order,
+    # so faces are sorted by their rounded corner positions and each loop list starts at its smallest corner (winding kept).
+    def ck(v):
+        return (round(v.co.x, 5), round(v.co.y, 5), round(v.co.z, 5))
+    def loops_of(f):
+        lps = list(f.loops)
+        k = min(range(len(lps)), key=lambda i: ck(lps[i].vert))
+        return lps[k:] + lps[:k]
+    faces = sorted(bm.faces, key=lambda f: tuple(sorted(ck(v) for v in f.verts)))
     if normals == 'flat':
-        for f in bm.faces:
+        for f in faces:
             idx = []
-            for lp in f.loops:
+            for lp in loops_of(f):
                 idx.append(len(V)); V.append(lp.vert.co.copy()); N.append(f.normal.copy())
             F.append(idx)
-            UV.append([box_uv(lp.vert.co, f.normal, size) if uv == 'box' else (lp.vert.co.x, lp.vert.co.z) for lp in f.loops])
+            UV.append([box_uv(lp.vert.co, f.normal, size) if uv == 'box' else (lp.vert.co.x, lp.vert.co.z) for lp in loops_of(f)])
         return V, N, F, UV
     for v in bm.verts:
         V.append(v.co.copy())
@@ -170,9 +193,10 @@ def bm_geo(bm, size=None, normals='smooth', uv='box', center=None):
             N.append(n.normalized() if n.length > 1e-12 else v.normal.copy())
         else:
             N.append(v.normal.copy())
-    for f in bm.faces:
-        F.append([v.index for v in f.verts])
-        UV.append([box_uv(lp.vert.co, f.normal, size) if uv == 'box' else (lp.vert.co.x, lp.vert.co.z) for lp in f.loops])
+    for f in faces:
+        lps = loops_of(f)
+        F.append([lp.vert.index for lp in lps])
+        UV.append([box_uv(lp.vert.co, f.normal, size) if uv == 'box' else (lp.vert.co.x, lp.vert.co.z) for lp in lps])
     return V, N, F, UV
 
 # ---- primitives (local frame, then placed with xform) ----
@@ -427,8 +451,6 @@ def build_pier_deck():
     # Two WoodDark stringers under the plank ends (they rest on the posts and give the deck edge a dark band against the sea).
     for side in (-1, 1):
         add_box(g, (1.38 * side, DECK_UNDER - 0.06, (DECK_Z0 + DECK_Z1) / 2), (0.12, 0.12, length - 0.1), 0.025, S['WoodDark'], L['Wood'], 0.4)
-    for z in (-25.2, -24.8):  # ladder brackets from the stringer to the mid ladder rails (kept here so Harbour_Ladders stays inside its rail boxes)
-        add_box(g, (1.5, DECK_UNDER - 0.1, z), (0.16, 0.06, 0.06), 0.015, S['WoodDark'], L['Wood'], 0.35)
     return g
 
 def build_pier_head():
@@ -444,8 +466,6 @@ def build_pier_head():
         g.add(xform(rbox((PLANK_W, DECK_THICK, THEAD_Z1 - THEAD_Z0), 0.02), (x, cy, (THEAD_Z0 + THEAD_Z1) / 2), ry(yaw)), slot, L['Wood'], AO_WOOD)
     for z in (-7.6, -5.4):  # bearers on the corner posts
         add_box(g, (0, DECK_UNDER - 0.07, z), (width - 0.1, 0.14, 0.14), 0.025, S['WoodDark'], L['Wood'], 0.4)
-    for x in (1.8, 2.2):  # head ladder brackets
-        add_box(g, (x, DECK_UNDER - 0.1, -4.95), (0.06, 0.06, 0.12), 0.015, S['WoodDark'], L['Wood'], 0.35)
     # Ramp: planks across it, centred on the collider mid-plane so their top is the collider top (the lake RampDeck construction).
     low, high = Vector(RAMP_LOW), Vector(RAMP_HIGH)
     along = high - low
@@ -514,8 +534,8 @@ def build_ladders():
     ladder(g, ax0, ax1, az0, az1, True)
     (bx0, _, bz0), (bx1, _, bz1) = LADDER_HEAD_RAILBOX
     ladder(g, bx0, bx1, bz0, bz1, False)
-    g.item('LadderMid', (2.05, 0.55, -25.0), (1.0, 3.9, 1.0), collider='LadderVolume (layout)', rail_top=LADDER_RAIL_TOP)
-    g.item('LadderHead', (2.0, 0.55, -4.45), (1.0, 3.9, 1.0), collider='LadderVolume (layout)', rail_top=LADDER_RAIL_TOP)
+    g.item('LadderMid', (2.05, 0.55, -25.0), (1.0, 3.9, 1.0), collider='LadderVolume (layout)', auto=False, rail_top=LADDER_RAIL_TOP)
+    g.item('LadderHead', (2.0, 0.55, -4.45), (1.0, 3.9, 1.0), collider='LadderVolume (layout)', auto=False, rail_top=LADDER_RAIL_TOP)
     return g
 
 # ---------------------------------------------------------------------------------------------------------------------------------------
@@ -1281,6 +1301,16 @@ def main(export=True, bake=True):
                       colour='Col: 0.5 x ao (half-scale grey, _JitterEncoded 1); ao = per-vertex BVH ray-cast bake in Blender (40 rays, 1 m, terrain occluder, back faces ignored) above a per-part floor (wood 0.45, rock 0.62)',
                       normals='smooth / analytic rounded-box custom normals', materials='none exported'),
         slots=S, layers=L, assets_used=[],
+        items_note='Per FBX, items lists every placed piece: position and footprint are the world AABB (Unity axes, yaw included) of its geometry; '
+                   'sphere items (rocks, boulders) give the sphere centre and radius (the mesh is inside it) plus bounds_min/max. Place rock and '
+                   'boulder colliders from these numbers; never re-draw the rocks in C# (Python random.Random is not Pcg32).',
+        notes=['uv1.z (mapping) is not in the FBX: RenderValidators.ToonMeshMappingMatchesMaterial expects uv1.z == 1 on M_Toon_Tri, so the '
+               'builder writes uv1.z = 1 into the _Tri mesh copies or the validator exempts them.',
+               'Layout deviations: west-front T-head bollard at (-3.9, -5.4) to clear the lamp at (-4.8, -5.3); deck stringers at x +-1.38 '
+               '(under the plank ends, resting on the posts); ladder grab rails rise to y 2.35 (inside the rail boxes); post foot flares reach '
+               '2 cm below TerrainY; the hut roof, ridge roll and stove pipe exceed the 4 x 3 x 3 m box (see the Hut item bounds); lamps top out at y 4.53.',
+               'Breakwater boulders overhang the x 28..32 collider box by up to ~1.9 m at the waterline and the rubble base reaches x ~25 / ~35 '
+               '(top y ~ -0.48): add per-boulder sphere colliders from the items or widen the box at water level, or swimmers pass into rock.'],
         fbx=[])
     total = 0
     for ob, g in zip(objs, groups):

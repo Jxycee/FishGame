@@ -33,19 +33,25 @@
   "Cloth": 7
  },
  "assets_used": [],
+ "items_note": "Per FBX, items lists every placed piece: position and footprint are the world AABB (Unity axes, yaw included) of its geometry; sphere items (rocks, boulders) give the sphere centre and radius (the mesh is inside it) plus bounds_min/max. Place rock and boulder colliders from these numbers; never re-draw the rocks in C# (Python random.Random is not Pcg32).",
+ "notes": [
+  "uv1.z (mapping) is not in the FBX: RenderValidators.ToonMeshMappingMatchesMaterial expects uv1.z == 1 on M_Toon_Tri, so the builder writes uv1.z = 1 into the _Tri mesh copies or the validator exempts them.",
+  "Layout deviations: west-front T-head bollard at (-3.9, -5.4) to clear the lamp at (-4.8, -5.3); deck stringers at x +-1.38 (under the plank ends, resting on the posts); ladder grab rails rise to y 2.35 (inside the rail boxes); post foot flares reach 2 cm below TerrainY; the hut roof, ridge roll and stove pipe exceed the 4 x 3 x 3 m box (see the Hut item bounds); lamps top out at y 4.53.",
+  "Breakwater boulders overhang the x 28..32 collider box by up to ~1.9 m at the waterline and the rubble base reaches x ~25 / ~35 (top y ~ -0.48): add per-boulder sphere colliders from the items or widen the box at water level, or swimmers pass into rock."
+ ],
  "fbx": [
   {
    "name": "Harbour_PierDeck",
    "file": "Art/Export/Harbour/Harbour_PierDeck.fbx",
-   "triangles": 18036,
-   "vertices": 9352,
+   "triangles": 17820,
+   "vertices": 9240,
    "bounds_min": [
     -1.5014,
-    1.25,
+    1.26,
     -56.9976
    ],
    "bounds_max": [
-    1.58,
+    1.5014,
     1.5,
     -8.01
    ],
@@ -64,8 +70,8 @@
   {
    "name": "Harbour_PierHead",
    "file": "Art/Export/Harbour/Harbour_PierHead.fbx",
-   "triangles": 5400,
-   "vertices": 2800,
+   "triangles": 5184,
+   "vertices": 2688,
    "bounds_min": [
     -4.9886,
     1.0261,
@@ -74,7 +80,7 @@
    "bounds_max": [
     4.9906,
     1.5,
-    -4.89
+    -4.9986
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -116,533 +122,913 @@
      "name": "Post",
      "position": [
       -1.4,
-      1.29,
+      1.28,
       -56.0
      ],
      "footprint": [
-      0.18,
-      0.18,
-      0.18
+      0.198,
+      0.2,
+      0.198
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.499,
+      1.18,
+      -56.099
+     ],
+     "bounds_max": [
+      -1.301,
+      1.38,
+      -55.901
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      1.29,
+      1.28,
       -56.0
      ],
      "footprint": [
-      0.18,
-      0.18,
-      0.18
+      0.198,
+      0.2,
+      0.198
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.301,
+      1.18,
+      -56.099
+     ],
+     "bounds_max": [
+      1.499,
+      1.38,
+      -55.901
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      1.17,
+      1.16,
       -53.0
      ],
      "footprint": [
-      0.18,
-      0.42,
-      0.18
+      0.198,
+      0.44,
+      0.198
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.499,
+      0.94,
+      -53.099
+     ],
+     "bounds_max": [
+      -1.301,
+      1.38,
+      -52.901
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      1.17,
+      1.16,
       -53.0
      ],
      "footprint": [
-      0.18,
-      0.42,
-      0.18
+      0.198,
+      0.44,
+      0.198
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.301,
+      0.94,
+      -53.099
+     ],
+     "bounds_max": [
+      1.499,
+      1.38,
+      -52.901
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      0.99,
+      0.98,
       -50.0
      ],
      "footprint": [
-      0.18,
-      0.78,
-      0.18
+      0.212,
+      0.8,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      0.58,
+      -50.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -49.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      0.99,
+      0.98,
       -50.0
      ],
      "footprint": [
-      0.18,
-      0.78,
-      0.18
+      0.212,
+      0.8,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      0.58,
+      -50.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -49.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      0.81,
+      0.8,
       -47.0
      ],
      "footprint": [
-      0.18,
-      1.14,
-      0.18
+      0.212,
+      1.16,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      0.22,
+      -47.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -46.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      0.81,
+      0.8,
       -47.0
      ],
      "footprint": [
-      0.18,
-      1.14,
-      0.18
+      0.212,
+      1.16,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      0.22,
+      -47.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -46.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      0.565,
+      0.555,
       -44.0
      ],
      "footprint": [
-      0.18,
-      1.63,
-      0.18
+      0.212,
+      1.65,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -0.27,
+      -44.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -43.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      0.565,
+      0.555,
       -44.0
      ],
      "footprint": [
-      0.18,
-      1.63,
-      0.18
+      0.212,
+      1.65,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -0.27,
+      -44.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -43.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      0.19,
+      0.18,
       -41.0
      ],
      "footprint": [
-      0.18,
-      2.38,
-      0.18
+      0.212,
+      2.4,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -1.02,
+      -41.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -40.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      0.19,
+      0.18,
       -41.0
      ],
      "footprint": [
-      0.18,
-      2.38,
-      0.18
+      0.212,
+      2.4,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -1.02,
+      -41.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -40.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      -0.185,
+      -0.195,
       -38.0
      ],
      "footprint": [
-      0.18,
-      3.13,
-      0.18
+      0.212,
+      3.15,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -1.77,
+      -38.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -37.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      -0.185,
+      -0.195,
       -38.0
      ],
      "footprint": [
-      0.18,
-      3.13,
-      0.18
+      0.212,
+      3.15,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -1.77,
+      -38.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -37.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      -0.56,
+      -0.57,
       -35.0
      ],
      "footprint": [
-      0.18,
-      3.88,
-      0.18
+      0.212,
+      3.9,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -2.52,
+      -35.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -34.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      -0.56,
+      -0.57,
       -35.0
      ],
      "footprint": [
-      0.18,
-      3.88,
-      0.18
+      0.212,
+      3.9,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -2.52,
+      -35.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -34.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      -0.935,
+      -0.945,
       -32.0
      ],
      "footprint": [
-      0.18,
-      4.63,
-      0.18
+      0.212,
+      4.65,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -3.27,
+      -32.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -31.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      -0.935,
+      -0.945,
       -32.0
      ],
      "footprint": [
-      0.18,
-      4.63,
-      0.18
+      0.212,
+      4.65,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -3.27,
+      -32.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -31.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      -1.31,
+      -1.32,
       -29.0
      ],
      "footprint": [
-      0.18,
-      5.38,
-      0.18
+      0.212,
+      5.4,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -4.02,
+      -29.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -28.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      -1.31,
+      -1.32,
       -29.0
      ],
      "footprint": [
-      0.18,
-      5.38,
-      0.18
+      0.212,
+      5.4,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -4.02,
+      -29.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -28.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      -1.685,
+      -1.695,
       -26.0
      ],
      "footprint": [
-      0.18,
-      6.13,
-      0.18
+      0.212,
+      6.15,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -4.77,
+      -26.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -25.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      -1.685,
+      -1.695,
       -26.0
      ],
      "footprint": [
-      0.18,
-      6.13,
-      0.18
+      0.212,
+      6.15,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -4.77,
+      -26.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -25.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      -2.06,
+      -2.07,
       -23.0
      ],
      "footprint": [
-      0.18,
-      6.88,
-      0.18
+      0.212,
+      6.9,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -5.52,
+      -23.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -22.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      -2.06,
+      -2.07,
       -23.0
      ],
      "footprint": [
-      0.18,
-      6.88,
-      0.18
+      0.212,
+      6.9,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -5.52,
+      -23.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -22.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      -2.435,
+      -2.445,
       -20.0
      ],
      "footprint": [
-      0.18,
-      7.63,
-      0.18
+      0.212,
+      7.65,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -6.27,
+      -20.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -19.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      -2.435,
+      -2.445,
       -20.0
      ],
      "footprint": [
-      0.18,
-      7.63,
-      0.18
+      0.212,
+      7.65,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -6.27,
+      -20.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -19.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      -2.81,
+      -2.82,
       -17.0
      ],
      "footprint": [
-      0.18,
-      8.38,
-      0.18
+      0.212,
+      8.4,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -7.02,
+      -17.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -16.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      -2.81,
+      -2.82,
       -17.0
      ],
      "footprint": [
-      0.18,
-      8.38,
-      0.18
+      0.212,
+      8.4,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -7.02,
+      -17.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -16.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      -3.185,
+      -3.195,
       -14.0
      ],
      "footprint": [
-      0.18,
-      9.13,
-      0.18
+      0.212,
+      9.15,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -7.77,
+      -14.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -13.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      -3.185,
+      -3.195,
       -14.0
      ],
      "footprint": [
-      0.18,
-      9.13,
-      0.18
+      0.212,
+      9.15,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -7.77,
+      -14.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -13.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      -3.56,
+      -3.57,
       -11.0
      ],
      "footprint": [
-      0.18,
-      9.88,
-      0.18
+      0.212,
+      9.9,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -8.52,
+      -11.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -10.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      -3.56,
+      -3.57,
       -11.0
      ],
      "footprint": [
-      0.18,
-      9.88,
-      0.18
+      0.212,
+      9.9,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -8.52,
+      -11.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -10.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       -1.4,
-      -3.81,
+      -3.82,
       -8.0
      ],
      "footprint": [
-      0.18,
-      10.38,
-      0.18
+      0.212,
+      10.4,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.506,
+      -9.02,
+      -8.106
+     ],
+     "bounds_max": [
+      -1.294,
+      1.38,
+      -7.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       1.4,
-      -3.81,
+      -3.82,
       -8.0
      ],
      "footprint": [
-      0.18,
-      10.38,
-      0.18
+      0.212,
+      10.4,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      1.294,
+      -9.02,
+      -8.106
+     ],
+     "bounds_max": [
+      1.506,
+      1.38,
+      -7.894
+     ]
     },
     {
      "name": "Post",
      "position": [
       4.6,
-      -3.81,
+      -3.82,
       -7.6
      ],
      "footprint": [
-      0.18,
-      10.38,
-      0.18
+      0.212,
+      10.4,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      4.494,
+      -9.02,
+      -7.706
+     ],
+     "bounds_max": [
+      4.706,
+      1.38,
+      -7.494
+     ]
     },
     {
      "name": "Post",
      "position": [
       -4.6,
-      -3.81,
+      -3.82,
       -7.6
      ],
      "footprint": [
-      0.18,
-      10.38,
-      0.18
+      0.212,
+      10.4,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -4.706,
+      -9.02,
+      -7.706
+     ],
+     "bounds_max": [
+      -4.494,
+      1.38,
+      -7.494
+     ]
     },
     {
      "name": "Post",
      "position": [
       4.6,
-      -3.81,
+      -3.82,
       -5.4
      ],
      "footprint": [
-      0.18,
-      10.38,
-      0.18
+      0.212,
+      10.4,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      4.494,
+      -9.02,
+      -5.506
+     ],
+     "bounds_max": [
+      4.706,
+      1.38,
+      -5.294
+     ]
     },
     {
      "name": "Post",
      "position": [
       -4.6,
-      -3.81,
+      -3.82,
       -5.4
      ],
      "footprint": [
-      0.18,
-      10.38,
-      0.18
+      0.212,
+      10.4,
+      0.212
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -4.706,
+      -9.02,
+      -5.506
+     ],
+     "bounds_max": [
+      -4.494,
+      1.38,
+      -5.294
+     ]
     }
    ]
   },
@@ -740,6 +1126,16 @@
       1.694
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.556,
+      0.543,
+      -55.85
+     ],
+     "bounds_max": [
+      27.938,
+      1.508,
+      -54.476
+     ],
      "radius": 0.847
     },
     {
@@ -755,6 +1151,16 @@
       2.451
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.28,
+      0.029,
+      -54.708
+     ],
+     "bounds_max": [
+      28.465,
+      1.522,
+      -52.525
+     ],
      "radius": 1.225
     },
     {
@@ -770,6 +1176,16 @@
       1.92
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.674,
+      0.295,
+      -52.663
+     ],
+     "bounds_max": [
+      28.463,
+      1.429,
+      -50.992
+     ],
      "radius": 0.96
     },
     {
@@ -785,6 +1201,16 @@
       1.651
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.461,
+      0.501,
+      -51.21
+     ],
+     "bounds_max": [
+      27.915,
+      1.479,
+      -49.701
+     ],
      "radius": 0.825
     },
     {
@@ -800,6 +1226,16 @@
       2.519
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.369,
+      -0.132,
+      -49.702
+     ],
+     "bounds_max": [
+      28.627,
+      1.268,
+      -47.475
+     ],
      "radius": 1.26
     },
     {
@@ -815,6 +1251,16 @@
       1.717
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.502,
+      0.489,
+      -48.078
+     ],
+     "bounds_max": [
+      27.938,
+      1.514,
+      -46.602
+     ],
      "radius": 0.858
     },
     {
@@ -830,6 +1276,16 @@
       2.036
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.474,
+      0.264,
+      -46.65
+     ],
+     "bounds_max": [
+      28.307,
+      1.438,
+      -44.843
+     ],
      "radius": 1.018
     },
     {
@@ -845,6 +1301,16 @@
       2.192
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.326,
+      0.12,
+      -44.732
+     ],
+     "bounds_max": [
+      28.174,
+      1.324,
+      -42.846
+     ],
      "radius": 1.096
     },
     {
@@ -860,6 +1326,16 @@
       1.717
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.603,
+      0.457,
+      -43.035
+     ],
+     "bounds_max": [
+      28.166,
+      1.418,
+      -41.525
+     ],
      "radius": 0.859
     },
     {
@@ -875,6 +1351,16 @@
       2.522
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.091,
+      0.018,
+      -41.834
+     ],
+     "bounds_max": [
+      28.514,
+      1.453,
+      -39.455
+     ],
      "radius": 1.261
     },
     {
@@ -890,6 +1376,16 @@
       1.896
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.48,
+      0.305,
+      -39.986
+     ],
+     "bounds_max": [
+      28.217,
+      1.41,
+      -38.135
+     ],
      "radius": 0.948
     },
     {
@@ -905,6 +1401,16 @@
       1.664
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.519,
+      0.561,
+      -38.301
+     ],
+     "bounds_max": [
+      27.998,
+      1.489,
+      -36.711
+     ],
      "radius": 0.832
     },
     {
@@ -920,6 +1426,16 @@
       1.607
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.743,
+      0.496,
+      -36.539
+     ],
+     "bounds_max": [
+      28.096,
+      1.481,
+      -35.151
+     ],
      "radius": 0.804
     },
     {
@@ -935,6 +1451,16 @@
       2.592
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.021,
+      -0.174,
+      -35.47
+     ],
+     "bounds_max": [
+      28.412,
+      1.436,
+      -33.122
+     ],
      "radius": 1.296
     },
     {
@@ -950,6 +1476,16 @@
       2.189
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.401,
+      0.205,
+      -33.829
+     ],
+     "bounds_max": [
+      28.338,
+      1.474,
+      -31.898
+     ],
      "radius": 1.095
     },
     {
@@ -965,6 +1501,16 @@
       1.781
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.739,
+      0.456,
+      -31.965
+     ],
+     "bounds_max": [
+      28.397,
+      1.425,
+      -30.243
+     ],
      "radius": 0.891
     },
     {
@@ -980,6 +1526,16 @@
       2.026
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.7,
+      0.157,
+      -30.319
+     ],
+     "bounds_max": [
+      28.427,
+      1.298,
+      -28.63
+     ],
      "radius": 1.013
     },
     {
@@ -995,6 +1551,16 @@
       1.97
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.364,
+      0.393,
+      -28.9
+     ],
+     "bounds_max": [
+      28.163,
+      1.504,
+      -27.044
+     ],
      "radius": 0.985
     },
     {
@@ -1010,6 +1576,16 @@
       1.744
      ],
      "collider": "sphere",
+     "bounds_min": [
+      26.705,
+      0.495,
+      -26.975
+     ],
+     "bounds_max": [
+      28.19,
+      1.488,
+      -25.488
+     ],
      "radius": 0.872
     },
     {
@@ -1025,6 +1601,16 @@
       2.536
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.324,
+      -0.149,
+      -56.381
+     ],
+     "bounds_max": [
+      33.547,
+      1.406,
+      -54.192
+     ],
      "radius": 1.268
     },
     {
@@ -1040,6 +1626,16 @@
       2.524
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.532,
+      -0.164,
+      -54.826
+     ],
+     "bounds_max": [
+      33.781,
+      1.353,
+      -52.63
+     ],
      "radius": 1.262
     },
     {
@@ -1055,6 +1651,16 @@
       2.499
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.384,
+      -0.079,
+      -53.19
+     ],
+     "bounds_max": [
+      33.513,
+      1.379,
+      -51.081
+     ],
      "radius": 1.249
     },
     {
@@ -1070,6 +1676,16 @@
       2.388
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.649,
+      0.031,
+      -51.537
+     ],
+     "bounds_max": [
+      33.678,
+      1.293,
+      -49.392
+     ],
      "radius": 1.194
     },
     {
@@ -1085,6 +1701,16 @@
       2.414
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.337,
+      0.062,
+      -50.059
+     ],
+     "bounds_max": [
+      33.534,
+      1.506,
+      -47.947
+     ],
      "radius": 1.207
     },
     {
@@ -1100,6 +1726,16 @@
       1.796
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.94,
+      0.469,
+      -48.086
+     ],
+     "bounds_max": [
+      33.621,
+      1.495,
+      -46.512
+     ],
      "radius": 0.898
     },
     {
@@ -1115,6 +1751,16 @@
       2.401
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.596,
+      0.01,
+      -46.608
+     ],
+     "bounds_max": [
+      33.689,
+      1.344,
+      -44.548
+     ],
      "radius": 1.201
     },
     {
@@ -1130,6 +1776,16 @@
       2.284
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.603,
+      0.046,
+      -44.8
+     ],
+     "bounds_max": [
+      33.74,
+      1.322,
+      -42.785
+     ],
      "radius": 1.142
     },
     {
@@ -1145,6 +1801,16 @@
       2.447
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.45,
+      -0.043,
+      -43.441
+     ],
+     "bounds_max": [
+      33.758,
+      1.328,
+      -41.127
+     ],
      "radius": 1.224
     },
     {
@@ -1160,6 +1826,16 @@
       2.363
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.747,
+      -0.074,
+      -41.678
+     ],
+     "bounds_max": [
+      33.733,
+      1.332,
+      -39.65
+     ],
      "radius": 1.181
     },
     {
@@ -1175,6 +1851,16 @@
       1.762
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.678,
+      0.407,
+      -40.058
+     ],
+     "bounds_max": [
+      33.386,
+      1.417,
+      -38.516
+     ],
      "radius": 0.881
     },
     {
@@ -1190,6 +1876,16 @@
       1.933
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.816,
+      0.39,
+      -38.276
+     ],
+     "bounds_max": [
+      33.517,
+      1.505,
+      -36.642
+     ],
      "radius": 0.966
     },
     {
@@ -1205,6 +1901,16 @@
       1.778
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.732,
+      0.387,
+      -36.707
+     ],
+     "bounds_max": [
+      33.429,
+      1.409,
+      -35.103
+     ],
      "radius": 0.889
     },
     {
@@ -1220,6 +1926,16 @@
       1.745
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.782,
+      0.498,
+      -35.066
+     ],
+     "bounds_max": [
+      33.347,
+      1.538,
+      -33.491
+     ],
      "radius": 0.873
     },
     {
@@ -1235,6 +1951,16 @@
       2.577
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.314,
+      -0.081,
+      -33.979
+     ],
+     "bounds_max": [
+      33.732,
+      1.44,
+      -31.596
+     ],
      "radius": 1.289
     },
     {
@@ -1250,6 +1976,16 @@
       2.322
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.383,
+      -0.034,
+      -32.235
+     ],
+     "bounds_max": [
+      33.485,
+      1.36,
+      -29.992
+     ],
      "radius": 1.161
     },
     {
@@ -1265,6 +2001,16 @@
       2.353
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.618,
+      0.024,
+      -30.712
+     ],
+     "bounds_max": [
+      33.648,
+      1.375,
+      -28.617
+     ],
      "radius": 1.176
     },
     {
@@ -1280,6 +2026,16 @@
       1.891
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.669,
+      0.346,
+      -28.66
+     ],
+     "bounds_max": [
+      33.209,
+      1.397,
+      -27.145
+     ],
      "radius": 0.946
     },
     {
@@ -1295,6 +2051,16 @@
       2.389
      ],
      "collider": "sphere",
+     "bounds_min": [
+      31.691,
+      -0.046,
+      -27.233
+     ],
+     "bounds_max": [
+      33.716,
+      1.314,
+      -25.238
+     ],
      "radius": 1.194
     },
     {
@@ -1310,6 +2076,16 @@
       1.86
      ],
      "collider": "sphere",
+     "bounds_min": [
+      27.871,
+      0.272,
+      -25.014
+     ],
+     "bounds_max": [
+      29.527,
+      1.339,
+      -23.465
+     ],
      "radius": 0.93
     },
     {
@@ -1325,6 +2101,16 @@
       1.708
      ],
      "collider": "sphere",
+     "bounds_min": [
+      29.296,
+      0.346,
+      -25.022
+     ],
+     "bounds_max": [
+      30.87,
+      1.376,
+      -23.476
+     ],
      "radius": 0.854
     },
     {
@@ -1340,6 +2126,16 @@
       1.958
      ],
      "collider": "sphere",
+     "bounds_min": [
+      30.407,
+      0.198,
+      -25.114
+     ],
+     "bounds_max": [
+      32.202,
+      1.32,
+      -23.329
+     ],
      "radius": 0.979
     }
    ]
@@ -1371,406 +2167,676 @@
     {
      "name": "RubbleBoulder",
      "position": [
-      27.017,
-      -1.496,
-      -36.592
+      27.024,
+      -1.395,
+      -36.684
      ],
      "footprint": [
-      2.167,
-      1.842,
-      2.167
+      1.92,
+      1.308,
+      1.961
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      26.064,
+      -2.05,
+      -37.665
+     ],
+     "bounds_max": [
+      27.984,
+      -0.741,
+      -35.704
+     ],
      "radius": 1.084
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      26.91,
-      -1.694,
-      -34.775
+      26.932,
+      -1.551,
+      -34.792
      ],
      "footprint": [
-      2.448,
-      2.081,
-      2.448
+      2.051,
+      1.535,
+      1.992
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      25.907,
+      -2.318,
+      -35.788
+     ],
+     "bounds_max": [
+      27.958,
+      -0.783,
+      -33.796
+     ],
      "radius": 1.224
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      26.716,
-      -1.783,
-      -33.117
+      26.695,
+      -1.717,
+      -33.092
      ],
      "footprint": [
-      2.497,
-      2.122,
-      2.497
+      2.382,
+      1.407,
+      2.239
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      25.504,
+      -2.421,
+      -34.212
+     ],
+     "bounds_max": [
+      27.886,
+      -1.014,
+      -31.973
+     ],
      "radius": 1.248
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      26.694,
-      -1.774,
-      -31.484
+      26.657,
+      -1.631,
+      -31.488
      ],
      "footprint": [
-      2.799,
-      2.379,
-      2.799
+      2.489,
+      1.746,
+      2.469
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      25.412,
+      -2.504,
+      -32.723
+     ],
+     "bounds_max": [
+      27.901,
+      -0.758,
+      -30.254
+     ],
      "radius": 1.399
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      26.808,
-      -1.772,
-      -29.869
+      26.809,
+      -1.663,
+      -29.876
      ],
      "footprint": [
-      2.715,
-      2.308,
-      2.715
+      2.281,
+      1.62,
+      2.34
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      25.668,
+      -2.473,
+      -31.046
+     ],
+     "bounds_max": [
+      27.949,
+      -0.853,
+      -28.706
+     ],
      "radius": 1.358
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      26.698,
-      -1.785,
-      -27.857
+      26.678,
+      -1.65,
+      -27.884
      ],
      "footprint": [
-      2.469,
-      2.098,
-      2.469
+      2.056,
+      1.517,
+      2.171
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      25.65,
+      -2.409,
+      -28.969
+     ],
+     "bounds_max": [
+      27.706,
+      -0.892,
+      -26.798
+     ],
      "radius": 1.234
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      27.075,
-      -1.484,
-      -26.326
+      27.128,
+      -1.339,
+      -26.244
      ],
      "footprint": [
-      2.778,
-      2.361,
-      2.778
+      2.584,
+      1.726,
+      2.526
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      25.836,
+      -2.202,
+      -27.507
+     ],
+     "bounds_max": [
+      28.42,
+      -0.476,
+      -24.981
+     ],
      "radius": 1.389
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      32.857,
-      -1.481,
-      -38.24
+      32.883,
+      -1.378,
+      -38.207
      ],
      "footprint": [
-      2.167,
-      1.842,
-      2.167
+      2.02,
+      1.308,
+      1.979
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      31.873,
+      -2.032,
+      -39.196
+     ],
+     "bounds_max": [
+      33.893,
+      -0.724,
+      -37.217
+     ],
      "radius": 1.084
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      32.9,
-      -1.63,
-      -36.467
+      32.926,
+      -1.507,
+      -36.485
      ],
      "footprint": [
-      2.448,
-      2.08,
-      2.448
+      2.322,
+      1.486,
+      2.317
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      31.765,
+      -2.25,
+      -37.644
+     ],
+     "bounds_max": [
+      34.086,
+      -0.764,
+      -35.327
+     ],
      "radius": 1.224
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      33.0,
-      -1.595,
-      -34.841
+      33.052,
+      -1.489,
+      -34.835
      ],
      "footprint": [
-      2.063,
-      1.753,
-      2.063
+      1.812,
+      1.269,
+      1.888
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      32.146,
+      -2.123,
+      -35.779
+     ],
+     "bounds_max": [
+      33.959,
+      -0.855,
+      -33.892
+     ],
      "radius": 1.031
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      33.214,
-      -1.642,
-      -33.208
+      33.165,
+      -1.519,
+      -33.211
      ],
      "footprint": [
-      2.077,
-      1.766,
-      2.077
+      1.875,
+      1.305,
+      1.818
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      32.228,
+      -2.172,
+      -34.12
+     ],
+     "bounds_max": [
+      34.102,
+      -0.867,
+      -32.302
+     ],
      "radius": 1.039
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      33.29,
-      -1.403,
-      -31.208
+      33.289,
+      -1.294,
+      -31.254
      ],
      "footprint": [
-      2.064,
-      1.755,
-      2.064
+      1.692,
+      1.254,
+      1.715
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      32.443,
+      -1.921,
+      -32.111
+     ],
+     "bounds_max": [
+      34.135,
+      -0.666,
+      -30.396
+     ],
      "radius": 1.032
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      33.186,
-      -1.643,
-      -29.825
+      33.188,
+      -1.514,
+      -29.77
      ],
      "footprint": [
-      2.792,
-      2.373,
-      2.792
+      2.469,
+      1.662,
+      2.454
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      31.953,
+      -2.345,
+      -30.997
+     ],
+     "bounds_max": [
+      34.423,
+      -0.683,
+      -28.543
+     ],
      "radius": 1.396
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      33.289,
-      -1.688,
-      -28.043
+      33.285,
+      -1.547,
+      -28.024
      ],
      "footprint": [
-      2.421,
-      2.058,
-      2.421
+      2.062,
+      1.506,
+      2.113
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      32.253,
+      -2.3,
+      -29.081
+     ],
+     "bounds_max": [
+      34.316,
+      -0.795,
+      -26.968
+     ],
      "radius": 1.21
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      33.174,
-      -1.47,
-      -26.225
+      33.165,
+      -1.336,
+      -26.232
      ],
      "footprint": [
-      2.493,
-      2.119,
-      2.493
+      2.052,
+      1.551,
+      2.106
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      32.138,
+      -2.111,
+      -27.285
+     ],
+     "bounds_max": [
+      34.191,
+      -0.56,
+      -25.179
+     ],
      "radius": 1.246
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      28.6,
-      -1.6,
-      -23.7
+      28.598,
+      -1.494,
+      -23.718
      ],
      "footprint": [
-      2.274,
-      1.933,
-      2.274
+      1.959,
+      1.362,
+      2.036
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      27.619,
+      -2.175,
+      -24.736
+     ],
+     "bounds_max": [
+      29.578,
+      -0.813,
+      -22.701
+     ],
      "radius": 1.137
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      30.0,
-      -1.6,
-      -23.7
+      29.962,
+      -1.471,
+      -23.72
      ],
      "footprint": [
-      2.441,
-      2.075,
-      2.441
+      1.933,
+      1.46,
+      2.066
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      28.995,
+      -2.201,
+      -24.753
+     ],
+     "bounds_max": [
+      30.928,
+      -0.741,
+      -22.687
+     ],
      "radius": 1.22
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      31.4,
-      -1.6,
-      -23.7
+      31.429,
+      -1.46,
+      -23.744
      ],
      "footprint": [
-      2.547,
-      2.165,
-      2.547
+      2.279,
+      1.599,
+      2.166
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      30.29,
+      -2.26,
+      -24.827
+     ],
+     "bounds_max": [
+      32.568,
+      -0.66,
+      -22.661
+     ],
      "radius": 1.273
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      26.307,
-      -3.51,
-      -29.767
+      26.294,
+      -3.379,
+      -29.781
      ],
      "footprint": [
-      2.282,
-      1.94,
-      2.282
+      2.182,
+      1.485,
+      2.163
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      25.203,
+      -4.121,
+      -30.862
+     ],
+     "bounds_max": [
+      27.385,
+      -2.637,
+      -28.699
+     ],
      "radius": 1.141
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      26.293,
-      -3.56,
-      -28.167
+      26.27,
+      -3.434,
+      -28.183
      ],
      "footprint": [
-      2.265,
-      1.925,
-      2.265
+      2.033,
+      1.421,
+      2.167
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      25.254,
+      -4.144,
+      -29.267
+     ],
+     "bounds_max": [
+      27.287,
+      -2.723,
+      -27.1
+     ],
      "radius": 1.132
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      26.198,
-      -3.475,
-      -26.457
+      26.139,
+      -3.372,
+      -26.406
      ],
      "footprint": [
-      2.75,
-      2.338,
-      2.75
+      2.217,
+      1.547,
+      2.269
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      25.03,
+      -4.146,
+      -27.541
+     ],
+     "bounds_max": [
+      27.247,
+      -2.598,
+      -25.272
+     ],
      "radius": 1.375
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      33.552,
-      -3.618,
-      -29.734
+      33.645,
+      -3.48,
+      -29.726
      ],
      "footprint": [
-      2.448,
-      2.081,
-      2.448
+      2.165,
+      1.517,
+      2.277
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      32.562,
+      -4.238,
+      -30.865
+     ],
+     "bounds_max": [
+      34.727,
+      -2.722,
+      -28.587
+     ],
      "radius": 1.224
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      33.443,
-      -3.545,
-      -28.012
+      33.43,
+      -3.423,
+      -28.014
      ],
      "footprint": [
-      2.109,
-      1.793,
-      2.109
+      1.813,
+      1.286,
+      1.821
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      32.524,
+      -4.066,
+      -28.925
+     ],
+     "bounds_max": [
+      34.337,
+      -2.78,
+      -27.104
+     ],
      "radius": 1.055
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      33.51,
-      -3.618,
-      -26.181
+      33.535,
+      -3.452,
+      -26.158
      ],
      "footprint": [
-      2.798,
-      2.378,
-      2.798
+      2.475,
+      1.736,
+      2.46
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      32.297,
+      -4.32,
+      -27.388
+     ],
+     "bounds_max": [
+      34.772,
+      -2.584,
+      -24.928
+     ],
      "radius": 1.399
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      28.6,
-      -3.6,
-      -23.7
+      28.651,
+      -3.471,
+      -23.697
      ],
      "footprint": [
-      2.381,
-      2.024,
-      2.381
+      1.974,
+      1.392,
+      1.857
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      27.664,
+      -4.167,
+      -24.626
+     ],
+     "bounds_max": [
+      29.639,
+      -2.775,
+      -22.769
+     ],
      "radius": 1.191
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      30.0,
-      -3.6,
-      -23.7
+      29.984,
+      -3.487,
+      -23.783
      ],
      "footprint": [
-      2.46,
-      2.091,
-      2.46
+      2.051,
+      1.433,
+      2.191
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      28.959,
+      -4.203,
+      -24.879
+     ],
+     "bounds_max": [
+      31.009,
+      -2.771,
+      -22.688
+     ],
      "radius": 1.23
     },
     {
      "name": "RubbleBoulder",
      "position": [
-      31.4,
-      -3.6,
-      -23.7
+      31.418,
+      -3.483,
+      -23.691
      ],
      "footprint": [
-      2.065,
-      1.755,
-      2.065
+      1.752,
+      1.312,
+      1.873
      ],
      "collider": "none (underwater; optional sphere)",
+     "bounds_min": [
+      30.542,
+      -4.139,
+      -24.627
+     ],
+     "bounds_max": [
+      32.294,
+      -2.827,
+      -22.754
+     ],
      "radius": 1.032
     }
    ]
@@ -1812,6 +2878,16 @@
       1.315
      ],
      "collider": "sphere",
+     "bounds_min": [
+      -24.804,
+      0.776,
+      -52.472
+     ],
+     "bounds_max": [
+      -23.72,
+      1.496,
+      -51.335
+     ],
      "radius": 0.657
     },
     {
@@ -1827,6 +2903,16 @@
       1.314
      ],
      "collider": "sphere",
+     "bounds_min": [
+      -56.259,
+      0.437,
+      -49.674
+     ],
+     "bounds_max": [
+      -55.083,
+      1.178,
+      -48.498
+     ],
      "radius": 0.657
     },
     {
@@ -1842,6 +2928,16 @@
       0.878
      ],
      "collider": "sphere",
+     "bounds_min": [
+      -34.692,
+      1.029,
+      -54.284
+     ],
+     "bounds_max": [
+      -33.911,
+      1.545,
+      -53.509
+     ],
      "radius": 0.439
     },
     {
@@ -1857,6 +2953,16 @@
       0.851
      ],
      "collider": "sphere",
+     "bounds_min": [
+      49.439,
+      0.65,
+      -51.091
+     ],
+     "bounds_max": [
+      50.225,
+      1.109,
+      -50.35
+     ],
      "radius": 0.426
     },
     {
@@ -1872,6 +2978,16 @@
       0.637
      ],
      "collider": "sphere",
+     "bounds_min": [
+      14.263,
+      0.565,
+      -50.231
+     ],
+     "bounds_max": [
+      14.834,
+      0.944,
+      -49.688
+     ],
      "radius": 0.318
     },
     {
@@ -1887,6 +3003,16 @@
       1.462
      ],
      "collider": "sphere",
+     "bounds_min": [
+      -32.506,
+      0.874,
+      -53.567
+     ],
+     "bounds_max": [
+      -31.221,
+      1.714,
+      -52.308
+     ],
      "radius": 0.731
     },
     {
@@ -1902,6 +3028,16 @@
       1.388
      ],
      "collider": "sphere",
+     "bounds_min": [
+      -25.71,
+      0.928,
+      -53.886
+     ],
+     "bounds_max": [
+      -24.49,
+      1.7,
+      -52.671
+     ],
      "radius": 0.694
     },
     {
@@ -1917,6 +3053,16 @@
       0.828
      ],
      "collider": "sphere",
+     "bounds_min": [
+      -46.683,
+      0.889,
+      -53.045
+     ],
+     "bounds_max": [
+      -45.925,
+      1.346,
+      -52.251
+     ],
      "radius": 0.414
     },
     {
@@ -1932,6 +3078,16 @@
       1.518
      ],
      "collider": "sphere",
+     "bounds_min": [
+      14.606,
+      0.785,
+      -52.707
+     ],
+     "bounds_max": [
+      15.919,
+      1.605,
+      -51.471
+     ],
      "radius": 0.759
     },
     {
@@ -1947,6 +3103,16 @@
       1.406
      ],
      "collider": "sphere",
+     "bounds_min": [
+      55.815,
+      0.309,
+      -48.634
+     ],
+     "bounds_max": [
+      57.021,
+      1.083,
+      -47.424
+     ],
      "radius": 0.703
     },
     {
@@ -1962,6 +3128,16 @@
       0.675
      ],
      "collider": "sphere",
+     "bounds_min": [
+      33.846,
+      0.248,
+      -47.637
+     ],
+     "bounds_max": [
+      34.39,
+      0.632,
+      -47.053
+     ],
      "radius": 0.337
     },
     {
@@ -1977,6 +3153,16 @@
       1.064
      ],
      "collider": "sphere",
+     "bounds_min": [
+      38.726,
+      0.804,
+      -52.512
+     ],
+     "bounds_max": [
+      39.615,
+      1.377,
+      -51.635
+     ],
      "radius": 0.532
     }
    ]
@@ -2015,15 +3201,25 @@
      "name": "Hut",
      "position": [
       -9.0,
-      2.7,
+      2.765,
       -63.0
      ],
      "footprint": [
-      4.0,
-      3.0,
-      3.0
+      4.4,
+      3.13,
+      3.464
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -11.2,
+      1.2,
+      -64.732
+     ],
+     "bounds_max": [
+      -6.8,
+      4.33,
+      -61.268
+     ]
     },
     {
      "name": "Bollard_0",
@@ -2033,11 +3229,21 @@
       -7.6
      ],
      "footprint": [
-      0.34,
+      0.33,
       0.45,
-      0.34
+      0.322
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      4.435,
+      1.5,
+      -7.761
+     ],
+     "bounds_max": [
+      4.765,
+      1.95,
+      -7.439
+     ]
     },
     {
      "name": "Bollard_1",
@@ -2047,11 +3253,21 @@
       -7.6
      ],
      "footprint": [
-      0.34,
+      0.33,
       0.45,
-      0.34
+      0.322
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -4.765,
+      1.5,
+      -7.761
+     ],
+     "bounds_max": [
+      -4.435,
+      1.95,
+      -7.439
+     ]
     },
     {
      "name": "Bollard_2",
@@ -2061,11 +3277,21 @@
       -5.4
      ],
      "footprint": [
-      0.34,
+      0.33,
       0.45,
-      0.34
+      0.322
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      4.435,
+      1.5,
+      -5.561
+     ],
+     "bounds_max": [
+      4.765,
+      1.95,
+      -5.239
+     ]
     },
     {
      "name": "Bollard_3",
@@ -2075,11 +3301,21 @@
       -5.4
      ],
      "footprint": [
-      0.34,
+      0.33,
       0.45,
-      0.34
+      0.322
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -4.065,
+      1.5,
+      -5.561
+     ],
+     "bounds_max": [
+      -3.735,
+      1.95,
+      -5.239
+     ]
     },
     {
      "name": "Crate_0",
@@ -2089,11 +3325,21 @@
       -49.75
      ],
      "footprint": [
-      0.55,
-      0.55,
-      0.55
+      0.606,
+      0.56,
+      0.606
      ],
      "collider": "box",
+     "bounds_min": [
+      -1.353,
+      1.495,
+      -50.053
+     ],
+     "bounds_max": [
+      -0.747,
+      2.055,
+      -49.447
+     ],
      "yaw": 4.0
     },
     {
@@ -2104,11 +3350,21 @@
       -49.15
      ],
      "footprint": [
-      0.5,
-      0.5,
-      0.5
+      0.575,
+      0.51,
+      0.575
      ],
      "collider": "box",
+     "bounds_min": [
+      -1.387,
+      1.495,
+      -49.437
+     ],
+     "bounds_max": [
+      -0.813,
+      2.005,
+      -48.863
+     ],
      "yaw": -7.0
     },
     {
@@ -2119,11 +3375,21 @@
       -49.73
      ],
      "footprint": [
-      0.42,
-      0.42,
-      0.42
+      0.538,
+      0.43,
+      0.538
      ],
      "collider": "box",
+     "bounds_min": [
+      -1.319,
+      2.045,
+      -49.999
+     ],
+     "bounds_max": [
+      -0.781,
+      2.475,
+      -49.461
+     ],
      "yaw": 17.0
     },
     {
@@ -2134,11 +3400,21 @@
       -48.55
      ],
      "footprint": [
-      0.55,
+      0.544,
       0.78,
-      0.55
+      0.544
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.292,
+      1.5,
+      -48.822
+     ],
+     "bounds_max": [
+      -0.748,
+      2.28,
+      -48.278
+     ]
     },
     {
      "name": "Barrel_1",
@@ -2148,39 +3424,69 @@
       -48.0
      ],
      "footprint": [
-      0.55,
+      0.544,
       0.78,
-      0.55
+      0.544
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.392,
+      1.5,
+      -48.272
+     ],
+     "bounds_max": [
+      -0.848,
+      2.28,
+      -47.728
+     ]
     },
     {
      "name": "Lamp_0",
      "position": [
       -1.35,
-      3.0,
+      3.015,
       -46.0
      ],
      "footprint": [
-      0.24,
+      0.34,
       3.03,
-      0.24
+      0.34
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -1.52,
+      1.5,
+      -46.17
+     ],
+     "bounds_max": [
+      -1.18,
+      4.53,
+      -45.83
+     ]
     },
     {
      "name": "Lamp_1",
      "position": [
       -4.8,
-      3.0,
+      3.015,
       -5.3
      ],
      "footprint": [
-      0.24,
+      0.34,
       3.03,
-      0.24
+      0.34
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -4.97,
+      1.5,
+      -5.47
+     ],
+     "bounds_max": [
+      -4.63,
+      4.53,
+      -5.13
+     ]
     }
    ]
   },
@@ -2218,46 +3524,76 @@
     {
      "name": "Rowboat_West",
      "position": [
-      -3.35,
-      0.3,
-      -36.2
+      -3.356,
+      0.183,
+      -36.201
      ],
      "footprint": [
-      1.25,
-      0.7,
-      3.1
+      1.202,
+      0.567,
+      3.204
      ],
      "collider": "box (optional)",
+     "bounds_min": [
+      -3.957,
+      -0.101,
+      -37.803
+     ],
+     "bounds_max": [
+      -2.755,
+      0.466,
+      -34.599
+     ],
      "heading_deg": 2.0
     },
     {
      "name": "Rowboat_East",
      "position": [
-      3.45,
-      0.3,
-      -14.3
+      3.46,
+      0.183,
+      -14.304
      ],
      "footprint": [
-      1.25,
-      0.7,
-      3.1
+      1.208,
+      0.567,
+      3.207
      ],
      "collider": "box (optional)",
+     "bounds_min": [
+      2.855,
+      -0.101,
+      -15.907
+     ],
+     "bounds_max": [
+      4.064,
+      0.466,
+      -12.7
+     ],
      "heading_deg": -3.0
     },
     {
      "name": "Skiff_Breakwater",
      "position": [
-      25.4,
-      0.4,
-      -38.5
+      25.376,
+      0.137,
+      -38.669
      ],
      "footprint": [
-      1.6,
-      0.9,
-      4.7
+      1.574,
+      1.373,
+      4.632
      ],
      "collider": "box (optional)",
+     "bounds_min": [
+      24.589,
+      -0.55,
+      -40.984
+     ],
+     "bounds_max": [
+      26.163,
+      0.824,
+      -36.353
+     ],
      "heading_deg": 4.0
     }
    ]
@@ -2298,158 +3634,268 @@
      "name": "MooringBuoy_A",
      "position": [
       -7.0,
-      0.0,
+      0.14,
       -16.0
      ],
      "footprint": [
       0.6,
-      0.6,
-      0.6
+      0.681,
+      0.585
      ],
-     "collider": "none (floating)"
+     "collider": "none (floating)",
+     "bounds_min": [
+      -7.3,
+      -0.2,
+      -16.292
+     ],
+     "bounds_max": [
+      -6.7,
+      0.481,
+      -15.708
+     ]
     },
     {
      "name": "MooringBuoy_B",
      "position": [
       8.0,
-      0.0,
+      0.14,
       -17.0
      ],
      "footprint": [
       0.6,
-      0.6,
-      0.6
+      0.681,
+      0.585
      ],
-     "collider": "none (floating)"
+     "collider": "none (floating)",
+     "bounds_min": [
+      7.7,
+      -0.2,
+      -17.292
+     ],
+     "bounds_max": [
+      8.3,
+      0.481,
+      -16.708
+     ]
     },
     {
      "name": "MarkerBuoy_A",
      "position": [
       21.0,
-      0.0,
+      0.365,
       -14.0
      ],
      "footprint": [
       0.62,
-      1.4,
-      0.62
+      1.43,
+      0.604
      ],
-     "collider": "none (floating)"
+     "collider": "none (floating)",
+     "bounds_min": [
+      20.69,
+      -0.35,
+      -14.302
+     ],
+     "bounds_max": [
+      21.31,
+      1.08,
+      -13.698
+     ]
     },
     {
      "name": "MarkerBuoy_B",
      "position": [
       -22.0,
-      0.0,
+      0.365,
       -20.0
      ],
      "footprint": [
       0.62,
-      1.4,
-      0.62
+      1.43,
+      0.604
      ],
-     "collider": "none (floating)"
+     "collider": "none (floating)",
+     "bounds_min": [
+      -22.31,
+      -0.35,
+      -20.302
+     ],
+     "bounds_max": [
+      -21.69,
+      1.08,
+      -19.698
+     ]
     },
     {
      "name": "LobsterPot_A",
      "position": [
       -6.3,
-      1.35,
+      1.266,
       -62.6
      ],
      "footprint": [
-      0.5,
-      0.3,
-      0.74
+      0.571,
+      0.441,
+      0.776
      ],
      "collider": "box",
+     "bounds_min": [
+      -6.586,
+      1.045,
+      -62.988
+     ],
+     "bounds_max": [
+      -6.014,
+      1.486,
+      -62.212
+     ],
      "yaw": 8.0
     },
     {
      "name": "LobsterPot_B",
      "position": [
       -6.32,
-      1.71,
+      1.626,
       -62.58
      ],
      "footprint": [
-      0.5,
-      0.3,
-      0.74
+      0.603,
+      0.441,
+      0.793
      ],
      "collider": "box",
+     "bounds_min": [
+      -6.621,
+      1.405,
+      -62.976
+     ],
+     "bounds_max": [
+      -6.019,
+      1.846,
+      -62.184
+     ],
      "yaw": -11.0
     },
     {
      "name": "LobsterPot_C",
      "position": [
       2.85,
-      1.35,
+      1.266,
       -59.6
      ],
      "footprint": [
-      0.5,
-      0.3,
-      0.74
+      0.72,
+      0.441,
+      0.841
      ],
      "collider": "box",
+     "bounds_min": [
+      2.49,
+      1.045,
+      -60.021
+     ],
+     "bounds_max": [
+      3.21,
+      1.486,
+      -59.179
+     ],
      "yaw": 24.0
     },
     {
      "name": "RopeCoil_East",
      "position": [
-      3.85,
-      1.55,
-      -7.55
+      3.863,
+      1.546,
+      -7.558
      ],
      "footprint": [
-      0.6,
-      0.1,
-      0.6
+      0.517,
+      0.092,
+      0.495
      ],
-     "collider": "none (low, walkable)"
+     "collider": "none (low, walkable)",
+     "bounds_min": [
+      3.604,
+      1.5,
+      -7.806
+     ],
+     "bounds_max": [
+      4.121,
+      1.592,
+      -7.311
+     ]
     },
     {
      "name": "RopeCoil_West",
      "position": [
-      -3.85,
-      1.55,
-      -7.55
+      -3.837,
+      1.546,
+      -7.558
      ],
      "footprint": [
-      0.6,
-      0.1,
-      0.6
+      0.517,
+      0.092,
+      0.495
      ],
-     "collider": "none (low, walkable)"
+     "collider": "none (low, walkable)",
+     "bounds_min": [
+      -4.096,
+      1.5,
+      -7.806
+     ],
+     "bounds_max": [
+      -3.579,
+      1.592,
+      -7.311
+     ]
     },
     {
      "name": "HutNet",
      "position": [
-      -6.92,
-      2.5,
+      -6.922,
+      2.485,
       -63.85
      ],
      "footprint": [
-      0.2,
-      1.3,
-      1.6
+      0.092,
+      1.271,
+      1.5
      ],
-     "collider": "none (on the hut wall)"
+     "collider": "none (on the hut wall)",
+     "bounds_min": [
+      -6.968,
+      1.85,
+      -64.6
+     ],
+     "bounds_max": [
+      -6.876,
+      3.121,
+      -63.1
+     ]
     },
     {
      "name": "PierSign",
      "position": [
       -2.9,
-      2.2,
+      2.125,
       -58.8
      ],
      "footprint": [
       2.2,
-      2.0,
-      0.15
+      2.05,
+      0.128
      ],
-     "collider": "box"
+     "collider": "box",
+     "bounds_min": [
+      -4.0,
+      1.1,
+      -58.864
+     ],
+     "bounds_max": [
+      -1.8,
+      3.15,
+      -58.736
+     ]
     },
     {
      "name": "LifeRing",
@@ -2463,10 +3909,20 @@
       0.6,
       0.12
      ],
-     "collider": "none (on the hut wall)"
+     "collider": "none (on the hut wall)",
+     "bounds_min": [
+      -10.85,
+      2.35,
+      -61.54
+     ],
+     "bounds_max": [
+      -10.25,
+      2.95,
+      -61.42
+     ]
     }
    ]
   }
  ],
- "total_triangles": 83244
+ "total_triangles": 82812
 }
