@@ -188,6 +188,92 @@ namespace FishGame.EditorTools
             if (!string.IsNullOrEmpty(sheet) && !string.IsNullOrEmpty(before)) ComposeSheet(before, outDir, sheet, AdoptionShots);
         }
 
+        // M3 T23 (2026-10-13): all 25 species as wired on the species assets (FishSpeciesDef.Model, so the content build's model fill is part of the check),
+        // five per shot in FishingSeedData.Species order (the roster order; a species without a model is skipped and logged as "fallback"), side on,
+        // each scaled so its longest bounds axis is 0.30 m. Writes species_0..4.png to -fgLookOut and, with -fgLookSheet <abs png>, one single-column sheet.
+        // Logs one "FG LOOKDEV species <row>.<col> <id> <model> tris=<n> uv1y=<layer>" line per fish. Needs a graphics device (no -nographics).
+        public static void CaptureSpecies()
+        {
+            string outDir = Arg("-fgLookOut");
+            if (string.IsNullOrEmpty(outDir)) throw new System.ArgumentException("-fgLookOut <dir> is required");
+            Directory.CreateDirectory(outDir);
+
+            EditorSceneManager.OpenScene(AssetPaths.LakeDockScene, OpenSceneMode.Single);
+            var palette = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
+            var water = AssetDatabase.LoadAssetAtPath<WaterSettingsDef>(AssetPaths.WaterSettingsAsset);
+            PushPalette(palette);
+            PushWaves(water);
+            Light sun = FindSun();
+            ApplyPhase(palette, DayPhase, sun, sun.transform.rotation);
+
+            var cameraGo = new GameObject("LookDevCamera");
+            Camera camera = cameraGo.AddComponent<Camera>();
+            camera.nearClipPlane = MovementMath.NearClip;
+            camera.farClipPlane = MovementMath.FarClip;
+            cameraGo.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = true;
+            Camera sceneCamera = GameObject.Find("SceneCamera")?.GetComponent<Camera>();
+            if (sceneCamera != null) sceneCamera.enabled = false;
+
+            var fishMaterial = AssetDatabase.LoadAssetAtPath<Material>(AssetPaths.MaterialsFolder + "/M_Toon_Fish.mat");
+            Vector3 lineEye = new Vector3(0f, 1.78f, -47.9f), lineAt = new Vector3(0f, 1.62f, -46.4f);
+            Vector3 view = (lineAt - lineEye).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, view).normalized;
+            Quaternion rot = Quaternion.LookRotation(Vector3.Cross(view, Vector3.up).normalized, Vector3.up);
+
+            const int perRow = 5;
+            int rows = 0, withModel = 0;
+            var row = new List<GameObject>();
+            foreach (SpeciesSeed seed in FishingSeedData.Species)
+            {
+                var def = AssetDatabase.LoadAssetAtPath<FishSpeciesDef>(AssetPaths.SpeciesFolder + "/" + seed.Id + ".asset");
+                Mesh mesh = def != null ? def.Model : null;
+                if (mesh == null) { Debug.Log("FG LOOKDEV species " + seed.Id + " fallback (no model)"); continue; }
+                withModel++;
+                int col = row.Count;
+                var uv1 = new List<Vector4>();
+                mesh.GetUVs(1, uv1);
+                long tris = 0;
+                for (int s = 0; s < mesh.subMeshCount; s++) tris += mesh.GetIndexCount(s) / 3;
+                Debug.Log("FG LOOKDEV species " + rows + "." + col + " " + seed.Id + " " + seed.ModelFile + " tris=" + tris + " submeshes=" + mesh.subMeshCount
+                          + " uv1y=" + (uv1.Count > 0 ? uv1[0].y.ToString("0") : "none"));
+
+                var go = new GameObject("LookDevFish_" + seed.Id);
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var r = go.AddComponent<MeshRenderer>();
+                var mats = new Material[Mathf.Max(1, mesh.subMeshCount)];
+                for (int k = 0; k < mats.Length; k++) mats[k] = fishMaterial;
+                r.sharedMaterials = mats;
+                r.shadowCastingMode = ShadowCastingMode.Off;
+                r.receiveShadows = false;
+                Vector3 size = mesh.bounds.size;
+                float scale = 0.30f / Mathf.Max(1e-5f, Mathf.Max(size.x, Mathf.Max(size.y, size.z)));
+                go.transform.localScale = Vector3.one * scale;
+                go.transform.rotation = rot;
+                Vector3 centre = lineAt + right * ((col - 2) * 0.36f);
+                go.transform.position = centre - rot * (mesh.bounds.center * scale);
+                row.Add(go);
+
+                if (row.Count == perRow)
+                {
+                    Shoot(camera, lineEye, lineAt, 42f, outDir, "species_" + rows);
+                    foreach (GameObject g in row) Object.DestroyImmediate(g);
+                    row.Clear();
+                    rows++;
+                }
+            }
+            if (row.Count > 0)
+            {
+                Shoot(camera, lineEye, lineAt, 42f, outDir, "species_" + rows);
+                foreach (GameObject g in row) Object.DestroyImmediate(g);
+                rows++;
+            }
+            Object.DestroyImmediate(cameraGo);
+            Debug.Log("FG LOOKDEV species captured " + withModel + " of " + FishingSeedData.Species.Count + " rows=" + rows);
+
+            string sheet = Arg("-fgLookSheet");
+            if (!string.IsNullOrEmpty(sheet)) ComposeGrid(outDir, rows, new[] { "species" }, sheet);
+        }
+
         // Batch entry (no graphics needed): only the collider dump of the scene on disk, colliders_<tag>.txt in -fgLookOut.
         public static void DumpCollidersBatch()
         {
