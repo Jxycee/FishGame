@@ -41,6 +41,7 @@ namespace FishGame.UI
         private PausePresenter _pausePresenter;
         private HudPresenter _hudPresenter;
         private JournalPresenter _journal;
+        private DevPanelPresenter _devPanel;     // dev builds only; null otherwise
         private ToastPresenter _toasts;
         private NameplateOverlay _nameplates;
         private IDisposable _toastSoundSubscription;
@@ -247,7 +248,14 @@ namespace FishGame.UI
 
             _hudPresenter = new HudPresenter(_hud, _bus, _input);
             AttachHudExtension(new FishingHudPresenter());
-            if (Debug.isDebugBuild) AttachHudExtension(new DevOverlayPresenter());
+            AttachHudExtension(new ClockHudPresenter());     // every build: the clock is gameplay information
+            if (Debug.isDebugBuild)
+            {
+                var overlay = new DevOverlayPresenter();
+                _devPanel = new DevPanelPresenter(this, overlay);
+                AttachHudExtension(overlay);
+                AttachHudExtension(_devPanel);
+            }
             _toasts = new ToastPresenter(_root, _bus, _settings);
             _nameplates = new NameplateOverlay(nameplateLayer);
 
@@ -279,7 +287,11 @@ namespace FishGame.UI
                 _nameplates.Tick(Camera.main);
                 for (int i = 0; i < _hudExtensions.Count; i++) _hudExtensions[i].Tick(Time.unscaledDeltaTime);
             }
-            if (_modalOwner != null) _journal.RecoverFocus();   // the menu behind a modal is hidden, so the router's recovery would miss it
+            if (_modalOwner != null)
+            {
+                _journal.RecoverFocus();                        // the menu behind a modal is hidden, so the router's recovery would miss it
+                _devPanel?.RecoverFocus();                      // each is a no-op unless it is the open modal
+            }
             else _focus.RefocusIfLost(_screen, _input.LastDevice);
         }
 

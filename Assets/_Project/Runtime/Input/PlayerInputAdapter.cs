@@ -339,22 +339,34 @@ namespace FishGame.Runtime
         // Stateless on purpose: no caching, so every reader in the frame sees the same edge.
         public bool WasPressed(DevKey key)
         {
+            if (!TryDevKey(key, out Key k)) return false;
+            return Keyboard.current[k].wasPressedThisFrame;
+        }
+
+        // G-CR3: F8 "held". Same gating as WasPressed (dev build, window focus, not Menu), so alt-tab or opening a menu reads as released.
+        public bool IsHeld(DevKey key)
+        {
+            if (!TryDevKey(key, out Key k)) return false;
+            return Keyboard.current[k].isPressed;
+        }
+
+        private bool TryDevKey(DevKey key, out Key k)
+        {
+            k = Key.None;
             if (!Debug.isDebugBuild || !_hasFocus || Context == InputContext.Menu) return false;
-            Keyboard kb = Keyboard.current;
-            if (kb == null) return false;
-            Key k;
+            if (Keyboard.current == null) return false;
             switch (key)
             {
-                case DevKey.ToggleOverlay: k = Key.F3; break;
-                case DevKey.NextRod: k = Key.F4; break;
-                case DevKey.NextBait: k = Key.F5; break;
-                case DevKey.ToggleForcedBite: k = Key.F6; break;
-                case DevKey.ToggleTwitchy: k = Key.F7; break;
-                case DevKey.RippleAtCrosshair: k = Key.F9; break;
-                case DevKey.CycleForcedSpecies: k = Key.F10; break;
+                case DevKey.ToggleOverlay: k = Key.F3; return true;
+                case DevKey.NextRod: k = Key.F4; return true;
+                case DevKey.NextBait: k = Key.F5; return true;
+                case DevKey.ToggleForcedBite: k = Key.F6; return true;
+                case DevKey.ToggleTwitchy: k = Key.F7; return true;
+                case DevKey.ScrubClock: k = Key.F8; return true;
+                case DevKey.RippleAtCrosshair: k = Key.F9; return true;
+                case DevKey.CycleForcedSpecies: k = Key.F10; return true;
                 default: return false;
             }
-            return kb[k].wasPressedThisFrame;
         }
 
         public void SetRumble(float low, float high)
