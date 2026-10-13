@@ -551,7 +551,7 @@ No asserted bot target failed. These are the marginal or informational numbers t
   - [ ] Dev overlay check (T26): F3 updates through a cast, a bite and a fight.
   - [ ] Dock look check, frame-time baseline and V13 facet lighting (T28).
   - [ ] Five-fish look check and the catch reveal per species (T29).
-  - [ ] Ladders (R70): swim to `LadderR`, look up at the deck and hold W: you climb out onto the deck with no button, in about 1.5 s; E never rings the bell from the water or a ladder.
+  - [ ] Ladders (R70): swim to `LadderR`, look up at the deck and hold W: you climb out onto the deck with no button, in about 1.25 s (the headless PlayMode measurement at 45 deg; allow up to 2 s); E never rings the bell from the water or a ladder.
   - [ ] Two-player fishing check (T23/T24): remote rod angle, the arc plays once, the marker is owner-only.
   - [ ] Fishing sounds listen (u01).
   - [ ] Toon look check (T20).

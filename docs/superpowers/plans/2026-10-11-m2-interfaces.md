@@ -2037,6 +2037,7 @@ What changed between the plan and the code after T1-T19 were implemented and rev
 | T28 | Fix any M1 swim/water-height test broken by waves (integration-fix rule, F-Q12); swimming interact gate playtest | ui-world T28 block, C 7.28 |
 | T29 | T14-fix minors (`Rooted()` guard, `ModelsFolder` re-root test, `BuildAt_` renames, `OneTimeSetUp` cleanup, `ValidationTests` temp prefab under `Tests/__Temp/`); import the staged `Art/Export/` models | ui-world T29 block, C 7.29 |
 | T30 | Criterion 7 wording; bad-luck nudge USER playtest line; near-snap recovery >= 40% is a human fun-gate metric with tuning hints; Twig thrasher trophy median about 93 s; F3 manual check; M4 note (`FishCaught` without a stored fish); M5 notes (knockback vs walk bound; Staggered row must zero Move) | ui-world T30 (criterion 7 row, fun-gate steps 6-7, H, section J), C 7.30 |
+| R70 rod hold (ladders plan, review fixes; M5) | `PlayerLocomotion.OnDisable` never clears `IsGrounded`, and `RodControllerRules.EffectiveAway` holds the rod away while `LadderCatchPending` (grace running or capsule centre inside a `LadderVolume`). A future `LocksMovement` source (M5 carry, Staggered) on a player who stands inside a volume would keep the rod away until they step out; check this when M5 adds sources. | M2-D31, ladders plan L8 |
 
 ### 16.3 Pending work that changes code the contract describes
 
