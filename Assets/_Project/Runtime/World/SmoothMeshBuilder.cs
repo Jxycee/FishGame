@@ -171,7 +171,12 @@ namespace FishGame.Runtime
                             const float e = 0.01f;
                             Vector3 p1 = Surface((d + t1 * e).normalized, radius, scale) - Surface((d - t1 * e).normalized, radius, scale);
                             Vector3 p2 = Surface((d + t2 * e).normalized, radius, scale) - Surface((d - t2 * e).normalized, radius, scale);
-                            Vector3 n = Vector3.Cross(p1, p2).normalized;
+                            // |p1 x p2| ~ (2 e r)^2 = 4e-4 r^2 falls below Vector3.normalized's 1e-5 threshold for r < ~0.158 m, which returns (0,0,0)
+                            // (a black part). Past that threshold cross the unit tangents instead (same direction, no length problem); larger
+                            // surfaces keep the original path, so their meshes stay byte-identical.
+                            Vector3 cross = Vector3.Cross(p1, p2);
+                            Vector3 n = cross.magnitude > 1e-5f ? cross.normalized : Vector3.Cross(p1.normalized, p2.normalized).normalized;
+                            if (n.sqrMagnitude < 0.5f) n = d;   // degenerate tangents (r below ~0.5 mm): fall back to the radial direction
                             if (Vector3.Dot(n, p) < 0f) n = -n;
                             Vector2 uv = new Vector2(q[a], q[b]) * uvScale + uvOffset;
                             Vertex(center + rotation * p, rotation * n, uv, slot, faceLayerValue, mapping, ao(d));
