@@ -243,6 +243,14 @@ namespace FishGame.EditorTools
             Range(e, L, "backPullMargin", t.BackPullMargin, 0f, 10f);
             Range(e, L, "fightTimeout", t.FightTimeout, 30f, 300f);
             Rule(e, L, t.MaxFightTime > t.FightTimeout, "maxFightTime > fightTimeout");
+            // User playtest 2026-10-13: the 30 s idle escape (a fish only; junk keeps slackEscapeTime) and the opening reel surge.
+            Range(e, L, "idleEscapeTime", t.IdleEscapeTime, 10f, 120f);
+            Rule(e, L, t.IdleEscapeTime < t.FightTimeout, "idleEscapeTime < fightTimeout");
+            Range(e, L, "reelOpenMult", t.ReelOpenMult, 1f, 5f);
+            Range(e, L, "reelOpenSeconds", t.ReelOpenSeconds, 0.2f, 3f);
+            // The host's Landed floor divides by MaxReelSpeed = reelSpeed x reelInMult x tireReelMaxMult. The surge replaces the tire multiplier
+            // (max, never a product), so it must not exceed it or an honest reel could beat the floor.
+            Rule(e, L, t.ReelOpenMult <= t.TireReelMaxMult, "reelOpenMult <= tireReelMaxMult");
         }
 
         private static void CheckRod(List<string> e, RodDef r, FishingTuningDef tuning)

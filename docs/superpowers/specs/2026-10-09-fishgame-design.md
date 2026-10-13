@@ -172,6 +172,7 @@ The user decided these at spec review. They override every earlier row and secti
 | R74 | Art direction: realistic toon with painted textures (2026-10-12) | The user moved the look away from the full low-poly, flat-colour style toward a more realistic toon look, using RV There Yet and Gamble With Your Friends as references: smooth rounded models (no visible faceting), soft toon lighting (gentle light-to-shadow ramp, rim light, ambient occlusion), subtle colour gradients and hand-painted-style textures (wood, rock, sand, bark, fish skin) made for the project in Blender or procedurally and baked. Still no paid or third-party assets. Timing: a look-dev pass now (dock, player body, one fish, props) for the user to approve; once approved it becomes the standard before M3 builds its 23 species and the Harbour Pier, and the existing M2 content is restyled. R69 (release graphics polish) still follows later. The water (R73) is already smooth and is tuned to match during look-dev. **Approved by the user 2026-10-13** from the look-dev sheet (branch `m2-lookdev`, style guide `docs/superpowers/research/2026-10-12-art-direction-lookdev.md`): "loving how it is looking". Notes: the player model needs a proper redesign later (beyond the look-dev pillow body); some scenery still reads oddly blocky and gets a smoothing sweep during adoption. Water and fog are kept as they are (no haze added). **Seasonal trees (2026-10-13, user: "the trees don't change with the seasons"):** evergreen pines with winter snow caps, spring blossoms, a per-tree orange / red / yellow autumn mix and bare winter branches, in the R74 style (smooth lathes and radials); details in 10.2. | 1, 10 |
 | R75 | M3 defaults and pending deltas (2026-10-13) | The user accepted every M3 default on 2026-10-13: `minLandDepth` lowered from 0.8 m to 0.5 m so the lake's reeds band is castable (M3-D52, M3-D74); the new fish models do not gate M3's exit and a species without a model shows the procedural fallback fish (Q2); a fixed dev run seed; the bare hook can catch any species but brings more junk and slower bites (M3-D3); Harbour Pier is reached in M3 through a dev-panel map switch, the Hub map board arriving in M4 (M3-D31). Spec deltas written with it, from `docs/superpowers/plans/2026-10-13-m3-interfaces.md` section 13: **9.3 and 9.12** `minLandDepth` is 0.5 m (M3-D74); **13.3** the variety rule "a species eligible in exactly one band" becomes "a species eligible in at most two adjacent bands (Night and Dawn are not adjacent)", because every species of the 12.6 roster has two or more bands (M3-D65); **12.9 and 13.3** gain the definitions of neutral bait, "eligible", "differs by >= 2", which species the counts and reports include, and V5 ties (M3-D5, M3-D66); **12.2** the rarity type keeps its M2 name `FishRarity` and gains `Legendary = 3` (M3-D2); **9.7** the bare hook can catch any species (M3-D3), and the **17.2** M2 test line that says it yields only Steady/Bulldog fish is annotated as superseded; **12.5** the reachability check counts castable cells within [4.9, 16.4] m of a StandPoint (M3-D6); **11.4** no `Day N/7` in M3 (M3-D19); **12.4** `IWorldContext` adds `CastingOpen`, `HasState`, `SpotId` and `Changed` (M3-D53); **12.6** two spawn weights retuned by the T12 balance reports, noted under the roster table: lake `mirror_minnow` 10 -> 4, harbour `red_snapper` 12 -> 18. | 9.3, 9.7, 9.12, 11.4, 12.2, 12.4, 12.5, 12.6, 12.9, 13.3, 17.2 |
 | R76 | Story and run structure: on the run downriver (2026-10-13, user) | **Story:** after a crazy night out the crew (or a solo player) pissed off the mafia and is on the run. They ditch town and head down the river on their boat. Their drinking buddy from that night, a goofy floating **starfish god**, is NOT owed anything: he is on the run with them and helps, because he can get the crew supplies. **Quota meaning:** each night the crew pays the starfish god for fuel and food. Miss the quota and they run out of fuel/food, and the mafia catches up (the run is lost). **Run = 7 days = 7 maps:** each day is a new, crazier map further down the river. The river runs through 7 stages in a fixed order (for example creek, lake, rapids, swamp, canyon, delta, harbour/sea); each stage picks one of several map variants per run, so runs differ (variety is the top priority). **Night:** the crew camps in the woods on the riverbank; the starfish god is the night-camp vendor/buyer (sell catches, buy rods, bait and supplies). **Travel:** each morning a short, skippable scripted boat ride downriver leads to the next map (fits the M6 boat later). **Win reward:** surviving day 7 (escaping) gives each finisher one permanent skill (max 5, re-choosable), replacing the per-map skill of R57; escaping more unlocks more stage variants and harder rivers [proposed default]. **Supersedes in part:** R57 (one map chosen in the Hub per run; beat map N to unlock N+1), R66 (the story beat "wronged a powerful figure"; the intro/ending cutscenes now tell this story), and the run/map/skill text of sections 1, 12.3, 13, 14 and 16.6. **Milestones:** M3 is unchanged in scope: `Spot_LakeDock` and `Spot_HarbourPier` become two river stages (lake early, harbour as the river-mouth finale); the map switch stays a dev tool. M4 plans the 7-stage run, the morning boat-ride transition, the riverbank camp with the starfish god, the escape reward and the mafia escalation; the spec sections above are rewritten then. Content scale: 7 stages each with variants is more maps than the old 5; M6 and later add stages and variants. | 1, 12.3, 13, 14, 16.6 |
+| R77 | Fight playtest fixes, batch A (2026-10-13, user playtest) | The user's M3 playtest notes F1, F7, S10 and F10, decided and applied (details and numbers in 9.12 "User playtest 2026-10-13"). **F1:** reeling felt halted for the first second. The sim and input path were checked first (no gating; Bite and Hooked both route as RodFighting): the cause is by design, a x1 reel at tire 0 (0.6-0.7 m/s) that an opening back pull cancels. Fix: an opening reel surge (`reelOpenMult` 2.5 falling to the tire curve over `reelOpenSeconds` 0.8) and a back pull that ramps in over the same window. **F7:** a hooked fish with no reel and no steer input for `idleEscapeTime` 30 s throws the hook (Escaped, ThrewHook); `fightTimeout` stays the 120 s overall cap and junk keeps its 12 s slack escape. **S10:** the terminal beat is 0.6 s (was 1.5 s) and a held aim carries into Readying; the catch reveal no longer blocks a recast and the next cast dismisses it. **F10:** fights shortened with the strain path untouched (Greedy snap times identical): `tireRunFull` 20 -> 12, `tireSteerRate` 0.8 -> 1.2, `backMoveSpeed` 1.3 -> 1.0, `reelInMult` Darter 1.0 -> 1.3, Thrasher 1.0 -> 1.15, Bulldog 0.9 -> 1.0, Runner 0.9 -> 0.95. | 9.2, 9.5, 9.6, 9.12, 9.13 |
 
 Contract details for R61-R65: `docs/superpowers/plans/2026-10-11-m2-interfaces.md` (M2-D3, D15, D16 and section 7.7). R72: plan `docs/superpowers/plans/2026-10-12-m2-rework-fight.md` and C 16.1 row R72.
 
@@ -862,11 +863,12 @@ Units: metres and seconds. The fight runs at a fixed **50 Hz (dt 0.02 s)** from 
 | Hooked | `lineLength ≤ landDistance` while reeling this tick | Landed | `ResultRpc(Landed)` |
 | Hooked | strain > snap strain (strainSnap 7; 7.5 on a Pity cast) | Snapped | ResultRpc(Snapped); RodEventRpc(Snapped, sizeClass) |
 | Hooked | elapsed >= fightTimeout (120 s) | Escaped (Timeout) | ResultRpc(Escaped, Timeout); the host checks it on its own clock (9.9) |
-| Hooked (junk only) | slackTimer >= slackEscapeTime | Escaped (ThrewHook) | An AFK junk hook clears itself; a fish fight ends by fightTimeout instead (R72) |
+| Hooked (junk only) | slackTimer >= slackEscapeTime | Escaped (ThrewHook) | An AFK junk hook clears itself (12 s without reel) |
+| Hooked (fish only) | idleTimer >= idleEscapeTime (30 s with no reel and no steer input; any raw key press resets it; R77) | Escaped (ThrewHook) | An AFK fish throws the hook; `ResultRpc(Escaped, ThrewHook)`, which the host takes on any hooked cast, announced as Lost. `fightTimeout` stays the overall cap |
 | Hooked | displaced > `hookedLeash` (3 m) from hook position, or entered water | Escaped (Dropped) | Only via external forces (M5 shove, M6 boat) or falling in |
 | Any line-out state | teleport, respawn, stow, swim, disconnect | Idle (Cancelled), or Escaped (Dropped) when Hooked | `CancelRpc`/`ResultRpc` |
-| Waiting / Bite / Hooked | **unsolicited** `CommitRpc` for the current castId (host-initiated: stuck-Waiting refund, `maxFightTime`, LastCast auto-reel or grace end, the pre-snapshot sweep on entering Night Camp (14.9), Invalid) | Idle (Cancelled; bait refunded if the host says so) or Escaped(reason from `finalOutcome`) | 1.5 s feedback beat (recall for a cancel, slack line for an escape), then Idle; no `ResultRpc` sent; rumble off |
-| Landed / Snapped / Escaped | 1.5 s feedback beat done **and** (`CommitRpc` received or 3 s `commitTimeout`) | Idle | Clear the line; rumble off |
+| Waiting / Bite / Hooked | **unsolicited** `CommitRpc` for the current castId (host-initiated: stuck-Waiting refund, `maxFightTime`, LastCast auto-reel or grace end, the pre-snapshot sweep on entering Night Camp (14.9), Invalid) | Idle (Cancelled; bait refunded if the host says so) or Escaped(reason from `finalOutcome`) | 0.6 s feedback beat (recall for a cancel, slack line for an escape), then Idle; no `ResultRpc` sent; rumble off |
+| Landed / Snapped / Escaped | 0.6 s feedback beat (was 1.5 s; R77) done **and** (`CommitRpc` received or 3 s `commitTimeout`) | Idle; Readying instead, one tick later, when Secondary is still held | Clear the line; rumble off. A held aim carries over so a press made during the beat is not lost; the catch reveal keeps showing but never blocks a recast, and the next cast (charge start or release) dismisses it |
 
 Rules:
 - **Bait:** consumed when the host accepts a cast; refunded on cancel or recall; lost on snap, escape or miss.
@@ -963,14 +965,16 @@ lateral += v * dt / (max(lineLength, 1) * lateralMaxRad);   at +-1: clamp, and a
 
 // line
 tireReel = 1 + (tireReelMaxMult(3) - 1) * clamp01(tire / tireReelFull(5))
-if reel: lineLength -= rod.reelSpeed * fish.reelInMult * tireReel * dt
-if back: lineLength += backMoveSpeed(1.3) * speed * (reel ? 0.5 : 1) * dt
+open = 1 + (reelOpenMult(2.5) - 1) * (1 - clamp01(elapsed / reelOpenSeconds(0.8)))      // R77/F1 opening surge; a FLOOR under the tire curve, never a product
+reelMult = max(tireReel, open)                                                            // reelOpenMult <= tireReelMaxMult, so CatchValidator.MaxReelSpeed still bounds every reel
+if reel: lineLength -= rod.reelSpeed * fish.reelInMult * reelMult * dt
+if back: lineLength += backMoveSpeed(1.0) * speed * clamp01(elapsed / reelOpenSeconds) * (reel ? 0.5 : 1) * dt   // the back pull ramps in over the surge window (movement only)
 else if at rest and fish.calmDrift > 0 and not exhausted:                                // [Q] Bulldog creeps line out at rest
     lineLength += fish.calmDrift * clamp01(secondsIntoRest / fish.calmDriftRamp) * (1 - tire01) * dt
 lineLength = clamp(lineLength, 0, rod.castMaxDist + spoolExtra)                         // no strain at the clamp
 
 // tire (only steering tires the fish)
-tire += steer != 0 ? (counter && !back ? 1.25 : 0.8) * dt : -0.1 * dt                   // no floor
+tire += steer != 0 ? (counter && !back ? 1.25 : 1.2) * dt : -0.1 * dt                   // no floor (R77/F10: the plain steer rate was 0.8)
 
 // strain
 if reel or steer != 0:
@@ -981,11 +985,12 @@ else:
 tension = strain / strainBarFull(6)
 ```
 
-**Endings** (same-tick priority Landed > Snapped > Timeout)
+**Endings** (same-tick priority Landed > Snapped > Timeout > Idle escape (ThrewHook))
 - **Landed:** `lineLength <= landDistance` (1.0 m from the rod tip) while reeling on that tick [FG: Rust lands within 1.0 m of its cast origin, the player; ours is the rod tip, R67].
 - **Snapped:** `strain > strainSnap` (7). On a Pity cast the snap strain is `6 + (7 - 6) x 1.5 = 7.5`. There is no grace timer: the band from 6 to 7 (bar full, no snap yet) is the warning, and `snapTimer` counts the seconds spent in it (FlagGrace, crack).
-- **Escaped(Timeout):** `elapsed >= fightTimeout` (120 s).
-- There is no pinned or slack escape for a fish. Junk keeps its slack escape (9.4).
+- **Escaped(Timeout):** `elapsed >= fightTimeout` (120 s), the overall cap.
+- **Escaped(ThrewHook), fish only (R77/F7):** `idleTimer >= idleEscapeTime` (30 s with no reel and no steer input; the raw key counts even when the sim drops it as a wrong-way steer). `idleEscapeTime <= 0` turns it off.
+- There is no pinned or slack escape for a fish. Junk keeps its 12 s slack escape (9.4).
 - `nearSnapRecoveries` counts tension going above 1.0 (over the full bar) and later below 0.5.
 
 The lessons fall out of the rules:
@@ -1016,10 +1021,10 @@ Five shared `FightProfileDef` assets (R3). M2 has one placeholder species per pr
 | Profile | Seeded from | Rust tier | strainMod | moveMult | reelInMult |
 |---|---|---|---|---|---|
 | Steady | Bluegill | small | 0.8 | 0.8 | 1.2 |
-| Darter | Perch | medium | 1.0 | 1.0 | 1.0 |
-| Thrasher | Trout | medium | 1.0 | 1.0 | 1.0 |
-| Bulldog | Carp | large | 1.25 | 1.25 | 0.9 |
-| Runner | Catfish | large | 1.25 | 1.25 | 0.9 |
+| Darter | Perch | medium | 1.0 | 1.0 | 1.3 (R77; Rust 1.0) |
+| Thrasher | Trout | medium | 1.0 | 1.0 | 1.15 (R77; Rust 1.0) |
+| Bulldog | Carp | large | 1.25 | 1.25 | 1.0 (R77; Rust 0.9) |
+| Runner | Catfish | large | 1.25 | 1.25 | 0.95 (R77; Rust 0.9) |
 
 **Quirks** (behaviour only; Rust's values are rest 2-4, run 3-7, back 0.39, no flip, no ramp, no drift, no jitter, wave 4 s):
 
@@ -1234,11 +1239,13 @@ Tension below is the display value, strain / 6 (1.0 = full bar; the line snaps a
 | `strainRestInput` | 0.5 /s (any input while the fish rests) | 0-3 |
 | `strainReelRun` / `strainReelBack` | 2.2 / 2.5 /s | 0-6 |
 | `strainCounterSteer` / `strainOtherSteer` | 0.8 / 0.5 /s | 0-3 |
-| `sideMoveSpeed` / `backMoveSpeed` | 1.2 / 1.3 m/s | 0-5 |
-| `tireSteerRate` / `tireCounterRate` / `tireDecayRate` | 0.8 / 1.25 / 0.1 /s | 0-5 / 0-5 / 0-1 |
-| `tireRunFull` / `tireReelFull` / `tireReelMaxMult` | 20 / 5 / 3 | 1-100 / 0.5-50 / 1-5 |
+| `sideMoveSpeed` / `backMoveSpeed` | 1.2 / 1.0 m/s (R77: backMoveSpeed was 1.3) | 0-5 |
+| `tireSteerRate` / `tireCounterRate` / `tireDecayRate` | 1.2 / 1.25 / 0.1 /s (R77: tireSteerRate was 0.8) | 0-5 / 0-5 / 0-1 |
+| `tireRunFull` / `tireReelFull` / `tireReelMaxMult` | 12 / 5 / 3 (R77: tireRunFull was 20) | 1-100 / 0.5-50 / 1-5 |
 | `backPullMargin` | 2 m | 0-10 |
-| `fightTimeout` | 120 s | 30-300, < maxFightTime |
+| `fightTimeout` | 120 s (overall cap) | 30-300, < maxFightTime |
+| `idleEscapeTime` (R77, F7) | 30 s (a hooked fish with no reel and no steer input; escape reason ThrewHook; <= 0 = off in code, the validator keeps shipped data in range) | 10-120, < fightTimeout |
+| `reelOpenMult` / `reelOpenSeconds` (R77, F1) | 2.5 / 0.8 s (opening reel surge; a floor under the tire curve) | 1-5, <= tireReelMaxMult / 0.2-3 |
 | `slackEscapeTime` | 12 s (junk only, R72) | 8–20 |
 | `lateralMaxDeg` | 60° (Rust cone) | 60-85 |
 | `hookedLeash` | 3 m | 2–5 |
@@ -1256,10 +1263,38 @@ Tension below is the display value, strain / 6 (1.0 = full bar; the line snaps a
 | Greedy | always reels, never steers | snaps >= 95% in every cell; Handmade Steady median snap time 5.5-9.0 s (model 7.4; Steady's runs never reach Rust's 5.3 s single-run snap); Handmade Runner 2.8-3.8 s (Rust 3.4) |
 | Reckless | always reels, counter-steers every run | snaps >= 95% for Darter, Thrasher, Bulldog and Runner; Steady >= 50% (model 74% Handmade, 100% Twig) |
 | Pump | never steers; reels until tension 0.85, lets go until 0.30 | snaps <= 5% in every cell; Handmade Steady lands >= 85%; Handmade Bulldog times out >= 60%, Runner >= 30% (big fish need steering) |
-| Rhythm | counter-steers runs without reeling, reels while the fish rests (steering it to the cast line), lets go at 0.85 until 0.30 | lands >= 95%, snaps <= 2%, times out <= 2% in every cell. Median Handmade: Steady 10-20 s, Darter 13-27, Thrasher 13-27, Runner 20-41, Bulldog 23-44. Twig: Steady 10-20, Darter 15-30, Thrasher 16-31, Runner 22-44, Bulldog 23-45 |
+| Rhythm | counter-steers runs without reeling, reels while the fish rests (steering it to the cast line), lets go at 0.85 until 0.30 | lands >= 95%, snaps <= 2%, times out <= 2% in every cell. Median (R77, 2026-10-13 playtest retune) Handmade: Steady 10-18 s, Darter 10-17.5, Thrasher 10-18, Runner 15-27, Bulldog 14-25. Twig: Steady 10-18, Darter 11.5-20, Thrasher 12.5-22, Runner 16.5-29, Bulldog 15-26.5 (the R72 bands were Handmade 10-20 / 13-27 / 13-27 / 20-41 / 23-44 and Twig 10-20 / 15-30 / 16-31 / 22-44 / 23-45) |
 | Signatures (Rhythm, Handmade) | the five styles stay distinct | back-pull share of runs: Bulldog >= 40% and the highest; Runner 15-40%; Steady, Darter and Thrasher <= 25%. Mean run: Runner >= 3.8 s; Steady 3.0-4.4; Thrasher 2.6-3.8; Darter <= 2.7; Bulldog <= 3.1; ordered Runner > Steady > Thrasher > Darter. Mid-run side switches per run-second: Darter >= 0.5; Thrasher 0.15-0.55; Steady, Bulldog and Runner <= 0.05 (cone-edge flips only) |
 
 **Measured (F4, 2026-10-12): every target met, none retuned.** Greedy snaps 100% in all ten cells (median snap time Steady 7.4 s Handmade / 4.7 s Twig, Runner 3.4 / 2.7 s). Reckless snaps 100% except Steady Handmade 68% (median 7.5 s). Pump never snaps; Steady lands 100%, Bulldog times out 91.5% (Twig 98.5%), Runner 50.5% (Twig 63%). Rhythm lands 100% with no snaps and no timeouts in every cell. Signatures (Rhythm, Handmade): back share Steady 12%, Darter 14%, Thrasher 18%, Bulldog 51%, Runner 23%; mean run 3.7 / 2.2 / 3.2 / 2.6 / 4.5 s; switches per run-second 0 / 0.79 / 0.34 / 0 / 0. The full table is in the M2 acceptance doc, K.1. The bands are wide because the scratch model behind them used a different RNG. A miss is reported with its numbers and not retuned away from Rust's values. Weight cannot change a baseline fight; the bots draw it only so that a later weight term is measured at real weights.
+
+**User playtest 2026-10-13 (R77, batch A).** The user's M3 notes F1, F7, S10 and F10, applied as data and small code changes; the strain path (`strainBarFull`, `strainSnap`, the strain gains, `relaxRate`, `strainScale`) is untouched.
+
+- **F1, reeling halted for the first second.** Checked before changing anything: input is not gated (Bite and Hooked both route as RodFighting, and `HookBeat` is the 0.25 s auto-hook delay before the fight), and `LineView` and `BobberView` ease at 20/s. The cause is the maths: at tire 0 the reel is x1 (Handmade vs a Darter 0.6 m/s), the opening run starts on tick 1, and a back pull at the wave peak outruns an x1 reel. Line taken under full reel from the hook, 120 seeds per cell, median [worst seed] in metres. These traces come from the shared test fixture (the pre-F10 Rust tuning and profiles: `backMoveSpeed` 1.3, Bulldog `reelInMult` 0.9), which is the HARDER case for the surge than the shipped data (Bulldog `reelInMult` 1.0, `backMoveSpeed` 1.0):
+
+  | Cell | 0.2 s | 0.5 s | 1.0 s | 1.5 s |
+  |---|---|---|---|---|
+  | Before, Handmade Bulldog | 0.11 [-0.21] | 0.27 [-0.49] | 0.54 [-0.88] | 0.81 [-1.16] |
+  | Before, Handmade Steady | 0.14 [0.11] | 0.36 [0.15] | 0.72 [0.06] | 1.08 [0.07] |
+  | After, Handmade Bulldog | 0.25 [0.20] | 0.54 [0.29] | 0.86 [-0.04] | 1.13 [-0.41] |
+  | After, Handmade Steady | 0.33 [0.32] | 0.72 [0.63] | 1.14 [0.64] | 1.50 [0.65] |
+  | After, Twig Bulldog (hardest cell) | 0.22 [0.18] | 0.49 [0.24] | 0.77 [-0.12] | 1.01 [-0.52] |
+
+  This is a design change (user-requested), not a bug fix: `reelOpenMult` 2.5 falling linearly to 1 over `reelOpenSeconds` 0.8 is a floor under the tire curve (the reel multiplier is `max(tireReel, open)`, never a product, and `reelOpenMult <= tireReelMaxMult` is a validator rule, so `CatchValidator.MaxReelSpeed` still bounds every honest reel and the host Landed floor needs no change). The fish's back pull ramps in over the same window (movement only, strain untouched). Every opening in 600 fights takes at least 0.18 m by 0.2 s; later in a fight the fish can still win line back (design).
+- **F7, no input escapes at 30 s.** `idleEscapeTime` 30 s: a hooked fish with no reel and no steer input (a raw key press counts, even one the sim drops) throws the hook, `Escaped(ThrewHook)`. The host already accepts ThrewHook on any hooked cast (no clock check, unlike Timeout) and announces it as Lost, so there is no wire change. `fightTimeout` 120 s stays as the overall cap, junk keeps its 12 s `slackEscapeTime`, `maxFightTime` 240 s stays the host fallback. `idleEscapeTime <= 0` is off in code.
+- **S10, recast after a catch.** Before: Landed, a 1.5 s forced beat (shared by Snapped and Escaped), then Idle only after the commit; Idle needed a fresh Secondary press (a press or hold during the beat was lost), then the 0.25 s ready hold, then a Primary press and at least 0.1 s of charge: the earliest cast was 1.85 s after the landing and about 3 s in practice. After: the beat is 0.6 s, an aim held at the end of the beat carries into Readying (Idle for one tick first), the reveal keeps showing but the next `ChargeStart` or `CastRelease` cue dismisses it. Earliest cast about 1.05 s after the landing, about 1.4 s with a normal 0.4 s charge. `resultTimeout` 3 s (cast to result) and `commitTimeout` 3 s (the host-commit fallback) are unchanged; Idle still waits for the commit.
+- **F10, shorter fights, same difficulty (shipped = "option A").** Changed: `tireRunFull` 20 -> 12, `tireSteerRate` 0.8 -> 1.2, `backMoveSpeed` 1.3 -> 1.0, `reelInMult` Darter 1.0 -> 1.3, Thrasher 1.0 -> 1.15, Bulldog 0.9 -> 1.0, Runner 0.9 -> 0.95. Rhythm-bot median fight seconds (Handmade / Twig, 200 fights per cell), before -> after:
+
+  | Profile | Before | After | Cut |
+  |---|---|---|---|
+  | Steady | 14.0 / 14.4 | 13.7 / 13.9 | 2% / 3% |
+  | Darter | 19.1 / 21.6 | 13.2 / 15.5 | 31% / 28% |
+  | Thrasher | 17.8 / 21.7 | 13.8 / 17.2 | 22% / 21% |
+  | Runner | 26.2 / 30.5 | 20.4 / 21.6 | 22% / 29% |
+  | Bulldog | 30.9 / 33.7 | 19.3 / 20.5 | 38% / 39% |
+
+  The guards held: Greedy median snap seconds are identical (Steady 7.4 Handmade / 4.7 Twig, Bulldog and Runner 3.4 / 2.7, Darter 5.4 / 4.5, Thrasher 4.5 / 3.4); Reckless still snaps (Steady Handmade 68% -> 55.5%, the margin to its 50% pin is thin; Darter Handmade 99.5%, Thrasher Handmade 96.5%, every other cell 99-100%); Pump still cannot land the big fish (Handmade times out: Runner 33% against a 30% pin, Bulldog 63.5% against 60%; thin margins, which is why Runner's `reelInMult` moved only to 0.95). A cut deeper than about 30% on Steady, Darter and Thrasher is not available inside those guards: every lever that speeds the Rhythm player's reel (the tire-to-reel curve, the counter-steer tire rate, a lower `tireRunFull`) speeds a steering player who never lets go (Reckless) the same way, and Reckless Steady Handmade races the strain clock at 7.2 s of reeling against a 7.5 s snap. Steady is left alone for that reason (13-14 s is already inside the 8-15 s target). The host Landed floor uses the same `MaxReelSpeed` formula with the new `reelInMult` values, and `FightPaceHostTests` runs 8,943 bot landings (every rod, profile, seed and four bots) with the worst margin over the host floor 2.98 s.
+  **Option B (data-only alternative, not shipped):** `tireRunFull` 12, `tireReelFull` 3.5, `tireReelMaxMult` 3.5, `tireSteerRate` 1.2, `tireCounterRate` 1.9, `backMoveSpeed` 1.1, Bulldog `reelInMult` 0.8, surge 3 x 1 s. Rhythm medians Handmade / Twig: Steady 10.4 / 11.0, Darter 11.8 / 13.7, Thrasher 11.8 / 14.8, Runner 16.2 / 18.3, Bulldog 17.9 / 19.4 (cuts 26% to 42%), but it needs the Reckless pins loosened to Steady Handmade 6%, Darter Handmade 67%, Thrasher Handmade 74% (Twig stays at or above 64%). That is "too easy" for a player who steers right and never eases, so it waits for the user.
 
 ### 9.13 Edge cases
 
@@ -1270,7 +1305,7 @@ Tension below is the display value, strain / 6 (1.0 = full bar; the line snaps a
 | Walking away while Waiting | Allowed; past `maxLineOut` (measured from the rod tip: root-to-bobber minus `castTipReach`, R67) auto-reel (refunded) |
 | Fish over land or dock (cosmetic) | View samples water every 0.2 s and holds the last valid water point; sim unaffected |
 | Line all out | Clamped at maxLineOut with no strain (strain is input-only, R72). Back pulls stop inside castMaxDist - 2 m, so this is rare (Rust fails at twice its cast range instead) |
-| Alt-tab mid-fight | Neutral input → strain drains at 1.5/s while the fish keeps running; the fight times out at 120 s; Run In Background keeps the session alive; rumble off |
+| Alt-tab mid-fight | Neutral input → strain drains at 1.5/s while the fish keeps running; after 30 s of neutral input the fish throws the hook (R77/F7 `idleEscapeTime`; only the solo pause menu freezes the idle timer; an alt-tab, solo or multiplayer, and a multiplayer menu do not, so the fish escapes after 30 s); `fightTimeout` 120 s stays the overall cap; Run In Background keeps the session alive; rumble off |
 | Owner hangs but stays connected | Host timeouts resolve the cast |
 | No `CommitRpc` | Owner returns to Idle after 3 s and logs a warning; the rod is never stuck |
 | Host disconnects | Session ends (no migration). From M4 the run is recoverable from the host's last Night Camp snapshot via Hub resume; only the in-progress day is lost |

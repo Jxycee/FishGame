@@ -12,6 +12,7 @@ namespace FishGame.Core
         public sbyte BurstDir;              // run side: -1 left, +1 right (always set in a run); 0 at rest
         public bool Back;                   // the run also pulls back (Rust PullingBack); false at rest
         public float SnapTimer, SlackTimer, Elapsed;   // SnapTimer = seconds over the full bar (FlagGrace); SlackTimer = seconds not reeling (junk only)
+        public float IdleTimer;             // seconds with no reel and no steer input (a fish only: IdleEscapeTime throws the hook at this; any input resets it)
         public int NearSnapRecoveries; public float MaxTension;
         public FightOutcome Outcome; public EscapeReason Reason;
     }

@@ -1,7 +1,8 @@
 // Authority: local only. On PlayerFP; reads its FishingRodNetwork (Announced). Never writes gameplay state (C 2.8 #17).
 // The catch reveal on every peer: on Landed or ReleasedCreelFull the fish is held up at CatchHold (species model with M_Toon_Fish, or a
 // FishFallbackMesh with M_Toon_FishFallback, one material per submesh). Lost and PityCast show nothing. ReleasedCreelFull drops the fish with a
-// splash after the hold. A new announcement replaces a running reveal; OnDisable hides it. All timing is polled in Update/LateUpdate (no
+// splash after the hold. A new announcement replaces a running reveal; OnDisable hides it; the owner's next cast (ChargeStart or CastRelease cue)
+// dismisses it, so the reveal never blocks a recast (S10, user playtest 2026-10-13). All timing is polled in Update/LateUpdate (no
 // coroutines), so a disabled component cannot finish a reveal.
 using FishGame.Core;
 using FishGame.Data;
@@ -65,14 +66,27 @@ namespace FishGame.Presentation
         {
             if (_rod == null) return;
             _rod.Announced += HandleAnnounced;
+            _rod.Cue += HandleCue;
             _live = true;
         }
 
         private void OnDisable()
         {
             _live = false;
-            if (_rod != null) _rod.Announced -= HandleAnnounced;
+            if (_rod != null)
+            {
+                _rod.Announced -= HandleAnnounced;
+                _rod.Cue -= HandleCue;
+            }
             Hide();
+        }
+
+        // S10 (user playtest 2026-10-13): the reveal never blocks casting, and the next cast dismisses it. The cue arrives on every peer for
+        // this player's rod, so the fish also leaves the other screens when its owner casts again.
+        private void HandleCue(RodCue cue, byte arg)
+        {
+            if (!_live || _phase == Phase.Hidden) return;
+            if (cue == RodCue.ChargeStart || cue == RodCue.CastRelease) Hide();
         }
 
         private ParticleSystem BuildSparkles()

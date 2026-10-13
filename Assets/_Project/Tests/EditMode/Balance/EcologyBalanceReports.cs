@@ -1,7 +1,8 @@
 // T12 balance reports (spec 12.9, contract 11.4, plan data-coverage section 5): V4 expedition sim, V5 economy and the M4 quota-calibration print.
 // Real assets (registry), the real FishingResolver, the real WeatherDirector and the R72 Rhythm bot (FishingBots.RunFight, internal). Reads no seeds.
 // Test-local random streams only (Rng.Stream with "balance.*" ids), never an EcologyStreams id. A bound that data cannot meet is an
-// EcologyTuningItems entry with the controller's approval; M3 never retunes R72 fight values (M3-D38).
+// EcologyTuningItems entry with the controller's approval; M3 never retunes R72 fight values (M3-D38) except for the user's 2026-10-13 playtest
+// retune (F10: shorter fights, spec 9.12 note), which moved the Rhythm medians this file reads.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -504,14 +505,15 @@ namespace FishGame.Tests.EditMode
 
             // Hand computation (FishingTestData.Tuning: charge 1, hook beat 0.25, bite wait 4..18, min 1, land distance 1, junk drag 3):
             //   j = 0.2, p = 0.8; waitMid = 11; depth mult at 0.75 m = 1 - 0.2 * 0.125 = 0.975 -> wait = 10.725 (species and junk, biteWaitMod 1)
-            //   overhead = 1 + (0.45 + 0.012 * 12) + 0.25 + 1.5 + 10 = 13.344; junk fight = (12 - 1) / 3; species fight 10 s, landed 50%.
+            //   overhead = 1 + (0.45 + 0.012 * 12) + 0.25 + 0.6 + 10 = 12.444 (the terminal beat is 0.6 s since the 2026-10-13 recast change; it was 1.5 s);
+            //   junk fight = (12 - 1) / 3; species fight 10 s, landed 50%.
             double wait = 11.0 * 0.975;
-            double cycle = 13.344 + 0.2 * (wait + 11.0 / 3.0) + 0.8 * (wait + 10.0);
+            double cycle = 12.444 + 0.2 * (wait + 11.0 / 3.0) + 0.8 * (wait + 10.0);
             double coins = 0.8 * 0.5 * 10.0 + 0.2 * 2.0;
             double kg = 0.8 * 0.5 * 2.0;
             Assert.That(coinsPerMin, Is.EqualTo(60.0 * coins / cycle).Within(1e-3));
             Assert.That(kgPerMin, Is.EqualTo(60.0 * kg / cycle).Within(1e-3));
-            Assert.That(coinsPerMin, Is.EqualTo(8.0482).Within(1e-3), "literal value of the hand computation");
+            Assert.That(coinsPerMin, Is.EqualTo(8.2753).Within(1e-3), "literal value of the hand computation");
         }
 
         // The stationary distribution (Clear, Rain, Fog) of the season's renormalised weather chain: 200 power iterations from Clear.

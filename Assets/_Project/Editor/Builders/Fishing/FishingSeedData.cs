@@ -59,9 +59,15 @@ namespace FishGame.EditorTools
                 PityAfterFailures = 3, PityStrainMult = 0.85f, PityGraceMult = 1.5f, PityHookWindowBonus = 0.3f,
                 // R72 Rust fight baseline (spec 9.12; research note 8). Read by the new FightSim from F2.
                 StrainBarFull = 6f, StrainSnap = 7f, StrainRestInput = 0.5f, StrainReelRun = 2.2f, StrainReelBack = 2.5f,
-                StrainCounterSteer = 0.8f, StrainOtherSteer = 0.5f, SideMoveSpeed = 1.2f, BackMoveSpeed = 1.3f,
-                TireSteerRate = 0.8f, TireCounterRate = 1.25f, TireDecayRate = 0.1f, TireRunFull = 20f, TireReelFull = 5f,
+                StrainCounterSteer = 0.8f, StrainOtherSteer = 0.5f, SideMoveSpeed = 1.2f, BackMoveSpeed = 1.0f,
+                TireSteerRate = 1.2f, TireCounterRate = 1.25f, TireDecayRate = 0.1f, TireRunFull = 12f, TireReelFull = 5f,
                 TireReelMaxMult = 3f, BackPullMargin = 2f, FightTimeout = 120f,
+                // F10 retune (user playtest 2026-10-13, spec 9.12 note): backMoveSpeed 1.3 -> 1.0, tireSteerRate 0.8 -> 1.2, tireRunFull 20 -> 12 (plus
+                // reelInMult on four profiles below). Fish tire sooner and cover less line; the strain bar, snap, gains, drain and scale are untouched, so a
+                // player who does not steer (Greedy) snaps at the same times as before, and a counter-steering player who never lets go (Reckless) still snaps.
+                // User playtest 2026-10-13 (spec 9.12 note): F7 a hooked fish with no input for 30 s throws the hook; F1 the reel opens at x2.5 and
+                // settles into the tire curve over 0.8 s (<= TireReelMaxMult, so the host's MaxReelSpeed floor still bounds it).
+                IdleEscapeTime = 30f, ReelOpenMult = 2.5f, ReelOpenSeconds = 0.8f,
             };
 
             // Spec 9.7 rods.
@@ -93,10 +99,13 @@ namespace FishGame.EditorTools
             var profiles = new List<(string id, string name, FishFightProfile profile)>
             {
                 ("steady", "Steady", Profile(2f, 4f, 3f, 5f, 0f, 0.15f, 0.6f, 0f, 0f, 0.5f, 0f, 0.8f, 0.8f, 1.2f, 4f)),
-                ("darter", "Darter", Profile(1f, 2f, 2f, 3.5f, 1.0f, 0.15f, 0f, 0f, 0f, 0.3f, 0f, 1.0f, 1.0f, 1.0f, 4f)),
-                ("bulldog", "Bulldog", Profile(2f, 4f, 2.5f, 4.5f, 0f, 0.55f, 0f, 0.06f, 2.5f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f)),
-                ("thrasher", "Thrasher", Profile(1.5f, 3f, 3f, 5f, 0.4f, 0.20f, 0f, 0f, 0f, 0.5f, 0.3f, 1.0f, 1.0f, 1.0f, 1.5f)),
-                ("runner", "Runner", Profile(2f, 3.5f, 5f, 9f, 0f, 0.30f, 0.8f, 0f, 0f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f)),
+                // F10 (user playtest 2026-10-13): reelInMult darter 1.0 -> 1.3, bulldog 0.9 -> 1.0, thrasher 1.0 -> 1.15, runner 0.9 -> 0.95. Steady is
+                // unchanged (already 13-14 s; its careless-player race is a knife edge). reelInMult is movement only, so no snap time moves. Runner stays
+                // near 0.9: a non-steering player must not land the big fish (FishingBots Pump pin).
+                ("darter", "Darter", Profile(1f, 2f, 2f, 3.5f, 1.0f, 0.15f, 0f, 0f, 0f, 0.3f, 0f, 1.0f, 1.0f, 1.3f, 4f)),
+                ("bulldog", "Bulldog", Profile(2f, 4f, 2.5f, 4.5f, 0f, 0.55f, 0f, 0.06f, 2.5f, 0.5f, 0f, 1.25f, 1.25f, 1.0f, 4f)),
+                ("thrasher", "Thrasher", Profile(1.5f, 3f, 3f, 5f, 0.4f, 0.20f, 0f, 0f, 0f, 0.5f, 0.3f, 1.0f, 1.0f, 1.15f, 1.5f)),
+                ("runner", "Runner", Profile(2f, 3.5f, 5f, 9f, 0f, 0.30f, 0.8f, 0f, 0f, 0.5f, 0f, 1.25f, 1.25f, 0.95f, 4f)),
             };
             s_profiles = new ReadOnlyCollection<(string, string, FishFightProfile)>(profiles);
 

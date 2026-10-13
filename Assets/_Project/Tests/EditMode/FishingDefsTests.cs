@@ -249,14 +249,14 @@ namespace FishGame.Tests.EditMode
         private void CheckTuning()
         {
             FieldInfo[] coreFields = typeof(FishingTuning).GetFields(BindingFlags.Public | BindingFlags.Instance);
-            Assert.AreEqual(47, coreFields.Length, "FishingTuning has 47 members (43 + the 17 R72 fight members - the 13 R72 retired ones)");
+            Assert.AreEqual(50, coreFields.Length, "FishingTuning has 50 members (43 + the 17 R72 fight members - the 13 R72 retired ones + idleEscapeTime, reelOpenMult, reelOpenSeconds)");
 
             int serialized = 0;
             foreach (FieldInfo f in typeof(FishingTuningDef).GetFields(BindingFlags.NonPublic | BindingFlags.Instance))
             {
                 if (f.GetCustomAttribute<SerializeField>() != null) serialized++;
             }
-            Assert.AreEqual(47, serialized, "FishingTuningDef has 47 serialized fields (creelMaxKg replaces CreelMaxWeightG)");
+            Assert.AreEqual(50, serialized, "FishingTuningDef has 50 serialized fields (creelMaxKg replaces CreelMaxWeightG)");
 
             FishingTuning t = DistinctTuning(12345);
             FishingTuningDef d = Make<FishingTuningDef>();
@@ -305,7 +305,7 @@ namespace FishGame.Tests.EditMode
             "pityHookWindowBonus",
             "strainBarFull", "strainSnap", "strainRestInput", "strainReelRun", "strainReelBack", "strainCounterSteer", "strainOtherSteer",
             "sideMoveSpeed", "backMoveSpeed", "tireSteerRate", "tireCounterRate", "tireDecayRate", "tireRunFull", "tireReelFull",
-            "tireReelMaxMult", "backPullMargin", "fightTimeout",
+            "tireReelMaxMult", "backPullMargin", "fightTimeout", "idleEscapeTime", "reelOpenMult", "reelOpenSeconds",
         };
 
         // Contract 7.13 serialized names. The builder, the T14 asset YAML and every saved asset depend on them: a renamed private field
@@ -339,7 +339,7 @@ namespace FishGame.Tests.EditMode
                 default: Assert.Fail("unknown Def " + typeName); return;
             }
             string[] expected = csv == "TUNING" ? TuningNames : csv.Split(',');
-            if (csv == "TUNING") Assert.AreEqual(47, expected.Length, "47 serialized members (creelMaxKg replaces CreelMaxWeightG)");
+            if (csv == "TUNING") Assert.AreEqual(50, expected.Length, "50 serialized members (creelMaxKg replaces CreelMaxWeightG)");
 
             var so = new UnityEditor.SerializedObject(o);
             foreach (string name in expected)

@@ -57,6 +57,10 @@ namespace FishGame.Data
         [SerializeField] private float tireReelMaxMult;
         [SerializeField] private float backPullMargin;
         [SerializeField] private float fightTimeout;
+        // User playtest 2026-10-13 (F7 idle escape, F1 opening reel surge), appended after fightTimeout.
+        [SerializeField] private float idleEscapeTime;
+        [SerializeField] private float reelOpenMult;
+        [SerializeField] private float reelOpenSeconds;
 
         public float CastChargeTime => castChargeTime;
         public bool ChargePingPong => chargePingPong;
@@ -105,6 +109,9 @@ namespace FishGame.Data
         public float TireReelMaxMult => tireReelMaxMult;
         public float BackPullMargin => backPullMargin;
         public float FightTimeout => fightTimeout;
+        public float IdleEscapeTime => idleEscapeTime;
+        public float ReelOpenMult => reelOpenMult;
+        public float ReelOpenSeconds => reelOpenSeconds;
 
         // Used by the content builder and by tests. creelMaxKg = CreelMaxWeightG / 1000.
         public void Configure(in FishingTuning t)
@@ -156,6 +163,9 @@ namespace FishGame.Data
             tireReelMaxMult = t.TireReelMaxMult;
             backPullMargin = t.BackPullMargin;
             fightTimeout = t.FightTimeout;
+            idleEscapeTime = t.IdleEscapeTime;
+            reelOpenMult = t.ReelOpenMult;
+            reelOpenSeconds = t.ReelOpenSeconds;
         }
 
         // CreelMaxWeightG = round(creelMaxKg * 1000) (away from zero).
@@ -210,6 +220,9 @@ namespace FishGame.Data
                 TireReelMaxMult = tireReelMaxMult,
                 BackPullMargin = backPullMargin,
                 FightTimeout = fightTimeout,
+                IdleEscapeTime = idleEscapeTime,
+                ReelOpenMult = reelOpenMult,
+                ReelOpenSeconds = reelOpenSeconds,
             };
         }
     }

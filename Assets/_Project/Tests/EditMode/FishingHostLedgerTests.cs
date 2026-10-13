@@ -907,6 +907,31 @@ namespace FishGame.Tests.EditMode
             Assert.That(early.Announce, Is.EqualTo(AnnounceKind.None));
         }
 
+        // User playtest 2026-10-13 (F7): the owner's 30 s idle escape is Escaped(ThrewHook). The host takes it on a hooked cast at any time (no
+        // clock check, unlike Timeout), announces it as a loss, and keeps the MaxFightTime cap for an owner that never reports.
+        [Test]
+        public void FishingHostLedger_OwnerIdleEscape_ThrewHookAfterThirtySeconds_AcceptedAsLost()
+        {
+            FishingHostLedger l = NewLedger();
+            Accept(l, 1, Ov);
+            HookAt(l, 1);
+            Tick(l, 30.5);
+            CommitDecision d = Result(l, 1, FightOutcome.Escaped, EscapeReason.ThrewHook, NotClean(30f));
+            Assert.That(d.Accepted, Is.True);
+            Assert.That(d.Outcome, Is.EqualTo(FightOutcome.Escaped));
+            Assert.That(d.Reason, Is.EqualTo(EscapeReason.ThrewHook));
+            Assert.That(d.Announce, Is.EqualTo(AnnounceKind.Lost));
+            Assert.That(l.TryGetActive(Client, out _), Is.False, "the cast is resolved");
+
+            Accept(l, 2, Ov);
+            HookAt(l, 2);
+            List<CommitDecision> before = Tick(l, 119.0);
+            Assert.That(before, Is.Empty, "an unattended hooked cast is not host-resolved at the 120 s fight cap (MaxFightTime is 240 s)");
+            List<CommitDecision> capped = Tick(l, 125.0);
+            Assert.That(capped.Count, Is.EqualTo(1));
+            Assert.That(capped[0].Reason, Is.EqualTo(EscapeReason.Timeout));
+        }
+
         [Test]
         public void FishingHostLedger_Tick_ResolvesClientsInAscendingIdOrder()
         {

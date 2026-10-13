@@ -28,6 +28,9 @@ namespace FishGame.Core
         public float TireSteerRate, TireCounterRate, TireDecayRate;                  // /s
         public float TireRunFull, TireReelFull, TireReelMaxMult;                     // run/rest scaling saturates at TireRunFull; reel x1..x3 over 0..TireReelFull
         public float BackPullMargin;                                                 // m: no back pull while lineLength >= castMaxDist - margin
-        public float FightTimeout;                                                   // s: Escaped(Timeout)
+        public float FightTimeout;                                                   // s: Escaped(Timeout), the overall cap on a fish fight
+        // User playtest 2026-10-13 (F7, F1; spec 9.12 note):
+        public float IdleEscapeTime;                                                 // s: a hooked FISH with no reel and no steer input this long throws the hook (Escaped(ThrewHook)); <= 0 = off
+        public float ReelOpenMult, ReelOpenSeconds;                                  // opening reel surge: the reel multiplier is max(tire curve, 1 + (ReelOpenMult - 1) x (1 - t / ReelOpenSeconds)) for the first ReelOpenSeconds; <= 1 or <= 0 s = off. Must stay <= TireReelMaxMult so MaxReelSpeed still bounds every honest reel
     }
 }

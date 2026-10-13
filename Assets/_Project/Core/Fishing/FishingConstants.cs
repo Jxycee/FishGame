@@ -8,7 +8,7 @@ namespace FishGame.Core
         public const int MaxFightStepsPerFrame = 5;          // extra accumulated time is dropped
         public const float ReadyHoldSeconds = 0.25f;         // Readying -> Ready
         public const float MinChargeNorm = 0.1f;             // below: thunk
-        public const float FeedbackBeatSeconds = 1.5f;       // terminal / unsolicited-commit beat
+        public const float FeedbackBeatSeconds = 0.6f;       // terminal / unsolicited-commit beat (was 1.5 s; user playtest 2026-10-13 S10: recast sooner)
         public const float CleanClaimClockSlackSeconds = 2.0f;  // |owner fight seconds - host hooked-to-result seconds| bound (clean-catch claim)
         public const float PinnedLateral = 0.95f;            // parked (R72): only the angleWindow validator rule reads it
         public const float NearSnapHigh = 1.0f, NearSnapLow = 0.5f;   // over the full bar (R72)

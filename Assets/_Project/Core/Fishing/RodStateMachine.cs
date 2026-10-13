@@ -16,6 +16,7 @@ namespace FishGame.Core
         private bool _flightOver;        // Landing cue emitted for this cast
         private int _nibblesDone;
         private bool _commitReceived;
+        private bool _aimCarry;          // S10: Secondary was held when a terminal state ended; the next Idle tick readies the rod without a fresh press
         private bool _castAssist;        // Assist captured at release
         private uint _cancelledCastId;   // last cast we sent SendCancel for (0 = none); never cleared by ResetCast
 
@@ -57,8 +58,12 @@ namespace FishGame.Core
             switch (State)
             {
                 case RodState.Idle:                                                    // row: Idle / Secondary down
-                    if (f.SecondaryPressed) Enter(RodState.Readying);
+                {
+                    bool carry = _aimCarry;                                            // S10: aim held when a terminal state ended
+                    _aimCarry = false;
+                    if (f.SecondaryPressed || (carry && f.SecondaryHeld)) Enter(RodState.Readying);
                     break;
+                }
                 case RodState.Readying:
                     if (!f.SecondaryHeld) Enter(RodState.Idle);                        // row: Readying / released
                     else if (StateTime >= FishingConstants.ReadyHoldSeconds - Eps)    // row: Readying / held 0.25 s
@@ -76,7 +81,7 @@ namespace FishGame.Core
                 case RodState.Hooked:                                                  // rows: Hooked / leash, entered water
                     if (f.InWater || f.HookDisplacement > _t.HookedLeash) EndEscaped(EscapeReason.Dropped);
                     break;
-                default: TickTerminal(); break;                                        // Landed, Snapped, Escaped
+                default: TickTerminal(f); break;                                       // Landed, Snapped, Escaped
             }
         }
 
@@ -199,12 +204,22 @@ namespace FishGame.Core
             else if (tire < _t.TireRunFull - FishingConstants.SpentClearBelowTire) Spent = false;
         }
 
-        private void TickTerminal()
+        // S10 (user playtest 2026-10-13): the beat is 0.6 s, and an aim (Secondary) still held when the terminal state ends carries into Readying
+        // instead of Idle, so a press made during the beat is not lost and the player does not have to release and press again. Commit first:
+        // the host's result still gates the return to Idle (CommitTimeout is the fallback), so host validation is untouched.
+        private void TickTerminal(in RodFrame f)
         {
-            if (StateTime < FishingConstants.FeedbackBeatSeconds - Eps) return;       // 1.5 s beat first
-            if (_commitReceived) { EnterIdle(); return; }                              // row: beat + commit
+            if (StateTime < FishingConstants.FeedbackBeatSeconds - Eps) return;       // 0.6 s beat first
+            if (_commitReceived) { LeaveTerminal(f); return; }                         // row: beat + commit
             if (StateTime >= _t.CommitTimeout - Eps)                                   // row: no commit in 3 s
-            { Add(new RodEffect { Kind = RodEffectKind.CommitTimedOut, CastId = CastId }); EnterIdle(); }
+            { Add(new RodEffect { Kind = RodEffectKind.CommitTimedOut, CastId = CastId }); LeaveTerminal(f); }
+        }
+
+        // Idle first, for one tick: the controller's Idle bookkeeping (telemetry record, landing reset, rumble off) keys on entering Idle.
+        private void LeaveTerminal(in RodFrame f)
+        {
+            EnterIdle();
+            _aimCarry = f.SecondaryHeld;
         }
 
         public void OnCastResult(uint castId, bool valid, in FishingRoll roll, in FishFightProfile profile)
@@ -292,7 +307,7 @@ namespace FishGame.Core
         private void EnterTerminal(RodState s, FightOutcome o, EscapeReason r)
         { Enter(s); Outcome = o; Reason = r; Recalling = false; _commitReceived = false; }
         private void EnterIdle() { Enter(RodState.Idle); ResetCast(); ChargeNorm = 0f; }
-        private void Enter(RodState s) { State = s; StateTime = 0f; }
+        private void Enter(RodState s) { State = s; StateTime = 0f; _aimCarry = false; }
 
         private void ResetCast()
         {

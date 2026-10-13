@@ -117,10 +117,23 @@ namespace FishGame.Core
             }
             _s.Lateral = lateral;
 
-            // 5. line: the reel speeds up as the fish tires; a back pull takes line, halved while reeling; the clamp adds no strain
+            // 5. line: the reel speeds up as the fish tires; a back pull takes line, halved while reeling; the clamp adds no strain.
+            // User playtest 2026-10-13 (F1): for the first ReelOpenSeconds the reel multiplier is floored by a surge that starts at ReelOpenMult and
+            // settles into 1 (max with the tire curve, never a product, so CatchValidator.MaxReelSpeed still bounds every honest reel), and the
+            // fish's back pull ramps in over the same window so the opening run cannot cancel the reel. Movement only: strain is untouched.
             float tireReel = 1f + (_t.TireReelMaxMult - 1f) * Clamp01(_s.Tire / _t.TireReelFull);
-            if (reel) _s.LineLength -= _rod.ReelSpeed * _fish.ReelInMult * tireReel * dt;
-            if (back) _s.LineLength += _t.BackMoveSpeed * speed * (reel ? FishingConstants.ReelBackMult : 1f) * dt;
+            bool surge = _t.ReelOpenMult > 1f && _t.ReelOpenSeconds > 0f;
+            float reelMult = tireReel;
+            float backRamp = 1f;
+            if (surge)
+            {
+                float open = 1f + (_t.ReelOpenMult - 1f) * (1f - Clamp01(_s.Elapsed / _t.ReelOpenSeconds));
+                if (open > _t.TireReelMaxMult) open = _t.TireReelMaxMult;   // belt and braces: the validator keeps ReelOpenMult <= TireReelMaxMult (host MaxReelSpeed)
+                if (open > reelMult) reelMult = open;
+                backRamp = Clamp01(_s.Elapsed / _t.ReelOpenSeconds);
+            }
+            if (reel) _s.LineLength -= _rod.ReelSpeed * _fish.ReelInMult * reelMult * dt;
+            if (back) _s.LineLength += _t.BackMoveSpeed * speed * backRamp * (reel ? FishingConstants.ReelBackMult : 1f) * dt;
             else if (!run && _fish.CalmDrift > 0f && !Exhausted)                           // quirk: Bulldog creeps line out at rest
             {
                 float driftRamp = _fish.CalmDriftRamp > 0f ? Clamp01(_phaseElapsed / _fish.CalmDriftRamp) : 1f;
@@ -147,13 +160,17 @@ namespace FishGame.Core
             // 8. timers and near-snap recoveries (over the full bar, then back under half)
             _s.SnapTimer = _s.Strain > _t.StrainBarFull ? _s.SnapTimer + dt : 0f;
             _s.SlackTimer = reel ? 0f : _s.SlackTimer + dt;
+            _s.IdleTimer = reel || RawSteer(input.Steer) ? 0f : _s.IdleTimer + dt;   // F7: raw input, not the effective steer (a dropped steer is still a press)
             if (_s.Tension > FishingConstants.NearSnapHigh) _nearSnapArmed = true;
             else if (_nearSnapArmed && _s.Tension < FishingConstants.NearSnapLow) { _nearSnapArmed = false; _s.NearSnapRecoveries++; }
 
-            // 9. endings (priority: Landed, Snapped, Timeout); a fish has no pinned or slack escape (Rust has neither)
+            // 9. endings (priority: Landed, Snapped, Timeout, Idle escape); a fish has no pinned or slack escape (Rust has neither)
             if (reel && _s.LineLength <= _t.LandDistance) return End(FightOutcome.Landed, EscapeReason.None);
             if (_s.Strain > _snapStrain) return End(FightOutcome.Snapped, EscapeReason.None);
             if (_s.Elapsed >= _t.FightTimeout - TimeEps) return End(FightOutcome.Escaped, EscapeReason.Timeout);
+            // F7 (user playtest 2026-10-13): a walked-away player loses the fish after IdleEscapeTime. ThrewHook, not Timeout: the host takes ThrewHook
+            // on any hooked cast, while an owner Timeout is checked against the host clock (>= FightTimeout - 2 s). IdleEscapeTime <= 0 = off.
+            if (_t.IdleEscapeTime > 0f && _s.IdleTimer >= _t.IdleEscapeTime - TimeEps) return End(FightOutcome.Escaped, EscapeReason.ThrewHook);
 
             // 10. phase clock
             _s.PhaseTimer -= dt;
@@ -188,6 +205,12 @@ namespace FishGame.Core
             float duration = Uniform(_fish.CalmMin, _fish.CalmMax) * (1f + tire01);                // draw 1
             _s.Phase = FightPhase.Calm; _s.BurstDir = 0; _s.Back = false; _s.PhaseTimer = duration;
             _phaseElapsed = 0f; _runSpeedMult = 1f;
+        }
+
+        // True when the raw steer axis is a key press (NaN is none). Unlike SteerDir this ignores the side: any press shows the player is there.
+        private static bool RawSteer(float steer)
+        {
+            return !float.IsNaN(steer) && Math.Abs(steer) >= FishingConstants.SteerDigitalThreshold;
         }
 
         // Rust: steering counts only while it pulls the line away from the bobber's side; here, toward the cast line (sign opposite to lateral).

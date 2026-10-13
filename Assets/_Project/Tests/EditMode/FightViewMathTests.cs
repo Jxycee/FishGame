@@ -118,5 +118,24 @@ namespace FishGame.Tests.EditMode
                 last = s;
             }
         }
+
+        // Catches (batch A review): a remote that sees Escaped -> Readying (the owner's one Idle frame after the terminal beat, S10 aim carry)
+        // never recalling the bobber, which then glides to the world origin (BobberPoint is zero for a no-line state).
+        [TestCase(RodState.Escaped, RodState.Idle, true)]
+        [TestCase(RodState.Escaped, RodState.Readying, true)]
+        [TestCase(RodState.Escaped, RodState.Ready, true)]
+        [TestCase(RodState.Waiting, RodState.Idle, true)]
+        [TestCase(RodState.Casting, RodState.Idle, true)]
+        [TestCase(RodState.Hooked, RodState.Idle, true)]
+        [TestCase(RodState.Hooked, RodState.Readying, true)]
+        [TestCase(RodState.Waiting, RodState.Bite, false)]
+        [TestCase(RodState.Hooked, RodState.Escaped, false)]   // still line-out: the Escaped beat shows the slack line
+        [TestCase(RodState.Casting, RodState.Waiting, false)]
+        [TestCase(RodState.Idle, RodState.Readying, false)]
+        [TestCase(RodState.Readying, RodState.Ready, false)]
+        public void FightViewMath_RecallOnLeavingLineOut_CoversEveryExitFromTheLine(RodState from, RodState to, bool recall)
+        {
+            Assert.That(FightViewMath.RecallOnLeavingLineOut(from, to), Is.EqualTo(recall));
+        }
     }
 }

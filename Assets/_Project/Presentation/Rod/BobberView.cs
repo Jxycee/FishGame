@@ -150,7 +150,7 @@ namespace FishGame.Presentation
                 if (_phase == Phase.Steady || _phase == Phase.Arc)
                 {
                     if (vs.State == RodState.Escaped && (vs.Flags & RodWireQuant.FlagRecall) != 0) StartRecall();
-                    else if (vs.State == RodState.Idle && IsLineOut(_lastState)) StartRecall();
+                    else if (FightViewMath.RecallOnLeavingLineOut(_lastState, vs.State)) StartRecall();
                 }
             }
 
@@ -320,7 +320,7 @@ namespace FishGame.Presentation
 
         private static bool IsLineOut(RodState state)
         {
-            return state == RodState.Casting || state == RodState.Waiting || state == RodState.Bite || state == RodState.Hooked || state == RodState.Escaped;
+            return FightViewMath.IsLineOut(state);
         }
 
         private static bool IsFinite(Vector3 v)
