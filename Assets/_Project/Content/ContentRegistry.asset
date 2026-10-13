@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41a701385bf63674a8a571e161803e45, type: 3}
   m_Name: ContentRegistry
   m_EditorClassIdentifier: FishGame.Data::FishGame.Data.ContentRegistry
-  dataVersion: 1
+  dataVersion: 2
   spots:
   - {fileID: 11400000, guid: aee9431bc88ba5644bd17cfbd0798afb, type: 2}
   rods:
@@ -35,10 +35,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d4dc0e4ff28dbfb4eb31b037d3677bee, type: 2}
   species:
   - {fileID: 11400000, guid: b6165142528cfd945b50848c4c3433b2, type: 2}
-  - {fileID: 11400000, guid: da8de3e045334f143857d5a75b775776, type: 2}
-  - {fileID: 11400000, guid: 44a81c349e7d0f247b8432469acdae23, type: 2}
-  - {fileID: 11400000, guid: dbc2ebb35c2a97e45b2f09f575647936, type: 2}
-  - {fileID: 11400000, guid: 2ee339c4f5f30144dbe196dcee5dc100, type: 2}
   junk:
   - {fileID: 11400000, guid: b16740ee59c9a7e4484d2a91b7c8f237, type: 2}
   - {fileID: 11400000, guid: b6435e1ed38ea454c8ae4b0c6fa558ef, type: 2}

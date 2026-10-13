@@ -21,6 +21,9 @@ namespace FishGame.EditorTools
         private const float DefaultMaxDistance = 30f;   // AudioBus default when a cue's maxDistance is 0
         private const float MaxFogDensity = 0.033f;     // spec 10.3 readability rule
 
+        // M3 T3: the FishTags bits that exist (spec 12.2); a species `tags` or a bait `affinityTags` outside them is a data bug.
+        private const FishTags DefinedTags = FishTags.Nocturnal | FishTags.Predator | FishTags.Bottom | FishTags.Schooling | FishTags.Surface;
+
         public static List<string> All()
         {
             return Prefixed(FishingContent(), SpeciesModels());
@@ -273,6 +276,9 @@ namespace FishGame.EditorTools
                 Range(e, l, "biteSpeedMod", b.BiteSpeedMod, 0.5f, 1.5f);
                 Range(e, l, "junkMult", b.JunkMult, 0f, 2f);
                 Range(e, l, "maxNibbles", b.MaxNibbles, 0f, FishingConstants.MaxNibbleSlots);
+                Range(e, l, "affinityMult", b.AffinityMult, 1f, 3f);       // M3-D4
+                Range(e, l, "specialMult", b.SpecialMult, 0.5f, 3f);
+                Rule(e, l, (b.AffinityTags & ~DefinedTags) == 0, "affinityTags has undefined bits");
                 if (b.Unlimited) unlimited++;
             }
             Rule(e, "baits", unlimited == 1, "exactly one bait must be unlimited (found " + unlimited + ")");
@@ -311,6 +317,7 @@ namespace FishGame.EditorTools
             Rule(e, l, s.HookWindow == 0f || (s.HookWindow >= 0.8f && s.HookWindow <= 1.2f), "hookWindow is 0 or in [0.8, 1.2]");
             Range(e, l, "minBaitRating", s.MinBaitRating, 0f, 20f);
             Range(e, l, "minDepth", s.MinDepth, 0f, FishingConstants.DepthMultFullDepth);
+            Rule(e, l, (s.Tags & ~DefinedTags) == 0, "tags has undefined bits");   // M3 T3
 
             // Reachable: some bait reaches the species at the full depth (a null fight is reported by ContentRegistry.Validate).
             FishSpeciesData data = s.ToCore(0);

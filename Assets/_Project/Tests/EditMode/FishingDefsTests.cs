@@ -82,7 +82,7 @@ namespace FishGame.Tests.EditMode
         private void CheckBait()
         {
             BaitDef d = Make<BaitDef>();
-            d.Configure("bait_x", "Bait X", 3, 4, 9, 1.25f, 0.75f, 2, true);
+            d.Configure("bait_x", "Bait X", 3, 4, 9, 1.25f, 0.75f, 2, true, FishTags.Bottom | FishTags.Surface, 1.7f, 0.6f);
             Assert.AreEqual("bait_x", d.Id);
             Assert.AreEqual("Bait X", d.DisplayName);
             Assert.AreEqual(3, d.Rating);
@@ -92,6 +92,9 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(0.75f, d.JunkMult);
             Assert.AreEqual(2, d.MaxNibbles);
             Assert.IsTrue(d.Unlimited);
+            Assert.AreEqual(FishTags.Bottom | FishTags.Surface, d.AffinityTags);
+            Assert.AreEqual(1.7f, d.AffinityMult);
+            Assert.AreEqual(0.6f, d.SpecialMult);
             BaitStats s = d.ToCore();
             Assert.AreEqual(3, s.Rating);
             Assert.AreEqual(4, s.StackMax);
@@ -100,9 +103,17 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(0.75f, s.JunkMult);
             Assert.AreEqual(2, s.MaxNibbles);
             Assert.IsTrue(s.Unlimited);
+            // Catches: ToCore not mapping the M3 bait fields.
+            Assert.AreEqual(FishTags.Bottom | FishTags.Surface, s.AffinityTags);
+            Assert.AreEqual(1.7f, s.AffinityMult);
+            Assert.AreEqual(0.6f, s.SpecialMult);
 
+            // The M3 parameters are optional and trailing (M3-D75): an old call keeps compiling and gets the neutral defaults None / 1 / 1.
             d.Configure("bait_x", "Bait X", 3, 4, 9, 1.25f, 0.75f, 2, false);
             Assert.IsFalse(d.ToCore().Unlimited);
+            Assert.AreEqual(FishTags.None, d.AffinityTags);
+            Assert.AreEqual(1f, d.AffinityMult);
+            Assert.AreEqual(1f, d.SpecialMult);
         }
 
         private void CheckFightProfile()
@@ -155,7 +166,7 @@ namespace FishGame.Tests.EditMode
             created.Add(mesh);
             FishSpeciesDef d = Make<FishSpeciesDef>();
             d.Configure("fish_x", "Fish X", FishRarity.Uncommon, 11, 222, 333, 1.7f, 1.3f, fight, BodyShape.Flat, colorA, colorB,
-                0.8f, 0.9f, true, 4, 1.6f, mesh);
+                0.8f, 0.9f, true, 4, 1.6f, mesh, FishTags.Predator | FishTags.Nocturnal);
             Assert.AreEqual("fish_x", d.Id);
             Assert.AreEqual("Fish X", d.DisplayName);
             Assert.AreEqual(FishRarity.Uncommon, d.Rarity);
@@ -174,8 +185,10 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(4, d.MinBaitRating);
             Assert.AreEqual(1.6f, d.MinDepth);
             Assert.AreSame(mesh, d.Model);
+            Assert.AreEqual(FishTags.Predator | FishTags.Nocturnal, d.Tags);
 
             FishSpeciesData s = d.ToCore(7);
+            Assert.AreEqual(FishTags.Predator | FishTags.Nocturnal, s.Tags);   // Catches: ToCore not mapping tags
             Assert.AreEqual((ushort)7, s.FightProfileIndex);
             Assert.AreEqual(222, s.WeightMinG);
             Assert.AreEqual(333, s.WeightMaxG);
@@ -196,6 +209,13 @@ namespace FishGame.Tests.EditMode
             Assert.IsNull(d.Model);
             Assert.IsFalse(d.ToCore(0).IsSpecial);
             Assert.AreEqual(FishRarity.Rare, d.ToCore(0).Rarity);
+            Assert.AreEqual(FishTags.None, d.Tags, "tags is an optional trailing parameter (M3-D75)");
+
+            // Catches: Legendary misnumbered (spec 12.2 / M3-D2: Common 0, Uncommon 1, Rare 2, Legendary 3).
+            d.Configure("fish_x", "Fish X", FishRarity.Legendary, 11, 222, 333, 1.7f, 1.3f, null, BodyShape.Round, colorA, colorB,
+                0.8f, 0.9f, false, 4, 1.6f, null);
+            Assert.AreEqual((byte)3, (byte)d.Rarity);
+            Assert.AreEqual(FishRarity.Legendary, d.ToCore(0).Rarity);
         }
 
         private void CheckJunk()
@@ -296,9 +316,9 @@ namespace FishGame.Tests.EditMode
         // silently drops the saved value. The property set must equal the list exactly (no extra field either).
         // Catches: a renamed or removed [SerializeField] field, a stray extra serialized field, slotTints / creelMaxWeightG reappearing.
         [TestCase("RodDef", "id,displayName,tier,castMaxDist,reelSpeed,lineStrength,angleWindow,steerRate,relaxMult,shopCost,firstCamp")]
-        [TestCase("BaitDef", "id,displayName,rating,stackMax,maxRating,biteSpeedMod,junkMult,maxNibbles,unlimited")]
+        [TestCase("BaitDef", "id,displayName,rating,stackMax,maxRating,biteSpeedMod,junkMult,maxNibbles,unlimited,affinityTags,affinityMult,specialMult")]
         [TestCase("FightProfileDef", "id,displayName,calmMin,calmMax,burstMin,burstMax,flipRate,diveChance,burstRamp,calmDrift,calmDriftRamp,flipMinGap,lateralJitter,strainMod,moveMult,reelInMult,wavePeriod")]
-        [TestCase("FishSpeciesDef", "id,displayName,rarity,baseValue,weightMinG,weightMaxG,weightSkew,lengthShapeK,fight,bodyShape,colorA,colorB,biteWaitMod,hookWindow,isSpecial,minBaitRating,minDepth,model")]
+        [TestCase("FishSpeciesDef", "id,displayName,rarity,baseValue,weightMinG,weightMaxG,weightSkew,lengthShapeK,fight,bodyShape,colorA,colorB,biteWaitMod,hookWindow,isSpecial,minBaitRating,minDepth,model,tags")]
         [TestCase("JunkDef", "id,displayName,valueCoins,bodyShape,color")]
         [TestCase("FishingTuningDef", "TUNING")]
         [TestCase("SfxCueTableDef", "rows")]

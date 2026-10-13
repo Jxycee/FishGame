@@ -49,7 +49,7 @@ namespace FishGame.EditorTools
             // Spec 9.12 tuning table + creel caps (9.10) + clean threshold + R65 pity seeds. Field order = the plan 1.1 table.
             s_tuning = new FishingTuning
             {
-                CastChargeTime = 1.0f, ChargePingPong = true, CastMinDist = 2.5f, MinLandDepth = 0.8f,
+                CastChargeTime = 1.0f, ChargePingPong = true, CastMinDist = 2.5f, MinLandDepth = 0.5f,   // M3-D52 (Q1 default): reeds castable; was 0.8 in M2
                 BiteWaitMin = 4f, BiteWaitMax = 18f, MinBiteWait = 1.0f, HookBeat = 0.25f, LandDistance = 1.0f,
                 SpoolExtra = 12f, RelaxRate = 1.5f, StrainScale = 0.75f, StrainScaleAssist = 0.45f,
                 SlackEscapeTime = 12f, LateralMaxDeg = 60f,
@@ -76,15 +76,15 @@ namespace FishGame.EditorTools
             };
             s_rods = new ReadOnlyCollection<(string, string, RodStats, int, int)>(rods);
 
-            // Spec 9.7 baits.
+            // Spec 9.7 baits. M3 T3 (M3-D4): the last three arguments are affinityTags, affinityMult, specialMult.
             var baits = new List<(string id, string name, BaitStats stats)>
             {
-                ("bait_bare_hook", "Bare Hook", Bait(1, 1, 1, 1.30f, 1.5f, 1, true)),
-                ("bait_worm", "Worm", Bait(3, 3, 9, 0.90f, 1.0f, 2, false)),
-                ("bait_grub", "Grub", Bait(4, 3, 12, 0.85f, 0.9f, 2, false)),
-                ("bait_minnow", "Minnow", Bait(2, 2, 4, 1.00f, 1.1f, 1, false)),
-                ("bait_shrimp", "Shrimp", Bait(5, 2, 10, 0.80f, 0.8f, 1, false)),
-                ("bait_raw_meat", "Raw Meat", Bait(10, 1, 10, 0.70f, 0.5f, 0, false)),
+                ("bait_bare_hook", "Bare Hook", Bait(1, 1, 1, 1.30f, 1.5f, 1, true, FishTags.None, 1.0f, 1.0f)),
+                ("bait_worm", "Worm", Bait(3, 3, 9, 0.90f, 1.0f, 2, false, FishTags.Bottom, 1.3f, 1.0f)),
+                ("bait_grub", "Grub", Bait(4, 3, 12, 0.85f, 0.9f, 2, false, FishTags.Surface, 1.3f, 1.0f)),
+                ("bait_minnow", "Minnow", Bait(2, 2, 4, 1.00f, 1.1f, 1, false, FishTags.Predator, 1.4f, 1.0f)),
+                ("bait_shrimp", "Shrimp", Bait(5, 2, 10, 0.80f, 0.8f, 1, false, FishTags.Schooling, 1.3f, 1.2f)),
+                ("bait_raw_meat", "Raw Meat", Bait(10, 1, 10, 0.70f, 0.5f, 0, false, FishTags.Predator | FishTags.Nocturnal, 1.5f, 1.5f)),
             };
             s_baits = new ReadOnlyCollection<(string, string, BaitStats)>(baits);
 
@@ -105,18 +105,11 @@ namespace FishGame.EditorTools
             string[] sortedProfileIds = new string[profiles.Count];
             for (int i = 0; i < profiles.Count; i++) sortedProfileIds[i] = profiles[i].id;
             Array.Sort(sortedProfileIds, StringComparer.Ordinal);
+            // M3 T3: only bluegill remains (12.6 row 2); perch/carp/trout/catfish were deleted by EcologyMigration. T10 moves the list to EcologySeedData.
             var species = new List<SpeciesSeed>
             {
-                MakeSpecies("bluegill", "Bluegill", "steady", sortedProfileIds, 200, 800, 5, 0.9f, 1, 0.8f, FishRarity.Common, BodyShape.Round,
-                    new Color(0.32f, 0.50f, 0.62f, 1f), new Color(0.95f, 0.62f, 0.22f, 1f), "Fish_Bluegill.fbx"),
-                MakeSpecies("perch", "Perch", "darter", sortedProfileIds, 300, 1200, 8, 1.0f, 3, 1.2f, FishRarity.Common, BodyShape.Long,
-                    new Color(0.62f, 0.68f, 0.30f, 1f), new Color(0.20f, 0.24f, 0.16f, 1f), "Fish_Perch.fbx"),
-                MakeSpecies("carp", "Carp", "bulldog", sortedProfileIds, 1000, 4000, 12, 1.2f, 1, 1.5f, FishRarity.Common, BodyShape.Round,
-                    new Color(0.72f, 0.58f, 0.30f, 1f), new Color(0.45f, 0.34f, 0.18f, 1f), "Fish_Carp.fbx"),
-                MakeSpecies("trout", "Trout", "thrasher", sortedProfileIds, 600, 2500, 20, 0.9f, 5, 2.0f, FishRarity.Uncommon, BodyShape.Long,
-                    new Color(0.55f, 0.62f, 0.55f, 1f), new Color(0.88f, 0.45f, 0.48f, 1f), "Fish_Trout.fbx"),
-                MakeSpecies("catfish", "Catfish", "runner", sortedProfileIds, 2000, 7000, 35, 1.4f, 6, 2.5f, FishRarity.Uncommon, BodyShape.Long,
-                    new Color(0.36f, 0.34f, 0.30f, 1f), new Color(0.70f, 0.66f, 0.56f, 1f), "Fish_Catfish.fbx"),
+                MakeSpecies("bluegill", "Bluegill", "steady", sortedProfileIds, 200, 600, 8, 1.0f, 0, 0f, FishRarity.Common, BodyShape.Round,
+                    new Color(0.32f, 0.50f, 0.62f, 1f), new Color(0.95f, 0.62f, 0.22f, 1f), "Fish_Bluegill.fbx", FishTags.Schooling),
             };
             s_species = new ReadOnlyCollection<SpeciesSeed>(species);
 
@@ -140,9 +133,14 @@ namespace FishGame.EditorTools
             return new RodStats { Tier = tier, CastMaxDist = cast, ReelSpeed = reel, LineStrength = strength, AngleWindow = window, SteerRate = steer, RelaxMult = relax };
         }
 
-        private static BaitStats Bait(int rating, int stackMax, int maxRating, float biteSpeedMod, float junkMult, int maxNibbles, bool unlimited)
+        private static BaitStats Bait(int rating, int stackMax, int maxRating, float biteSpeedMod, float junkMult, int maxNibbles, bool unlimited,
+            FishTags affinityTags, float affinityMult, float specialMult)
         {
-            return new BaitStats { Rating = rating, StackMax = stackMax, MaxRating = maxRating, BiteSpeedMod = biteSpeedMod, JunkMult = junkMult, MaxNibbles = maxNibbles, Unlimited = unlimited };
+            return new BaitStats
+            {
+                Rating = rating, StackMax = stackMax, MaxRating = maxRating, BiteSpeedMod = biteSpeedMod, JunkMult = junkMult, MaxNibbles = maxNibbles,
+                Unlimited = unlimited, AffinityTags = affinityTags, AffinityMult = affinityMult, SpecialMult = specialMult,
+            };
         }
 
         private static FishFightProfile Profile(float calmMin, float calmMax, float burstMin, float burstMax,
@@ -158,7 +156,8 @@ namespace FishGame.EditorTools
         }
 
         private static SpeciesSeed MakeSpecies(string id, string name, string profileId, string[] sortedProfileIds, int weightMinG, int weightMaxG, int baseValue,
-            float biteWaitMod, int minBaitRating, float minDepth, FishRarity rarity, BodyShape shape, Color colorA, Color colorB, string modelFile)
+            float biteWaitMod, int minBaitRating, float minDepth, FishRarity rarity, BodyShape shape, Color colorA, Color colorB, string modelFile,
+            FishTags tags)
         {
             int index = Array.IndexOf(sortedProfileIds, profileId);
             if (index < 0) throw new InvalidOperationException("species seed '" + id + "' names unknown profile '" + profileId + "'");
@@ -166,6 +165,7 @@ namespace FishGame.EditorTools
             {
                 FightProfileIndex = (ushort)index, WeightMinG = weightMinG, WeightMaxG = weightMaxG, BaseValue = baseValue, MinBaitRating = minBaitRating,
                 WeightSkew = 2.2f, LengthShapeK = 1.0f, BiteWaitMod = biteWaitMod, HookWindow = 0f, MinDepth = minDepth, IsSpecial = false, Rarity = rarity,
+                Tags = tags,
             };
             return new SpeciesSeed(id, name, profileId, data, shape, colorA, colorB, modelFile);
         }

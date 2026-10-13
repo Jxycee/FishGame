@@ -4,6 +4,7 @@
 // null registry singleton, and filling a null FishSpeciesDef.model from Content/Models when the mesh has vertex colours and exactly one submesh.
 // Reads the registry's serialized lists through SerializedObject, never the cached accessors (the registry may have been edited in memory).
 // Does not call SaveAssets: ContentBuilder.Build saves after the hook.
+// Existing assets are migrated by EcologyMigration (M3 T3), never here.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -68,7 +69,8 @@ namespace FishGame.EditorTools
             {
                 BaitStats s = b.stats;
                 baits.Add(Ensure<BaitDef>(Rooted(AssetPaths.BaitsFolder) + "/" + b.id + ".asset", d =>
-                    d.Configure(b.id, b.name, s.Rating, s.StackMax, s.MaxRating, s.BiteSpeedMod, s.JunkMult, s.MaxNibbles, s.Unlimited)));
+                    d.Configure(b.id, b.name, s.Rating, s.StackMax, s.MaxRating, s.BiteSpeedMod, s.JunkMult, s.MaxNibbles, s.Unlimited,
+                        s.AffinityTags, s.AffinityMult, s.SpecialMult)));
             }
 
             var junk = new List<JunkDef>();
@@ -89,7 +91,7 @@ namespace FishGame.EditorTools
                     if (fight == null) throw new InvalidOperationException("species '" + s.Id + "': missing fight profile asset " + profilePath);
                     FishSpeciesData x = s.Data;
                     d.Configure(s.Id, s.Name, x.Rarity, x.BaseValue, x.WeightMinG, x.WeightMaxG, x.WeightSkew, x.LengthShapeK, fight, s.BodyShape,
-                        s.ColorA, s.ColorB, x.BiteWaitMod, x.HookWindow, x.IsSpecial, x.MinBaitRating, x.MinDepth, null);
+                        s.ColorA, s.ColorB, x.BiteWaitMod, x.HookWindow, x.IsSpecial, x.MinBaitRating, x.MinDepth, null, x.Tags);
                 }));
             }
 

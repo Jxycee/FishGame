@@ -1,5 +1,6 @@
 // Data assets (spec 4.6 step 2). Create-if-missing only: the user tunes these in the Inspector, so existing values are never overwritten.
 // The only edit to an existing asset is adding lake_dock to the registry list and filling an empty PanelSettings theme. Owned by T15.
+// M3 T3 adds the one-off migration (EcologyMigration, spec 12.6 step 1): it runs before the fishing build and is gated on dataVersion.
 using FishGame.Core;
 using FishGame.Data;
 using UnityEditor;
@@ -19,6 +20,8 @@ namespace FishGame.EditorTools
             SpotDef lakeDock = EnsureLakeDockSpot();
             EnsureRegistry(lakeDock);
             EnsurePanelSettings();
+            var registry = AssetDatabase.LoadAssetAtPath<ContentRegistry>(AssetPaths.ContentRegistryAsset);
+            EcologyMigration.MigrateIfNeeded(registry);   // M3 T3 (C 2.6): BEFORE the fishing build, so create-if-missing never sees the M2 placeholders
             FishingContentBuilder.Build();
             RenderingSetupBuilder.Build();   // T21 (C 2.6): world materials, volume profiles, URP shadow tuning
             AssetDatabase.SaveAssets();

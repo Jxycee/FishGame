@@ -8,5 +8,6 @@ namespace FishGame.Core
         public float WeightSkew, LengthShapeK, BiteWaitMod, HookWindow, MinDepth;
         public bool IsSpecial;
         public FishRarity Rarity;
+        public FishTags Tags;   // M3 T3 (spec 12.2)
     }
 }

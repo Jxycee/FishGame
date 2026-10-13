@@ -114,7 +114,7 @@ namespace FishGame.Tests.EditMode
             Load<RodDef>(T(AssetPaths.RodsFolder) + "/rod_twig.asset");
             Load<BaitDef>(T(AssetPaths.BaitsFolder) + "/bait_worm.asset");
             Load<FightProfileDef>(T(AssetPaths.FightProfilesFolder) + "/darter.asset");
-            Load<FishSpeciesDef>(T(AssetPaths.SpeciesFolder) + "/perch.asset");
+            Load<FishSpeciesDef>(T(AssetPaths.SpeciesFolder) + "/bluegill.asset");   // M3 T3: bluegill is the only seed species
             Load<JunkDef>(T(AssetPaths.JunkFolder) + "/tin_can.asset");
         }
 
@@ -162,7 +162,7 @@ namespace FishGame.Tests.EditMode
             var rod = Load<RodDef>(T(AssetPaths.RodsFolder) + "/rod_twig.asset");
             var bait = Load<BaitDef>(T(AssetPaths.BaitsFolder) + "/bait_worm.asset");
             var profile = Load<FightProfileDef>(T(AssetPaths.FightProfilesFolder) + "/darter.asset");
-            var species = Load<FishSpeciesDef>(T(AssetPaths.SpeciesFolder) + "/perch.asset");
+            var species = Load<FishSpeciesDef>(T(AssetPaths.SpeciesFolder) + "/bluegill.asset");   // M3 T3: bluegill is the only seed species
             var junk = Load<JunkDef>(T(AssetPaths.JunkFolder) + "/tin_can.asset");
             var cues = Load<SfxCueTableDef>(T(AssetPaths.SfxCueTableAsset));
             var palette = Load<ArtPaletteDef>(T(AssetPaths.ArtPaletteAsset));

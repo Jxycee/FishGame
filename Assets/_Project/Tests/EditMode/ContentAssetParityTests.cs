@@ -50,7 +50,7 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void SeedSpecies_Models_AreFishModelMeshes_UnderTriangleBudget()
         {
-            Assert.That(FishingSeedData.Species.Count, Is.EqualTo(5), "the five M2 seed species");
+            Assert.That(FishingSeedData.Species.Count, Is.EqualTo(1), "after the M3 migration only bluegill is seeded here (T10 moves the roster)");
             foreach (SpeciesSeed seed in FishingSeedData.Species)
             {
                 string path = AssetPaths.SpeciesFolder + "/" + seed.Id + ".asset";
@@ -69,28 +69,32 @@ namespace FishGame.Tests.EditMode
         // Catches: the model importer regenerating or swapping UV channels (FishModelPostprocessor pins generateSecondaryUV / swapUVChannels off), which would
         // replace the authored uv1 = (slot, layer, mapping, 0) and make FishGame/Toon read the wrong T_FishSkinArray layer (the fish would be skinned as another
         // species, or white). Each species model must carry uv1, and uv1.y is its skin layer on every vertex.
+        // M3 T3: keyed by model FILE, not by species. The four M2 species assets are deleted by the migration but their FBX files stay (M3-D33 reuses
+        // them as yellow_perch, grumpy_carp, sunny_trout and mudcat), so the layer check keeps covering all five models.
         [Test]
         public void SeedSpecies_Models_CarryUv1_WithTheirSkinArrayLayer()
         {
             var expectedLayer = new Dictionary<string, float>(StringComparer.Ordinal)
             {
-                { "bluegill", 1f }, { "perch", 2f }, { "carp", 3f }, { "trout", 4f }, { "catfish", 5f },
+                { "Fish_Bluegill.fbx", 1f }, { "Fish_Perch.fbx", 2f }, { "Fish_Carp.fbx", 3f }, { "Fish_Trout.fbx", 4f }, { "Fish_Catfish.fbx", 5f },
             };
-            Assert.That(FishingSeedData.Species.Count, Is.EqualTo(expectedLayer.Count), "every seed species needs an expected skin layer here");
-            foreach (SpeciesSeed seed in FishingSeedData.Species)
+            foreach (KeyValuePair<string, float> expected in expectedLayer)
             {
-                Assert.That(expectedLayer.TryGetValue(seed.Id, out float layer), Is.True, seed.Id + ": no expected skin layer in this test");
-                var def = AssetDatabase.LoadAssetAtPath<FishSpeciesDef>(AssetPaths.SpeciesFolder + "/" + seed.Id + ".asset");
-                Assert.IsNotNull(def, seed.Id + ": missing species asset");
-                Mesh mesh = def.Model;
-                Assert.IsNotNull(mesh, seed.Id + ": Model is null");
-                Assert.That(mesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.TexCoord1), Is.True, seed.Id + ": the model has no uv1 (TexCoord1)");
+                string file = expected.Key;
+                float layer = expected.Value;
+                Mesh mesh = null;
+                foreach (UnityEngine.Object o in AssetDatabase.LoadAllAssetsAtPath(AssetPaths.ModelsFolder + "/" + file))
+                {
+                    if (o is Mesh m) { mesh = m; break; }
+                }
+                Assert.IsNotNull(mesh, file + ": no mesh in the model file");
+                Assert.That(mesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.TexCoord1), Is.True, file + ": the model has no uv1 (TexCoord1)");
 
                 var uv1 = new List<Vector4>();
                 mesh.GetUVs(1, uv1);
-                Assert.That(uv1.Count, Is.EqualTo(mesh.vertexCount), seed.Id + ": uv1 count vs vertex count");
+                Assert.That(uv1.Count, Is.EqualTo(mesh.vertexCount), file + ": uv1 count vs vertex count");
                 for (int i = 0; i < uv1.Count; i++)
-                    Assert.That(uv1[i].y, Is.EqualTo(layer), seed.Id + ": uv1.y (skin layer) at vertex " + i);
+                    Assert.That(uv1[i].y, Is.EqualTo(layer), file + ": uv1.y (skin layer) at vertex " + i);
             }
         }
     }

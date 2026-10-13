@@ -21,3 +21,6 @@ MonoBehaviour:
   junkMult: 1.5
   maxNibbles: 1
   unlimited: 1
+  affinityTags: 0
+  affinityMult: 1
+  specialMult: 1
