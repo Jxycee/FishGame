@@ -266,7 +266,7 @@ namespace FishGame.Tests.EditMode
             FishingHostLedger l = NewLedger();
             RollOverrides none = RollOverrides.None;
             HostCastView notWater = View(water: false);
-            HostCastView shallow = View(depth: 0.5f);
+            HostCastView shallow = View(depth: 0.4f);   // below minLandDepth 0.5 (M3-D52; was 0.5 against 0.8)
             HostCastView noBed = View(hasBed: false);
             Assert.That(l.RequestCast(Client, 0, Req(1), notWater, in none).Reason, Is.EqualTo(CastRejectReason.NotWater));
             Assert.That(l.RequestCast(Client, 0, Req(1), shallow, in none).Reason, Is.EqualTo(CastRejectReason.TooShallow));

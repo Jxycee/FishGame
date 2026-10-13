@@ -51,6 +51,14 @@ namespace FishGame.Tests.PlayMode
             return _hosting.Task;
         }
 
+        // The attempt succeeding: Connected, then the start task completes (its continuation runs on a later player-loop update).
+        public void Succeed()
+        {
+            if (!HostingPending) return;
+            SetState(ConnState.Connected);
+            _hosting.TrySetResult(null);
+        }
+
         // What UgsNetworkSession.EndCoreAsync does synchronously before its up-to-30 s teardown.
         public void ReportCancel()
         {
@@ -173,8 +181,34 @@ namespace FishGame.Tests.PlayMode
             }
         }
 
-        // Catches: the cancel handler subscribed after _attempt.Cancel(): a session that reports the cancel inside Cancel() (LocalNetworkSession
-        // style) would then never reach the handler and the Busy screen would stay up.
+        // Catches: a cancel that loses the race to Connected flashing the main menu (A-Q3: the attempt succeeds and the game loads, so the Busy
+        // screen stays up and the menu never shows).
+        [UnityTest]
+        public IEnumerator UiFlow_OnlineCancel_LosingRaceToConnected_NeverShowsMainMenu()
+        {
+            yield return OpenHostAttempt(false);
+            using (var capture = new PlayModeHarness.LogCapture())
+            {
+                _fake.Succeed();                           // Connected and the start task done, but its continuation has not run yet
+                Click(_root.Q<Button>("CancelButton"));    // no yield: the cancel lands before the continuation
+                Assert.That(_fake.CancelSeen, Is.True, "the cancel reached the attempt's token");
+                Assert.That(_ui.CurrentScreen, Is.EqualTo(UiScreen.Busy));
+
+                for (var i = 0; i < 12; i++)
+                {
+                    yield return PlayModeHarness.WaitFrames(1, 0.05f);
+                    Assert.That(_ui.CurrentScreen, Is.Not.EqualTo(UiScreen.MainMenu), "the menu flashed after the attempt had already succeeded (frame " + i + ")");
+                }
+                Assert.That(_ui.CurrentScreen, Is.EqualTo(UiScreen.Busy), "Busy stays up for the scene load");
+                Assert.That(_fake.State, Is.EqualTo(ConnState.Connected));
+                Assert.That(_root.Q<Label>("BusyLabel").text, Is.EqualTo("Loading..."), "the label is back to the loading text");
+                Assert.That(_toasts, Is.EqualTo(0));
+                capture.AssertNoWarnings("cancel losing the race to Connected");
+            }
+        }
+
+        // Catches: a cancel reported inside Cancel() (LocalNetworkSession style) that leaves Busy up because neither the handler nor the
+        // post-check acts (needs BOTH defects at once: a handler subscribed after _attempt.Cancel() AND no CancelReported check after it).
         [UnityTest]
         public IEnumerator UiFlow_OnlineCancel_ReportedInsideCancel_ReturnsToMenuSameFrame()
         {

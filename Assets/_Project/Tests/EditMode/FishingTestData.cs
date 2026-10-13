@@ -16,7 +16,7 @@ namespace FishGame.Tests.EditMode
 
         public static FishingTuning Tuning() => new FishingTuning
         {
-            CastChargeTime = 1f, ChargePingPong = true, CastMinDist = 2.5f, MinLandDepth = 0.8f,
+            CastChargeTime = 1f, ChargePingPong = true, CastMinDist = 2.5f, MinLandDepth = 0.5f,   // M3-D52 (was 0.8 in M2)
             BiteWaitMin = 4f, BiteWaitMax = 18f, MinBiteWait = 1f, HookBeat = 0.25f, LandDistance = 1f,
             SpoolExtra = 12f, RelaxRate = 1.5f, StrainScale = 0.75f, StrainScaleAssist = 0.45f, SlackEscapeTime = 12f,
             LateralMaxDeg = 60f, HookedLeash = 3f,

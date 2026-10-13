@@ -109,7 +109,16 @@ namespace FishGame.UI
             finally
             {
                 // An attempt that ended without a reporting state change (for example the D8 already-cancelled throw) still leaves the Busy screen.
-                if (_cancelPending && _attempt == cts) ReturnToMenuAfterCancel();
+                // A cancel that lost the race to Connected changes nothing (A-Q3): the attempt succeeded, Busy stays up and the game loads.
+                if (_cancelPending && _attempt == cts)
+                {
+                    if (succeeded)
+                    {
+                        StopCancelWatch();
+                        _busyPresenter.SetMessage(UiStrings.Get("busy.loading"));
+                    }
+                    else ReturnToMenuAfterCancel();
+                }
                 if (_attempt == cts) _attempt = null;
                 cts.Dispose();
             }
@@ -164,11 +173,17 @@ namespace FishGame.UI
             if (CancelReported(current)) ReturnToMenuAfterCancel();
         }
 
+        // Clears the pending flag and stops watching the session for the cancel report (nothing else).
+        private void StopCancelWatch()
+        {
+            _cancelPending = false;
+            _session.StateChanged -= OnStateAfterCancel;
+        }
+
         private void ReturnToMenuAfterCancel()
         {
             if (!_cancelPending) return;
-            _cancelPending = false;
-            _session.StateChanged -= OnStateAfterCancel;
+            StopCancelWatch();
             if (_isLive() && _currentScreen() == UiScreen.Busy) _show(UiScreen.MainMenu);   // menu actions stay off: HasAttempt is still true
         }
 
