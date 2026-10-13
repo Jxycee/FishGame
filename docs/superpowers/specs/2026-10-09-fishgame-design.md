@@ -668,11 +668,13 @@ Network prefab, registered in the list, built by `PrefabBuilder`.
 
 **Teleport:** server-initiated teleports use `PlayerActions.TeleportRpc(Vector3 pos, float yaw)` (`SendTo.Owner, InvokePermission = Server`). Owner: `cc.enabled = false` → `networkTransform.Teleport(pos, Quaternion.Euler(0, yaw, 0), Vector3.one)` → zero velocity and knockback → `cc.enabled = true`. Only the owner may call `Teleport`. **Out of bounds:** if y < −20 the owner teleports itself to its spawn point.
 
-**Water: swimming and exits**
+**Water: swimming, ladders and the ramp**
 - `WaterSurface.HeightAt(x, z)` (Runtime adapter over Core `WaveMath`, section 10.4) defines the surface. A player is swimming when the root is below `HeightAt − 1.2 m` inside a `WaterVolume`.
 - Swimming: 2.2 m/s, no sprint, gravity −4 m/s² plus buoyancy holding the eyes ~0.15 m above the surface. The owner writes `NetSwimming`.
-- Entering water stows the rod (remembered), ends any active fight as `Escaped(Dropped)`, and (M5) drops any carried item.
-- `WaterExit` trigger volumes sit at every ladder and the shore ramp (the lake-dock map has ≥ 2 ladders and 1 ramp). Inside one, Jump or swimming forward plays a 0.4 s lerp to the exit's `topPoint`. After 60 s in water the owner teleports to the dock spawn.
+- Entering water stows the rod (remembered) with the stow animation (a ladder does the same), ends any active fight as `Escaped(Dropped)`, and (M5) drops any carried item.
+- **Ladders (R70).** Each dock ladder has a walk-in `LadderVolume` (a trigger box; lake dock: x 1.55..2.55 on each side, 1.0 m along z around the ladder, y -1.4..1.6, layer Default). While the owner's capsule centre is inside one, the player is **Climbing**: no gravity; Move goes along the camera look (W toward where you look, so look up to climb and down to descend; S reverses; A/D strafe flat) at `climbSpeed` 2.4 m/s [tune]; with no input you hang (instant stop). Entering needs no button and works from walking, wading, swimming or stepping off the deck edge, but not while RodFighting. Leaving the box ends the climb and the climb velocity carries on into normal walking, falling or swimming; leaving through the top blocks re-entry for 0.25 s, so a climber who tops out is not caught again. Sprint, Jump, Interact and the rod inputs do nothing on a ladder. The rod is put away with a short stow animation on entry and comes back out after (held away until the player is grounded and no ladder can retake them), as for swimming. The CharacterController stays on, so rails, posts and the deck still collide. Nothing about ladders is networked beyond the owner's NetworkTransform (`NetSwimming` is written false on entry; no `NetClimbing` in M2).
+- **Shore ramp (R70).** A walkable slope: no lerp and no pull. Its foot (in the water) is a `WaterExit` box (lake dock: x 10.5..13.5, z -46..-39, layer Default): a player in water there always wades (feet on the bed, walk speed) instead of swimming, and a swimmer arriving there while pushing toward the ramp top gets one small upward kick (2.0 m/s [tune]).
+- After 60 s in water the owner teleports to the dock spawn.
 - No fall damage.
 
 ### 7.4 Body, colours, nameplates
@@ -732,7 +734,7 @@ public abstract class NetworkInteractable : NetworkBehaviour {
 
 1. Remote movement in a 4-instance MPPM session at 150 ms RTT and 2% loss shows no snap > 0.5 m during steady walking.
 2. Remote pitch tracks within 5°.
-3. A player climbs out of the lake within 2 s of reaching any ladder or the ramp.
+3. A player gets out of the lake within 2 s of reaching a ladder while looking up toward the deck (about 45 deg), and walks out up the shore ramp with no pull (R70).
 4. Teleport lands within 0.05 m with no stale velocity.
 5. Clients see the host's own player move (re-test of an old NGO 2.2.0 forum report; failure is a blocker).
 6. The owner sees no body of their own except the right arm and their shadow; Camera and AudioListener are active only on the owner.
@@ -766,7 +768,8 @@ public abstract class NetworkInteractable : NetworkBehaviour {
 | `Carrying` (M5) | yes (carry speed) | Throw: hold to charge, release | — | Interact | Shove | Drop | — | move |
 | `Staggered` (M5) | no | Reel if fighting | — | — | — | — | — | Steer/Reel if fighting |
 | `Downed` / `Carried` (M5) | no | — | — | — | — | — | — | — |
-| `Swimming` | swim | — | — | climb at exits | — | — | — | move |
+| `Swimming` | swim | — | — | — | — | — | — | move |
+| `Climbing` (ladder, R70) | climb along the look (W toward it, S away; no jump, no sprint) | — | — | — | — | — | — | strafe / back |
 | `Menu` | UI map only | | | | | | | |
 
 **Fishing feel rule:** movement is suppressed only while hooked, because A/D/S are the fight keys (Rust-style). With the rod merely out, WASD walks.

@@ -551,7 +551,7 @@ No asserted bot target failed. These are the marginal or informational numbers t
   - [ ] Dev overlay check (T26): F3 updates through a cast, a bite and a fight.
   - [ ] Dock look check, frame-time baseline and V13 facet lighting (T28).
   - [ ] Five-fish look check and the catch reveal per species (T29).
-  - [ ] Swim / wade at the ladder (`LadderR`): E climbs out, the bell is not rung.
+  - [ ] Ladders (R70): swim to `LadderR`, look up at the deck and hold W: you climb out onto the deck with no button, in about 1.5 s; E never rings the bell from the water or a ladder.
   - [ ] Two-player fishing check (T23/T24): remote rod angle, the arc plays once, the marker is owner-only.
   - [ ] Fishing sounds listen (u01).
   - [ ] Toon look check (T20).
@@ -560,7 +560,8 @@ No asserted bot target failed. These are the marginal or informational numbers t
 
 ### Manual checks carried from reviews
 - [ ] **F3 overlay in the editor and in a NON-development player build:** in the editor, F3 toggles the overlay and it updates through a cast, a bite and a fight. In a build made WITHOUT "Development Build", F3 and F4-F9 do nothing at all (T8-fix/T10 review). Result: ______
-- [ ] **Swimming interact gate:** swim to the ladder and to the bell, with the rod out and stowed. Expected: **E** climbs out at the ladder exit and never rings the bell or sells the creel; in open water **E** does nothing (T16 note, swim-gate fix `a0eb655`/`8320ad5`; recorded by the T28 look check). Result: ______
+- [ ] **Swimming interact gate:** swim to the ladder and to the bell, with the rod out and stowed. Expected: **E** does nothing in the water or on a ladder (no bell, no creel sale); walking or swimming into a ladder volume starts the climb with no press (R70, ladders plan L5; T16 note, swim-gate fix `a0eb655`/`8320ad5`; recorded by the T28 look check). Result: ______
+- [ ] **Ladder and ramp feel (R70, ladders plan):** (a) climb out of the water at a shallow (30 deg) and a steep (60 deg) look-up; (b) top out looking almost straight up and note the bob (the rod must not flicker in and out); (c) walk to the deck edge in front of a ladder: does it grab you too early? (open question Q7, knob `LadderVolumeInnerX`); (d) descend from the deck looking down, let go mid-ladder (you hang), leave sideways into the water; (e) swim to the ramp and walk out: the small kick at the foot; walk back down: no push; (f) the rod stow / unstow animation on 1, in water and on a ladder, rod out and line out; (g) MPPM: a second window sees a climber move smoothly. Result: ______
 - [ ] **150 ms RTT clean-claim slack:** the 2.0 s `CleanClaimClockSlackSeconds` is a guess (skeleton risk 3); note the MPPM result (MP11). Result: ______
 - [ ] **Gamepad:** criterion 1 and rumble 0 on every terminal state need a controller. Result: ______
 - [ ] **Rod geometry (ruling T19-R1):** cast from the deck end at minimum and maximum charge, at camera pitch -60, 0 and +60. The rod tip stays in front of the camera, and the line never starts shorter than the host expects (no `Invalid` escapes from the early-hook or landed-floor checks on honest casts). Result: ______
