@@ -705,7 +705,7 @@ namespace FishGame.UI
             return _netCached;
         }
 
-        private static bool LocalBiteOrHooked()
+        internal static bool LocalBiteOrHooked()
         {
             FishingRodController rod = FishingRodController.Local;
             if (rod == null || rod.Machine == null) return false;

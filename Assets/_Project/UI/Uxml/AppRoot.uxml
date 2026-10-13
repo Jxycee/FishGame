@@ -35,6 +35,7 @@
                         <ui:Button name="DevWeather3" class="dev-btn" />
                     </ui:VisualElement>
                     <ui:Toggle name="DevClockToggle" class="dev-toggle" />
+                    <ui:Button name="DevDayOver" class="dev-btn dev-wide" />
                     <ui:VisualElement class="row">
                         <ui:Button name="DevNewDay" class="dev-btn" />
                         <ui:Label name="DevScrubHint" class="dev-hint" />

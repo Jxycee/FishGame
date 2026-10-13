@@ -166,6 +166,9 @@ namespace FishGame.UI
             Button newDay = UiQuery.Req<Button>(root, "DevNewDay");
             newDay.text = UiStrings.Get("dev.new_day");
             Hook(newDay, OnNewDay);
+            Button dayOver = UiQuery.Req<Button>(root, "DevDayOver");
+            dayOver.text = UiStrings.Get("dev.day_over");
+            Hook(dayOver, OnDayOver);
             Button hotspot = UiQuery.Req<Button>(root, "DevHotspotButton");
             hotspot.text = UiStrings.Get("dev.spawn_hotspot");
             Hook(hotspot, OnHotspot);
@@ -174,6 +177,7 @@ namespace FishGame.UI
             Hook(close, OnClose);
             Hook(_seedApply, OnApplySeed);
             _worldRows.Add(newDay);
+            _worldRows.Add(dayOver);
             _worldRows.Add(hotspot);
             _worldRows.Add(_minute);
             _worldRows.Add(_clockToggle);
@@ -333,6 +337,13 @@ namespace FishGame.UI
             }
 
             if (_overlay.Mode != DevHudMode.Panel || !PanelShown) return;
+
+            // Like the journal: a local bite or fight closes the panel (the owner is never left fighting behind a modal).
+            if (JournalPresenter.LocalBiteOrHooked())
+            {
+                _overlay.SetMode(DevHudMode.Off);
+                return;
+            }
 
             if (_minutePending)
             {
@@ -507,6 +518,15 @@ namespace FishGame.UI
         {
             if (!CanEdit()) { SetLast(UiStrings.Get("dev.host_only")); return; }
             _driver.DevNewDay();
+            _refreshTimer = RefreshSeconds;
+        }
+
+        // The slider stops at 1190 and a running clock that reaches 1200 starts a new day, so the closed-casting state needs this: stop, then 1200.
+        private void OnDayOver()
+        {
+            if (!CanEdit()) { SetLast(UiStrings.Get("dev.host_only")); return; }
+            _driver.DevSetClockRunning(false);
+            _driver.DevSetMinute(1200);
             _refreshTimer = RefreshSeconds;
         }
 
