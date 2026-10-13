@@ -29,7 +29,7 @@
 | 5 | Rod back to Idle within 3 s in every 9.13 case; no stuck states; no rumble left | User + Claude | Section C walk, gamepad connected | Open (user); automated rows pass |
 | 6 | Bait consumed on accept, refunded on cancel/recall, lost on snap/escape/miss; bare hook never runs out | Claude (tests) + User | EditMode + PlayMode tests, then F3 LOADOUT count | Tests PASS; manual open |
 | 7 | Host rejects forged or out-of-order casts and hooks and impossibly fast catches; species and weight come from the host roll | Claude (tests) + Opus xhigh review | Ledger tests, branch review | Tests PASS; review pending |
-| 8 | Bots meet the 9.12 targets (a failure passes only with numbers recorded as a tuning item) | Claude | `test-edit -Filter "FishGame.Tests.EditMode.FishingBots"` | PASS: 9 of 9, every asserted target met (section F.2) |
+| 8 | Bots meet the 9.12 targets (a failure passes only with numbers recorded as a tuning item) | Claude | `test-edit -Filter "FishGame.Tests.EditMode.FishingBots"` | PASS (R72 baseline, section K.1): 8 of 8, every asserted target met, no tuning item |
 | 9 | All tuning lives in assets; Core holds none except test defaults | Claude + User | Branch-review grep, then the Inspector edit | Review pending; manual open |
 | 10 | Assist, line gauge, captions and Camera motion behave as 9.11 defines | User | Settings toggles in a fight | Open (user) |
 | 11 | `FightSim` costs < 0.05 ms per step | Claude + User | Printed per-step time of `FishingBots_FightSimStep_UnderFiftyMicroseconds` | PASS: 0.16 us per step (0.00016 ms) |
@@ -82,8 +82,8 @@
 
 ### Criterion 8: Bots meet the 9.12 targets
 - [x] **Owner:** Claude (T30). **How to check:** `Tools\unity.ps1 test-edit -Filter "FishGame.Tests.EditMode.FishingBots"`.
-- **Result line:** `FG RESULT test-edit PASS total=9 passed=9 failed=0 skipped=0`. Every asserted target is met. The printed tables are in section F.2; marginal and informational numbers are in F.3.
-- **Result:** PASS 2026-10-12 (with tuning items in F.3).
+- **Result line (R72, 2026-10-12):** `FG RESULT test-edit PASS total=8 passed=8 failed=0 skipped=0`. Every asserted target of the R72 baseline (spec 9.12 after F0) is met with no tuning item. The printed table is section K.1; sections F.2 and F.3 describe the superseded pre-R72 fight.
+- **Result:** PASS 2026-10-12 (R72 baseline).
 
 ### Criterion 9: All tuning lives in assets
 - [ ] **Owner:** Claude + User.
@@ -94,7 +94,7 @@
 ### Criterion 10: Assist, gauge, captions, Camera motion
 - [ ] **Owner:** User.
 - **Steps:**
-  - Assist on: the grace feels longer (the line snaps later). While the gauge is Off, turning assist on switches the gauge to Arc each time (T25 rule, ruling G-Q4).
+  - Assist on: the strain gains are x0.6 (the same reckless reel snaps later; R72, step M8 in section K.2). While the gauge is Off, turning assist on switches the gauge to Arc each time (T25 rule, ruling G-Q4).
   - Line gauge Arc / Bar / Off: the arc below the crosshair, the thin bar, nothing.
   - Captions on / off: "Bite!", "Line straining", "Snapped", "Got away".
   - Camera motion 0: no camera shake, no FOV kicks, no rod shake and no rumble.
@@ -408,6 +408,8 @@ Add rows as needed. **Proposed bar (you confirm it):** 70% or more correct overa
   - **Measured after R67 (`9278b2e`):** in-game minimum charge is 0.10 (`MinChargeNorm`; charge 0 is not castable). At charge 0.10 the owner start line is 3.65-5.25 m across the shipped rods, and with an always-reel bot the time to Landed is 2.4-3.0 s at the minimum and 2.6-4.3 s at the median. Clean claims are 48-77% at charge 0.10.
 
 ### F.2 Bot report (criterion 8): T15 `FishingBots`, 200 seeds per cell
+**SUPERSEDED by R72 (2026-10-12): the fight was rebuilt, the bots were rewritten, and the current numbers are in section K.1. Everything in F.2 and F.3 below describes the pre-R72 fight and is kept as history.**
+
 Command: `Tools\unity.ps1 test-edit -Filter "FishGame.Tests.EditMode.FishingBots"`. Result: 9 of 9 passed, matrix time 2.4 s.
 
 **Re-run 2026-10-12 after R67 (`9278b2e`) and the final fix wave (HEAD `f25c646`): every printed number below is unchanged, no target fails, no retune.** The bots start every fight at `FightSim` start line = `rod.CastMaxDist` (18 m Handmade, 14 m Twig), which is already the rod-tip basis that R67 made the cast distance, so the bot fights already match what a charge-1.0 cast gives after R67 (R67 moved landings at every charge; the bots only model the maximum cast). The R67 effect on short casts is measured in section F.1 (always-reel bot, charge 0.10: 2.4-3.0 s to Landed, 2.6-4.3 s median). The matrix, signature, fun-gate and tuning lines below are therefore the current ones. Columns: `land` = landed share, `snap` = snapped share, `len` = fight length of landed fights (p10 / median / p90, seconds), `snapT` = median time to the snap, `near-snap rec>=1` = share of fights with at least one near-snap recovery, `clean` = the printed clean pair (claimed share / landed-and-clean share).
@@ -539,6 +541,7 @@ No asserted bot target failed. These are the marginal or informational numbers t
 ## I. User actions due
 
 - [ ] **Decide the cast-distance origin (F.1): A, B or C.** This blocks the fun gate.
+- [ ] Play the R72 fight baseline and answer its open questions (section K: steps M1-M9, then K.3).
 - [ ] Run this checklist (sections A-E, H) and record the results.
 - [ ] Run the M1 multiplayer criteria (3-9, 12) that are still open.
 - [ ] Run the fun gate with a friend (development build, section D).
@@ -555,6 +558,50 @@ No asserted bot target failed. These are the marginal or informational numbers t
   - [ ] Two-player fishing check (T23/T24): remote rod angle, the arc plays once, the marker is owner-only.
   - [ ] Fishing sounds listen (u01).
   - [ ] Toon look check (T20).
+
+## K. R72 fight baseline: bot report and your play steps (2026-10-12, plan `2026-10-12-m2-rework-fight.md`)
+
+The fight is rebuilt on Rust's server maths (spec R72, 9.5). Sections F.2 and F.3 and the pre-R72 targets in criterion 8 are superseded by this section. Commits: F0 `a5714ee`, F1 `c1fdc6a`, F2 `8dbef65`, F3 `a0ea43c`, review tests `c737fd9`, F4 `0678baf`, F5 `4ad64f8`, F6 `105a525`, F7 `2eaf1e5`, F8 (this commit).
+
+### K.1 Bot report (F4 `FishingBots`, 200 fights per cell, casts of 10-14 m from the tip)
+Result: 8 of 8 passed, no `TuningItems` entry, no value retuned from Rust. Matrix time 1.3 s; `FG PERF FightSim.Tick 0.14 us/step`. Medians are in seconds. Pump and Rhythm medians are landed fights only.
+
+| Profile | Rod | Greedy snap / median snap | Reckless snap / median snap | Pump land / timeout / median | Rhythm land / median / p90 |
+|---|---|---|---|---|---|
+| Steady | Handmade | 100% / 7.4 | 68% / 7.5 | 100% / 0% / 23.3 | 100% / 14.0 / 19.6 |
+| Darter | Handmade | 100% / 5.4 | 100% / 5.6 | 100% / 0% / 43.8 | 100% / 19.1 / 24.1 |
+| Thrasher | Handmade | 100% / 4.5 | 100% / 4.5 | 99% / 1% / 43.4 | 100% / 17.8 / 26.9 |
+| Runner | Handmade | 100% / 3.4 | 100% / 3.4 | 49.5% / 50.5% / 43.7 | 100% / 26.2 / 42.5 |
+| Bulldog | Handmade | 100% / 3.4 | 100% / 3.4 | 8.5% / 91.5% / 57.9 | 100% / 30.9 / 45.2 |
+| Steady | Twig | 100% / 4.7 | 100% / 4.7 | 100% / 0% / 28.6 | 100% / 14.4 / 18.4 |
+| Darter | Twig | 100% / 4.5 | 100% / 4.5 | 94.5% / 5.5% / 68.5 | 100% / 21.6 / 28.0 |
+| Thrasher | Twig | 100% / 3.4 | 100% / 3.4 | 86.5% / 13.5% / 58.3 | 100% / 21.7 / 29.3 |
+| Runner | Twig | 100% / 2.7 | 100% / 2.7 | 37% / 63% / 55.4 | 100% / 30.5 / 43.7 |
+| Bulldog | Twig | 100% / 2.7 | 100% / 2.7 | 1.5% / 98.5% / 51.1 | 100% / 33.7 / 45.7 |
+
+- Rhythm: no snaps and no timeouts in any cell. Decision 3 holds: Greedy and Reckless snap a Steady (median about 7.4 s with Greedy), and the Pump bot never snaps but cannot land big fish (decision Q4).
+- Signatures (Rhythm, Handmade): back-pull share Steady 12%, Darter 14%, Thrasher 18%, Bulldog 51%, Runner 23%; mean run 3.68 / 2.22 / 3.19 / 2.63 / 4.48 s; mid-run switches per run-second 0 / 0.79 / 0.34 / 0 / 0.
+- Fun-gate proxies (informational): Rhythm clean catches (Handmade) Steady 100%, Darter 56.5%, Thrasher 51%, Bulldog 0%, Runner 0%. Near-snap recovery (the bar went over full, then under half): 0% for the Rhythm bot in every cell, because it lets go at 0.85. The fun-gate line "at least 40% of Bulldog/Thrasher/Runner fights include a near-snap recovery" is a human metric: read it from the playtest log. Overall snap rate over the five profiles, Handmade: Greedy 100%, Reckless 93.6%, Pump 0%, Rhythm 0%.
+
+### K.2 Your play steps (the baseline is playable; F7 and F8 are done)
+Start a solo run, equip the Handmade rod, and use the dev keys (README, "Fishing dev keys") to force a species when a step names one. Turn the line gauge on (Arc or Bar) for M1-M3.
+
+- [ ] **M1 (gauge).** The bar fills while you reel and drains only when you let go of everything. It shows a full mark, a red zone past the full mark up to the snap point, and blinks red once the strain is past the full mark. A clean-catch tick sits below the full mark. Result: ______
+- [ ] **M2 (greed on a bluegill).** Reel non-stop into a bluegill's runs without steering: it should snap in about 5-8 s (decision 3, open question Q2). Result: ______
+- [ ] **M3 (counter a catfish).** Counter-steer a run without reeling. The fish visibly comes back toward the cast line, its runs get shorter, and the reel gets faster once it is tired. Watch for jitter near the centre line (a steer that carries the fish across the line is dropped on the next tick). Result: ______
+- [ ] **M4 (greed on a catfish).** Reel into a catfish run: it snaps in about 3.4 s. Result: ______
+- [ ] **M5 (creak).** Silent at low tension, rising steeply near the top, fading out over a quarter second when you let go. Result: ______
+- [ ] **M6 (bobber).** The bobber leans toward the pull side, less on a back pull; another peer sees the same lean. Result: ______
+- [ ] **M7 (unattended).** An unattended fish escapes at 2 minutes (a fish; junk still clears at 12 s). Result: ______
+- [ ] **M8 (assist).** Assist on: the same greedy reel snaps later (strain gains x0.6). Result: ______
+- [ ] **M9 (five styles, blind).** Force each species in turn without looking at the reveal. Steady gives short plain runs that ease in. Darter darts and switches sides mid-run. Thrasher surges jerkily at varying speeds. Bulldog keeps diving and creeps line out at rest. Runner makes long sideways runs that build up. Name each one. Result: ______
+
+### K.3 Open questions for you (plan defaults are built)
+- **Q2 careless small fish:** default is Rust's Steady strainMod 0.8 (one unbroken reckless run snaps at 5.3 s; in play a bluegill snaps at about 7.4 s median). Steady strainMod 0.6 would give 7.07 s for a single run.
+- **Q5 AFK:** an unattended fish now clears only at the 120 s timeout; junk keeps the 12 s slack escape.
+- **Q6 M4 skill Steady Nerves:** "snap headroom x1.15" is a placeholder.
+- **Q7 spec 17.2 fun gate:** median fight targets are replaced by "record the baseline" (K.1); you set new targets in the friendlier pass.
+- **Tuning pass:** every R72 value is Rust's baseline. After you play, say what feels too harsh (Bulldog is the harshest: about 31 s, and a non-steerer times out 92% of the time).
 
 ## J. Carried manual checks and later-milestone hand-offs (2026-10-12, contract 16.2)
 

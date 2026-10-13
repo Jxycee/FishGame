@@ -119,7 +119,7 @@ The section specs disagreed in these places. Each row is the single answer this 
 | R33 | Journal: 4 hint levels vs 3 card states | ecology, art | **Ecology's 4 hint levels.** | Finer progression. |
 | R34 | Solo pause: `Time.timeScale = 0` vs never touching timeScale | vision, art | **Never touch `Time.timeScale`.** Solo pause writes a clock anchor with rate 0 and sets a `Paused` flag read by locomotion and the fishing tick. | NGO tick timing must not be scaled. |
 | R35 | Content check: 64-bit hash in the connection payload vs 32-bit hash on WorldState | networking, ecology | **64-bit FNV-1a `ContentHash` in the connection payload**, checked by connection approval. No WorldState check. | The client is rejected before it joins. |
-| R36 | Line gauge: shop gadget vs free accessibility setting | fishing, runloop, art | **Free accessibility setting (Off/Arc/Bar).** The shop sells a different gadget, the Fish Finder (shows hooked fish stamina). | Accessibility must not be paywalled. |
+| R36 | Line gauge: shop gadget vs free accessibility setting | fishing, runloop, art | **Free accessibility setting (Off/Arc/Bar).** The shop sells a different gadget, the Fish Finder (shows how spent the hooked fish is: its tire, R72). | Accessibility must not be paywalled. |
 | R37 | Monster solo rule: stamina scaling table vs automatic solo profile | vision, slop | **Automatic solo profile** (run speed ×0.5, stamina ×0.5) when 1 player is connected; co-op stamina scales ×1.0/×1.2/×1.35 for 2/3/4 players. | Solo never hits a co-op-only gate. |
 | R38 | Thief scaling: multiplier table vs interval formula | vision, slop | **Slop's interval formula** in `CrewScaling` (section 15.2). | One source. |
 | R39 | Session classes and interface: `UgsNetworkSession`/`LocalNetworkSession` vs Sessions/Solo/Direct sessions; two `INetworkSession` signatures | networking, project-testing | **`UgsNetworkSession` and `LocalNetworkSession` (solo and dev-direct)**, networking's `INetworkSession`. | Networking's version is complete. |
@@ -820,7 +820,7 @@ The fight uses Rust's server numbers (R72, research note 2026-10-12 section 8); 
 | Line length | Horizontal metres from rod tip to fish |
 | Strain / tension | Strain is the line load (Rust units): the bar is full at strainBarFull 6 and the line snaps above strainSnap 7. Tension = strain / 6 is the displayed value (1.0 = full bar; snap above 7/6) |
 | Pull wave p | 0.2..2: a 4 s triangle (Rust PingPong(t, 2) clamped) that scales the fish's speed; its phase is drawn per fight |
-| Run / rest (Burst / Calm) | A run pulls left or right (burstDir +-1) and, 39% of the time, also back; at rest the fish does not move |
+| Run / rest (Burst / Calm) | A run pulls left or right (burstDir +-1) and, with the profile's diveChance (Rust 39%), also back; at rest the fish does not move |
 | Tire | Rust's TireAmount: +1.25/s countering a plain side run, +0.8/s any other steer, -0.1/s without steer (no floor). It shortens runs, lengthens rests (saturating at 20) and speeds the reel (x1..x3 over 0..5) |
 
 Units: metres and seconds. The fight runs at a fixed **50 Hz (dt 0.02 s)** from an accumulator in `Update` (not `FixedUpdate`), at most 5 steps per frame; extra time is dropped.
@@ -1044,11 +1044,11 @@ Junk (`old_boot`, `tin_can`): 0 kg, 2 coins.
 
 M2 species also fill the 12.3 presentation fields (`displayName`, `bodyShape`, `colorA`/`colorB`, `weightSkew` 2.2, `lengthShapeK` 1.0). The M2 catch reveal shows each species' Blender model (R62); the procedural fish mesh built from these fields is the fallback when a model is missing.
 
-**Baseline fight lengths** (Rhythm bot, Handmade, realistic casts of 10-14 m from the tip, weights drawn like the game): median Steady about 14 s, Darter and Thrasher about 19 s, Runner about 30 s, Bulldog about 33 s. Each tier stays within ±25% of Rust's quirk-free lengths (17 / 23 / 29 s). Bands are in 9.12; plan rework-fight F8 records the measured numbers. These are Rust-like lengths, shorter than the pre-R72 targets; the user keeps them for the baseline, and the friendlier pass retargets them.
+**Baseline fight lengths** (Rhythm bot, Handmade, realistic casts of 10-14 m from the tip, weights drawn like the game): median Steady about 14 s, Darter and Thrasher about 19 s, Runner about 30 s, Bulldog about 33 s. Each tier stays within ±25% of Rust's quirk-free lengths (17 / 23 / 29 s). Bands are in 9.12. **Measured (F4 bots, 200 fights per cell, 2026-10-12), median landing time, Handmade:** Steady 14.0 s, Darter 19.1, Thrasher 17.8, Runner 26.2, Bulldog 30.9; Twig: 14.4 / 21.6 / 21.7 / 30.5 / 33.7. The 90th percentile is 18-28 s for Steady, Darter and Thrasher and 42-46 s for Runner and Bulldog. These are Rust-like lengths, shorter than the pre-R72 targets; the user keeps them for the baseline, and the friendlier pass retargets them.
 
 ### 9.7 Rods, bait, line
 
-**`RodDef`** (mirrored as Core `RodStats`): `id`, `tier` (0-3), `castMaxDist` (also sets `maxLineOut = castMaxDist + 12`; both are distances from the rod tip, R67, so a Handmade line may reach 30 m from the tip, about 32.4 m from the player), `reelSpeed` (m/s in Calm), `lineStrength` (divides positive strain), `angleWindow`, `steerRate`, `relaxMult` (R72: `reelSpeed` is the reel speed in m/s before the fish's `reelInMult` and the tire multiplier; `lineStrength` divides every strain gain; `relaxMult` multiplies the 1.5/s release drain; `steerRate` is the sideways push in m/s; `angleWindow` is parked, unused by the baseline), `shopCost` (coins at Night Camp shops, M4; 0 for the starter), `firstCamp` (the first Night Camp where it is stocked).
+**`RodDef`** (mirrored as Core `RodStats`): `id`, `tier` (0-3), `castMaxDist` (also sets `maxLineOut = castMaxDist + 12`; both are distances from the rod tip, R67, so a Handmade line may reach 30 m from the tip, about 32.4 m from the player), `reelSpeed` (m/s before the fish's `reelInMult` and the tire multiplier), `lineStrength` (divides every strain gain), `angleWindow`, `steerRate`, `relaxMult` (R72: `relaxMult` multiplies the 1.5/s release drain; `steerRate` is the sideways push in m/s; `angleWindow` is parked, unused by the baseline), `shopCost` (coins at Night Camp shops, M4; 0 for the starter), `firstCamp` (the first Night Camp where it is stocked).
 
 | Rod | Tier | castMaxDist | reelSpeed | lineStrength | angleWindow | steerRate | relaxMult | In-run source [tune] |
 |---|---|---|---|---|---|---|---|---|
@@ -1206,7 +1206,7 @@ Tension below is the display value, strain / 6 (1.0 = full bar; the line snaps a
 - **Line gauge** (default off; Off/Arc/Bar): HUD arc below the crosshair (90°) or a thin bar showing tension = strain / 6 smoothed by clamp01(dt x 10) per frame (Rust); the track runs to the snap point (7/6) with a full mark at 1.0, a tick at the clean threshold (0.8) and a red headroom zone above 1.0; the local player's own line only. Always free.
 - **Camera motion** slider: 0 removes shake, FOV kicks, bob and rumble.
 - **Captions** (default on): "Bite!", "Line straining", "Snapped" captions for audio cues.
-- **Dev overlay** (F3, editor/dev builds): phase, tension, stamina, line length, timers, last roll.
+- **Dev overlay** (F3, editor/dev builds): phase, run side, back pull, strain and tension, tire, pull wave, line length, timers, last roll.
 
 ### 9.12 Tuning table (`FishingTuningDef`)
 
@@ -1252,7 +1252,7 @@ Tension below is the display value, strain / 6 (1.0 = full bar; the line snaps a
 | Rhythm | counter-steers runs without reeling, reels while the fish rests (steering it to the cast line), lets go at 0.85 until 0.30 | lands >= 95%, snaps <= 2%, times out <= 2% in every cell. Median Handmade: Steady 10-20 s, Darter 13-27, Thrasher 13-27, Runner 20-41, Bulldog 23-44. Twig: Steady 10-20, Darter 15-30, Thrasher 16-31, Runner 22-44, Bulldog 23-45 |
 | Signatures (Rhythm, Handmade) | the five styles stay distinct | back-pull share of runs: Bulldog >= 40% and the highest; Runner 15-40%; Steady, Darter and Thrasher <= 25%. Mean run: Runner >= 3.8 s; Steady 3.0-4.4; Thrasher 2.6-3.8; Darter <= 2.7; Bulldog <= 3.1; ordered Runner > Steady > Thrasher > Darter. Mid-run side switches per run-second: Darter >= 0.5; Thrasher 0.15-0.55; Steady, Bulldog and Runner <= 0.05 (cone-edge flips only) |
 
-The bands are wide because the scratch model behind them used a different RNG. A miss is reported with its numbers and not retuned away from Rust's values. Weight cannot change a baseline fight; the bots draw it only so that a later weight term is measured at real weights.
+**Measured (F4, 2026-10-12): every target met, none retuned.** Greedy snaps 100% in all ten cells (median snap time Steady 7.4 s Handmade / 4.7 s Twig, Runner 3.4 / 2.7 s). Reckless snaps 100% except Steady Handmade 68% (median 7.5 s). Pump never snaps; Steady lands 100%, Bulldog times out 91.5% (Twig 98.5%), Runner 50.5% (Twig 63%). Rhythm lands 100% with no snaps and no timeouts in every cell. Signatures (Rhythm, Handmade): back share Steady 12%, Darter 14%, Thrasher 18%, Bulldog 51%, Runner 23%; mean run 3.7 / 2.2 / 3.2 / 2.6 / 4.5 s; switches per run-second 0 / 0.79 / 0.34 / 0 / 0. The full table is in the M2 acceptance doc, F.2. The bands are wide because the scratch model behind them used a different RNG. A miss is reported with its numbers and not retuned away from Rust's values. Weight cannot change a baseline fight; the bots draw it only so that a later weight term is measured at real weights.
 
 ### 9.13 Edge cases
 
@@ -1900,7 +1900,7 @@ Freshness = max(0.40, 1 - decayPerMin * age * storageMult)        // decayPerMin
 | Bait | Worm ×5 (15), Grub ×5 (25), Minnow ×4 (20), Shrimp ×3 (30), Raw meat ×2 (40) | Rating, bite speed, junk mult (9.7) | per cast |
 | Lure | Shiny Spoon (Predator ×2), Glow Jig (Nocturnal ×2), Bottom Bouncer (Bottom ×2) — 60–90 | Affinity weight bonus; never consumed; **lost if the line snaps** | run |
 | Rods (rack, per player) | Handmade (120, from camp 1), Carbon (300, from camp 2), Deep-sea (600, from camp 4); solo base prices, × crew rate (14.4) | Replaces the buyer's rod for the rest of the run (9.7); opens rod-gated fish | run |
-| Gear | Cooler (+6 slots, +10 kg, storage ×0.25, 80); Fish Finder (shows hooked fish stamina, 70) | | run |
+| Gear | Cooler (+6 slots, +10 kg, storage ×0.25, 80); Fish Finder (shows how spent the hooked fish is: its tire, 70) | | run |
 
 There are no perks: their effects moved into the map skill pool (14.8). The line gauge is a free setting (R36). Cosmetics are never run stock.
 
