@@ -559,6 +559,8 @@ C 2.8 that bite: #2, #4, #6, #11, #13 (the shaders go through `Validation_Shader
 
 ### T21.1 `Water.shader` (complete code; spec 10.4, C 7.21)
 
+**Superseded (2026-10-12, spec R73).** This listing is the original T21 skeleton. The approved look replaced its flat facet normal, `smoothstep` depth fade and ramp lighting: the shipped `Shaders/Water.shader` uses a smooth per-pixel normal from `FG_WaveHeight` finite differences plus drifting ripples, a vertical depth fade `1 - exp(-depth / _DepthRange)` blended in sqrt space, slope shading relative to a flat surface, crest tint, fresnel sky reflection, sparkle glints, a shallow bed cover with caustics, value-noise foam and fog at `_FogAmount` 0.35 (spec 10.4). The colours and depth range below are the approved variant C values; the shader file and spec 10.4 are the reference, not this listing.
+
 ```hlsl
 // Shaders/Water.shader - FishGame/Water (spec 10.4, C 7.21). Owned by T21. ASCII only.
 // Vertex-displaced MeshBuilder.Grid (shared vertices) via _Waves/_WaterTime (mirrors WaveMath, F1); flat facet normal;
@@ -568,10 +570,10 @@ Shader "FishGame/Water"
 {
     Properties
     {
-        _ShallowColor("Shallow Colour", Color) = (0.36, 0.72, 0.70, 0.75)
-        _DeepColor("Deep Colour", Color) = (0.08, 0.28, 0.42, 0.95)
-        _FoamColor("Foam Colour", Color) = (0.92, 0.97, 1.0, 1.0)
-        _DepthRange("Depth Range (m)", Float) = 3.0
+        _ShallowColor("Shallow Colour", Color) = (0.30, 0.86, 0.80, 0.68)   // R73 variant C
+        _DeepColor("Deep Colour", Color) = (0.03, 0.36, 0.62, 0.97)         // R73 variant C
+        _FoamColor("Foam Colour", Color) = (0.96, 0.99, 1.0, 1.0)
+        _DepthRange("Depth Range (m)", Float) = 1.6                         // R73 variant C
         _FoamWidth("Foam Width (m)", Float) = 0.35
         _RampMid("Ramp Mid", Range(0, 1)) = 0.45
         _RampSoft("Ramp Softness", Range(0.001, 0.5)) = 0.1
@@ -649,6 +651,7 @@ Shader "FishGame/Water"
                 half noise = FG_Hash21(floor(positionWS.xz * 3.0) + floor(_WaterTime * 1.5));
                 half foam = saturate(step(noise * 0.7h + 0.15h, foamEdge) + ripple * 0.6h);
 
+                // Superseded (R73): the shipped shader has no ramp/_ToonShade swap; see the note above T21.1 and spec 10.4.
                 Light mainLight = GetMainLight();
                 half band = smoothstep(_RampMid - _RampSoft, _RampMid + _RampSoft, saturate(dot(n, mainLight.direction)));
                 half3 tint = lerp(_ToonShade.rgb, mainLight.color, band);

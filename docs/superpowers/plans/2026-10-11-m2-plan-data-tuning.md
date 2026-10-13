@@ -197,7 +197,7 @@ Palette rules (validator, plan): 16 slot names; 4 seasons with 16 colours each; 
 | W1 | 75 | 0.040 | 7.0 | 1.0 |
 | W2 | 320 | 0.025 | 6.5 | 0.8 |
 
-Sum of amplitudes 0.115 <= 0.12; every wavelength >= 6 (4 x the 1.25 m grid cell of C 6.4 is 5 m). `shallowColor` (0.36,0.72,0.70,0.75), `deepColor` (0.08,0.28,0.42,0.95), `depthRange` 3.0, `foamWidth` 0.35. Rules (validator): exactly 3 waves; amplitude 0-0.08 each and sum <= 0.12; wavelength >= 5; speed 0-3; depthRange > 0; foamWidth > 0.
+Sum of amplitudes 0.115 <= 0.12; every wavelength >= 6 (4 x the 1.25 m grid cell of C 6.4 is 5 m). `shallowColor` (0.30,0.86,0.80,0.68), `deepColor` (0.03,0.36,0.62,0.97), `depthRange` 1.6, `foamWidth` 0.35 (variant C, spec R73, 2026-10-12; was (0.36,0.72,0.70,0.75) / (0.08,0.28,0.42,0.95) / 3.0). Rules (validator): exactly 3 waves; amplitude 0-0.08 each and sum <= 0.12; wavelength >= 5; speed 0-3; depthRange > 0; foamWidth > 0.
 
 ### 1.9 Cue table rows (C M2-D11)
 

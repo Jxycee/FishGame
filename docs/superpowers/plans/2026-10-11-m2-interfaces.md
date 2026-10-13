@@ -46,7 +46,7 @@ Every type, file, asset, constant, event, RPC and test that two or more tasks us
 | G9 | Lake geometry for the PlayMode cast fixture (M1 contract 6.5, D34): dock deck x in [-1.5, 1.5], z in [-52, -40], top y 0.6; water trigger top y 0; lakebed depth at the dock end (z -40) is 1.5 m and deepens outward. A player at (0, 0.65, -41) facing +z (yaw 0) with chargeNorm 0.15 (Handmade: 2.5 + 15.5 x 0.15 = 4.83 m) lands (R67: the distance is from the rod tip, so the landing is `CastTipReach` 2.4 + 4.83 = 7.23 m from the player) at z about -33.8, over deeper water than the pre-R67 spot (z about -36.2, about 2 m deep). The host `lineLength0` = max(landDistance, 7.23 - `HookedLineSlack` 3.1) = 4.13 m, so the host's Landed floor is 0.8 x (4.13 - 2.0) / 1.0 - 0.5 = 1.2 s. The G9 minimum marker (charge 0, `castMinDist` 2.5) is `CastTipReach` + 2.5 = 4.9 m from the player, z -36.1. | M1 contract 6.5; spec 9.9 |
 | G10 | `SfxGenerator.GenerateAll` and `SfxRecipes.TryGet` iterate only `M1Table`. `AudioBus` plays one-shots only (`loop = false`, no minDistance control, no ducking). | code |
 
-Closed by package-source reading (section 15): V11 `DeferLocal` defers on a host-owned object (net plan N1; the T19 PlayMode test stays as the runtime check) and NetworkVariable change detection uses `IEquatable` (N3). Still to verify at runtime (owners in brackets): V12 trigger-water raycast with `QueryTriggerInteraction.Collide`, water first when a dock is above [T19]; V13 water facet-normal sign, C#/HLSL wave parity, fog variants in a player build, `ShaderUtil` messages in `-nographics` batchmode [T21, T28, T30].
+Closed by package-source reading (section 15): V11 `DeferLocal` defers on a host-owned object (net plan N1; the T19 PlayMode test stays as the runtime check) and NetworkVariable change detection uses `IEquatable` (N3). Still to verify at runtime (owners in brackets): V12 trigger-water raycast with `QueryTriggerInteraction.Collide`, water first when a dock is above [T19]; V13 water facet-normal sign (moot since R73: the facet normal is gone), C#/HLSL wave parity, fog variants in a player build, `ShaderUtil` messages in `-nographics` batchmode [T21, T28, T30].
 
 ---
 
@@ -1047,7 +1047,7 @@ Every Def: `public sealed class XDef : ScriptableObject`, private `[SerializeFie
 | `Art/ArtPaletteDef` | `slotNames (string[16]), seasons (PaletteSeason[4]), faceJitter, skinTone (Color), phases (DayPhaseAmbient[4]), uiAccent, uiGood, uiWarn, uiBad, uiPanel, uiText, m2Season (int, default index 1 Summer)` | `Vector4[] PaletteVectors(int season)` (length 16); `Color GetSlotTint(int slot)` reads **`SlotPalette`** (no stored copy); `Color GetSkinTone()` |
 | `Art/PaletteSeason` (`[Serializable]` class) | `name, colors (Color[16])` | - |
 | `Art/DayPhaseAmbient` (`[Serializable]` struct) | `startFraction, lightColor, lightIntensity, skyTop, skyHorizon, skyGround, toonShade, toonAmbient, fogColor, fogDensity, warmWeight, coolWeight` (spec 10.3) | - |
-| `Art/WaterSettingsDef` | `dirAmpLenSpeed (Vector4[3])` (x direction deg, y amplitude m, z wavelength m, w speed m/s), `shallowColor, deepColor, depthRange (3.0), foamWidth (0.35)` | `WaveSet ToWaveSet()` |
+| `Art/WaterSettingsDef` | `dirAmpLenSpeed (Vector4[3])` (x direction deg, y amplitude m, z wavelength m, w speed m/s), `shallowColor, deepColor, depthRange (1.6, R73), foamWidth (0.35)` | `WaveSet ToWaveSet()` |
 
 `ContentRegistry` (edit):
 ```csharp
@@ -1394,7 +1394,7 @@ public sealed class FishModelPostprocessor : AssetPostprocessor   // Editor/Buil
 - `PrefabBuilder` body meshes (head, nose, torso, arms, legs) become `MeshBuilder` meshes saved as `Content/Meshes/Body_*.asset` (same dimensions as M1 contract 6.3), so they carry vertex colours.
 
 ### 7.21 T21 - Water, line, sky, rendering setup
-- `Shaders/Water.shader` (`FishGame/Water`, spec 10.4: vertex-displaced grid via `_Waves`/`_WaterTime`, flat facet normal, depth fade `_ShallowColor`/`_DeepColor`/`_DepthRange`, foam band `_FoamWidth` plus `_Ripples`, Transparent, ZWrite Off, one UniversalForward pass, fog). `Shaders/Line.shader` (`FishGame/Line`, unlit; `_Tension` drives warm/warn colour and the moving dash `frac(uv.x * _DashCount - _Time.y * _DashSpeed)`; the width pulse is in `LineView`). `Shaders/GradientSky.shader` (`FishGame/GradientSky`, Background queue, ZWrite Off, `_SkyTop/_SkyHorizon/_SkyGround` and a sun disc).
+- `Shaders/Water.shader` (`FishGame/Water`, spec 10.4: vertex-displaced grid via `_Waves`/`_WaterTime` (through `FG_WaveHeight` only), smooth per-pixel normal from `FG_WaveHeight` finite differences plus drifting ripples (R73; no flat facet normal), vertical depth fade `1 - exp(-depth / _DepthRange)` on `_ShallowColor`/`_DeepColor`, shallow bed cover and caustics, crest tint, fresnel, sparkle glints, foam band `_FoamWidth` plus `_Ripples`, Transparent, ZWrite Off, one UniversalForward pass, fog at `_FogAmount`; full description in spec 10.4). `Shaders/Line.shader` (`FishGame/Line`, unlit; `_Tension` drives warm/warn colour and the moving dash `frac(uv.x * _DashCount - _Time.y * _DashSpeed)`; the width pulse is in `LineView`). `Shaders/GradientSky.shader` (`FishGame/GradientSky`, Background queue, ZWrite Off, `_SkyTop/_SkyHorizon/_SkyGround` and a sun disc).
 ```csharp
 public static class RenderingSetupBuilder  // Editor/Builders/Render/RenderingSetupBuilder.cs; ContentBuilder hook
 {
