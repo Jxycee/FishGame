@@ -25,7 +25,9 @@ namespace FishGame.EditorTools
         sealed class ArtAssets
         {
             public Material Toon, ToonTri, Water;   // ToonTri: R74 world-triplanar variant for the rocks and canopies
-            public Mesh WaterMesh, Lakebed, Shore, LakebedVisual, ShoreVisual, Rock, Trunk, CanopyRound, CanopyPine, Dock, Reeds;
+            public Mesh WaterMesh, Lakebed, Shore, LakebedVisual, ShoreVisual, Rock, Trunk, CanopyPine, Dock, Reeds;
+            public Mesh[] CanopyRound;   // per foliage variant (LakeDockLayout.RoundCanopyMeshPaths order)
+            public Mesh Blossoms, CanopyPineSnow, Branches;   // seasonal trees (2026-10-13)
             public VolumeProfile WarmProfile, CoolProfile;
             public ArtPaletteDef Palette;
         }
@@ -51,8 +53,11 @@ namespace FishGame.EditorTools
                 ShoreVisual = LoadMesh(LakeDockLayout.ShoreVisualMeshPath),
                 Rock = LoadMesh(LakeDockLayout.RockMeshPath),
                 Trunk = LoadMesh(LakeDockLayout.TrunkMeshPath),
-                CanopyRound = LoadMesh(LakeDockLayout.CanopyRoundMeshPath),
+                CanopyRound = System.Array.ConvertAll(LakeDockLayout.RoundCanopyMeshPaths, LoadMesh),
                 CanopyPine = LoadMesh(LakeDockLayout.CanopyPineMeshPath),
+                Blossoms = LoadMesh(LakeDockLayout.BlossomsMeshPath),
+                CanopyPineSnow = LoadMesh(LakeDockLayout.CanopyPineSnowMeshPath),
+                Branches = LoadMesh(LakeDockLayout.BranchesMeshPath),
                 Dock = LoadMesh(LakeDockLayout.DockMeshPath),
                 Reeds = LoadMesh(LakeDockLayout.ReedsMeshPath),
                 WarmProfile = LoadProfile(AssetPaths.WarmVolumeProfile),
@@ -206,10 +211,15 @@ namespace FishGame.EditorTools
         }
 
         // The M1 loop is untouched; the canopy shape is one draw per placed tree from the NEW stream lake_dock.canopy (60% pine, 40% round).
+        // Seasonal trees (user decision 2026-10-13 "Full seasons"; no collider is added, moved or toggled): after placement every round tree
+        // takes a foliage variant from a balanced shuffle (stream lake_dock.foliage) and gets spring blossoms and winter bare branches; every pine
+        // gets a snowy winter twin. A SeasonalVisibility on the tree root switches those renderers with the season PaletteGlobals pushes.
         static void PlaceTrees(Transform parent, ArtAssets art)
         {
             Pcg32 rng = Rng.Stream(LakeDockLayout.Seed, LakeDockLayout.TreeStream, 0UL);
             Pcg32 canopyRng = Rng.Stream(LakeDockLayout.Seed, LakeDockLayout.CanopyStream, 0UL);
+            var trees = new System.Collections.Generic.List<GameObject>();
+            var isPine = new System.Collections.Generic.List<bool>();
             int placed = 0;
             for (int attempt = 0; attempt < LakeDockLayout.MaxAttempts && placed < LakeDockLayout.TreeCount; attempt++)
             {
@@ -227,12 +237,67 @@ namespace FishGame.EditorTools
                 GameObject canopy = BuilderUtil.EnsurePrimitive(tree.transform, "Canopy", PrimitiveType.Sphere, new Vector3(0f, 2.6f, 0f),
                     Quaternion.identity, new Vector3(2.4f, 2.4f, 2.4f), art.ToonTri, true);
                 trunk.GetComponent<MeshFilter>().sharedMesh = art.Trunk;
-                canopy.GetComponent<MeshFilter>().sharedMesh = canopyRng.NextFloat() < LakeDockLayout.PineChance ? art.CanopyPine : art.CanopyRound;
-                BuilderUtil.SetLayerRecursive(tree, Layers.Shore);
+                bool pine = canopyRng.NextFloat() < LakeDockLayout.PineChance;
+                canopy.GetComponent<MeshFilter>().sharedMesh = pine ? art.CanopyPine : art.CanopyRound[0];
+                trees.Add(tree);
+                isPine.Add(pine);
                 placed++;
             }
             if (placed < LakeDockLayout.TreeCount)
                 throw new System.InvalidOperationException("Placed only " + placed + " of " + LakeDockLayout.TreeCount + " trees");
+
+            int roundCount = 0;
+            foreach (bool pine in isPine) if (!pine) roundCount++;
+            Pcg32 foliageRng = Rng.Stream(LakeDockLayout.Seed, LakeDockLayout.FoliageStream, 0UL);
+            int[] variants = SeasonalLook.BalancedVariants(ref foliageRng, roundCount, LakeDockLayout.RoundFoliageSlots.Length);
+            int round = 0;
+            for (int i = 0; i < trees.Count; i++)
+            {
+                if (isPine[i]) AddPineSeasons(trees[i], art);
+                else AddRoundSeasons(trees[i], i, variants[round++], art);
+                BuilderUtil.SetLayerRecursive(trees[i], Layers.Shore);
+            }
+        }
+
+        // Round tree: the variant canopy (Spring-Autumn), blossom specks on it (Spring) and bare branches in tree space (Winter, yawed per tree).
+        static void AddRoundSeasons(GameObject tree, int index, int variant, ArtAssets art)
+        {
+            Transform canopy = tree.transform.Find("Canopy");
+            canopy.GetComponent<MeshFilter>().sharedMesh = art.CanopyRound[variant];
+            MeshRenderer blossoms = AddVisual(canopy, "Blossoms", art.Blossoms, art.ToonTri, Quaternion.identity, false);
+            MeshRenderer branches = AddVisual(tree.transform, "Branches", art.Branches, art.Toon,
+                Quaternion.Euler(0f, (index * LakeDockLayout.BranchesYawStepDegrees) % 360f, 0f), true);
+            tree.AddComponent<SeasonalVisibility>().Configure(new[]
+            {
+                new SeasonalVisibility.Entry(canopy.GetComponent<MeshRenderer>(), SeasonalLook.MaskLeafy),
+                new SeasonalVisibility.Entry(blossoms, SeasonalLook.MaskSpring),
+                new SeasonalVisibility.Entry(branches, SeasonalLook.MaskWinter),
+            });
+        }
+
+        // Pine: evergreen all year (PineLight / PineDark); in winter the snowy twin replaces it (same tiers, white caps).
+        static void AddPineSeasons(GameObject tree, ArtAssets art)
+        {
+            Transform canopy = tree.transform.Find("Canopy");
+            MeshRenderer snowy = AddVisual(canopy, "CanopyWinter", art.CanopyPineSnow, art.ToonTri, Quaternion.identity, true);
+            tree.AddComponent<SeasonalVisibility>().Configure(new[]
+            {
+                new SeasonalVisibility.Entry(canopy.GetComponent<MeshRenderer>(), SeasonalLook.MaskLeafy),
+                new SeasonalVisibility.Entry(snowy, SeasonalLook.MaskWinter),
+            });
+        }
+
+        // A visual-only child (MeshFilter + MeshRenderer, never a collider) at the parent's origin.
+        static MeshRenderer AddVisual(Transform parent, string name, Mesh mesh, Material material, Quaternion localRotation, bool castShadows)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localRotation = localRotation;
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            MeshRenderer renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
+            return renderer;
         }
 
         // Deck 3 x 12 m (x -1.5..1.5, z -52..-40), top y 0.6; posts every 2 m at x +-1.4 down to the bed; ladders at z -41.5; ramp at x 12.

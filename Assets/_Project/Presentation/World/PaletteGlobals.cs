@@ -1,6 +1,7 @@
 // Authority: local only (every peer); never writes gameplay state.
 // Pushes the art palette (16 slots, linearised) and the Day phase colours as shader globals (spec 10.3, C 7.22, ruling F3).
 // ArtPaletteDef.PaletteVectors allocates, so Apply runs on enable and on editor validate only, never per frame (C 16.2).
+// Every successful palette push also hands the season to SeasonalVisibility (Runtime), which switches the seasonal scenery renderers.
 using System.Collections.Generic;
 using FishGame.Core;
 using FishGame.Data;
@@ -68,6 +69,9 @@ namespace FishGame.Presentation
                     _vectors[i] = v;
                 }
                 Shader.SetGlobalVectorArray(PaletteId, _vectors);
+                // Seasonal scenery (bare winter trees, spring blossoms, snowy pines) follows the pushed season. M3 T18 keeps this call on
+                // every push, so a runtime season change re-applies the palette AND switches the trees in one place.
+                SeasonalVisibility.SetSeason(season);
             }
 
             IReadOnlyList<DayPhaseAmbient> phases = def.Phases;

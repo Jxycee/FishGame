@@ -116,6 +116,7 @@ Keep `[ExecuteAlways]`, the authority comment, the serialized `palette`, `Apply(
 - **World attach (P6), play mode only.** `Update`: if unattached and `Time.unscaledTime >= _nextLookup` (every 0.25 s): `ServiceRoots.Game` non-null and `TryGet(out IWorldContext w)` -> attach: store it, `w.Changed += HandleWorldChanged`, then call `HandleWorldChanged()` once (state may already be there). If attached but the instance is gone (`w is UnityEngine.Object o && o == null`), detach (unsubscribe through the stored reference, keep the last palette: no pop at unload). `OnDisable` detaches.
 - **`HandleWorldChanged`:** `if (world.HasState && (int)world.Season != _pushedSeason) Apply();`. Weather and hotspot changes, and `HasState` turning false at despawn, never re-apply. This is the "once per season change, never per frame" rule; `DayNight_SeasonChange_PushesTintOnceNotPerFrame` pins it.
 - `Update` does nothing else and allocates nothing. `OnValidate` still calls `Apply()`.
+- **Seasonal trees (landed 2026-10-13):** keep the existing `SeasonalVisibility.SetSeason(season)` call right after the palette push in `Apply()`; it is what bares the round trees in winter, shows spring blossoms and swaps in the snowy pines (renderers only, via `forceRenderingOff`). A T18 PlayMode test can assert it through `SeasonalVisibility.CurrentSeason` (Runtime).
 
 ### T18.3 `DayNightController` (C 7.18; `Presentation/World/DayNightController.cs`)
 

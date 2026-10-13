@@ -14,6 +14,9 @@ namespace FishGame.EditorTools
         public const string PlankStream = "lake_dock.planks";
         public const string CanopyStream = "lake_dock.canopy";
         public const string ReedStream = "lake_dock.reeds";
+        // Seasonal trees (2026-10-13): the round trees' foliage variant is a balanced shuffle drawn from this stream (index 0), after placement,
+        // so the M1 tree stream and the canopy stream keep their draws.
+        public const string FoliageStream = "lake_dock.foliage";
 
         // T28 mesh asset paths (C 2.6: no AssetPaths edit; LakebedMesh, ShoreMesh and MeshesFolder stay in AssetPaths).
         public const string WaterMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Water.asset";
@@ -22,6 +25,13 @@ namespace FishGame.EditorTools
         public const string TrunkMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Trunk.asset";
         public const string CanopyRoundMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyRound.asset";
         public const string CanopyPineMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyPine.asset";
+        // Seasonal trees (2026-10-13): the round canopy's two other foliage variants (same shape, slots FoliageDark / FoliageAlt), the spring
+        // blossom specks (canopy space), the winter pine (the same tiers with snow on the top-facing rings) and the bare winter branches (tree space).
+        public const string CanopyRoundDarkMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyRoundDark.asset";
+        public const string CanopyRoundAltMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyRoundAlt.asset";
+        public const string BlossomsMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Blossoms.asset";
+        public const string CanopyPineSnowMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyPineSnow.asset";
+        public const string BranchesMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Branches.asset";
         public const string ReedsMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Reeds.asset";
         // R74 look-dev: smooth VISUAL meshes for the lakebed and shore (same vertex positions as the collider meshes, shared vertices, smooth normals,
         // world-xz UVs). The MeshColliders keep LakebedMesh / ShoreMesh, which stay byte-identical (physics fingerprint).
@@ -32,6 +42,7 @@ namespace FishGame.EditorTools
         // (MeshBuilder FaceJitter) take theirs; the rock and the round canopy use theirs for the SmoothMeshBuilder.Noise3 lumps. The other props are
         // seedless (lathes and rounded boxes), so their seeds were removed with the R74 adoption. The numbering is kept so the values never change.
         public const uint LakebedMeshSeed = 0x1A4E0B01u, ShoreMeshSeed = 0x1A4E0B02u, RockMeshSeed = 0x1A4E0B04u, CanopyRoundMeshSeed = 0x1A4E0B06u;
+        public const uint BlossomMeshSeed = 0x1A4E0B0Bu;   // speck placement jitter (seasonal trees, 2026-10-13)
 
         // Water grid: 96 cells x 1.25 m = 120 m (the M1 visual plane). Spec 10.4 wants wavelengths >= 4 cells; T14 seeds at least 6 m.
         public const int WaterGridCells = 96;
@@ -40,6 +51,18 @@ namespace FishGame.EditorTools
         // Palette slot indices (spec 10.2 slotNames order). No shared constant set exists in Core or Data, so they live here.
         public const byte SlotGrass = 0, SlotFoliage = 1, SlotFoliageDark = 2, SlotWood = 3, SlotWoodDark = 4, SlotSand = 5;
         public const byte SlotRock = 6, SlotReed = 7, SlotDock = 8, SlotRoof = 9, SlotAccent = 10;
+        public const byte SlotPineLight = 12, SlotPineDark = 13, SlotBlossom = 14, SlotFoliageAlt = 15;
+        // The round trees' foliage variants, in variant order (autumn orange, red, yellow) with their meshes in the same order.
+        public static readonly byte[] RoundFoliageSlots = { SlotFoliage, SlotFoliageDark, SlotFoliageAlt };
+        public static readonly string[] RoundCanopyMeshPaths = { CanopyRoundMeshPath, CanopyRoundDarkMeshPath, CanopyRoundAltMeshPath };
+        // Snow on the winter pine: the Grass slot, which is the ground snow in winter (the winter pine is only ever shown in winter).
+        public const byte SlotPineSnow = SlotGrass;
+
+        // Seasonal trees: blossom specks per round canopy; the snowline of each pine tier (ring t at or above it is snow on the winter pine);
+        // the bare branches' yaw step per tree (golden angle, so neighbouring trees never share an orientation).
+        public const int BlossomCount = 48;
+        public const float PineSnowFromT = 0.4f;
+        public const float BranchesYawStepDegrees = 137.5f;
 
         // Shore faces whose centre is below this height are Sand, above it Grass.
         public const float ShoreSandMaxY = 0.3f;

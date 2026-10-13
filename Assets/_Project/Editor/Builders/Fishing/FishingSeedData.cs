@@ -241,7 +241,7 @@ namespace FishGame.EditorTools
         internal static readonly string[] PaletteSlotNames =
         {
             "Grass", "Foliage", "FoliageDark", "Wood", "WoodDark", "Sand", "Rock", "Reed", "Dock", "Roof", "Accent", "Snow",
-            "Reserved12", "Reserved13", "Reserved14", "Reserved15",
+            "PineLight", "PineDark", "Blossom", "FoliageAlt",
         };
 
         internal const float PaletteFaceJitter = 0.04f;
@@ -268,32 +268,43 @@ namespace FishGame.EditorTools
             return new Color(r, g, b, 1f);
         }
 
-        // Spring, Summer, Autumn, Winter. Summer is the base; the other seasons copy it and override slots 0, 1, 2 and 7. Slots 12-15 are mid grey.
+        // Spring, Summer, Autumn, Winter. Summer is the base; the other seasons copy it and override slots 0, 1, 2, 7, 14 and 15.
+        // Seasonal trees (user decision 2026-10-13 "Full seasons"): the round (deciduous) trees take one of three foliage slots per tree,
+        // Foliage (1), FoliageDark (2) or FoliageAlt (15): close greens in spring and summer, orange / red / yellow in autumn; in winter the
+        // canopies are hidden (bare branches), so their winter values are never seen on trees. PineLight (12) and PineDark (13) are the evergreen
+        // pines, identical in every season (the winter snow on the pines is a separate renderer on the Grass slot, which is the ground snow).
+        // Blossom (14) is the spring blossom specks (a spring-only renderer); outside spring it equals that season's Foliage.
         internal static PaletteSeason[] PaletteSeasons()
         {
             Color[] summer =
             {
-                Rgb(0.42f, 0.66f, 0.30f), Rgb(0.30f, 0.52f, 0.24f), Rgb(0.17f, 0.34f, 0.17f), Rgb(0.66f, 0.48f, 0.30f),
+                Rgb(0.42f, 0.66f, 0.30f), Rgb(0.30f, 0.52f, 0.24f), Rgb(0.22f, 0.42f, 0.19f), Rgb(0.66f, 0.48f, 0.30f),
                 Rgb(0.40f, 0.27f, 0.17f), Rgb(0.88f, 0.80f, 0.58f), Rgb(0.55f, 0.55f, 0.53f), Rgb(0.62f, 0.68f, 0.36f),
                 Rgb(0.58f, 0.44f, 0.30f), Rgb(0.70f, 0.30f, 0.24f), Rgb(0.95f, 0.45f, 0.15f), Rgb(0.95f, 0.96f, 0.98f),
-                Rgb(0.5f, 0.5f, 0.5f), Rgb(0.5f, 0.5f, 0.5f), Rgb(0.5f, 0.5f, 0.5f), Rgb(0.5f, 0.5f, 0.5f),
+                Rgb(0.24f, 0.46f, 0.28f), Rgb(0.13f, 0.30f, 0.20f), Rgb(0.30f, 0.52f, 0.24f), Rgb(0.36f, 0.56f, 0.22f),
             };
             return new[]
             {
-                Season("Spring", summer, Rgb(0.50f, 0.74f, 0.34f), Rgb(0.40f, 0.62f, 0.30f), Rgb(0.22f, 0.42f, 0.20f), Rgb(0.56f, 0.70f, 0.34f)),
-                Season("Summer", summer, summer[0], summer[1], summer[2], summer[7]),
-                Season("Autumn", summer, Rgb(0.62f, 0.60f, 0.30f), Rgb(0.85f, 0.50f, 0.18f), Rgb(0.55f, 0.26f, 0.12f), Rgb(0.72f, 0.62f, 0.32f)),
-                Season("Winter", summer, Rgb(0.80f, 0.84f, 0.86f), Rgb(0.32f, 0.44f, 0.36f), Rgb(0.18f, 0.28f, 0.24f), Rgb(0.66f, 0.62f, 0.48f)),
+                Season("Spring", summer, Rgb(0.50f, 0.74f, 0.34f), Rgb(0.48f, 0.74f, 0.32f), Rgb(0.38f, 0.62f, 0.26f), Rgb(0.56f, 0.70f, 0.34f),
+                    Rgb(0.92f, 0.62f, 0.74f), Rgb(0.56f, 0.76f, 0.30f)),
+                Season("Summer", summer, summer[0], summer[1], summer[2], summer[7], summer[14], summer[15]),
+                Season("Autumn", summer, Rgb(0.62f, 0.60f, 0.30f), Rgb(0.88f, 0.50f, 0.16f), Rgb(0.76f, 0.24f, 0.15f), Rgb(0.72f, 0.62f, 0.32f),
+                    Rgb(0.88f, 0.50f, 0.16f), Rgb(0.92f, 0.74f, 0.20f)),
+                Season("Winter", summer, Rgb(0.80f, 0.84f, 0.86f), Rgb(0.32f, 0.44f, 0.36f), Rgb(0.18f, 0.28f, 0.24f), Rgb(0.66f, 0.62f, 0.48f),
+                    Rgb(0.32f, 0.44f, 0.36f), Rgb(0.32f, 0.44f, 0.36f)),
             };
         }
 
-        private static PaletteSeason Season(string name, Color[] summer, Color grass, Color foliage, Color foliageDark, Color reed)
+        private static PaletteSeason Season(string name, Color[] summer, Color grass, Color foliage, Color foliageDark, Color reed, Color blossom,
+            Color foliageAlt)
         {
             var colors = (Color[])summer.Clone();
             colors[0] = grass;
             colors[1] = foliage;
             colors[2] = foliageDark;
             colors[7] = reed;
+            colors[14] = blossom;
+            colors[15] = foliageAlt;
             return new PaletteSeason { name = name, colors = colors };
         }
 

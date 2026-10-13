@@ -11,6 +11,7 @@ using System.IO;
 using System.Text;
 using FishGame.Core;
 using FishGame.Data;
+using FishGame.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -209,12 +210,18 @@ namespace FishGame.EditorTools
         // ---- globals (same values as PaletteGlobals / WaterTimeDriver at runtime) ----
 
         // Palette check (R74 adoption): the same shore view under each of the four seasons' palettes (season_0..3.png), Day phase lighting.
+        // Seasonal trees (2026-10-13): each season also shoots a close-up of one round tree (round_0..3.png) and one pine (pine_0..3.png); the
+        // season goes through SeasonalVisibility as PaletteGlobals does at runtime (bare winter trees, spring blossoms, snowy pines). With
+        // -fgLookSheet <abs png> it composes a grid: one row per season, columns shore | round tree | pine.
+        public static readonly string[] SeasonColumns = { "season", "round", "pine" };
+
         public static void CaptureSeasons()
         {
             string outDir = Arg("-fgLookOut");
             if (string.IsNullOrEmpty(outDir)) throw new System.ArgumentException("-fgLookOut <dir> is required");
             Directory.CreateDirectory(outDir);
             EditorSceneManager.OpenScene(AssetPaths.LakeDockScene, OpenSceneMode.Single);
+            File.WriteAllText(Path.Combine(outDir, "colliders_seasons.txt"), DumpColliders(SceneManager.GetActiveScene()));
             var palette = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
             PushWaves(AssetDatabase.LoadAssetAtPath<WaterSettingsDef>(AssetPaths.WaterSettingsAsset));
             Light sun = FindSun();
@@ -229,17 +236,79 @@ namespace FishGame.EditorTools
             Transform rock = FindRock();
             Vector3 rockPos = rock.position;
             Vector3 toCentre = new Vector3(-rockPos.x, 0f, -rockPos.z).normalized;
+            Transform roundTree = FindTree(rockPos, false), pineTree = FindTree(rockPos, true);
+            int seasons = 0;
             for (int season = 0; season < ArtPaletteDef.SeasonCount && season < palette.Seasons.Count; season++)
             {
                 PushPalette(palette, season);
                 Shoot(camera, rockPos + toCentre * 7f + Vector3.up * 2.2f, rockPos + Vector3.up * 1.0f - toCentre * 6f, 55f, outDir, "season_" + season);
+                ShootTree(camera, roundTree, outDir, "round_" + season);
+                ShootTree(camera, pineTree, outDir, "pine_" + season);
+                seasons++;
             }
+            PushPalette(palette);   // back to the M2 season (SeasonalVisibility is static)
             Object.DestroyImmediate(cameraGo);
-            Debug.Log("FG LOOKDEV seasons captured");
+            Debug.Log("FG LOOKDEV seasons captured round=" + roundTree.name + " pine=" + pineTree.name);
+
+            string sheet = Arg("-fgLookSheet");
+            if (!string.IsNullOrEmpty(sheet)) ComposeGrid(outDir, seasons, SeasonColumns, sheet);
+        }
+
+        // The round tree (or pine) nearest `near` on the xz plane; a round tree has three SeasonalVisibility entries, a pine two.
+        static Transform FindTree(Vector3 near, bool pine)
+        {
+            GameObject shore = GameObject.Find("Shore");
+            Transform best = null;
+            float bestDistance = float.MaxValue;
+            foreach (Transform child in shore.transform)
+            {
+                if (!child.name.StartsWith("Tree_")) continue;
+                var seasonal = child.GetComponent<SeasonalVisibility>();
+                if (seasonal == null || (seasonal.EntryCount == 2) != pine) continue;
+                Vector3 delta = child.position - near;
+                float distance = new Vector2(delta.x, delta.z).magnitude;
+                if (distance < bestDistance) { best = child; bestDistance = distance; }
+            }
+            if (best == null) throw new System.InvalidOperationException("no " + (pine ? "pine" : "round tree") + " with SeasonalVisibility under Shore");
+            return best;
+        }
+
+        // A three-quarter view of one tree from the lake side, framing trunk and crown (the tree root's uniform scale is its height factor).
+        static void ShootTree(Camera camera, Transform tree, string outDir, string name)
+        {
+            float scale = tree.lossyScale.y;
+            Vector3 foot = tree.position;
+            Vector3 toCentre = new Vector3(-foot.x, 0f, -foot.z).normalized;
+            Vector3 side = Vector3.Cross(Vector3.up, toCentre);
+            Vector3 target = foot + Vector3.up * (2.1f * scale);
+            Shoot(camera, target + (toCentre * 6.5f + side * 2.5f) * scale + Vector3.up * (0.4f * scale), target, 50f, outDir, name);
+        }
+
+        // Rows = seasons, columns = shots (files <column>_<row>.png in dir), a 6 px dark gutter.
+        static void ComposeGrid(string dir, int rows, string[] columns, string sheetPath)
+        {
+            const int gutter = 6;
+            int w = Width * columns.Length + gutter * (columns.Length - 1), h = Height * rows + gutter * (rows - 1);
+            var sheet = new Texture2D(w, h, TextureFormat.RGB24, false);
+            var fill = new Color32[w * h];
+            for (int i = 0; i < fill.Length; i++) fill[i] = new Color32(24, 24, 28, 255);
+            sheet.SetPixels32(fill);
+            for (int row = 0; row < rows; row++)
+            {
+                int y = h - (row + 1) * Height - row * gutter;   // texture rows go bottom-up
+                for (int col = 0; col < columns.Length; col++)
+                    Blit(sheet, Path.Combine(dir, columns[col] + "_" + row + ".png"), col * (Width + gutter), y);
+            }
+            sheet.Apply();
+            Directory.CreateDirectory(Path.GetDirectoryName(sheetPath));
+            File.WriteAllBytes(sheetPath, sheet.EncodeToPNG());
+            Object.DestroyImmediate(sheet);
+            Debug.Log("FG LOOKDEV sheet " + sheetPath);
         }
 
         static void PushPalette(ArtPaletteDef palette) => PushPalette(palette, palette.M2Season);
 
+        // Same push as PaletteGlobals.Apply: the linearised palette, then the season for the seasonal scenery.
         static void PushPalette(ArtPaletteDef palette, int season)
         {
             Vector4[] authored = palette.PaletteVectors(season);
@@ -250,6 +319,7 @@ namespace FishGame.EditorTools
                 linear[i] = new Vector4(c.r, c.g, c.b, c.a);
             }
             Shader.SetGlobalVectorArray(ShaderGlobals.Palette, linear);
+            SeasonalVisibility.SetSeason(season);
         }
 
         static void PushWaves(WaterSettingsDef water)
@@ -358,7 +428,7 @@ namespace FishGame.EditorTools
             foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
                 foreach (MeshRenderer r in root.GetComponentsInChildren<MeshRenderer>(false))
                 {
-                    if (!r.enabled || !GeometryUtility.TestPlanesAABB(planes, r.bounds)) continue;
+                    if (!r.enabled || r.forceRenderingOff || !GeometryUtility.TestPlanesAABB(planes, r.bounds)) continue;
                     MeshFilter f = r.GetComponent<MeshFilter>();
                     if (f == null || f.sharedMesh == null) continue;
                     renderers++;
