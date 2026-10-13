@@ -90,7 +90,10 @@ namespace FishGame.UI
         private int _filterSpot = -1;                      // -1 = All spots; else an index into _chips
         private bool _bitingOnly;
 
-        private FishingRodController _rodCached;           // the local rod's network component, re-read when the controller changes
+        private bool _pointerFocusLoss;                    // the last focus loss came from a pointer press; recovery waits for a navigation input
+        private VisualElement _panelRoot;
+
+        private FishingRodController _rodCached;          // the local rod's network component, re-read when the controller changes
         private FishingRodNetwork _netCached;
 
         public JournalPresenter(VisualElement root, ServiceRegistry app, IInputService input, Action requestClose)
@@ -122,6 +125,13 @@ namespace FishGame.UI
             _filterAll.clicked += OnFilterAllClicked;
             _filterBiting.RegisterValueChangedCallback(OnBitingToggled);
             _scroll.RegisterCallback<FocusInEvent>(OnFocusIn, TrickleDown.TrickleDown);
+
+            // A click that lands on nothing focusable blurs the focus; that is the mouse user's doing and recovery must not undo it. Any
+            // navigation move (keyboard arrows, the stick, the d-pad) or the gamepad being the last device ends the pointer state.
+            _modal.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+            _modal.RegisterCallback<NavigationMoveEvent>(OnNavigationMove, TrickleDown.TrickleDown);
+            _panelRoot = root.panel != null ? root.panel.visualTree : null;       // with no focus a navigation event targets the panel root
+            _panelRoot?.RegisterCallback<NavigationMoveEvent>(OnNavigationMove, TrickleDown.TrickleDown);
         }
 
         public bool IsOpen => _open;
@@ -145,6 +155,7 @@ namespace FishGame.UI
             _openedFrame = Time.frameCount;
             _biteTimer = 0f;
             _bitingOnly = false;
+            _pointerFocusLoss = false;
             _filterBiting.SetValueWithoutNotify(false);
             _filterSpot = inGame ? DefaultSpotFilter() : -1;
 
@@ -206,6 +217,9 @@ namespace FishGame.UI
             _filterAll.clicked -= OnFilterAllClicked;
             _filterBiting.UnregisterValueChangedCallback(OnBitingToggled);
             _scroll.UnregisterCallback<FocusInEvent>(OnFocusIn, TrickleDown.TrickleDown);
+            _modal.UnregisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+            _modal.UnregisterCallback<NavigationMoveEvent>(OnNavigationMove, TrickleDown.TrickleDown);
+            _panelRoot?.UnregisterCallback<NavigationMoveEvent>(OnNavigationMove, TrickleDown.TrickleDown);
             _open = false;
         }
 
@@ -214,6 +228,11 @@ namespace FishGame.UI
         internal void RecoverFocus()
         {
             if (!_open) return;
+            if (_pointerFocusLoss)
+            {
+                if (_input.LastDevice != InputDeviceKind.Gamepad) return;       // a mouse user's click on the backdrop stays unfocused
+                _pointerFocusLoss = false;
+            }
             if (_modal.panel?.focusController?.focusedElement == null) FocusRecovered();
         }
 
@@ -738,6 +757,10 @@ namespace FishGame.UI
         }
 
         // ---- events ----------------------------------------------------------------------------------------------------------------
+
+        private void OnPointerDown(PointerDownEvent evt) => _pointerFocusLoss = true;
+
+        private void OnNavigationMove(NavigationMoveEvent evt) => _pointerFocusLoss = false;
 
         private void OnCloseClicked() => _requestClose();
 

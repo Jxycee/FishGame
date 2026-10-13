@@ -312,6 +312,57 @@ namespace FishGame.Tests.PlayMode
 
         private void HideModalElement() => Modal.style.display = DisplayStyle.None;
 
+        // Catches: focus recovery stealing a mouse user's focus (a click on the backdrop blurs on purpose), and recovery staying off for a
+        // keyboard or gamepad user whose focus was lost (a card hidden by a filter). A pointer press blocks recovery; a navigation move
+        // (arrows, stick, d-pad) lifts the block and recovery lands on a card.
+        [UnityTest]
+        public IEnumerator Journal_FocusRecovery_RespectsThePointer_AndNavigationLiftsIt()
+        {
+            yield return BootMenu();
+            var fake = new FakeInputService();
+            var presenter = new JournalPresenter(_root, AppBootstrap.Current.Services, fake, () => { });
+            try
+            {
+                presenter.Open(false);
+                yield return PlayModeHarness.WaitFrames(3, 0.2f);
+                var focus = _root.panel.focusController;
+                Assert.That(focus.focusedElement, Is.Not.Null, "opening focuses a control");
+
+                // Keyboard path: focus lost, nothing pointer-related happened: recovery refocuses.
+                focus.focusedElement.Blur();
+                Assert.That(focus.focusedElement, Is.Null);
+                presenter.RecoverFocus();
+                Assert.That(focus.focusedElement, Is.Not.Null, "recovery for a keyboard or gamepad user");
+                Assert.That(((VisualElement)focus.focusedElement).ClassListContains("journal-card"), Is.True, "it lands on a card");
+
+                // Pointer path: a press on the modal, then the focus goes away: no auto-focus.
+                using (var down = PointerDownEvent.GetPooled())
+                {
+                    down.target = Modal;
+                    Modal.SendEvent(down);
+                }
+                if (focus.focusedElement != null) focus.focusedElement.Blur();   // the press itself may already have blurred it
+                presenter.RecoverFocus();
+                Assert.That(focus.focusedElement, Is.Null, "a mouse user's blur is left alone");
+
+                // A navigation move lifts the pointer state; recovery works again.
+                using (var move = NavigationMoveEvent.GetPooled(NavigationMoveEvent.Direction.Down))
+                {
+                    move.target = Modal;
+                    Modal.SendEvent(move);
+                }
+                if (focus.focusedElement != null) focus.focusedElement.Blur();   // the move itself may have focused something
+                presenter.RecoverFocus();
+                Assert.That(focus.focusedElement, Is.Not.Null, "navigation lifts the pointer block");
+            }
+            finally
+            {
+                presenter.Hide();
+                presenter.Dispose();
+                HideModalElement();
+            }
+        }
+
         // Catches: the journal staying open (and the owner stuck behind a modal) when the local bite lands, a journal that opens during the
         // bite or the fight, and MenuOpen left true afterwards. A long forced bite wait lets the journal open over a waiting bobber first.
         [UnityTest]
@@ -339,21 +390,20 @@ namespace FishGame.Tests.PlayMode
 
             yield return PlayModeHarness.WaitUntil(
                 () => rig.Machine.State == RodState.Bite || rig.Machine.State == RodState.Hooked, 8f, "the forced bite never came");
-            yield return PlayModeHarness.WaitFrames(3, 0f);
-            Assert.That(ModalShown, Is.False, "the bite closes the journal");
-            Assert.That(_ui.ModalOpen, Is.False);
+            yield return PlayModeHarness.WaitUntil(() => !ModalShown, 2f, "the bite never closed the journal");
+            // Everything below runs in one frame (no yields): the closed-state checks, the rod state read and the refused open.
+            Assert.That(_ui.ModalOpen, Is.False, "the bite releases the modal seam");
             Assert.That(adapter.MenuOpen, Is.False, "gameplay input is back for the fight");
-
-            if (rig.Machine.State == RodState.Bite || rig.Machine.State == RodState.Hooked)
+            if (rig.Machine.State != RodState.Bite && rig.Machine.State != RodState.Hooked)
             {
-                _ui.OpenJournal();
-                yield return PlayModeHarness.WaitFrames(2, 0f);
-                if (rig.Machine.State == RodState.Bite || rig.Machine.State == RodState.Hooked)
-                {
-                    Assert.That(ModalShown, Is.False, "it refuses to open while the local rod bites or fights");
-                    Assert.That(adapter.MenuOpen, Is.False);
-                }
+                Assert.Inconclusive("the rod left Bite/Hooked (" + rig.Machine.State + ") before the refused-open check could run");
             }
+            Assert.That(rig.Machine.State, Is.EqualTo(RodState.Bite).Or.EqualTo(RodState.Hooked));
+            _ui.OpenJournal();
+            Assert.That(_ui.ModalOpen, Is.False, "it refuses to open while the local rod bites or fights");
+            Assert.That(adapter.MenuOpen, Is.False, "and gameplay input stays on");
+            yield return PlayModeHarness.WaitFrames(2, 0f);
+            Assert.That(ModalShown, Is.False);
         }
     }
 }

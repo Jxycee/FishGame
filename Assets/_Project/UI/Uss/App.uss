@@ -63,7 +63,7 @@
 .journal-card { width: 290px; min-height: 270px; margin: 6px; padding: 16px; flex-direction: column; flex-shrink: 0; border-radius: 10px; border-width: 3px; border-color: rgba(0, 0, 0, 0); background-color: rgba(34, 48, 68, 0.95); }
 .journal-card:focus { border-color: rgb(255, 210, 90); }
 .journal-card.level-0 { background-color: rgba(26, 36, 50, 0.9); }
-.journal-plate { height: 116px; margin-bottom: 12px; align-items: center; justify-content: center; border-radius: 8px; background-color: rgba(14, 22, 34, 0.9); }
+.journal-plate { height: 116px; margin-bottom: 12px; align-items: center; justify-content: center; border-radius: 8px; background-color: rgba(58, 76, 102, 0.95); }
 .journal-icon { width: 224px; height: 112px; }
 .journal-badge { position: absolute; right: 12px; top: -10px; padding: 2px 12px; border-radius: 13px; border-width: 2px; border-color: rgb(255, 200, 70); background-color: rgba(60, 44, 10, 0.97); color: rgb(255, 214, 100); font-size: 16px; -unity-font-style: bold; }
 .journal-name { font-size: 25px; -unity-font-style: bold; margin: 0 0 6px 0; color: rgb(240, 244, 248); white-space: normal; }

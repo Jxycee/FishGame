@@ -59,8 +59,9 @@ namespace FishGame.UI
         private static readonly float[] Half = new float[Width + 2];       // body half-height per column, px (index x + 1; ends are 0)
         private static readonly float[] Slope = new float[Width];          // d(half)/dx per column
 
-        // The silhouette of level 0: nearly black with a hint of blue, so it reads as a shadow on the dark card.
-        internal static readonly Color UiTint = new Color(0.05f, 0.06f, 0.08f, 1f);
+        // The silhouette of level 0: a pure flat black. The tint multiplies RGB to 0 and leaves alpha, so only the outline of the icon stays:
+        // no colour, no shading and no eye detail leak through (spec 12.10: "black silhouette").
+        internal static readonly Color UiTint = new Color(0f, 0f, 0f, 1f);
 
         internal static Texture2D Get(FishSpeciesDef def)
         {
