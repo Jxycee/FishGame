@@ -102,6 +102,93 @@ namespace FishGame.EditorTools
 
         const float LakeDockLayoutDeckTop = 0.6f;
 
+        // R74 adoption shots (2026-10-13): the five fish side by side, the sweep viewpoints and the props. Same batch arguments as Capture
+        // (-fgLookOut, -fgLookTag, -fgLookSheet + -fgLookBefore). Logs per-shot render stats (FG LOOKDEV STATS) for the spec 10.7 record.
+        public static readonly string[] AdoptionShots = { "fish_lineup", "overview", "far_shore", "ramp", "ladders", "from_water", "bell", "reeds" };
+        static readonly string[] FishFiles = { "Fish_Bluegill.fbx", "Fish_Perch.fbx", "Fish_Carp.fbx", "Fish_Trout.fbx", "Fish_Catfish.fbx" };
+
+        public static void CaptureAdoption()
+        {
+            string outDir = Arg("-fgLookOut");
+            if (string.IsNullOrEmpty(outDir)) throw new System.ArgumentException("-fgLookOut <dir> is required");
+            string tag = Arg("-fgLookTag") ?? "shot";
+            Directory.CreateDirectory(outDir);
+
+            Scene scene = EditorSceneManager.OpenScene(AssetPaths.LakeDockScene, OpenSceneMode.Single);
+            var palette = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
+            var water = AssetDatabase.LoadAssetAtPath<WaterSettingsDef>(AssetPaths.WaterSettingsAsset);
+            File.WriteAllText(Path.Combine(outDir, "colliders_" + tag + ".txt"), DumpColliders(scene));
+            PushPalette(palette);
+            PushWaves(water);
+            Light sun = FindSun();
+            ApplyPhase(palette, DayPhase, sun, sun.transform.rotation);
+
+            var cameraGo = new GameObject("LookDevCamera");
+            Camera camera = cameraGo.AddComponent<Camera>();
+            camera.nearClipPlane = MovementMath.NearClip;
+            camera.farClipPlane = MovementMath.FarClip;
+            cameraGo.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = true;
+            Camera sceneCamera = GameObject.Find("SceneCamera")?.GetComponent<Camera>();
+            if (sceneCamera != null) sceneCamera.enabled = false;
+            float wideFov = Camera.HorizontalToVerticalFieldOfView(MovementMath.DefaultHorizontalFov, Width / (float)Height);
+
+            // Fish lineup: all five species at 0.30 m, side on, in a row above the deck.
+            var fishMaterial = AssetDatabase.LoadAssetAtPath<Material>(AssetPaths.MaterialsFolder + "/M_Toon_Fish.mat");
+            var fishes = new List<GameObject>();
+            Vector3 lineEye = new Vector3(0f, 1.78f, -47.9f), lineAt = new Vector3(0f, 1.62f, -46.4f);
+            Vector3 view = (lineAt - lineEye).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, view).normalized;
+            for (int i = 0; i < FishFiles.Length; i++)
+            {
+                Mesh mesh = null;
+                foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(AssetPaths.ModelsFolder + "/" + FishFiles[i]))
+                    if (asset is Mesh m) { mesh = m; break; }
+                var go = new GameObject("LookDevFish" + i);
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var r = go.AddComponent<MeshRenderer>();
+                var mats = new Material[Mathf.Max(1, mesh.subMeshCount)];
+                for (int k = 0; k < mats.Length; k++) mats[k] = fishMaterial;
+                r.sharedMaterials = mats;
+                r.shadowCastingMode = ShadowCastingMode.Off;
+                float scale = 0.30f / Mathf.Max(1e-5f, mesh.bounds.size.z);
+                go.transform.localScale = Vector3.one * scale;
+                Quaternion rot = Quaternion.LookRotation(Vector3.Cross(view, Vector3.up).normalized, Vector3.up);
+                go.transform.rotation = rot;
+                Vector3 centre = lineAt + right * ((i - 2) * 0.36f) + Vector3.up * ((i % 2) * 0.07f - 0.03f);
+                go.transform.position = centre - rot * (mesh.bounds.center * scale);
+                fishes.Add(go);
+            }
+            Shoot(camera, lineEye, lineAt, 42f, outDir, "fish_lineup");
+            foreach (GameObject go in fishes) Object.DestroyImmediate(go);
+
+            Shoot(camera, new Vector3(16f, 9f, -24f), new Vector3(1f, 0f, -46f), wideFov, outDir, "overview");
+            Shoot(camera, new Vector3(0.4f, 2.2f, -40.6f), new Vector3(0f, 0.6f, 40f), 22f, outDir, "far_shore");
+            Shoot(camera, new Vector3(5.5f, 1.6f, -39.5f), new Vector3(12f, -0.2f, -48f), 55f, outDir, "ramp");
+            Shoot(camera, new Vector3(3.6f, 0.45f, -38.6f), new Vector3(1.6f, -0.1f, -41.5f), 55f, outDir, "ladders");
+            Shoot(camera, new Vector3(-5.5f, 0.4f, -39f), new Vector3(0f, 0.4f, -47f), 55f, outDir, "from_water");
+
+            // Bell: the networked prefab is spawned at BellAnchor at runtime; place an instance there for the shot.
+            GameObject anchor = GameObject.Find("BellAnchor");
+            var bellPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(AssetPaths.DockBellPrefab);
+            var bell = (GameObject)PrefabUtility.InstantiatePrefab(bellPrefab);
+            bell.transform.position = anchor != null ? anchor.transform.position : new Vector3(1.1f, 0.6f, -40.6f);
+            Vector3 b = bell.transform.position;
+            Shoot(camera, b + new Vector3(-1.4f, 1.2f, -1.7f), b + new Vector3(0f, 0.9f, 0f), 45f, outDir, "bell");
+            Object.DestroyImmediate(bell);
+
+            // Reeds: the first reed vertex marks a cluster; look at it from the shallows.
+            GameObject reeds = GameObject.Find("Reeds");
+            Vector3 reed = reeds != null ? reeds.GetComponent<MeshFilter>().sharedMesh.vertices[0] : new Vector3(-30f, 0f, 36f);
+            Vector3 inward = new Vector3(-reed.x, 0f, -reed.z).normalized;
+            Shoot(camera, new Vector3(reed.x, 0f, reed.z) + inward * 3.2f + Vector3.up * 1.1f, new Vector3(reed.x, 0.5f, reed.z), 50f, outDir, "reeds");
+
+            Object.DestroyImmediate(cameraGo);
+            Debug.Log("FG LOOKDEV adoption captured " + AdoptionShots.Length + " shots tag=" + tag);
+            string sheet = Arg("-fgLookSheet");
+            string before = Arg("-fgLookBefore");
+            if (!string.IsNullOrEmpty(sheet) && !string.IsNullOrEmpty(before)) ComposeSheet(before, outDir, sheet, AdoptionShots);
+        }
+
         // Batch entry (no graphics needed): only the collider dump of the scene on disk, colliders_<tag>.txt in -fgLookOut.
         public static void DumpCollidersBatch()
         {
@@ -231,6 +318,29 @@ namespace FishGame.EditorTools
 
         // ---- render ----
 
+        // Spec 10.7 record: what this camera sees (frustum-culled renderers, their triangles and distinct materials) plus the editor's UnityStats
+        // for the last render (batches, SetPass calls, draw calls, triangles; these read 0 when the editor does not collect stats in batchmode).
+        static string s_statsLine = "";
+
+        static void LogStats(Camera camera, string name)
+        {
+            Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
+            int renderers = 0; long triangles = 0;
+            var materials = new HashSet<Material>();
+            foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+                foreach (MeshRenderer r in root.GetComponentsInChildren<MeshRenderer>(false))
+                {
+                    if (!r.enabled || !GeometryUtility.TestPlanesAABB(planes, r.bounds)) continue;
+                    MeshFilter f = r.GetComponent<MeshFilter>();
+                    if (f == null || f.sharedMesh == null) continue;
+                    renderers++;
+                    for (int s = 0; s < f.sharedMesh.subMeshCount; s++) triangles += f.sharedMesh.GetIndexCount(s) / 3;
+                    foreach (Material m in r.sharedMaterials) if (m != null) materials.Add(m);
+                }
+            Debug.Log("FG LOOKDEV STATS " + name + " visibleRenderers=" + renderers + " visibleTris=" + triangles + " materials=" + materials.Count +
+                      " | recorder " + s_statsLine);
+        }
+
         static void Shoot(Camera camera, Vector3 eye, Vector3 target, float verticalFov, string outDir, string name)
         {
             camera.transform.position = eye;
@@ -239,7 +349,15 @@ namespace FishGame.EditorTools
             var rt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 };
             camera.targetTexture = rt;
             camera.Render();
-            camera.Render();   // second frame: shadow and depth history settled
+            using (var batches = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Render, "Batches Count"))
+            using (var setPass = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Render, "SetPass Calls Count"))
+            using (var draws = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Render, "Draw Calls Count"))
+            using (var tris = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Render, "Triangles Count"))
+            {
+                camera.Render();   // second frame: shadow and depth history settled
+                s_statsLine = "batches=" + batches.CurrentValue + " setPass=" + setPass.CurrentValue + " drawCalls=" + draws.CurrentValue + " tris=" + tris.CurrentValue;
+            }
+            LogStats(camera, name);
             RenderTexture previous = RenderTexture.active;
             RenderTexture.active = rt;
             var tex = new Texture2D(Width, Height, TextureFormat.RGB24, false);
@@ -254,7 +372,9 @@ namespace FishGame.EditorTools
         }
 
         // Rows in Shots order; left column before, right column after; a 6 px dark gutter.
-        public static void ComposeSheet(string beforeDir, string afterDir, string sheetPath)
+        public static void ComposeSheet(string beforeDir, string afterDir, string sheetPath) => ComposeSheet(beforeDir, afterDir, sheetPath, Shots);
+
+        public static void ComposeSheet(string beforeDir, string afterDir, string sheetPath, string[] Shots)
         {
             const int gutter = 6;
             int w = Width * 2 + gutter, h = Height * Shots.Length + gutter * (Shots.Length - 1);
