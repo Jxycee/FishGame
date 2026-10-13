@@ -11,6 +11,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
@@ -28,6 +29,9 @@ namespace FishGame.EditorTools
 
         public static void BuildBootstrap()
         {
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            // Load after NewScene: NewScene(Single) unloads unused assets and would leave destroyed references (C 2.8 #14).
             NetworkObject sessionStatePrefab = BuilderUtil.LoadNetworkPrefab(AssetPaths.SessionStatePrefab);
             var inputActions = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputActionNames.AssetPath);
             if (inputActions == null) throw new System.IO.FileNotFoundException("Missing " + InputActionNames.AssetPath);
@@ -39,10 +43,6 @@ namespace FishGame.EditorTools
             if (panelSettings == null) throw new System.IO.FileNotFoundException("Missing " + AssetPaths.PanelSettingsAsset);
             var appRoot = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(AssetPaths.AppRootUxml);
             if (appRoot == null) throw new System.IO.FileNotFoundException("Missing " + AssetPaths.AppRootUxml + " (T14)");
-
-            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            // NewScene(Single) unloads unused assets, which leaves a destroyed reference in panelSettings. Load it again.
-            panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>(AssetPaths.PanelSettingsAsset);
 
             // App: AppBootstrap, NetworkManager, UnityTransport, PlayerInputAdapter, AudioBus (contract 6.5 order).
             var app = new GameObject("App");
@@ -86,6 +86,8 @@ namespace FishGame.EditorTools
             Camera camera = cameraObject.AddComponent<Camera>();
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(0.07f, 0.10f, 0.14f);
+            // Post-processing on, like the Spot_LakeDock SceneCamera and PlayerFP (C 7.21): no colour-grade pop on the SceneCameraSwitch hand-over (T21 review).
+            BuilderUtil.GetOrAdd<UniversalAdditionalCameraData>(cameraObject).renderPostProcessing = true;
             cameraObject.AddComponent<AudioListener>();
 
             var sun = new GameObject("Sun");

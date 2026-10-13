@@ -67,13 +67,13 @@ namespace FishGame.EditorTools
             Physics.IgnoreLayerCollision(Layers.Ragdoll, Layers.Fish, true);
         }
 
-        // Spec 4.2 #5: MSAA 4x, depth texture on, HDR on, soft shadows, 2 cascades, shadow distance 70 m, opaque texture off.
+        // Spec 4.2 #5: MSAA 4x, HDR on, soft shadows, 2 cascades, shadow distance 70 m, opaque texture off. The depth texture flag
+        // (m_RequireDepthTexture) is owned by RenderingSetupBuilder (PC and Mobile), not set here.
         static void ApplyUrp()
         {
             var asset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(AssetPaths.PcRenderPipelineAsset);
             if (asset == null) throw new System.IO.FileNotFoundException("Missing " + AssetPaths.PcRenderPipelineAsset);
             asset.msaaSampleCount = 4;
-            asset.supportsCameraDepthTexture = true;
             asset.supportsHDR = true;
             asset.supportsCameraOpaqueTexture = false;
             asset.shadowCascadeCount = 2;

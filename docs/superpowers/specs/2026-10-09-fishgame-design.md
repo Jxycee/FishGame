@@ -21,7 +21,7 @@ This file merges the reviewed section specs (vision and loop, networking, player
 
 ### 1.1 What the user said (agreed, not re-opened)
 
-- **Game:** "FishGame", an incremental rogue-lite fishing game in the "friend slop" category (Peak, Lethal Company, Gamble With Friends, How to Fish, RV There Yet). Simple low-poly, flat-colour look. Primitives and procedural content where possible. No paid assets.
+- **Game:** "FishGame", an incremental rogue-lite fishing game in the "friend slop" category (Peak, Lethal Company, Gamble With Friends, How to Fish, RV There Yet). Smooth stylised "realistic toon" look with painted-style textures, in the vein of RV There Yet and Gamble With Your Friends (R74; supersedes the original low-poly, flat-colour look). All art is made for the project (code, Blender, procedural or baked textures). No paid or third-party assets.
 - **Players:** online co-op from the start, 1 to 4 players. Single-player is also available; solo is a local host with no Relay. Difficulty scales a bit with player count.
 - **Netcode:** Netcode for GameObjects (NGO), host-authoritative. Connections go through Unity Multiplayer Services (Relay + Lobby, via the Sessions API) with a short join code. The transport layer stays swappable so Steam (Facepunch.Steamworks) can slot in later.
 - **Camera and bodies:** first-person camera. Other players see low-poly floppy bodies.
@@ -35,7 +35,7 @@ This file merges the reviewed section specs (vision and loop, networking, player
   - **M2 Fishing core:** Rust-style fishing.
   - **M3 Fish ecology:** data-driven spawn tables, journal.
   - **M4 Run loop (amended 2026-10-09):** 7-day expedition with an escalation arc, clock, rising quota, Night Camp (shop, radio, story, ready-up), nightly save/resume, Hub map choice and map unlocks, map skills with the skill pick, Infinite mode, cosmetics currency in the meta save (the cosmetics store itself may land in M5/M6).
-  - **M5 Friend slop:** physics fish carry/sell; seagull and raccoon thieves; co-op monster fish needing 2+ reelers; daily events and hazards (storm, frenzy, fog, heatwave spoilage); shove and light ragdoll.
+  - **M5 Friend slop:** physics fish carry/sell; seagull and raccoon thieves; co-op monster fish needing 2+ reelers; daily events and hazards (storm, frenzy, fog, heatwave spoilage); shove and light ragdoll; the self-hook gag (R68).
   - **M6 Expansion:** Vivox proximity voice; boat driving; boat damage with a repair minigame and bucket bailing (press a button to scoop, hold Q to throw water); more spots (amended: 5 maps in total, so three more maps from M6 on).
 - **Workflow:** Claude writes all code and files directly. Scenes are built by editor scripts where practical. The Unity batchmode CLI compiles and runs tests. The user playtests in the editor. Tests use the Unity Test Framework (EditMode + PlayMode). Multiplayer Play Mode (MPPM) handles local multi-client testing.
 - **Process:** The user said "go with your recommendation" about the milestone order and the networked-vertical-slice approach. The design defaults in section 19 are *proposed* defaults, to be confirmed at spec review; section 20 lists the open questions.
@@ -106,7 +106,7 @@ The section specs disagreed in these places. Each row is the single answer this 
 | R20 | Remote one-shot cues: reliable `RodEventRpc` vs sequence counters inside RodState | fishing, art | **Reliable `RodEventRpc`** (`SendTo.NotMe`). RodState carries continuous state only. | Simple, and rare events cost nothing reliable. |
 | R21 | Latency testing: `UnityTransport.SetDebugSimulatorParameters` vs Network Simulator | networking, fishing, art vs player, slop, project-testing | **Network Simulator from `com.unity.multiplayer.tools` 2.2.12.** The UnityTransport debug simulator is `[Obsolete]` and has no effect in NGO 2.13.3 (checked in source). | Verified against source. |
 | R22 | UI technology: uGUI + TextMeshPro vs UI Toolkit | art, project-testing | **UI Toolkit** (UXML/USS text, default runtime theme font). uGUI stays installed, unused. Art's layout, flow and HUD content are kept and implemented in UI Toolkit. | TMP Essential Resources are not imported and bring a font that falls under LFS rules. UXML/USS are plain text. |
-| R23 | Art pipeline scope in M1 (toon/water shaders, palette, day-night, procedural audio all in M1) vs a lean M1 | art, project-testing | **M1 lean:** flat URP Lit placeholder materials, one fixed light, `AudioBus` with UI and ambience recipes. **M2:** toon and water shaders, ripples, rod/line presentation, fishing audio. **M3:** seasonal palette swap and day-night controller (driven by the dev clock). | The agreed M1 scope is project/menu/player/map; M2 is judged on feel and needs the water and audio. |
+| R23 | Art pipeline scope in M1 (toon/water shaders, palette, day-night, procedural audio all in M1) vs a lean M1 | art, project-testing | **M1 lean:** flat URP Lit placeholder materials, one fixed light, `AudioBus` with UI and ambience recipes. **M2:** toon and water shaders, ripples, rod/line presentation, fishing audio; at its end the R74 realistic-toon look is adopted across all M2 content (smooth meshes, painted texture arrays, the five Blender fish). **M3:** seasonal palette swap and day-night controller (driven by the dev clock); new content follows the R74 style guide. | The agreed M1 scope is project/menu/player/map; M2 is judged on feel and needs the water and audio. |
 | R24 | Player names: PlayerFP/PlayerNetState/PlayerActions vs PlayerNet vs FirstPersonPlayer vs PlayerInteractor | player, networking, project-testing, slop | **Prefab `PlayerFP`** with `PlayerNetState` (NetworkVariables), `PlayerActions` (all non-fishing player RPCs), `PlayerLocomotion`, `PlayerCamera`, `PlayerBody`, `PlayerInteractor`, and `FishingRodNetwork` (fishing RPCs and rod state). | One set of names. |
 | R25 | Movement numbers: walk 4.2 vs 4.5, gravity −22 vs −18, eye 1.62 vs 1.6, pitch ±85 vs ±80 | player, project-testing | **Player section values:** walk 4.2, sprint 6.6, gravity −22, jump 1.1 m, eye 1.62, pitch ±85. | The player section is the more detailed one. |
 | R26 | FOV: 75 vertical (60–100) vs 90 horizontal (80–110) | player, art | **Horizontal 90° default, range 80–110°**, converted with `Camera.HorizontalToVerticalFieldOfView`. | Consistent across aspect ratios. |
@@ -119,7 +119,7 @@ The section specs disagreed in these places. Each row is the single answer this 
 | R33 | Journal: 4 hint levels vs 3 card states | ecology, art | **Ecology's 4 hint levels.** | Finer progression. |
 | R34 | Solo pause: `Time.timeScale = 0` vs never touching timeScale | vision, art | **Never touch `Time.timeScale`.** Solo pause writes a clock anchor with rate 0 and sets a `Paused` flag read by locomotion and the fishing tick. | NGO tick timing must not be scaled. |
 | R35 | Content check: 64-bit hash in the connection payload vs 32-bit hash on WorldState | networking, ecology | **64-bit FNV-1a `ContentHash` in the connection payload**, checked by connection approval. No WorldState check. | The client is rejected before it joins. |
-| R36 | Line gauge: shop gadget vs free accessibility setting | fishing, runloop, art | **Free accessibility setting (Off/Arc/Bar).** The shop sells a different gadget, the Fish Finder (shows hooked fish stamina). | Accessibility must not be paywalled. |
+| R36 | Line gauge: shop gadget vs free accessibility setting | fishing, runloop, art | **Free accessibility setting (Off/Arc/Bar).** The shop sells a different gadget, the Fish Finder (shows how spent the hooked fish is: its tire, R72). | Accessibility must not be paywalled. |
 | R37 | Monster solo rule: stamina scaling table vs automatic solo profile | vision, slop | **Automatic solo profile** (run speed ×0.5, stamina ×0.5) when 1 player is connected; co-op stamina scales ×1.0/×1.2/×1.35 for 2/3/4 players. | Solo never hits a co-op-only gate. |
 | R38 | Thief scaling: multiplier table vs interval formula | vision, slop | **Slop's interval formula** in `CrewScaling` (section 15.2). | One source. |
 | R39 | Session classes and interface: `UgsNetworkSession`/`LocalNetworkSession` vs Sessions/Solo/Direct sessions; two `INetworkSession` signatures | networking, project-testing | **`UgsNetworkSession` and `LocalNetworkSession` (solo and dev-direct)**, networking's `INetworkSession`. | Networking's version is complete. |
@@ -147,10 +147,32 @@ The user decided these at spec review. They override every earlier row and secti
 | R54 | A2 Story and escalation | Each day gets weirder: day 1 is mundane, then absurd events and modifiers escalate through the week, and day 7 is the climax (the map's signature boss, legendary fish or event). **Escalation is data-driven per map:** an escalation tier per day biases which daily modifiers and happenings roll, and how intense they are. The tone stays comedic. | 13, 14.5, 15.4, 9.4 |
 | R55 | A3 Quota | A Settle every night, so 7 per trip. **`dayMult` = [0.5, 0.7, 0.9, 1.1, 1.35, 1.6, 2.0] [tune]**, jitter ±8%. The jitter is bounded so `dayMult × jitter` is strictly increasing day to day for every seed (bound: j < (r − 1)/(r + 1), where r is the smallest consecutive ratio; here r = 1.185, so j < 0.0847). Player-count scaling is unchanged. Any failed Settle ends the run. | R9, 14.4, 14.11 |
 | R56 | A4 Night Camp and save/resume | After each day's Settle comes a **Night Camp** (shop, forecast radio, story beat, ready-up). The host auto-saves a run snapshot at every Night Camp. A crew can quit and resume another evening from the Hub: the host loads the snapshot, and players reclaim their slots by persistent player id. Joins open in Hub, Briefing and Night Camp. There is a shop at every Night Camp (6 per trip). This replaces old Q7 (answered: yes) and the old "banked pending payout" rule. | R10, R12, R13, R49, 6, 9.13, 11.5, 14.1, 14.2, 14.9 |
-| R57 | A5 Maps | **5 maps eventually**: `Spot_LakeDock` first, `Spot_HarbourPier` in M3, three more from M6. **The map is chosen in the Hub** from unlocked maps. Season, weather track and modifiers are still rolled per run. Beating map N unlocks map N+1 [proposed default]. A map is a `SpotDef` plus its `Spot_<Id>` scene (no separate MapDef type). | 1, 6.2, 12.3, 12.5, 13.1, 14.1, 14.8, 16.6, 17.6 |
+| R57 | A5 Maps | **5 maps eventually**: `Spot_LakeDock` first, `Spot_HarbourPier` in M3, three more from M6. **The map is chosen in the Hub** from unlocked maps. Season, weather track and modifiers are still rolled per run. Beating map N unlocks map N+1 [proposed default]. A map is a `SpotDef` plus its `Spot_<Id>` scene (no separate MapDef type). **Superseded in part by R76 (2026-10-13).** | 1, 6.2, 12.3, 12.5, 13.1, 14.1, 14.8, 16.6, 17.6 |
 | R58 | A6 Permanent progression = map skills | Beating a map (passing day 7's Settle) grants each player in the roster at that Settle **one permanent skill** (a passive ability, not an item) for that map. "In the roster" means every slot of the run's roster at that Settle, connected or not (a disconnected slot is still reclaimable by persistent id, 6.6). Connected players are awarded at once; a disconnected roster member's award is held by the host as a **pending clear** and delivered when that player's machine next connects to the same session or resumes the snapshot (14.8), because each save is only ever written by its own machine. Free pick from the whole pool (~12 skills; no duplicates across a player's slots). One skill slot per map, so 5 skills at most. Re-beating a map lets the player keep or re-choose that map's slot. **Skills are the only permanent power progression.** Skills never change crew scaling or quotas. | 14.8, 14.9, 9.8, 9.9 |
 | R59 | A7 Meta currency = cosmetics only | Runs, won or lost, pay a meta currency that **only buys cosmetics** (hats, rod skins, bobber skins, emotes, colours). No permanent rods, perks or map unlocks are bought with currency. Rod tiers (Twig/Handmade/Carbon/Deep-sea) become **in-run purchases at Night Camp shops**, and every run starts with the Twig starter kit. `meta.json` holds cosmetic currency, owned cosmetics, unlocked maps, `skillByMap[5]`, best infinite day per map, journal, stats and a pending-run snapshot reference. | R4, R7, R30–R32, 9.7, 14.7, 14.8, 14.10 |
 | R60 | A8 Infinite mode | After a day-7 win, the crew is offered **"Keep Fishing (Infinite)"** by unanimous vote (otherwise the run ends as a win). The map skill is awarded at the day-7 win, **before** Infinite starts, so it can't be lost. Days 8+ use the same day loop. The quota keeps rising (`dayMult[d] = 2.0 × 1.2^(d−7)` [tune]) and escalation stays at the top tier with crazier modifier stacks, until a Settle fails. Infinite pays cosmetic currency per day survived and records the best day reached per map. The nightly save applies in Infinite too. | 14.2, 14.4, 14.8, 15.4 |
+
+### 3.2 Amendment log (user decisions, 2026-10-11, start of M2)
+
+| # | Amendment | Decision (user) | Updated in |
+|---|---|---|---|
+| R61 | Slot colours | Host (slot 0) blue, then white, light green, dark red. Green and red also differ in lightness (10.2). | 7.4, `SlotPalette` |
+| R62 | Blender fish models | The Blender MCP spike passed (`Content/Models/Fish_Perch.fbx`), so the M2 species get Blender FBX models with per-face vertex colours on the Toon shader; the procedural fish mesh is only a fallback. | 9.6, 17.2 |
+| R63 | Distinct fight motions | Each fight profile also differs in motion, not only in strength: runs that ramp up (Steady, Runner), a slow creep during calm (Bulldog), rapid flips (Darter), per-run speed jitter (Thrasher). The fight stays Rust-style. A single "fight intensity" knob, tackle-style assist levers and a Stardew-style bite wait were considered and not adopted. (R72: kept as per-profile quirks layered on Rust's rules - timing, back-pull chance, mid-run flips, ramp, rest creep, per-run speed jitter, wave period; spec 9.5/9.6.) | 9.5, 9.6 |
+| R64 | Clean-catch bonus | A fish landed without the line ever reaching the clean threshold (seed 0.8 tension) gets +1 quality tier. The owner reports its fight stats; the host bound-checks the claim and only ever withholds the upgrade, never the catch. (R72: in display units, tension = strain / 6.) | 9.8, 9.9 |
+| R65 | Bad-luck nudge | After 3 failed casts in a row (snap, escape or missed bite; cancels don't count) the host gives that player's next cast a "lucky line": the fight strains the line less (x0.85), the snap grace lasts longer (x1.5; R72: the headroom above the full bar is x1.5, snap at strain 7.5) and the hook window is 0.3 s longer. Odds of species, weight and quality are unchanged. The crew sees a "lucky line" toast. All numbers are tuning seeds; the user playtests it and decides keep, tune or remove. | 9.5, 9.8, 9.9, 9.12 |
+| R66 | Story cutscenes (planned, not M2) | An intro cutscene and win/lose ending cutscenes. Story: a Hangover-style morning after - the crew wakes up having wronged a powerful figure and must fish for the week to appease them and save their lives. Gives the quota and day-7 Settle a narrative reason; ties into the nightly story beats and escalation (R54). Milestone and production approach (in-engine low-poly, primitives/Blender, Timeline or scripted camera) to be decided when M4's run loop is planned. **Superseded in part by R76 (2026-10-13).** | 2.1, 14.1, 14.2, 14.5 (to write) |
+| R67 | Cast measured from the rod tip (2026-10-12) | The cast distance (`castMinDist` 2.5 m .. `rod.castMaxDist`) is measured from the rod tip, not the player: the landing is `originFlat + yawForward x (castTipReach + distance)`, with `castTipReach` a fixed horizontal constant (the rod tip's forward reach in the rest pose), identical on owner and host. Pitch still never changes distance. Every rod's reach grows by `castTipReach`. Fixes casts landing almost under the tip (option A of the M2 cast-origin decision). | 9.3, 9.9, `CastMath`, `FishingConstants` |
+| R68 | Self-hook gag (M5, planned) | A cast can hook the caster: a small chance on every cast (3-5% [tune], host-rolled) and guaranteed after 3 casts in a row released below the 10% minimum charge (each of those is the usual invalid-release thunk). A self-hooked player drops the rod at their feet, cannot move or cast, and must mash a button to unhook (about 1.5-2 s when mashed fast); everyone sees and hears it. No other penalty. **Required test (EditMode, seeded, host roll):** over at least 10,000 normal casts the self-hook rate stays inside the tuned 3-5% band, and over a simulated session of normal casting no player self-hooks so often that it stops being a rare gag (e.g. no two random self-hooks on consecutive casts, and the longest random streak stays within what the configured chance predicts); the guaranteed rule fires only on the 3rd consecutive weak cast and the counter resets after a normal cast or a self-hook. Built in M5 with the body states (R28), not in M2. | 9.3, 9.9, 15 (M5), `PlayerStateMachine` |
+| R69 | Graphical overhaul before full release (2026-10-12) | Before the full release, a dedicated graphics pass upgrades the look (water, lighting, materials, models, effects) beyond the M2 toon baseline. Scheduled with the release polish (M6 or a dedicated polish milestone); M2-M5 keep the current toon pipeline. | 10, 15 |
+| R70 | Ladders like RV There Yet (2026-10-12) | A ladder is a walk-in `LadderVolume`: entering it (walking, wading, swimming or stepping off the deck edge; no button, no snap; blocked while RodFighting) starts Climbing. While climbing there is no gravity; Move travels along the camera look direction (W toward where you look, so look up to climb, down to descend; A/D strafe) at `climbSpeed` 2.4 m/s [tune] and stops instantly with no input (you hang). Leaving the volume ends the climb (normal walking/falling/swimming resumes); a 0.25 s re-entry grace stops a bounce back onto the ladder at the top. Sprint, Jump, Interact and rod inputs do nothing on a ladder, so nothing can be interacted with from it. The rod is put away with a short stow animation on entry and comes back out (unstow animation) after the climb. Owner-write movement; no new RPC. The shore ramp loses the auto-pull: it becomes a walkable slope with a light assist (a small upward help at its foot when coming out of the water), not a full lerp. Replaces the M1 `WaterExit` ladder lerp. | 7.3, 7.8, 8.2 |
+| R71 | Boat docking assist (M6, planned) | When boats arrive (M6), bringing a boat in to a dock or ramp gets a light assist, never a full auto-pull: the driver still needs some skill to bring it in without damaging the boat. | 15 (M6) |
+| R72 | Fight rework: Rust-faithful baseline (2026-10-12) | The fight is rebuilt on Rust's server maths (research note 2026-10-12 section 8) as a baseline the user plays before a friendlier tuning pass. **Strain is input-only:** with no input it drains at a flat 1.5/s; any input loads it at k x strainMod x 0.75 / lineStrength per second, with k = 0.5 while the fish rests, 2.2 reeling into a run, 2.5 reeling into a back pull, 0.8 counter-steering only, 0.5 other steering. The bar shows strain / 6; the line snaps above 7 (a headroom band above the full bar replaces the snap grace). **Fish:** a run starts at once on the hook and lasts Uniform(burstMin, burstMax) x (1 - tire01); a rest lasts Uniform(calmMin, calmMax) x (1 + tire01); a run goes left or right 50/50 and also pulls back with the profile's diveChance while the line is inside castMaxDist - 2 m; the side flips at the 60 deg cone edge; a pull wave (0.2..2, Rust period 4 s) scales its speed. **Five fight styles are kept (user, 2026-10-12) as data quirks on top of Rust's rules; they change only the fish's movement, never the strain formula:** Steady short plain runs that ease in (rest 2-4, run 3-5, back 0.15, ramp 0.6 s); Darter quick darts that switch sides mid-run (rest 1-2, run 2-3.5, back 0.15, flips 1.0/s at least 0.3 s apart); Thrasher jerky surges (rest 1.5-3, run 3-5, back 0.20, flips 0.4/s, per-run speed x0.7..1.3, 1.5 s wave); Bulldog dives and creeps (rest 2-4, run 2.5-4.5, back 0.55, line creeps out 0.06 m/s at rest); Runner long sideways runs that build up (rest 2-3.5, run 5-9, back 0.30, ramp 0.8 s). Rust's own values (rest 2-4, run 3-7, back 0.39, no quirk) remain the reference the hand checks use. **Steering:** digital, and only toward the cast line; a counter-steer halves the side run and pushes the fish back at the rod's steerRate (Handmade 0.8 m/s); steering tires the fish (+1.25/s countering a plain side run, +0.8/s otherwise, -0.1/s with no steer); reeling never tires; reel speed = reelSpeed x reelInMult x (1 rising to 3 as tire goes 0 to 5). **Endings:** landed at 1.0 m from the rod tip while reeling; snapped above strain 7; Escaped(Timeout) at 120 s (no pinned escape; the 12 s slack escape applies to junk only). Profiles take Rust's tiers (strainMod / moveMult / reelInMult): Steady 0.8/0.8/1.2; Darter and Thrasher 1/1/1; Bulldog and Runner 1.25/1.25/0.9. Weight does not enter the fight. Assist x0.6 on strain gains; the bad-luck nudge x0.85 on gains and x1.5 on the headroom (snap at 7.5). Handmade reels 0.6 m/s and steers 0.8 m/s; other rods keep their ratios. Feedback: creak from 0.10 of the bar on Rust's gain curve with a 0.25 s fade-out; HUD gauge smoothed at clamp01(dt x 10) and drawn to the snap point; bobber roll +-30 deg toward the pull, halved on a back pull. **Supersedes:** the 0.8 s calm lead-in, burst-only strain, relax while reeling, counter relief, steer/out-of-window/spool strain, the snap grace timer, the pinned and fish slack escapes, the weight factor, fish stamina and its regen, and the pre-R72 motion formulas (R63's characters live on as the quirks above). **Not copied:** PlayerMoved (walking while waiting stays), BadAngle, Obstructed, TooFarAway (the line clamps at maxLineOut), rod condition, tea boost, server authority. Authority is unchanged (owner sim, host validation, 9.9); the host Landed floor uses the fastest possible reel and the host accepts an owner Timeout only on its own clock. | 9.1, 9.2, 9.5-9.9, 9.11-9.13, 14.8, 17.2; R63, R64, R65 |
+| R73 | Water look: variant C, smooth (2026-10-12) | The user picked variant C's palette (shallow (0.30, 0.86, 0.80, 0.68), deep (0.03, 0.36, 0.62, 0.97), depth range 1.6 m) and rejected the faceted "patchwork" look: the water is a smooth, continuous stylised surface with per-pixel normals from `FG_WaveHeight` finite differences plus fine drifting ripples, so shading, crests, fresnel and glints never show triangles and glints are round or elongated sparkles. The low-poly lakebed is hidden by a partial opacity raise over shallow water, kept low so a bit of sand passes through (`_BedCover` 0.35), and soft caustic veins in the shallows are kept. Replaces the flat ddx/ddy facet normal and the facet shading of the earlier variant. Vertex displacement and `FishGameCommon.hlsl` are unchanged (GPU wave parity). | 10.4 |
+| R74 | Art direction: realistic toon with painted textures (2026-10-12) | The user moved the look away from the full low-poly, flat-colour style toward a more realistic toon look, using RV There Yet and Gamble With Your Friends as references: smooth rounded models (no visible faceting), soft toon lighting (gentle light-to-shadow ramp, rim light, ambient occlusion), subtle colour gradients and hand-painted-style textures (wood, rock, sand, bark, fish skin) made for the project in Blender or procedurally and baked. Still no paid or third-party assets. Timing: a look-dev pass now (dock, player body, one fish, props) for the user to approve; once approved it becomes the standard before M3 builds its 23 species and the Harbour Pier, and the existing M2 content is restyled. R69 (release graphics polish) still follows later. The water (R73) is already smooth and is tuned to match during look-dev. **Approved by the user 2026-10-13** from the look-dev sheet (branch `m2-lookdev`, style guide `docs/superpowers/research/2026-10-12-art-direction-lookdev.md`): "loving how it is looking". Notes: the player model needs a proper redesign later (beyond the look-dev pillow body); some scenery still reads oddly blocky and gets a smoothing sweep during adoption. Water and fog are kept as they are (no haze added). **Seasonal trees (2026-10-13, user: "the trees don't change with the seasons"):** evergreen pines with winter snow caps, spring blossoms, a per-tree orange / red / yellow autumn mix and bare winter branches, in the R74 style (smooth lathes and radials); details in 10.2. | 1, 10 |
+| R76 | Story and run structure: on the run downriver (2026-10-13, user) | **Story:** after a crazy night out the crew (or a solo player) pissed off the mafia and is on the run. They ditch town and head down the river on their boat. Their drinking buddy from that night, a goofy floating **starfish god**, is NOT owed anything: he is on the run with them and helps, because he can get the crew supplies. **Quota meaning:** each night the crew pays the starfish god for fuel and food. Miss the quota and they run out of fuel/food, and the mafia catches up (the run is lost). **Run = 7 days = 7 maps:** each day is a new, crazier map further down the river. The river runs through 7 stages in a fixed order (for example creek, lake, rapids, swamp, canyon, delta, harbour/sea); each stage picks one of several map variants per run, so runs differ (variety is the top priority). **Night:** the crew camps in the woods on the riverbank; the starfish god is the night-camp vendor/buyer (sell catches, buy rods, bait and supplies). **Travel:** each morning a short, skippable scripted boat ride downriver leads to the next map (fits the M6 boat later). **Win reward:** surviving day 7 (escaping) gives each finisher one permanent skill (max 5, re-choosable), replacing the per-map skill of R57; escaping more unlocks more stage variants and harder rivers [proposed default]. **Supersedes in part:** R57 (one map chosen in the Hub per run; beat map N to unlock N+1), R66 (the story beat "wronged a powerful figure"; the intro/ending cutscenes now tell this story), and the run/map/skill text of sections 1, 12.3, 13, 14 and 16.6. **Milestones:** M3 is unchanged in scope: `Spot_LakeDock` and `Spot_HarbourPier` become two river stages (lake early, harbour as the river-mouth finale); the map switch stays a dev tool. M4 plans the 7-stage run, the morning boat-ride transition, the riverbank camp with the starfish god, the escape reward and the mafia escalation; the spec sections above are rewritten then. Content scale: 7 stages each with variants is more maps than the old 5; M6 and later add stages and variants. | 1, 12.3, 13, 14, 16.6 |
+
+Contract details for R61-R65: `docs/superpowers/plans/2026-10-11-m2-interfaces.md` (M2-D3, D15, D16 and section 7.7). R72: plan `docs/superpowers/plans/2026-10-12-m2-rework-fight.md` and C 16.1 row R72.
 
 ---
 
@@ -648,17 +670,19 @@ Network prefab, registered in the list, built by `PrefabBuilder`.
 
 **Teleport:** server-initiated teleports use `PlayerActions.TeleportRpc(Vector3 pos, float yaw)` (`SendTo.Owner, InvokePermission = Server`). Owner: `cc.enabled = false` → `networkTransform.Teleport(pos, Quaternion.Euler(0, yaw, 0), Vector3.one)` → zero velocity and knockback → `cc.enabled = true`. Only the owner may call `Teleport`. **Out of bounds:** if y < −20 the owner teleports itself to its spawn point.
 
-**Water: swimming and exits**
+**Water: swimming, ladders and the ramp**
 - `WaterSurface.HeightAt(x, z)` (Runtime adapter over Core `WaveMath`, section 10.4) defines the surface. A player is swimming when the root is below `HeightAt − 1.2 m` inside a `WaterVolume`.
 - Swimming: 2.2 m/s, no sprint, gravity −4 m/s² plus buoyancy holding the eyes ~0.15 m above the surface. The owner writes `NetSwimming`.
-- Entering water stows the rod (remembered), ends any active fight as `Escaped(Dropped)`, and (M5) drops any carried item.
-- `WaterExit` trigger volumes sit at every ladder and the shore ramp (the lake-dock map has ≥ 2 ladders and 1 ramp). Inside one, Jump or swimming forward plays a 0.4 s lerp to the exit's `topPoint`. After 60 s in water the owner teleports to the dock spawn.
+- Entering water stows the rod (remembered) with the stow animation (a ladder does the same), ends any active fight as `Escaped(Dropped)`, and (M5) drops any carried item.
+- **Ladders (R70).** Each dock ladder has a walk-in `LadderVolume` (a trigger box; lake dock: x 1.55..2.55 on each side, 1.0 m along z around the ladder, y -1.4..1.6, layer Default). While the owner's capsule centre is inside one, the player is **Climbing**: no gravity; Move goes along the camera look (W toward where you look, so look up to climb and down to descend; S reverses; A/D strafe flat) at `climbSpeed` 2.4 m/s [tune]; with no input you hang (instant stop). Entering needs no button and works from walking, wading, swimming or stepping off the deck edge, but not while RodFighting. Leaving the box ends the climb and the climb velocity carries on into normal walking, falling or swimming; leaving through the top blocks re-entry for 0.25 s, so a climber who tops out is not caught again. Sprint, Jump, Interact and the rod inputs do nothing on a ladder. The rod is put away with a short stow animation on entry and comes back out after (held away until the player is grounded and no ladder can retake them), as for swimming. The CharacterController stays on, so rails, posts and the deck still collide. Nothing about ladders is networked beyond the owner's NetworkTransform (`NetSwimming` is written false on entry; no `NetClimbing` in M2).
+- **Shore ramp (R70).** A walkable slope: no lerp and no pull. Its foot (in the water) is a `WaterExit` box (lake dock: x 10.5..13.5, z -46..-39, layer Default): a player in water there always wades (feet on the bed, walk speed) instead of swimming, and a swimmer arriving there while pushing toward the ramp top gets one small upward kick (2.0 m/s [tune]).
+- After 60 s in water the owner teleports to the dock spawn.
 - No fall damage.
 
 ### 7.4 Body, colours, nameplates
 
 - Rig built by `PrefabBuilder` from primitives (M1: `GameObject.CreatePrimitive` meshes with URP Lit slot materials and all generated colliders removed except, from M5, the ragdoll part colliders; M2: `MeshBuilder` flat-shaded meshes on the Toon shader): head sphere r 0.14 at y 1.62 (child of `HeadPivot`); torso box 0.42×0.55×0.24 at y 1.2; arms capsule r 0.06 length 0.5 (shoulders y 1.42, x ±0.27); legs capsule r 0.08 length 0.8 (hips y 0.8, x ±0.11); a nose cube showing facing; `HoldNode` (empty + `AttachableNode`) at the right hand.
-- Player colour: **4 prebuilt body materials**, one per slot (`M_Body_Slot0..3`). No runtime material instances and no `MaterialPropertyBlock` (it opts out of the SRP Batcher). Head and hands use the skin tone. The host assigns the lowest free slot at join; the renderer applies it on `NetSlot` change.
+- Player colour: **4 prebuilt body materials**, one per slot (`M_Body_Slot0..3`): slot 0 (host) blue, 1 white, 2 light green, 3 dark red (values in `SlotPalette`; green and red differ in lightness, 10.2). No runtime material instances and no `MaterialPropertyBlock` (it opts out of the SRP Batcher). Head and hands use the skin tone. The host assigns the lowest free slot at join; the renderer applies it on `NetSlot` change.
 - **Procedural walk cycle (all clients):** legs ±30°, arms counter-swing ±20° at `speed / 1.4 m` stride frequency, with `speed` from the root's frame-to-frame delta, so remotes animate from interpolated motion.
 - **Nameplate:** remotes only, screen-projected UI Toolkit label above the head, alpha fading from 15 m to 25 m; shows a speaker icon in M6.
 - **M5 floppy springs** (`DampedSpring.Step`, semi-implicit Euler substepped at ≤ 1/60 s inside `LateUpdate`): head k 60 / c 9, arms k 35 / c 6, driven by root local velocity and acceleration; landing squash −0.3 scale-velocity on grounded false→true.
@@ -712,7 +736,7 @@ public abstract class NetworkInteractable : NetworkBehaviour {
 
 1. Remote movement in a 4-instance MPPM session at 150 ms RTT and 2% loss shows no snap > 0.5 m during steady walking.
 2. Remote pitch tracks within 5°.
-3. A player climbs out of the lake within 2 s of reaching any ladder or the ramp.
+3. A player gets out of the lake within 2 s of reaching a ladder while looking up toward the deck (about 45 deg), and walks out up the shore ramp with no pull (R70).
 4. Teleport lands within 0.05 m with no stale velocity.
 5. Clients see the host's own player move (re-test of an old NGO 2.2.0 forum report; failure is a blocker).
 6. The owner sees no body of their own except the right arm and their shadow; Camera and AudioListener are active only on the owner.
@@ -746,7 +770,8 @@ public abstract class NetworkInteractable : NetworkBehaviour {
 | `Carrying` (M5) | yes (carry speed) | Throw: hold to charge, release | — | Interact | Shove | Drop | — | move |
 | `Staggered` (M5) | no | Reel if fighting | — | — | — | — | — | Steer/Reel if fighting |
 | `Downed` / `Carried` (M5) | no | — | — | — | — | — | — | — |
-| `Swimming` | swim | — | — | climb at exits | — | — | — | move |
+| `Swimming` | swim | — | — | — | — | — | — | move |
+| `Climbing` (ladder, R70) | climb along the look (W toward it, S away; no jump, no sprint) | — | — | — | — | — | — | strafe / back |
 | `Menu` | UI map only | | | | | | | |
 
 **Fishing feel rule:** movement is suppressed only while hooked, because A/D/S are the fight keys (Rust-style). With the rod merely out, WASD walks.
@@ -780,23 +805,24 @@ Gamepad bindings exist from M1; gamepad play is verified from M2. Rumble (`IInpu
 
 ## 9. Fishing core (M2)
 
-Facepunch publishes no fishing numbers. Every value here is a starting point; the EditMode scripted bots (9.12) are the source of truth for tuning, and failing bots mean retuning data, not new mechanics.
+The fight uses Rust's server numbers (R72, research note 2026-10-12 section 8); every other value is a starting point; the EditMode scripted bots (9.12) are the source of truth for tuning, and failing bots mean retuning data, not new mechanics.
 
 ### 9.1 Goals, non-goals, glossary
 
-**Goals:** relaxed waiting; a loud bite you can't miss; a fight you read from the world (rod bend, creak, splash), not a HUD; a forgiving rhythm (steer against the run, reel when the fish calms); the agreed charge cast on top of Rust's ready-then-cast and blue-marker rule; one pure, seeded, data-driven fight model; zero input latency for the owner; host-owned outcomes; every species fighting *differently*, not just harder.
+**Goals:** relaxed waiting; a loud bite you can't miss; a fight you read from the world (rod bend, creak, splash), not a HUD; the Rust pump (counter-steer the runs, reel while the fish rests, let go to drain); the agreed charge cast on top of Rust's ready-then-cast and blue-marker rule; one pure, seeded, data-driven fight model; zero input latency for the owner; host-owned outcomes; every species fighting *differently*, not just harder.
 
 **Non-goals for M2:** real spawn tables, time/season/weather (M3; M2 uses a placeholder roller); shop, bait inventory, meta (M4: the in-run Night Camp shop with rods and bait, map skills, and cosmetics-only meta currency; the cosmetics store is M5; M2 uses a debug loadout); physical fish, thieves, monster fish, shove, boats (M5/M6); fight scaling by player count (never).
 
 | Term | Meaning |
 |---|---|
 | Owner | The client that owns the player object; the rod is a component on `PlayerFP` |
-| Lateral | Fish position across the line, −1..+1, **+1 = right**. Angle off the cast line = `lateral × lateralMaxDeg` (75°) |
+| Lateral | Fish position across the line, -1..+1, **+1 = right**. Angle off the cast line = lateral x lateralMaxDeg (60 deg, Rust's cone). The fish moves in m/s; a sideways speed v changes lateral by v x dt / (max(lineLength, 1 m) x lateralMaxDeg in radians) |
 | Steer | Input −1..+1, **A = −1, D = +1**. Steering pulls the fish toward the steer side; countering a fish running right means pressing A |
 | Line length | Horizontal metres from rod tip to fish |
-| Tension | 0..1; at 1.0 the snap grace timer runs |
-| P | Effective pull = `pullStrength × weightFactor × fishStamina`, 0..1. A tired fish fights less |
-| Burst / Calm | Fight phases. A Burst is a side run (`burstDir` ±1) or a dive (`burstDir` 0) |
+| Strain / tension | Strain is the line load (Rust units): the bar is full at strainBarFull 6 and the line snaps above strainSnap 7. Tension = strain / 6 is the displayed value (1.0 = full bar; snap above 7/6) |
+| Pull wave p | 0.2..2: a 4 s triangle (Rust PingPong(t, 2) clamped) that scales the fish's speed; its phase is drawn per fight |
+| Run / rest (Burst / Calm) | A run pulls left or right (burstDir +-1) and, with the profile's diveChance (Rust 39%), also back; at rest the fish does not move |
+| Tire | Rust's TireAmount: +1.25/s countering a plain side run, +0.8/s any other steer, -0.1/s without steer (no floor). It shortens runs, lengthens rests (saturating at 20) and speeds the reel (x1..x3 over 0..5) |
 
 Units: metres and seconds. The fight runs at a fixed **50 Hz (dt 0.02 s)** from an accumulator in `Update` (not `FixedUpdate`), at most 5 steps per frame; extra time is dropped.
 
@@ -826,15 +852,15 @@ Units: metres and seconds. The fight runs at a fixed **50 Hz (dt 0.02 s)** from 
 | Casting / Waiting | `CastResult.valid == false` | Idle | Recall animation (bobber bounces back) |
 | Casting | no `CastResult` within 3 s (`resultTimeout`) | Idle | Recall; `CancelRpc(castId)` so the host refunds if it accepted |
 | Waiting | Secondary pressed (edge) | Idle | `CancelRpc`; bait refunded |
-| Waiting | player–bobber distance > `maxLineOut` | Idle | Auto reel-in; `CancelRpc`; refunded |
+| Waiting | line out past `maxLineOut`: horizontal root-to-bobber distance minus `castTipReach` > `maxLineOut` (R67: the limit is measured from the rod tip) | Idle | Auto reel-in; `CancelRpc`; refunded |
 | Waiting | bite timer ≥ `biteWait` | Bite | Bite cue; `RodEventRpc(Bite)` |
 | Bite | `hookWindow == 0`, after `hookBeat` 0.25 s | Hooked | `HookedRpc(castId)`; `FightSim` starts from `fightSeed` |
 | Bite | `hookWindow > 0`, Primary within window | Hooked | `HookedRpc(castId)` |
 | Bite | `hookWindow > 0`, window elapsed | Escaped (Missed) | `ResultRpc` |
 | Hooked | `lineLength ≤ landDistance` while reeling this tick | Landed | `ResultRpc(Landed)` |
-| Hooked | `snapTimer ≥ snapGrace` | Snapped | `ResultRpc(Snapped)`; `RodEventRpc(Snapped, sizeClass)` |
-| Hooked | `pinnedTimer ≥ pinEscapeTime` | Escaped (Pinned) | Hook pulls free |
-| Hooked | `slackTimer ≥ slackEscapeTime` | Escaped (ThrewHook) | Covers AFK and "steer but never reel" |
+| Hooked | strain > snap strain (strainSnap 7; 7.5 on a Pity cast) | Snapped | ResultRpc(Snapped); RodEventRpc(Snapped, sizeClass) |
+| Hooked | elapsed >= fightTimeout (120 s) | Escaped (Timeout) | ResultRpc(Escaped, Timeout); the host checks it on its own clock (9.9) |
+| Hooked (junk only) | slackTimer >= slackEscapeTime | Escaped (ThrewHook) | An AFK junk hook clears itself; a fish fight ends by fightTimeout instead (R72) |
 | Hooked | displaced > `hookedLeash` (3 m) from hook position, or entered water | Escaped (Dropped) | Only via external forces (M5 shove, M6 boat) or falling in |
 | Any line-out state | teleport, respawn, stow, swim, disconnect | Idle (Cancelled), or Escaped (Dropped) when Hooked | `CancelRpc`/`ResultRpc` |
 | Waiting / Bite / Hooked | **unsolicited** `CommitRpc` for the current castId (host-initiated: stuck-Waiting refund, `maxFightTime`, LastCast auto-reel or grace end, the pre-snapshot sweep on entering Night Camp (14.9), Invalid) | Idle (Cancelled; bait refunded if the host says so) or Escaped(reason from `finalOutcome`) | 1.5 s feedback beat (recall for a cancel, slack line for an escape), then Idle; no `ResultRpc` sent; rumble off |
@@ -857,7 +883,7 @@ distance   = lerp(castMinDist, rod.castMaxDist, chargeNorm)     // castMinDist 2
 - **Direction:** camera flat forward (yaw only). **Pitch never changes distance**; it scales only the cosmetic arc apex ×0.7..×1.3.
 - **Flight (cosmetic, deterministic):** `tFlight = 0.45 + 0.012 × distance` s; `apex = max(0.6, 0.12 × distance) × pitchApexMult`; a parabola from rod tip to landing. Remotes replay the same arc from their render of that player's rod tip when `NetRodState.state` becomes Casting, using `bobberPos` (the landing target). No positions are sent during flight. There is **no bobber NetworkObject**.
 - **Validity (same function on owner and host, `CastMath` + a Fishing adapter):**
-  - Landing `L = originFlat + yawForward × distance`.
+  - Landing `L = originFlat + yawForward x (castTipReach + distance)` (R67: distance is measured from the rod tip; `castTipReach` is a fixed constant, the same on owner and host).
   - Ray 1 down from `(L.x, waterLevel + 20, L.z)` against `Water | Ground | Shore | Structure` with `QueryTriggerInteraction.Collide` (water is a trigger). The **first** hit must be Water (a dock, rock or bank above the water makes it invalid).
   - Ray 2 down from the water hit against `Ground`, up to 50 m: `depth = waterHitY − bedHitY`.
   - Valid if ray 1 hits Water first and `depth ≥ minLandDepth` (0.8 m). From M3 the bobber cell must also be a water cell of the spot's `ShoreGrid`.
@@ -881,98 +907,129 @@ biteWait  = max(minBiteWait, waitBase * waitMult)               // minBiteWait 1
 - **Bite audio:** spatial AudioSource on the bobber with a large `minDistance`, plus a 2D copy for the owner only, so the owner hears it while turned to chat. Friends hear it too.
 - **Junk:** no fight. Bite → hook beat → while reeling, the junk comes in at `junkDragSpeed` (3 m/s) with no tension (the 12 s slack escape still applies, so an AFK junk hook clears itself). It lands at `landDistance`. The host's Landed floor (9.9) uses `junkDragSpeed` instead of `rod.reelSpeed` for junk rolls; otherwise every junk catch would fail validation as too fast.
 
-### 9.5 The fight (`FightSim`, FishGame.Core)
+### 9.5 The fight (`FightSim`, FishGame.Core) - Rust-faithful baseline (R72)
+
+The fight runs Rust's server maths (research note 2026-10-12 section 8: mechanics and numbers only). It is a baseline the user plays before a friendlier tuning pass. Mappings onto FishGame's world are marked [FG].
 
 ```csharp
-public enum FightPhase : byte { Calm, Burst }
+public enum FightPhase : byte { Calm, Burst }        // Calm = the fish rests (Rust state 0); Burst = a run
 public enum FightOutcome : byte { None, Landed, Snapped, Escaped, Cancelled }
-public enum EscapeReason : byte { None, Missed, Pinned, ThrewHook, Dropped, Timeout, Invalid, Disconnected }
+public enum EscapeReason : byte { None, Missed, Pinned, ThrewHook, Dropped, Timeout, Invalid, Disconnected }   // Pinned is no longer produced
 public struct FightInput { public float steer; public bool reel; }
 public struct FightState {
-    public float lineLength, lateral, tension, fishStamina;
-    public FightPhase phase; public float phaseTimer; public sbyte burstDir;   // ±1 side run, 0 dive
-    public float snapTimer, pinnedTimer, slackTimer, elapsed;
+    public float lineLength, lateral, strain, tension, tire;   // tension = strain / strainBarFull (display)
+    public FightPhase phase; public float phaseTimer; public sbyte burstDir; public bool back;
+    public float snapTimer, slackTimer, elapsed;                 // snapTimer = seconds over the full bar
     public int nearSnapRecoveries; public float maxTension;
     public FightOutcome outcome; public EscapeReason reason;
 }
 public sealed class FightSim {
     public const float Step = 0.02f;
-    public FightSim(in FishFightProfile fish, in RodStats rod, in FishingTuning tuning, float weightT, uint seed, float startLineLength, bool assist);
-    public FightOutcome Tick(in FightInput input);   // one fixed step
+    public FightSim(in FishFightProfile fish, in RodStats rod, in FishingTuning tuning, float weightT, uint seed, float startLineLength, bool assist, bool pity = false);
+    public FightOutcome Tick(in FightInput input);
     public ref readonly FightState State { get; }
+    public bool Exhausted { get; }       // tire >= tireRunFull
+    public float SnapTension { get; }    // snap point in display units (7/6; 1.25 on a Pity cast)
+    public float PullWave { get; }       // p of the last tick
 }
 ```
 
-- Own seeded `Pcg32` from `fightSeed`; never `UnityEngine.Random`.
-- **Initial state:** `lineLength` = horizontal rod-tip-to-bobber distance; lateral 0; tension 0; stamina 1; phase Calm with `phaseTimer` 0.8 s (a lead-in so the first run never lands on the hook tick).
-- **Weight factor:** `weightFactor = lerp(0.85, 1.25, weightT)` multiplies `pullStrength`, so even one species varies; trophies fight hardest.
+- Own seeded `Pcg32` from `fightSeed`; never `UnityEngine.Random`. The draw order is fixed (plan rework-fight 0.9).
+- **Initial state:** `lineLength` = horizontal rod-tip-to-bobber distance; lateral 0; strain 0; tire 0; phase Calm with `phaseTimer` 0, so the **first tick starts a run** (Rust). The pull-wave phase is drawn in the constructor.
+- **Weight:** `weightT` does not enter the fight (Rust has no weight term; size is in the profile's tier). The parameter stays for API stability.
 
-**Phase schedule**
-- Calm lasts Uniform(`calmMin`, `calmMax`); Burst lasts Uniform(`burstMin`, `burstMax`).
-- New burst: dive with probability `diveChance`; otherwise a side run with `burstDir = −sign(lateral)` at probability 0.75 (random when |lateral| < 0.1), else random.
-- Flips: during a side run, each tick has `flipRate × dt` chance to reverse `burstDir`, at least 0.5 s apart.
-- **Exhaustion:** at `fishStamina ≤ 0.05` the current burst ends and the fish stays Calm with no new bursts.
+**Fish state machine** (at the start of each tick, when `phaseTimer <= 0`; `tire01 = clamp01(tire / tireRunFull)`, tireRunFull 20)
+- Run -> rest: rest for `Uniform(calmMin, calmMax) x (1 + tire01)` (up to twice as long when tired).
+- Rest -> run: side left or right 50/50; also a back pull when a draw `< diveChance` and `lineLength < rod.castMaxDist - backPullMargin` (2 m) [FG: Rust's gate is its 10 m max cast - 2]; run for `Uniform(burstMin, burstMax) x (1 - tire01)` (shrinking to nothing when fully tired); then, for a profile with `lateralJitter > 0`, `runSpeedMult = Uniform(1 - j, 1 + j)` for this run.
+- Rust's values are rest 2-4 s, run 3-7 s, back 0.39; each profile sets its own (9.6).
+- Cone edge: a next lateral beyond +-1 is clamped and the run's side flips (Rust flips the side flags at its 60 deg cone).
 
-**Per tick**
+**Per tick** (quirk terms marked [Q]; with every quirk at its Rust value this is exactly Rust)
 ```
-P = fish.pullStrength * weightFactor * fishStamina
+// [Q] mid-run side flips (Darter, Thrasher): each run tick, once flipMinGap has passed since the last flip (or the run start),
+//     a draw < flipRate * dt flips burstDir
+p       = clamp(pingpong-shaped wave of period fish.wavePeriod (Rust 4 s) peaking at 2, at wavePhase + elapsed, 0.2, 2)
+ramp    = fish.burstRamp > 0 ? clamp01(secondsIntoRun / fish.burstRamp) : 1                // [Q] Steady, Runner
+speed   = p * fish.moveMult * ramp * runSpeedMult                                        // [Q] ramp and runSpeedMult; behaviour only
+steer   = |input.steer| >= 0.5 ? sign(input.steer) : 0;  if !(steer * lateral < 0) steer = 0   // digital, only toward the cast line [FG frame]
+run     = phase == Burst;  back = run && back flag;  counter = run && steer == -burstDir
 
-// lateral
-if phase == Burst and burstDir != 0: lateral += burstDir * P * fish.lateralSpeed * dt
-lateral += input.steer * rod.steerRate * dt
-if phase == Calm:                    lateral -= lateral * calmCenterPull * dt            // 0.15 /s
-lateral = clamp(lateral, -1, 1)
-
-against = (phase == Burst and burstDir != 0) ? max(0, -input.steer * burstDir) : 0
-
-// stamina: fight the side runs, let the dives run
-if phase == Burst and burstDir != 0: fishStamina -= fish.staminaDrain * against * dt
-if phase == Burst and burstDir == 0: fishStamina -= fish.staminaDrain * (input.reel ? 0 : 1) * dt
-if phase == Calm:                    fishStamina += fishStaminaRegen * dt                // 0.04 /s
-fishStamina = clamp01(fishStamina)
+// sideways (m/s), then lateral at the current radius [FG polar mapping]
+v  = run ? burstDir * sideMoveSpeed(1.2) * speed * (counter ? 0.5 : 1) : 0
+v += (steer != 0 && !(run && steer == burstDir)) ? steer * rod.steerRate : 0           // the push (Handmade 0.8)
+lateral += v * dt / (max(lineLength, 1) * lateralMaxRad);   at +-1: clamp, and a run flips its side
 
 // line
-reelRate = (phase == Calm) ? rod.reelSpeed : rod.reelSpeed * max(0.1, 1 - reelBurstPenalty * P)   // penalty 1.0
-if input.reel:     lineLength -= reelRate * dt
-if phase == Burst: lineLength += fish.runSpeed * P * (burstDir == 0 ? diveRunMult : 1) * dt       // diveRunMult 1.5
-maxLineOut = rod.castMaxDist + spoolExtra                                                         // spoolExtra 12 m
-spooled    = phase == Burst and lineLength >= maxLineOut
-lineLength = clamp(lineLength, 0, maxLineOut)
+tireReel = 1 + (tireReelMaxMult(3) - 1) * clamp01(tire / tireReelFull(5))
+if reel: lineLength -= rod.reelSpeed * fish.reelInMult * tireReel * dt
+if back: lineLength += backMoveSpeed(1.3) * speed * (reel ? 0.5 : 1) * dt
+else if at rest and fish.calmDrift > 0 and not exhausted:                                // [Q] Bulldog creeps line out at rest
+    lineLength += fish.calmDrift * clamp01(secondsIntoRest / fish.calmDriftRamp) * (1 - tire01) * dt
+lineLength = clamp(lineLength, 0, rod.castMaxDist + spoolExtra)                         // no strain at the clamp
 
-// tension
-strainPos = 0
-if phase == Burst and input.reel: strainPos += reelStrainBurst * P * (1 - counterRelief * against)   // 0.30, relief 0.5
-strainPos += steerStrain * abs(input.steer)                                                          // 0.03
-if abs(lateral) > rod.angleWindow: strainPos += outOfWindowStrain                                    // 0.20
-if spooled:                        strainPos += spoolStrain * P                                      // 0.50
-relax = !input.reel ? relaxRate * rod.relaxMult                      // 0.45 /s
-      : phase == Calm ? relaxWhileReeling * rod.relaxMult            // 0.10 /s
-      : 0
-tension = clamp01(tension + (strainPos * strainScale / rod.lineStrength - relax) * dt)   // strainScale 1.0 (assist 0.6)
+// tire (only steering tires the fish)
+tire += steer != 0 ? (counter && !back ? 1.25 : 0.8) * dt : -0.1 * dt                   // no floor
+
+// strain
+if reel or steer != 0:
+    k = !run ? 0.5 : reel ? (back ? 2.5 : 2.2) : counter ? 0.8 : 0.5
+    strain += k * fish.strainMod * strainScale(0.75; assist 0.45) * (pity ? 0.85 : 1) / rod.lineStrength * dt
+else:
+    strain = max(0, strain - relaxRate(1.5) * rod.relaxMult * dt)                     // full release drains
+tension = strain / strainBarFull(6)
 ```
 
-**Timers and endings**
-- `snapTimer += dt` while tension ≥ 1, else 0. Snap at `snapGrace` 0.25 s (assist 0.75 s). Tension may touch 1.0 inside the grace window and the fish can still land.
-- `pinnedTimer` counts while |lateral| ≥ 0.95; escape at `pinEscapeTime` 5 s.
-- `slackTimer` counts while not reeling, resets on any reel; escape at `slackEscapeTime` 12 s.
-- Landed when `lineLength ≤ landDistance` (2.0 m) **while reeling** on that tick.
-- Near-snap recovery counts when tension rises above 0.8 and later falls below 0.5 without a snap.
+**Endings** (same-tick priority Landed > Snapped > Timeout)
+- **Landed:** `lineLength <= landDistance` (1.0 m from the rod tip) while reeling on that tick [FG: Rust lands within 1.0 m of its cast origin, the player; ours is the rod tip, R67].
+- **Snapped:** `strain > strainSnap` (7). On a Pity cast the snap strain is `6 + (7 - 6) x 1.5 = 7.5`. There is no grace timer: the band from 6 to 7 (bar full, no snap yet) is the warning, and `snapTimer` counts the seconds spent in it (FlagGrace, crack).
+- **Escaped(Timeout):** `elapsed >= fightTimeout` (120 s).
+- There is no pinned or slack escape for a fish. Junk keeps its slack escape (9.4).
+- `nearSnapRecoveries` counts tension going above 1.0 (over the full bar) and later below 0.5.
 
-The two lessons fall out of the rules: **counter-steer the side runs** (drains the fish, relieves strain) and **let the dives run** (reeling into a dive gets no relief; resting tires the fish). A weak fish barely slows the reel; a fresh trophy takes line.
+The lessons fall out of the rules:
+- **Pump:** any input loads the line and only letting go drains it.
+- **Counter the runs:** countering is cheaper than reeling into a run (0.8 vs 2.2). It halves the run, drags the fish back toward the cast line and tires it, which shortens its runs and triples the reel.
+- **Let the back pulls go:** reeling into one is the most expensive input (2.5).
+- **Greed snaps:** a large fish snaps in 3.4 s of reeling into a run, a small one in 5.3 s if a run lasts that long. Steady's runs are 3-5 s, so in play a bluegill needs about 7 s of reckless reeling, with strain carried across runs.
 
-**Hand-worked checks (Handmade rod; bots confirm or retune):** Catfish reel-no-steer on a side run leaves the window at ~0.9 s, creaks at ~2.0 s, snaps ~2.8 s; with full counter-steer ~0.16/s, ~0.6 after a 4 s run, so trophies need the rest rhythm. Carp greedy snaps ~3.8 s; Trout greedy ~3.1 s and flips punish wrong-way steering; Bluegill effectively can't snap. Resting from 0.9 gets under 0.3 within 1.5 s.
+Quirks never touch the strain formula, the tire or the reel: they change how the fish moves, so each style reads differently while the Rust lessons hold.
+
+**Hand-worked checks** (Handmade, strain from 0; effective multiplier strainMod x 0.75 = 0.6 / 0.75 / 0.9375; quirk-free Rust timing):
+
+| Action | small (Steady) | medium (Darter, Thrasher) | large (Bulldog, Runner) |
+|---|---|---|---|
+| Reel into a side run (7 / rate) | 5.3 s | 4.2 s | 3.4 s |
+| Reel into a back pull | 4.7 s | 3.7 s | 3.0 s |
+| Reel while the fish rests | 23 s | 18.7 s | 14.9 s |
+| Counter-steer only | 14.6 s | 11.7 s | 9.3 s |
+
+- **Release:** a full bar drains to 0 in 4.0 s; 90% -> 30% of the bar takes 2.4 s.
+- **Countering a medium fish for one 4 s wave at 12 m:** brings it from lateral 0.5 to 0.44 and tire to 5 (reel x3). Left alone, it reaches 0.89.
+- **Assist** snaps a small fish's reckless run at 8.8 s; **Pity** at 6.7 s.
 
 ### 9.6 Fight profiles and M2 placeholder species
 
-Five shared `FightProfileDef` assets (R3). M2 has one placeholder species per profile; M3's roster references the same five assets.
+Five shared `FightProfileDef` assets (R3). M2 has one placeholder species per profile; M3's roster references the same five assets. R72: each profile takes one of Rust's three fish tiers (the values that enter the strain formula), plus its own quirks that shape how it moves (user decision 2026-10-12: keep the five styles, each recognisable blind).
 
-| Profile | Seeded from | pullStrength | lateralSpeed | runSpeed m/s | staminaDrain /s | calm s | burst s | flipRate /s | diveChance | Character |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Steady | Bluegill | 0.30 | 0.60 | 0.30 | 0.08 | 1.0–2.5 | 1.5–2.5 | 0 | 0 | Tutorial: plain side runs, forgiving |
-| Darter | Perch | 0.45 | 0.70 | 0.40 | 0.07 | 1.0–2.5 | 1.5–3.0 | 0.2 | 0 | Occasional flips: watch which way it runs |
-| Bulldog | Carp | 0.60 | 0.60 | 0.50 | 0.06 | 1.0–3.0 | 2.0–4.0 | 0 | 0.35 | Heavy dives: "let it run" |
-| Thrasher | Trout | 0.70 | 1.00 | 0.60 | 0.09 | 1.0–2.5 | 1.5–3.0 | 0.5 | 0 | Fast, frequent flips; outruns a weak rod's steer, so you chase |
-| Runner | Catfish | 0.85 | 0.80 | 0.80 | 0.05 | 1.0–2.0 | 2.5–4.0 | 0.1 | 0.25 | Long strong runs that take line; needs the tire-then-reel rhythm |
+| Profile | Seeded from | Rust tier | strainMod | moveMult | reelInMult |
+|---|---|---|---|---|---|
+| Steady | Bluegill | small | 0.8 | 0.8 | 1.2 |
+| Darter | Perch | medium | 1.0 | 1.0 | 1.0 |
+| Thrasher | Trout | medium | 1.0 | 1.0 | 1.0 |
+| Bulldog | Carp | large | 1.25 | 1.25 | 0.9 |
+| Runner | Catfish | large | 1.25 | 1.25 | 0.9 |
+
+**Quirks** (behaviour only; Rust's values are rest 2-4, run 3-7, back 0.39, no flip, no ramp, no drift, no jitter, wave 4 s):
+
+| Profile | rest s | run s | back (diveChance) | flipRate /s (flipMinGap s) | burstRamp s | calmDrift m/s (ramp s) | lateralJitter | wavePeriod s | Character |
+|---|---|---|---|---|---|---|---|---|---|
+| Steady | 2-4 | 3-5 | 0.15 | 0 (0.5) | 0.6 | 0 | 0 | 4 | Tutorial: short plain side runs that ease in; rarely dives |
+| Darter | 1-2 | 2-3.5 | 0.15 | 1.0 (0.3) | 0 | 0 | 0 | 4 | Quick darts that switch sides mid-run |
+| Thrasher | 1.5-3 | 3-5 | 0.20 | 0.4 (0.5) | 0 | 0 | 0.3 | 1.5 | Jerky: fast surges, each run a different speed, sometimes flips |
+| Bulldog | 2-4 | 2.5-4.5 | 0.55 | 0 (0.5) | 0 | 0.06 (2.5) | 0 | 4 | Dives a lot and creeps line out even at rest |
+| Runner | 2-3.5 | 5-9 | 0.30 | 0 (0.5) | 0.8 | 0 | 0 | 4 | Long sideways runs that build up |
+
+Signatures under good play (scratch model, Handmade): back-pull share of runs Steady 15%, Darter 14%, Thrasher 18%, Bulldog 52%, Runner 27%; mean run 3.7 / 2.2 / 3.2 / 2.6 / 4.3 s; mid-run side switches 0 / 0.78 / 0.33 / 0 / 0 per run-second. The tuning bots pin these (9.12).
 
 **M2 placeholder species** (`FishSpeciesDef`):
 
@@ -986,22 +1043,22 @@ Five shared `FightProfileDef` assets (R3). M2 has one placeholder species per pr
 
 Junk (`old_boot`, `tin_can`): 0 kg, 2 coins.
 
-M2 species also fill the 12.3 presentation fields (`displayName`, `bodyShape`, `colorA`/`colorB`, `weightSkew` 2.2, `lengthShapeK` 1.0), because the M2 catch reveal builds its procedural fish mesh from them.
+M2 species also fill the 12.3 presentation fields (`displayName`, `bodyShape`, `colorA`/`colorB`, `weightSkew` 2.2, `lengthShapeK` 1.0). The M2 catch reveal shows each species' Blender model (R62); the procedural fish mesh built from these fields is the fallback when a model is missing.
 
-**Target fight lengths** (full 18 m Handmade cast, rhythm player): small 15–30 s; mid 35–55 s; trophy 60–110 s. Shorter casts land faster, traded against depth.
+**Baseline fight lengths** (Rhythm bot, Handmade, realistic casts of 10-14 m from the tip, weights drawn like the game): median Steady about 14 s, Darter and Thrasher about 19 s, Runner about 30 s, Bulldog about 33 s. Each tier stays within ±25% of Rust's quirk-free lengths (17 / 23 / 29 s). Bands are in 9.12. **Measured (F4 bots, 200 fights per cell, 2026-10-12), median landing time, Handmade:** Steady 14.0 s, Darter 19.1, Thrasher 17.8, Runner 26.2, Bulldog 30.9; Twig: 14.4 / 21.6 / 21.7 / 30.5 / 33.7. The Handmade 90th percentile is 20-27 s for Steady, Darter and Thrasher and 43-45 s for Runner and Bulldog. These are Rust-like lengths, shorter than the pre-R72 targets; the user keeps them for the baseline, and the friendlier pass retargets them.
 
 ### 9.7 Rods, bait, line
 
-**`RodDef`** (mirrored as Core `RodStats`): `id`, `tier` (0–3), `castMaxDist` (also sets `maxLineOut = castMaxDist + 12`), `reelSpeed` (m/s in Calm), `lineStrength` (divides positive strain), `angleWindow`, `steerRate`, `relaxMult`, `shopCost` (coins at Night Camp shops, M4; 0 for the starter), `firstCamp` (the first Night Camp where it is stocked).
+**`RodDef`** (mirrored as Core `RodStats`): `id`, `tier` (0-3), `castMaxDist` (also sets `maxLineOut = castMaxDist + 12`; both are distances from the rod tip, R67, so a Handmade line may reach 30 m from the tip, about 32.4 m from the player), `reelSpeed` (m/s before the fish's `reelInMult` and the tire multiplier), `lineStrength` (divides every strain gain), `angleWindow`, `steerRate`, `relaxMult` (R72: `relaxMult` multiplies the 1.5/s release drain; `steerRate` is the sideways push in m/s; `angleWindow` is parked, unused by the baseline), `shopCost` (coins at Night Camp shops, M4; 0 for the starter), `firstCamp` (the first Night Camp where it is stocked).
 
 | Rod | Tier | castMaxDist | reelSpeed | lineStrength | angleWindow | steerRate | relaxMult | In-run source [tune] |
 |---|---|---|---|---|---|---|---|---|
-| `rod_twig` | 0 | 14 | 0.9 | 0.8 | 0.50 | 0.50 | 0.9 | Starter kit (every run) |
-| `rod_handmade` | 1 | 18 | 1.0 | 1.0 | 0.60 | 0.60 | 1.0 | 120 coins, from Night Camp 1 |
-| `rod_carbon` | 2 | 24 | 1.2 | 1.3 | 0.70 | 0.70 | 1.1 | 300 coins, from Night Camp 2 |
-| `rod_deepsea` | 3 | 30 | 1.3 | 1.6 | 0.75 | 0.80 | 1.2 | 600 coins, from Night Camp 4 |
+| `rod_twig` | 0 | 14 | 0.54 | 0.8 | 0.50 (parked) | 0.67 | 0.9 | Starter kit (every run) |
+| `rod_handmade` | 1 | 18 | 0.6 | 1.0 | 0.60 (parked) | 0.8 | 1.0 | 120 coins, from Night Camp 1 |
+| `rod_carbon` | 2 | 24 | 0.72 | 1.3 | 0.70 (parked) | 0.93 | 1.1 | 300 coins, from Night Camp 2 |
+| `rod_deepsea` | 3 | 30 | 0.78 | 1.6 | 0.75 (parked) | 1.07 | 1.2 | 600 coins, from Night Camp 4 |
 
-M2 grants all four through a debug selector; Handmade is the M2 tuning reference and default only. From M4 a real run starts every player on `rod_twig` (starter kit, R59), and better rods are bought per player from the crew wallet at Night Camp shops (14.7). A bought rod is kept for the rest of that run, including across a save/resume, and is never carried into another run. Rod tiers are ours (Rust has one rod).
+M2 grants all four through a debug selector; Handmade is the M2 tuning reference and default only. From M4 a real run starts every player on `rod_twig` (starter kit, R59), and better rods are bought per player from the crew wallet at Night Camp shops (14.7). A bought rod is kept for the rest of that run, including across a save/resume, and is never carried into another run. Rod tiers are ours (Rust has one rod). R72: Handmade is Rust's rod (reel 0.6 m/s, steer push 0.8 m/s); the other rods keep their pre-R72 ratios to Handmade.
 
 **`BaitDef`:** `id`, `rating`, `stackMax`, `maxRating` (`effRating = min(maxRating, rating × loadedCount)`; 1 per cast until M4), `biteSpeedMod`, `junkMult`, `maxNibbles`; from M3 also `affinityTags`, `affinityMult`, `specialMult` (Core `BaitMods`).
 
@@ -1047,6 +1104,8 @@ value   = max(1, round(baseValue * (0.6 + 0.8 * t) * qMult))   // MidpointRoundi
 lengthMm = round(400 * cbrt(weightG / 1000.0) * fish.lengthShapeK)
 ```
 
+- **Clean-catch bonus (R64):** a Landed fish whose fight `maxTension < cleanCatchMaxTension` (`FishingTuningDef`, seed 0.8 of the bar, i.e. strain 4.8; R72 display units, `maxTension` may exceed 1) is raised one quality tier (cap Trophy) and its value recomputed with the new `qMult`. The owner's `ResultRpc` carries `maxTension`, `fightSeconds` and `nearSnapRecoveries` (a recovery means the bar went over full, so it is never clean); the host accepts the claim only within `CatchValidator.CleanClaimAccepted` bounds (9.9), and a rejected claim keeps the rolled quality without invalidating the catch.
+
 - **Skill hooks into the roll (M4, R58):** `ctx.Luck = clamp(event luck + skill luck, −1, 1)`, where the angler's Lucky Lure skill adds +0.15 [tune]. Rare Whisperer multiplies the angler's Uncommon and Rare rule weights in the 12.4 pool (step 3) by 1.15 [tune]. Skills apply only to the casting player's own rolls; the host reads them from that player's loadout (14.8).
 
 ### 9.9 Networking and host ledger
@@ -1083,16 +1142,16 @@ lengthMm = round(400 * cbrt(weightG / 1000.0) * fish.lengthShapeK)
 | `SelectRodRpc` | `SendTo.Server`, Owner | rodIndex | M2 debug rod selector only (refused while a cast is active). From M4 the host sets the rod itself: `rod_twig` at run start, then the rod a player buys at a Night Camp shop (14.7). The rod changes only during Night Camp and is restored from the snapshot on resume |
 | `NetRodIndex` | server write | ushort | The equipped rod. The host uses it for cast validity (`castMaxDist`) and the Landed floor; the owner builds `RodStats` for `FightSim` from it, and remotes use it for rod visuals |
 
-- `RodStateData` (Fishing, ~21 bytes, unmanaged, `INetworkSerializeByMemcpy` + `IEquatable` so it sends only on change [verify change detection uses IEquatable or memcmp; implement both]): `byte state`, `byte flags` (bit 0 Burst, 1 Reel, 2 Dive, 3 Exhausted), `sbyte lateralQ` (×127), `byte tensionQ` (×255), `Vector3 bobberPos` (landing target while Casting, then bobber/fish position), `uint castId`.
+- `RodStateData` (Fishing, ~21 bytes, unmanaged, `INetworkSerializeByMemcpy` + `IEquatable` so it sends only on change [verify change detection uses IEquatable or memcmp; implement both]): `byte state`, `byte flags` (bit 0 Burst, 1 Reel, 2 Dive, 3 Exhausted, 4 Recall, 5 Grace, 6 Right; Exhausted is the owner's latched spent state, set at tire 20 and cleared below 18; Recall marks a recall's Escaped, Grace is "over the full bar, strain > 6", Right is a right-pulling run, read with Burst), `sbyte lateralQ` (×127), `byte tensionQ` (×255), `Vector3 bobberPos` (landing target while Casting, then bobber/fish position), `uint castId`.
 - `CatchResultNet`/`FishingRollNet` (Fishing): unmanaged copies with `From`/`ToCore`. Core structs can't implement NGO interfaces. Clients sanity-check received values (index in range, weight in species range, quality 0..2) and drop bad messages with a log.
 - **Only the owner gets the roll.** Everyone else gets a "what is it?!" moment until `CatchAnnouncedRpc`. A hooked fish that is lost after the hook (Snapped or Escaped Pinned/ThrewHook/Dropped) is announced as Lost with its species revealed ("Snapped! It was a Lake Pike"). Cancels and misses are not announced.
 
 **Host validation (`FishingHostLedger`, `CatchValidator`)**
 - **CastRequest:** no `ActiveCast` for this player; `castId` > last accepted; `chargeNorm` in [0,1]; `origin` within 3 m of the host's view of the player; bait available (bare hook always); recomputed validity passes (from M3 also: grid cell is water, minute < 1200; from M4 also: run phase is Day, because LastCast can start before minute 1200 through the vote; casts are therefore refused in Briefing, LastCast, Settle, NightCamp, SkillPick, InfiniteVote, Result and the Hub, and infinite days use the same Day guard). Distance validity uses the host's `castMaxDist` **including the player's Long Arm skill** (14.8); the owner's marker uses the same value, so honest casts never disagree. Accept → consume bait, roll, create `ActiveCast`, reply valid. Reject → reply invalid with a reason, no bait used.
 - **Cancel:** castId matches and phase is Waiting → refund, clear.
-- **Hooked:** castId matches, phase Waiting, `now − tAccepted ≥ tFlight + biteWait − hookTolerance` (0.75 s). Too early → resolve Escaped(Invalid) and commit. On accept the host sets `ActiveCast.lineLength0` = horizontal distance from **its current view of the player** to the landing point, minus 1.5 m slack (floor `landDistance`). The player may walk toward the bobber while Waiting, so the cast-time distance would wrongly fail an honest fast land.
-- **Result:** castId matches; phase Hooked (or Waiting for Missed). `Landed` requires `now − tHooked ≥ 0.8 × (lineLength0 − landDistance) / rod.reelSpeed − 0.5 s` (physical minimum on the host clock; junk uses `junkDragSpeed`; `rod` is the host's `NetRodIndex`, never a value the owner reports; skills never change `reelSpeed`, so the floor needs no skill term. Skills that change the fight, Iron Grip and Steady Nerves, alter only owner-side `FightSim` inputs, which the host does not replay). Landed → add to the creel (9.10), append to the catch log, `CatchAnnouncedRpc`, publish `FishCaught` on the host event bus. Snapped/Escaped → announce Lost (if hooked), discard the roll. Validation failure → resolve Escaped(Invalid) anyway so the owner never stalls. Always `CommitRpc` then clear.
-- **Timeouts** (NetworkVariables send only when dirty, so the host never relies on silence): disconnect clears the cast with no commit (`OnClientDisconnectCallback`); stuck in Waiting after `tFlight + biteWait + 30 s` → refunded cancel; stuck in Hooked after `maxFightTime` 240 s → Escaped(Timeout) and commit.
+- **Hooked:** castId matches, phase Waiting, `now - tAccepted >= tFlight + biteWait - hookTolerance` (0.75 s). Too early -> resolve Escaped(Invalid) and commit. On accept the host sets `ActiveCast.lineLength0` = horizontal distance from **its current view of the player** to the landing point, minus `HookedLineSlack` 3.1 m (floor `landDistance`; the rig's max tip reach 2.52 m + 0.5 m margin), then raised to the walk bound `castTipReach + castDistance - sprintSpeed x elapsed - 3.1` (origin-to-landing distance, R67). The player may walk toward the bobber while Waiting, so the cast-time distance would wrongly fail an honest fast land.
+- **Result:** castId matches; phase Hooked (or Waiting for Missed). `Landed` requires `now − tHooked ≥ 0.8 × (lineLength0 − landDistance) / maxReel − 0.5 s`, `maxReel = rod.reelSpeed × profile.reelInMult × tireReelMaxMult` (R72: the fastest the line can come in, a fully tired fish; physical minimum on the host clock; junk uses `junkDragSpeed`; `rod` is the host's `NetRodIndex`, never a value the owner reports; skills never change `reelSpeed`, so the floor needs no skill term. Skills that change the fight, Iron Grip and Steady Nerves, alter only owner-side `FightSim` inputs, which the host does not replay). An owner `Escaped(Timeout)` is accepted only when `now − tHooked ≥ fightTimeout − 2 s` (`HostTimeoutSlackSeconds`; the owner's sim ends a fish fight at 120 s), otherwise it resolves Escaped(Invalid). Landed → add to the creel (9.10), append to the catch log, `CatchAnnouncedRpc`, publish `FishCaught` on the host event bus. Snapped/Escaped → announce Lost (if hooked), discard the roll. Validation failure → resolve Escaped(Invalid) anyway so the owner never stalls. Always `CommitRpc` then clear.
+- **Timeouts** (NetworkVariables send only when dirty, so the host never relies on silence): disconnect clears the cast with no commit (`OnClientDisconnectCallback`); stuck in Waiting after `tFlight + biteWait + 30 s` → refunded cancel; stuck in Hooked after `maxFightTime` 240 s → Escaped(Timeout) and commit (a fallback: the owner reports Timeout at `fightTimeout` 120 s).
 - **Orphan messages:** a `HookedRpc`, `ResultRpc` or `CancelRpc` whose castId has no `ActiveCast` (already resolved by the host) gets an immediate `CommitRpc(castId, accepted = false, finalOutcome)` repeating the stored resolution. The owner then never waits on a cast the host has cleared.
 - **The ledger clock is pause-aware.** The ledger measures `now` with its own clock, which stops while the solo `Paused` flag is set. All the timing checks above use it, so pausing mid-wait or mid-fight never times out a cast or shifts the hook and land floors. Co-op never pauses.
 
@@ -1113,15 +1172,18 @@ lengthMm = round(400 * cbrt(weightG / 1000.0) * fish.lengthShapeK)
 
 ### 9.11 Feedback mapping (no HUD meter by default)
 
+Tension below is the display value, strain / 6 (1.0 = full bar; the line snaps above 7/6).
+
 | Tension | Cue |
 |---|---|
 | 0.0–0.3 | Line gently taut; rod at rest |
 | 0.3–0.6 | Rod bend scales with tension; reel-click pitch rises |
-| 0.6–0.8 | Creak loop (pitch follows tension); line warms in colour |
+| > 0.10 | Creak loop (Rust's strainGainCurve): silent at <= 0.10, volume = CreakGain(tension) rising steeply to 1 at 0.95; stops with a 0.25 s fade when tension falls to 0.10 |
+| 0.6-0.8 | Line warms in colour; creak pitch rises from 0.6 |
 | 0.8–1.0 | Rod shake, rumble ramp, line in warn colour **plus** a moving dash pattern and width pulse, trauma +0.1/s |
-| ≥ 1.0 (grace) | Crack SFX, line shimmer |
+| > 1.0 (over the full bar, strain > 6) | Crack SFX on entry, line shimmer, gauge blinks red; the line snaps above 7/6 (7.5/6 on a Pity cast) |
 
-**Phase cues** (players must tell a side run from a dive): side run = splash column moving sideways and line swinging; dive = bobber plunges, line points down, deep thrum, no sideways splash; calm = ripples only; exhausted = the fish rolls on the surface.
+**Phase cues** (players must tell a side run from a dive): a side run = the side splash column (moving sideways) and the line swinging, with no plunge; a back pull (dive) = the same side column **plus** the bobber plunge (the bobber sits 0.35 m below the water height), the line pointing down and the deep thrum (a back pull also pulls to a side in R72, so the column stays and the plunge, the line and the thrum are what set it apart); rest = ripples only; spent (tire >= 20) = the fish rolls on the surface (a presentation latch: set at tire 20, cleared only below 18, so the roll, the cue and the flag do not flicker; the fight maths read the raw tire and are unchanged, and a latched fish raises no run cues). The bobber rolls +-30 deg toward the pull side (halved on a back pull), eased at clamp01(dt) per frame (Rust).
 
 | Event | Audio | VFX | Camera (owner) | Haptics |
 |---|---|---|---|---|
@@ -1135,17 +1197,17 @@ lengthMm = round(400 * cbrt(weightG / 1000.0) * fish.lengthShapeK)
 | Bite | loud splash (spatial + owner 2D) | big splash, bobber under | trauma 0.15 | strong pulse |
 | Hook set | reel-click burst | droplets | trauma 0.1 | medium |
 | Side run | reel scream | sideways splash column | — | low rumble |
-| Dive | deep thrum | plunge, line down | — | slow heavy rumble |
+| Dive | deep thrum | side column plus the bobber plunge, line down | — | slow heavy rumble |
 | Snap | snap + plink | line whip; **the fish jumps once, scaled by `sizeClass`, seen by everyone** | trauma 0.5 | strong |
 | Escape | line goes slack | bubbles | — | short |
 | Catch (everyone) | pop + cheer | fish held up 1.5 s (procedural mesh scaled by weight, species colours); toast "Name caught 3.2 kg Carp ($16)"; bigger burst for trophies | −3° FOV punch-in | double pulse |
 
 **Accessibility (one definition):**
-- **Fishing assist** (default off): `snapGrace` 0.75 s, `strainScale` 0.6; turns the line gauge on (which can then be turned off separately). The assist flag is sent with each cast so the host validator uses the matching grace.
-- **Line gauge** (default off; Off/Arc/Bar): HUD arc below the crosshair (90°, tick at 0.8) or a thin bar; the local player's own line only. Always free.
+- **Fishing assist** (default off): strain gains x0.6 (`strainScaleAssist` 0.45 = 0.75 x 0.6; drain and headroom unchanged); turns the line gauge on (which can then be turned off separately). The assist flag is sent with each cast (telemetry).
+- **Line gauge** (default off; Off/Arc/Bar): HUD arc below the crosshair (90°) or a thin bar showing tension = strain / 6 smoothed by clamp01(dt x 10) per frame (Rust); the track runs to the snap point (7/6) with a full mark at 1.0, a tick at the clean threshold (0.8) and a red headroom zone above 1.0; the local player's own line only. Always free.
 - **Camera motion** slider: 0 removes shake, FOV kicks, bob and rumble.
 - **Captions** (default on): "Bite!", "Line straining", "Snapped" captions for audio cues.
-- **Dev overlay** (F3, editor/dev builds): phase, tension, stamina, line length, timers, last roll.
+- **Dev overlay** (F3, editor/dev builds): phase, run side, back pull, strain and tension, tire, pull wave, line length, timers, last roll.
 
 ### 9.12 Tuning table (`FishingTuningDef`)
 
@@ -1158,41 +1220,40 @@ lengthMm = round(400 * cbrt(weightG / 1000.0) * fish.lengthShapeK)
 | `biteWaitMin` / `biteWaitMax` | 4 / 18 s | 2–8 / 10–30 |
 | `minBiteWait` | 1.0 s | 0.5–2 |
 | `hookBeat` | 0.25 s | 0.15–0.4 |
-| `landDistance` | 2.0 m | 1.5–3 |
-| `reelStrainBurst` | 0.30 /s | 0.2–0.45 |
-| `counterRelief` | 0.5 | 0.3–0.7 |
-| `steerStrain` | 0.03 /s | 0–0.08 |
-| `outOfWindowStrain` | 0.20 /s | 0.1–0.4 |
-| `spoolStrain` | 0.50 /s | 0.3–0.8 |
-| `spoolExtra` | 12 m | 6–20 |
-| `relaxRate` | 0.45 /s | 0.3–0.7 |
-| `relaxWhileReeling` | 0.10 /s | 0.05–0.2 |
-| `reelBurstPenalty` | 1.0 | 0.6–1.2 |
-| `diveRunMult` | 1.5 | 1.2–2 |
-| `snapGrace` | 0.25 s (assist 0.75) | 0.2–0.75 |
-| `strainScale` | 1.0 (assist 0.6) | |
-| `pinEscapeTime` | 5 s | 4–10 |
-| `slackEscapeTime` | 12 s | 8–20 |
-| `fishStaminaRegen` | 0.04 /s | 0.02–0.08 |
-| `calmCenterPull` | 0.15 /s | 0.05–0.3 |
-| `lateralMaxDeg` | 75° | 60–85 |
+| `landDistance` | 1.0 m (from the rod tip; R72) | 0.5-3 |
+| `spoolExtra` | 12 m (maxLineOut only; no strain) | 6–20 |
+| `relaxRate` | 1.5 strain/s (release drain; Rust) | 0.5-3 |
+| `strainScale` | 0.75 (Rust GlobalStrainSpeedMultiplier; assist 0.45) | 0.3-1.5 |
+| `strainBarFull` / `strainSnap` | 6 / 7 (Rust) | 1-20 / 1-30, snap > bar |
+| `strainRestInput` | 0.5 /s (any input while the fish rests) | 0-3 |
+| `strainReelRun` / `strainReelBack` | 2.2 / 2.5 /s | 0-6 |
+| `strainCounterSteer` / `strainOtherSteer` | 0.8 / 0.5 /s | 0-3 |
+| `sideMoveSpeed` / `backMoveSpeed` | 1.2 / 1.3 m/s | 0-5 |
+| `tireSteerRate` / `tireCounterRate` / `tireDecayRate` | 0.8 / 1.25 / 0.1 /s | 0-5 / 0-5 / 0-1 |
+| `tireRunFull` / `tireReelFull` / `tireReelMaxMult` | 20 / 5 / 3 | 1-100 / 0.5-50 / 1-5 |
+| `backPullMargin` | 2 m | 0-10 |
+| `fightTimeout` | 120 s | 30-300, < maxFightTime |
+| `slackEscapeTime` | 12 s (junk only, R72) | 8–20 |
+| `lateralMaxDeg` | 60° (Rust cone) | 60-85 |
 | `hookedLeash` | 3 m | 2–5 |
 | `junkDragSpeed` | 3 m/s | 2–5 |
 | `resultTimeout` / `commitTimeout` | 3 s / 3 s | |
 | `hookTolerance` (host) | 0.75 s | 0.5–1.5 |
-| `maxFightTime` (host) | 240 s | 180–400 |
+| `maxFightTime` (host) | 240 s (host fallback; owner Timeout at 120 s) | 180–400 |
 | `rodStateHz` | 15 | 10–20 |
 | `cancelRefundsBait` | true | |
 
-**Bot targets (Bulldog/Carp, Handmade, 18 m cast):**
+**Bot targets (R72 baseline; Handmade and Twig; 200 fights per cell; casts Uniform(10, 14) m from the tip; weightT = u^2.2):**
 
-| Style | Target |
-|---|---|
-| Greedy (always reels, never steers) | Snaps ≥ 70% |
-| Counter-reel (always reels, steers against side runs) | Snaps 10–40% |
-| Rhythm (counters side runs, eases off in dives and at the creak) | Snaps ≤ 5%, lands in 35–55 s |
+| Bot | Plays | Target |
+|---|---|---|
+| Greedy | always reels, never steers | snaps >= 95% in every cell; Handmade Steady median snap time 5.5-9.0 s (model 7.4; Steady's runs never reach Rust's 5.3 s single-run snap); Handmade Runner 2.8-3.8 s (Rust 3.4) |
+| Reckless | always reels, counter-steers every run | snaps >= 95% for Darter, Thrasher, Bulldog and Runner; Steady >= 50% (model 74% Handmade, 100% Twig) |
+| Pump | never steers; reels until tension 0.85, lets go until 0.30 | snaps <= 5% in every cell; Handmade Steady lands >= 85%; Handmade Bulldog times out >= 60%, Runner >= 30% (big fish need steering) |
+| Rhythm | counter-steers runs without reeling, reels while the fish rests (steering it to the cast line), lets go at 0.85 until 0.30 | lands >= 95%, snaps <= 2%, times out <= 2% in every cell. Median Handmade: Steady 10-20 s, Darter 13-27, Thrasher 13-27, Runner 20-41, Bulldog 23-44. Twig: Steady 10-20, Darter 15-30, Thrasher 16-31, Runner 22-44, Bulldog 23-45 |
+| Signatures (Rhythm, Handmade) | the five styles stay distinct | back-pull share of runs: Bulldog >= 40% and the highest; Runner 15-40%; Steady, Darter and Thrasher <= 25%. Mean run: Runner >= 3.8 s; Steady 3.0-4.4; Thrasher 2.6-3.8; Darter <= 2.7; Bulldog <= 3.1; ordered Runner > Steady > Thrasher > Darter. Mid-run side switches per run-second: Darter >= 0.5; Thrasher 0.15-0.55; Steady, Bulldog and Runner <= 0.05 (cone-edge flips only) |
 
-Also: Steady (Rhythm) median 15–30 s; Runner (Rhythm) median 60–110 s, snaps ≤ 15%. **Starter-rod check:** with the Twig rod (tier 0, the rod every new player starts on), the Rhythm bot lands ≥ 90% of fights for every profile at weight t = 0.5, and ≥ 75% at t = 0.9; if Thrasher or Runner fail, retune their `lateralSpeed` or Twig's `steerRate`.
+**Measured (F4, 2026-10-12): every target met, none retuned.** Greedy snaps 100% in all ten cells (median snap time Steady 7.4 s Handmade / 4.7 s Twig, Runner 3.4 / 2.7 s). Reckless snaps 100% except Steady Handmade 68% (median 7.5 s). Pump never snaps; Steady lands 100%, Bulldog times out 91.5% (Twig 98.5%), Runner 50.5% (Twig 63%). Rhythm lands 100% with no snaps and no timeouts in every cell. Signatures (Rhythm, Handmade): back share Steady 12%, Darter 14%, Thrasher 18%, Bulldog 51%, Runner 23%; mean run 3.7 / 2.2 / 3.2 / 2.6 / 4.5 s; switches per run-second 0 / 0.79 / 0.34 / 0 / 0. The full table is in the M2 acceptance doc, K.1. The bands are wide because the scratch model behind them used a different RNG. A miss is reported with its numbers and not retuned away from Rust's values. Weight cannot change a baseline fight; the bots draw it only so that a later weight term is measured at real weights.
 
 ### 9.13 Edge cases
 
@@ -1200,10 +1261,10 @@ Also: Steady (Rhythm) median 15–30 s; Runner (Rhythm) median 60–110 s, snaps
 |---|---|
 | Invalid spot under the marker | Release does nothing: thunk, stay Ready, no bait |
 | Owner/host disagree on validity | Host wins; recall; no bait |
-| Walking away while Waiting | Allowed; past `maxLineOut` auto-reel (refunded) |
+| Walking away while Waiting | Allowed; past `maxLineOut` (measured from the rod tip: root-to-bobber minus `castTipReach`, R67) auto-reel (refunded) |
 | Fish over land or dock (cosmetic) | View samples water every 0.2 s and holds the last valid water point; sim unaffected |
-| Fish takes all the line | Spooled: clamped, `spoolStrain` applies; tire it first |
-| Alt-tab mid-fight | Neutral input → tension relaxes; Run In Background keeps the session alive; rumble off |
+| Line all out | Clamped at maxLineOut with no strain (strain is input-only, R72). Back pulls stop inside castMaxDist - 2 m, so this is rare (Rust fails at twice its cast range instead) |
+| Alt-tab mid-fight | Neutral input → strain drains at 1.5/s while the fish keeps running; the fight times out at 120 s; Run In Background keeps the session alive; rumble off |
 | Owner hangs but stays connected | Host timeouts resolve the cast |
 | No `CommitRpc` | Owner returns to Idle after 3 s and logs a warning; the rod is never stuck |
 | Host disconnects | Session ends (no migration). From M4 the run is recoverable from the host's last Night Camp snapshot via Hub resume; only the in-progress day is lost |
@@ -1219,23 +1280,31 @@ Also: Steady (Rhythm) median 15–30 s; Runner (Rhythm) median 60–110 s, snaps
 
 ### 10.1 Principles
 
-- Flat-shaded, low-poly, flat colour. No imported textures, meshes, fonts or sounds; no paid assets.
+- **Realistic toon (R74, approved 2026-10-13):** smooth rounded models with no visible faceting, a soft toon ramp with sky fill, rim and baked ambient occlusion, subtle value gradients, and painted-style textures made for the project (Blender procedural bakes or code). The style guide is `docs/superpowers/research/2026-10-12-art-direction-lookdev.md` and is part of this spec by reference (shading model, texture approach, palette rules, smoothing rules, per-asset recipes). No paid or third-party textures, meshes, fonts or sounds.
+- The flat-shaded low-poly look (flat colour, per-face jitter) was the M2 baseline until R74; `MeshBuilder` remains for the water grid (shared vertices), the cast marker and `FishFallbackMesh` (see 10.2), and as the base of the M1-era EditMode tests.
 - Everything here is presentation, derived locally from replicated state, owner-local fishing state or RPCs. Presentation never writes gameplay state.
 - Pure maths (wave height, day-clock maths, tension-to-cue mapping, audio sample recipes, quota pace) lives in Core with EditMode tests.
 - Shaders are `.shader`/`.hlsl` text; meshes are built in C#; materials, palette, Volume profiles and UI assets are written by editor builders, overwritten in place for stable GUIDs.
 
-**By milestone (R23):** M1 uses flat URP Lit placeholder materials (one per colour), a single fixed directional light and primitive props. M2 adds `MeshBuilder` flat props with palette indices, the Toon, Water, Line and GradientSky shaders, ripples, and fishing audio. M3 adds the seasonal palette swap and `DayNightController` on the dev clock. M4 drives it from the run clock. M5 adds event looks.
+**By milestone (R23, R74):** M1 uses flat URP Lit placeholder materials (one per colour), a single fixed directional light and primitive props. M2 adds the Toon, Water, Line and GradientSky shaders, ripples and fishing audio, and (R74, adopted at the end of M2) the realistic-toon look: `SmoothMeshBuilder` props, the painted texture arrays, the five Blender fish. M3 adds the seasonal palette swap and `DayNightController` on the dev clock, and builds its 23 species and the Harbour Pier to the R74 style guide. M4 drives the day from the run clock. M5 adds event looks.
 
 ### 10.2 Palette and meshes
 
-- **`ArtPaletteDef`** (`Content/Art/ArtPalette.asset`): `slotNames[16]` (0–11 environment: Grass, Foliage, FoliageDark, Wood, WoodDark, Sand, Rock, Reed, Dock, Roof, Accent, Snow; 12–15 reserved); `seasons[4]` (Spring, Summer, Autumn, Winter), each `Color[16]`; `faceJitter` 0.04; `slotTints[4]`; `skinTone`; `phases[4]` (Dawn, Day, Dusk, Night, 10.3); UI theme colours (`uiAccent`, `uiGood`, `uiWarn`, `uiBad`, `uiPanel`, `uiText`).
+- **`ArtPaletteDef`** (`Content/Art/ArtPalette.asset`): `slotNames[16]` (0–11 environment: Grass, Foliage, FoliageDark, Wood, WoodDark, Sand, Rock, Reed, Dock, Roof, Accent, Snow; 12–15 seasonal trees, 2026-10-13: PineLight, PineDark, Blossom, FoliageAlt); `seasons[4]` (Spring, Summer, Autumn, Winter), each `Color[16]`; `faceJitter` 0.04; `slotTints[4]`; `skinTone`; `phases[4]` (Dawn, Day, Dusk, Night, 10.3); UI theme colours (`uiAccent`, `uiGood`, `uiWarn`, `uiBad`, `uiPanel`, `uiText`).
 - Neighbouring slots differ in lightness, not only hue. Anything with gameplay meaning (bobber, cast marker, line warning, quota pace) is also shown by shape or pattern, never hue alone.
+- **Seasonal trees (user decision 2026-10-13, "Full seasons"):** seasons override slots 0, 1, 2, 7, 14 and 15; every other slot copies Summer. Pines are evergreen on PineLight / PineDark (identical in every season). Round (deciduous) trees take Foliage, FoliageDark or FoliageAlt per tree from a balanced seeded shuffle (stream `lake_dock.foliage`): close greens in spring and summer, orange / red / yellow in autumn. Geometry that only some seasons show is switched by `SeasonalVisibility` (Runtime; presentation only, local): spring blossom specks (slot Blossom, pink), the round canopy in Spring–Autumn, bare trunk-and-branch lathes in Winter, and in Winter a snowy pine twin (top-facing tier rings on the Grass slot, which is the ground snow). It hides with `Renderer.forceRenderingOff` (not serialized) and never touches a collider; `PaletteGlobals` hands every pushed season to `SeasonalVisibility.SetSeason`, so a runtime season change switches the trees too. Pure rules in `Core/Render/SeasonalLook`. Sheet: `docs/superpowers/handoff/img/2026-10-13-seasonal-trees.png`.
 - At scene load `Shader.SetGlobalVectorArray("_FGPalette", Vector4[16])` with the run's season. **Always pass full-length arrays**: Unity fixes the size at the first call (16 palette, 8 ripples, 4 waves).
-- **`MeshBuilder`** (Runtime): `Box`, `Prism`, `Cylinder`, `Capsule`, `Icosphere`, `Grid`. Flat props use unshared vertices (3 per triangle) with an explicit face normal; `uv1.x` holds the palette slot; vertex colour holds the `1 ± faceJitter` grey multiplier from a seeded hash of `(meshSeed, faceIndex)` so rebuilds are byte-identical. Water grids keep shared vertices. Colliders are Box/Capsule/Sphere; MeshCollider only for coarse terrain/shoreline. EditMode tests: `vertexCount == 3 × triangleCount` for flat primitives; per-face shared normal, slot and colour; byte-identical rebuilds.
+- **`SmoothMeshBuilder`** (Runtime, R74): `RoundedBox` (bevelled box, grain along the long axis), `Lathe` (posts, trunks, rod, reeds, bell, capsules), `Radial` (cube-sphere blobs: rocks, canopies, heads). Shared vertices inside a patch and ANALYTIC normals (no `Recalculate*`), so seams shade continuously; UV0 in metres; `uv1 = (palette slot, texture layer, mapping, 0)`; vertex colour = half-scale grey × baked ao (BF-7, `_JitterEncoded` 1). Deterministic (same calls = identical bytes). EditMode tests: byte-identical rebuilds, shared vertices, unit normals, outward winding, the layer channel.
+- **Ground:** the lakebed and shore keep their M1 collider meshes byte-identical; the renderer draws a smooth visual twin (4× sectors, 2 sub-rings per collider band with heights interpolated on the collider surface, per-vertex palette slot so sand blends into grass).
+- **`MeshBuilder`** (Runtime, M2 flat): `Box`, `Prism`, `Cylinder`, `Capsule`, `Icosphere`, `Grid` with unshared vertices and per-face jitter. After R74 it builds only the water grid (shared vertices), the cast marker and `FishFallbackMesh`; its tests stay as they are. Colliders are Box/Capsule/Sphere; MeshCollider only for coarse terrain/shoreline. **A look change never changes a collider** (verify with `LookDevCapture`'s collider dump).
+- **Texture arrays** (R74): `Content/Textures/T_EnvDetailArray.png` (4×4 tiles of 512², linear detail centred on 0.5, gain 2: neutral, grass, foliage, wood, bark, sand, rock, cloth, face) and `T_FishSkinArray.png` (4 columns of 512² sRGB albedo, grown by rows: white, bluegill, perch, carp, trout, catfish; M3 appends rows so layer numbers never shift). Imported as `Texture2DArray` flipbooks by `TextureArrayPostprocessor`; PNGs are Git LFS; generators live in `Art/Blender/fishgame_lookdev.blend` (`fg_textures.py`, `fg_fish.py`). Detail maps carry value, the palette carries hue, so the season swap keeps working.
+- **Fish models** (R74): one Blender `fg_fish.py` SPECIES entry per model (lofted superellipse body + Catmull-Clark level 1, solidified fins, barbels, big comic eyes); one submesh, AO in vertex colour, UV0 into the species tile, UV "Layer" = (0, species layer); under 5,000 triangles (EditMode-tested).
 
 ### 10.3 Shaders and lighting
 
-**`FishGame/Toon` (M2):** one base material `M_Toon_Base` for environment props; material *instances* are fine (players, fish freshness), `MaterialPropertyBlock` is not. `UnityPerMaterial` holds `_BaseColor`, `_RampMid`, `_RampSoft`, `_UsePalette`, `_Desaturate`, `_RimPow`, `_RimStrength`, identical in every pass. Albedo = `_FGPalette[round(uv1.x)] × vertexColor × _BaseColor` (palette mode) or `vertexColor × _BaseColor`. Lighting: `band = smoothstep(_RampMid − _RampSoft, _RampMid + _RampSoft, saturate(dot(n, L)) × shadowAtten)`; `lit = albedo × lerp(_ToonShade, mainLight.color, band) + albedo × _ToonAmbient × 0.15`; additional lights add a hard-stepped term. Passes: `UniversalForward` (SimpleLit 17.6 keyword set including `_CLUSTER_LIGHT_LOOP` and `_ADDITIONAL_LIGHTS`; `#include_with_pragmas` for Fog; `InputData inputData = (InputData)0` with at least `positionWS` and `normalizedScreenSpaceUV`; the additional-light loop copied from URP `Lighting.hlsl`), `ShadowCaster` (`_CASTING_PUNCTUAL_LIGHT_SHADOW`), `DepthOnly` (needed for water foam).
+**`FishGame/Toon` (M2, realistic toon since R74):** one shader for everything opaque. Environment materials: `M_Toon_Base` (uv0-mapped: dock, ground, trunks, reeds, rod, bobber, bell post) and `M_Toon_Tri` (the same look with the `_FG_TRIPLANAR` keyword: rocks, canopies); characters `M_Body_Slot0..3`, `M_Skin`; `M_Toon_Brass` (bell); fish `M_Toon_Fish` (every species model; skins come from the array layer, so no per-species material) and `M_Toon_FishFallback`. Material *instances* are fine (players, fish freshness), `MaterialPropertyBlock` is not. One `UnityPerMaterial` CBUFFER holds every property, identical in every pass (SRP Batcher).
+- **Albedo:** `base = _FGPalette[round(uv1.x)] × vertexColor(×2 when _JitterEncoded) × _BaseColor` (palette mode) or without the palette, computed per vertex (so a per-vertex slot change blends), then `× lerp(1, sample(_FGAlbedoArray, uv, round(uv1.y)) × _FGArrayGain × macro, _FGTexWeight)` per pixel. `uv` is uv0 × `_FGTiling` or world triplanar (`_FG_TRIPLANAR`); `macro` is the same layer at 1/11 scale in world xz (`_FGMacro`). Layer 0 is neutral, so a mesh without uv1.y is untextured.
+- **Light:** `band = smoothstep(_RampMid − _RampSoft, _RampMid + _RampSoft, saturate(dot(n, L)) × shadowAtten)` with the standard soft ramp mid 0.30 / soft 0.28; `lit = albedo × lerp(_ToonShade, mainLight.color, band) + albedo × _ToonAmbient × 0.15 + albedo × lerp(_SkyGround, _SkyTop, n.y) × _SkyFill + (albedo × 0.5 + 0.5) × lerp(_SkyHorizon, light, band) × rim + light × toonHighlight`, where `rim = pow(1 − n·v, _RimPow) × _RimStrength` and the toon highlight is a smoothstepped Blinn-Phong lobe (`_SpecStrength`, `_SpecPower`) on the lit side; additional lights add a banded term. There are no normal maps (the relief comes from the analytic smooth normals and the albedo/detail array). Ambient occlusion is baked into vertex colour; no SSAO (it would force a DepthNormals prepass and move the water's depth source off CopyDepth). No outlines. Passes: `UniversalForward` (SimpleLit 17.6 keyword set including `_CLUSTER_LIGHT_LOOP` and `_ADDITIONAL_LIGHTS`; `#include_with_pragmas` for Fog; `InputData inputData = (InputData)0` with at least `positionWS` and `normalizedScreenSpaceUV`; the additional-light loop copied from URP `Lighting.hlsl`), `ShadowCaster` (`_CASTING_PUNCTUAL_LIGHT_SHADOW`), `DepthOnly` (needed for water foam).
 
 **`DayNightController` (Presentation, M3):** input `DayFraction01 = minuteSinceDawn / 1200`. Four `DayPhaseAmbient` entries (`startFraction` dawn 0, day 0.10, dusk 0.55, night 0.70 [tune]; light colour and intensity; sky top/horizon/ground; `toonShade`, `toonAmbient`; fog colour and density; warm/cool grade weights), smoothstep-blended over a 0.05 window.
 - **One directional light** (Sun/Moon) so URP's main light never swaps. The sun arcs east→west over daylight with elevation ≥ 12°; within 0.02 of sunset intensity fades to 0, the light flips to a fixed high moon direction with a cool tint at ~0.25 intensity and fades back in (and the reverse at dawn). Night stays playable through moon intensity and `toonAmbient`.
@@ -1245,8 +1314,17 @@ Also: Steady (Rhythm) median 15–30 s; Runner (Rhythm) median 60–110 s, snaps
 ### 10.4 Water
 
 - **`WaveMath` (Core):** sum of 3 directional sines; coefficients in `WaterSettingsDef` (`Vector4 dirAmpLenSpeed[3]`). `HeightAt(x, z, t)` drives the bobber, swimming, floating fish and boats. `WaterTimeDriver` pushes `_Waves` (length 4) and `_WaterTime` (`NetworkManager.ServerTime.Time` in gameplay scenes, `Time.timeSinceLevelLoad` in menus). Gameplay never reads `_WaterTime`; parity comes from one shared formula plus review. Wavelengths ≥ 4× the grid cell. Tests: bounded by Σ amplitudes, continuous in t, deterministic.
-- **`FishGame/Water` (M2):** `MeshBuilder.Grid` with ~1–1.5 m cells (e.g. 96×96 over 120 m), vertex-displaced; flat facet normal `normalize(cross(ddy(posWS), ddx(posWS)))` [verify sign in-game]; depth fade `lerp(_ShallowColor, _DeepColor, smoothstep(0, _DepthRange, sceneDepth − fragDepth))`; foam band where depth < `_FoamWidth` broken by animated hash noise; Transparent, ZWrite Off, alpha blend, one `UniversalForward` pass; same fog path. `_DepthRange` 3.0, `_FoamWidth` 0.35.
-- **`RippleField`** (scene object, Presentation): fixed `Vector4[8]` of `(x, z, spawnWaterTime, strength)` pushed as `_Ripples`; oldest slot recycled. Spawned by presentation listeners: cast landing 0.6, nibble 0.2, bite 1.0 + two 0.3 follow-ups, snap 0.8, landed 0.7, shove into water 1.0. Ring: `(1 − saturate(|dist − age × 2.2| / 0.25)) × saturate(1 − age / 2.5) × strength`. Ripples add foam and brightness only (sub-cell normals can't show).
+- **`FishGame/Water` (M2, look approved 2026-10-12, R73):** smooth, continuous stylised water with no triangle patchwork. `MeshBuilder.Grid` with ~1–1.5 m cells (96×96 over 120 m), vertex-displaced by `FG_WaveHeight` only (the vertex stage and `FishGameCommon.hlsl` are the GPU-parity contract; never re-implement the wave term in the shader). Fragment:
+  - **Normal:** per pixel, a central finite difference of `FG_WaveHeight` at ±0.2 m in float (the wide step keeps sine-argument rounding at long session time out of the slope), slope × `_NormalBoost` 6 for shading only (real slopes are a few degrees), plus two off-axis octaves of drifting value-noise ripples with an analytic gradient (`_DetailScale` 1.6 m, `_DetailStrength` 0.12, `_DetailSpeed` 0.3 m/s, faded out by `_DetailFade` 60 m; lattice period 256 so the wrapped drift never jumps). No ddx/ddy facet normal.
+  - **Depth and colour:** vertical depth = surface y − bed y, the bed reconstructed from the scene depth to a world position (not the eye-ray difference, which saturates at low angles); `t = 1 − exp(−depth / _DepthRange)`; body `= sq(lerp(sqrt(_ShallowColor), sqrt(_DeepColor), t))`; alpha `= lerp(shallow.a, deep.a, t)`.
+  - **Bed cover:** the lakebed is flat-shaded low-poly, so alpha is raised `lerp(alpha, 1, _BedCover × smoothstep(0.08, 0.9, depth))` with `_BedCover` 0.35 (some sand shows through; the waterline stays clear), and soft caustic veins (where the two ripple octaves cross, `_CausticStrength` 0.15) brighten shallow water, fading with depth and distance.
+  - **Light:** body × (light luminance with `_LightTint` 0.35 of its hue × slope shade + `_ToonAmbient` × `_AmbientStrength` 0.35); slope shade is relative to a flat surface, `1 ± _ShadeContrast` 0.14 through a soft smoothstep (`_ShadeSoft` 0.2). Crest tint: per-pixel height / `_CrestHeight` 0.11 shifts toward the shallow colour (`_CrestAmount` 0.35).
+  - **Fresnel:** toward `lerp(_SkyHorizon, _SkyTop, _ReflectZenith 0.6)`, power 4, capped at `_ReflectStrength` 0.4, on half the boosted slope.
+  - **Glints:** thresholded Blinn-Phong (`_GlintPower` 96, threshold 0.5, edge anti-aliased with `fwidth`) on a glint normal of half the wave boost plus `_GlintRipple` 3 × the ripples, so glints are round or elongated sparkles; light direction flattened by `_GlintFlatten` 0.7; light-hue tinted near-white; faded in past `_GlintNear` 6 m.
+  - `_Saturation` 1.15 before fog; fog at `_FogAmount` 0.35 of the shared URP fog path.
+  - **Foam:** band where vertical depth < `_FoamWidth` 0.35 m, its edge wobbled by smooth hash value noise cross-faded between two stepped time layers (the step wrapped at 1024 for float precision), plus `_Ripples`.
+  - Transparent, ZWrite Off, alpha blend, one `UniversalForward` pass, single `UnityPerMaterial` CBUFFER. Colours, `_DepthRange` 1.6 and `_FoamWidth` come from `WaterSettingsDef`; the look parameters are pinned in `RenderMaterialLibrary` (`WaterLook`). Adds over the facet version: four `FG_WaveHeight` calls (12 wave sin + 6 direction sin/cos), 8 hashes and one `fwidth` per pixel; no new textures. Far-distance shimmer is unguarded (only the ripples fade, by eye depth); if sparkles crawl at 30-60 m or moire shows near the far shore, fade the wave and octave-2 slope terms by screen footprint (`length(fwidth(xz))`).
+- **`RippleField`** (scene object, Presentation): fixed `Vector4[8]` of `(x, z, spawnWaterTime, strength)` pushed as `_Ripples`; oldest slot recycled. Spawned by presentation listeners: cast landing 0.6, nibble 0.2, bite 1.0 + two 0.3 follow-ups, snap 0.8, landed 0.7, shove into water 1.0. Ring: `(1 − saturate(|dist − age × 2.2| / 0.25)) × saturate(1 − age / 2.5) × strength`. Ripples add foam and brightness only (kept as foam and brightness only; not a normal term).
 - **M1 water:** a 120 × 120 m flat visual plane at y 0 with a flat blue placeholder material (its generated MeshCollider removed). On layer Water, a separate **`BoxCollider` trigger** (120 × 8 × 120 m, top face exactly at y 0) is both the cast raycast target and the `WaterVolume`. A concave MeshCollider can't be a trigger; `WaterSurface.HeightAt` returns 0 until M2's `WaveMath` lands.
 
 ### 10.5 Rod and line presentation (M2)
@@ -1269,6 +1347,20 @@ Camera motion 0 replaces lightning flashes with a brief sky tint. **Underwater:*
 ### 10.7 Performance baseline
 
 Recorded at M1 on the dev machine: lake dock, 4 bodies, development build, 1080p, frame time and SRP batch count. A later regression > 10% needs a note in the milestone summary. The water pass GPU time is recorded at M2.
+
+**R74 adoption record (2026-10-13, batchmode, static counts; frame time, SRP batches and the water pass GPU time stay a check on the user's machine, because the render counters read 0 in batchmode):**
+
+| Lake dock (`FG LAKEDOCK` build log) | M2 flat | R74 adopted |
+|---|---|---|
+| Scene renderers | 79 | 79 |
+| Scene triangles (summed per renderer) | 26,260 | 87,984 |
+| Distinct scene materials | 2 | 3 (+ `M_Toon_Brass` on the spawned bell) |
+| Dock / reeds / lakebed + shore visual / water grid | 1,300 / 944 / 2,352 / 18,432 | 11,196 / 5,844 / 19,008 / 18,432 |
+| Rock / trunk / canopy round / canopy pine | 80 / 24 / 80 / 24 | 432 / 224 / 768 / 640 |
+| Seasonal trees (2026-10-13): round variants ×2 / blossoms / snowy pine / bare branches | – | 768 each / 2,304 (spring only) / 640 (winter only) / 804 (winter only); build log 121 renderers, 136,800 triangles summed over every renderer including the hidden seasonal ones |
+| Fish model (each) | 222–262 | 3,856–4,724 |
+
+Visible per view (`LookDevCapture` STATS, frustum-culled; all views draw the water grid): dock overview 14 renderers / 58.5k triangles, ramp 11 / 57k, from the water 7 / 55k, far shore 17 / 49k, reeds 10 / 46k, bell 29 / 65k. Texture memory: env detail array 16 × 512² BC7 with mips ≈ 5.3 MB, fish skin array 8 × 512² ≈ 2.7 MB. Shader cost per textured pixel: uv-mapped materials 2 array samples (uv + macro), `M_Toon_Tri` 4 (triplanar + macro).
 
 ---
 
@@ -1830,7 +1922,7 @@ Freshness = max(0.40, 1 - decayPerMin * age * storageMult)        // decayPerMin
 | Bait | Worm ×5 (15), Grub ×5 (25), Minnow ×4 (20), Shrimp ×3 (30), Raw meat ×2 (40) | Rating, bite speed, junk mult (9.7) | per cast |
 | Lure | Shiny Spoon (Predator ×2), Glow Jig (Nocturnal ×2), Bottom Bouncer (Bottom ×2) — 60–90 | Affinity weight bonus; never consumed; **lost if the line snaps** | run |
 | Rods (rack, per player) | Handmade (120, from camp 1), Carbon (300, from camp 2), Deep-sea (600, from camp 4); solo base prices, × crew rate (14.4) | Replaces the buyer's rod for the rest of the run (9.7); opens rod-gated fish | run |
-| Gear | Cooler (+6 slots, +10 kg, storage ×0.25, 80); Fish Finder (shows hooked fish stamina, 70) | | run |
+| Gear | Cooler (+6 slots, +10 kg, storage ×0.25, 80); Fish Finder (shows how spent the hooked fish is: its tire, 70) | | run |
 
 There are no perks: their effects moved into the map skill pool (14.8). The line gauge is a free setting (R36). Cosmetics are never run stock.
 
@@ -1868,7 +1960,7 @@ at the day-7 win (SkillPick):    every connected player  += WinShells       // 4
 | Patient Hands | bite wait ×0.9 | 9.4 `skillMult` | M4 |
 | Night Owl | bite wait ×0.85 during Dusk and Night bands | 9.4 `skillMult`, night fishing | M4 |
 | Iron Grip | line strength ×1.1 | `FightSim` (owner), monster `lineStrength` | M4 |
-| Steady Nerves | snap grace +0.15 s | `FightSim` snap timer | M4 |
+| Steady Nerves | snap headroom x1.15 [tune] (R72: the snap grace became the headroom above the full bar) | FightSim snap strain | M4 |
 | Long Arm | `castMaxDist` +2 m (and `maxLineOut`) | 9.3 cast; host validity (9.9) | M4 |
 | Lucky Lure | Luck +0.15 (heavier fish, more Trophies) | 9.8 weight skew | M4 |
 | Rare Whisperer | Uncommon and Rare rule weights ×1.15 | 12.4 pool step 3 | M4 |
@@ -2134,16 +2226,16 @@ any       --shoved while immune, Downed or Carried--------> ignored
 3. Fishing: `FishingRodNetwork` (RPCs 9.9, `NetRodState`, bait vars), `FishingRodController` (fixed-step tick, input context, movement lock while hooked, stow/equip with `NetTool`), creel writes on the host (`NetCreel`), debug loadout and selectors (rod, bait, forced bite, twitchy toggle).
 4. Presentation: `MeshBuilder` props, Toon/Water/Line/GradientSky shaders + `ShaderValidator`, `RenderingSetupBuilder`, `WaterTimeDriver`, `RippleField`, `RodPresenter` (rod bend, line sag/dash), bobber view (wave bob), splash particles, `FishingFeedback` (audio, camera trauma, rumble), catch reveal (procedural fish mesh), remote cast arc.
 5. UI: charge ring, in-world cast marker (valid/invalid shapes), captions, line gauge (Arc/Bar), creel count, catch toasts, dev overlay (F3), settings (gauge, captions, assist).
-6. Telemetry: in editor/dev builds each fight appends to `Application.persistentDataPath/fight-log.csv` (outside the repo): profile, species, weightG, castDist, castToBite, fightSec, outcome, reason, nearSnapRecoveries, maxTension, rod, assist.
+6. Telemetry: in editor/dev builds each fight appends to `Application.persistentDataPath/fight-log.csv` (outside the repo): profile, species, weightG, castDist (the cast distance from the rod tip, R67; origin-to-landing is `castDist + castTipReach`), castToBite, fightSec, outcome, reason, nearSnapRecoveries, maxTension, rod, assist.
 7. Lake-dock rebuilt with MeshBuilder props and the water shader; ripple debug key.
 
 **M2 tests**
 - **EditMode, state machine and cast:** one test per row of the 9.2 table plus rejection of illegal events per state; ping-pong meter at 0/0.5/1.0/1.5/2.0 s gives 0/0.5/1/0.5/0; distance monotonic and clamped (charge 0, 0.25, 0.5, 0.75, 1 within 0.5 m of the formula); flight time and apex formulas, apex ≥ 0.6 m.
 - **EditMode, bite:** 10,000 samples within bounds with the 1.0 s floor and the means following bait/species/depth multipliers; nibbles ordered, inside the wait and never within 0.6 s of the bite; same seed → same plan.
-- **EditMode, fight (forced phases):** Runner reel-no-steer from lateral 0 snaps in 2.5–3.2 s; Runner reel + full counter over a 4 s side run doesn't snap and ends at tension 0.5–0.7; Steady reel-no-steer over a 2.5 s run stays below 0.3 tension and 0.6 lateral; from 0.9 with no reel ≤ 0.3 after 1.5 s; sign test (positive `burstDir` with steer −1 reduces |lateral| and drains stamina); dives drain only while not reeling; exhaustion stops bursts; pinned → Escaped at 5 s; slack → Escaped at 12 s; spooled line clamps and adds strain; tension touching 1 for less than the grace doesn't snap; line at land distance while reeling lands; never reeling ends by slack escape (no endless fights); same seed + inputs → identical state.
+- **EditMode, fight (R72, forced states):** Rust's hand-worked times for reeling into a run, into a back pull and at rest per tier; the counter-steer rate; the 1.5/s drain; the bar full at 6 and the snap above 7; run and rest durations scaled by tire; side 50/50 and back 39% inside the gate; the draw order replayed by hand; the pull wave; countering drags the fish back and tires it; the steer drop rule; the cone flip; the tire reel multiplier; back pulls take line; landing at 1.0 m while reeling; Timeout at 120 s; same-tick priority; weight never changes a fight; same seed and inputs give an identical state; assist and Pity numbers; near-snap recovery; junk.
 - **EditMode, roll and ledger:** species/junk frequencies within 2% of weights over 10,000 rolls; `minDepth` and `minBaitRating` gates; bare hook yields only Steady/Bulldog fish or junk at shallow depth; weight distribution mean and trophy rate (9.8); host ledger rejects a cast while active, stale/duplicate castId, `chargeNorm` outside [0,1], origin > 3 m off, no bait, an early hook and a catch below the duration floor; consumes on accept, refunds on cancel; both timeouts resolve; disconnect clears; a full creel releases the fish.
 - **EditMode, data and input:** ids unique, ranges valid, every species reachable with some debug bait and depth; `Fishing/Reel` and `Fishing/Steer` exist; shaders validate; M2 recipe checks.
-- **EditMode `[Category("Tuning")]`, bots (source of truth):** Greedy, CounterReel and Rhythm bots, 200 seeds each, per profile and per rod (Twig and Handmade); assert the 9.12 targets including the starter-rod check; print fight-length, snap-rate and recovery distributions.
+- **EditMode `[Category("Tuning")]`, bots (source of truth):** Greedy, Reckless, Pump and Rhythm bots, 200 fights per cell at casts of 10-14 m, per profile and per rod (Twig and Handmade); assert the 9.12 targets; print fight-length, snap, timeout, clean and recovery distributions.
 - **PlayMode:** `SoloHost_CastBiteFight_Lands` (forced 0.1 s bite, scripted `FightInput`, asserts a creel entry and the announce); solo `DeferLocal` ordering has no re-entrant state change during `CastRequestRpc`.
 - **Manual MPPM** (host + 1–3 clients, Network Simulator 150 ms RTT, 2% loss): the client's cast lands and bite/fight cues play on both peers; remote rod bend, line and bobber trail by ≤ ~250 ms; the cast arc appears once; the catch reveal shows on all screens after the host commits; a client disconnecting mid-fight leaves no outstanding hook on the host and the rod vanishes within 1 s; a host alt-tab doesn't stall clients.
 
@@ -2162,8 +2254,8 @@ any       --shoved while immune, Downed or Carried--------> ignored
 
 **M2 fun gate** (≥ 30 logged playtest fights, user plus at least one friend)
 - Median cast-to-bite 6–12 s; bite wait p90 ≤ 20 s with neutral modifiers; < 10% of casts end in cancel or timeout.
-- Median fight: Steady/Darter 15–30 s, Bulldog/Thrasher 35–55 s, Runner 60–110 s; overall median cast-to-land 35–80 s.
-- Overall snap rate 10–30% (failure should feel like greed, not bad luck); ≥ 40% of Bulldog/Thrasher/Runner fights include a near-snap recovery.
+- Median fight: recorded for the R72 baseline (Rhythm bot, Handmade, casts of 10-14 m: Steady 14.0 s, Darter 19.1, Thrasher 17.8, Runner 26.2, Bulldog 30.9); the user sets new targets in the friendlier pass.
+- Overall snap rate 10–30% (failure should feel like greed, not bad luck); ≥ 40% of Bulldog/Thrasher/Runner fights include a near-snap recovery (the bar went over full and came back under half).
 - Testers can tell the five profiles apart blind, and say the three play styles feel different.
 - After 10 minutes the testers want to keep casting, and conversation was comfortable while waiting.
 - A failed gate means tuning data, not new mechanics.
@@ -2227,7 +2319,7 @@ any       --shoved while immune, Downed or Carried--------> ignored
 | V10 | Clients see the host's own player move (old NGO 2.2.0 report) | M1 |
 | V11 | `DeferLocal` behaviour on `SendTo.Owner` when the host is the owner (the field exists); change detection for memcpy structs (IEquatable vs memcmp). (Resolved: `NetworkVariableUpdateTraits.MinSecondsBetweenUpdates` and `SetUpdateTraits` exist in 2.13.3.) | M1–M2 |
 | V12 | Raycasting a trigger water collider with `QueryTriggerInteraction.Collide`, water first when a dock is above it | M2 |
-| V13 | Water facet-normal sign; C#/HLSL wave parity; fog variants kept in a player build; `ShaderUtil` messages in `-nographics` batchmode | M2 |
+| V13 | Water facet-normal sign (moot since R73: smooth per-pixel normal); C#/HLSL wave parity; fog variants kept in a player build; `ShaderUtil` messages in `-nographics` batchmode | M2 |
 | V14 | Whether Newtonsoft resolves under `noEngineReferences` (else the serializer stays in Runtime) | M3 |
 | V15 | (Resolved: `NetworkManager.ServerTime.Time` is a double.) `DisconnectReason`, `OnClientStopped`, approval `request.Payload`/`response.Reason`; a Sessions join rejected by approval surfaces the reason text | M4 |
 | V16 | `AttachableBehaviour` `ComponentController` toggling and visual pop at 150 ms RTT (detach RPC one tick before the root's final transform) | M5 |

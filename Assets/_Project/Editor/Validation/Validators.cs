@@ -1,22 +1,31 @@
 // Spec 4.7 invariants for M1 (#1-#7; #8 arrives in M3, and #9 has no FishGame shaders before M2). Owned by T15.
-// Reads persisted state only (asset files, ProjectSettings text, Packages/manifest.json) and never opens a scene.
+// The M1 validators read persisted state only (asset files, ProjectSettings text, Packages/manifest.json) and never open a scene.
 // The separate test-edit process therefore also proves that BuildAll saved everything.
+// MeshReferences, MissingScripts and BootstrapReferences (M2 T4) open the build scenes additively, read-only: one scene at a time,
+// closed without saving, and a scene that was already open is left alone. If a build scene is already open with unsaved edits,
+// the in-memory state is what gets checked.
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using FishGame.App;
 using FishGame.Core;
 using FishGame.Data;
 using FishGame.Runtime;
 using Unity.Netcode;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 namespace FishGame.EditorTools
 {
     public static class Validators
     {
         static readonly string[] M1NetworkPrefabs = { AssetPaths.PlayerPrefab, AssetPaths.DockBellPrefab, AssetPaths.SessionStatePrefab };
+
+        // AssetPaths is not edited by T4, so the prefab folder lives here.
+        const string PrefabsFolder = "Assets/_Project/Prefabs";
 
         // GUID of Assets/Settings/SampleSceneProfile.asset, deleted by T1 (spec 4.2 #1).
         const string DeletedSampleSceneProfileGuid = "10fc4df2da32a41aaa32d77bc913491c";
@@ -191,7 +200,8 @@ namespace FishGame.EditorTools
             return errors;
         }
 
-        // 4.7 #6 plus the spec 4.2 steps 2, 4, 5 outputs of ProjectSettingsBuilder.
+        // 4.7 #6 plus the spec 4.2 steps 2, 4, 5 outputs of ProjectSettingsBuilder. Exception: the PC pipeline asset's m_RequireDepthTexture flag
+        // is owned by RenderingSetupBuilder (not ProjectSettingsBuilder); it is pinned here only as a guard.
         public static List<string> ProjectSettingsInvariants()
         {
             var errors = new List<string>();
@@ -245,6 +255,117 @@ namespace FishGame.EditorTools
                 errors.Add("unexpected file Assets/" + name);
             }
             return errors;
+        }
+
+        // M2 T4: every MeshFilter, MeshCollider and SkinnedMeshRenderer in the build scenes and in Prefabs/ has a mesh (catches destroyed references saved as null).
+        public static List<string> MeshReferences() => MeshReferences(PrefabsFolder);
+
+        // Same check with the prefab folder given (tests point it at Tests/__Temp so no test prefab ever lands in the shipped Prefabs/ folder).
+        internal static List<string> MeshReferences(string prefabsFolder)
+        {
+            var errors = new List<string>();
+            VisitAllObjects(errors, prefabsFolder, (assetPath, go) =>
+            {
+                MeshFilter filter = go.GetComponent<MeshFilter>();
+                if (filter != null && filter.sharedMesh == null) errors.Add(assetPath + ": " + HierarchyPath(go) + " MeshFilter has no mesh");
+                foreach (MeshCollider collider in go.GetComponents<MeshCollider>())
+                    if (collider.sharedMesh == null) errors.Add(assetPath + ": " + HierarchyPath(go) + " MeshCollider has no mesh");
+                SkinnedMeshRenderer skinned = go.GetComponent<SkinnedMeshRenderer>();
+                if (skinned != null && skinned.sharedMesh == null) errors.Add(assetPath + ": " + HierarchyPath(go) + " SkinnedMeshRenderer has no mesh");
+            });
+            return errors;
+        }
+
+        // M2 T4: no GameObject in the build scenes or in Prefabs/ has a missing script (NetworkPrefabs keeps its own prefab check).
+        public static List<string> MissingScripts()
+        {
+            var errors = new List<string>();
+            VisitAllObjects(errors, PrefabsFolder, (assetPath, go) =>
+            {
+                int missing = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(go);
+                if (missing > 0) errors.Add(assetPath + ": " + HierarchyPath(go) + " has " + missing + " missing script(s)");
+            });
+            return errors;
+        }
+
+        // M2 T4: Bootstrap.unity has one AppBootstrap whose inputActions and contentRegistry point at the project assets.
+        public static List<string> BootstrapReferences()
+        {
+            var errors = new List<string>();
+            if (!File.Exists(BuilderUtil.Abs(AssetPaths.BootstrapScene))) return errors; // BuildScenes reports a missing file
+            int count = 0;
+            ForEachSceneObject(AssetPaths.BootstrapScene, errors, go =>
+            {
+                foreach (AppBootstrap bootstrap in go.GetComponents<AppBootstrap>())
+                {
+                    count++;
+                    if (count > 1) continue;
+                    CheckBootstrapReference(bootstrap, "inputActions", InputActionNames.AssetPath, errors);
+                    CheckBootstrapReference(bootstrap, "contentRegistry", AssetPaths.ContentRegistryAsset, errors);
+                }
+            });
+            if (count == 0 && errors.Count > 0) return errors; // the play-mode guard fired; nothing was visited
+            if (count != 1) errors.Add("Bootstrap has " + count + " AppBootstrap components, expected 1");
+            return errors;
+        }
+
+        static void CheckBootstrapReference(AppBootstrap bootstrap, string property, string expectedPath, List<string> errors)
+        {
+            using var so = new SerializedObject(bootstrap);
+            SerializedProperty serialized = so.FindProperty(property);
+            if (serialized == null) { errors.Add("Bootstrap AppBootstrap." + property + " property not found"); return; }
+            Object reference = serialized.objectReferenceValue;
+            if (reference == null) { errors.Add("Bootstrap AppBootstrap." + property + " is null"); return; }
+            string path = AssetDatabase.GetAssetPath(reference);
+            if (path != expectedPath) errors.Add("Bootstrap AppBootstrap." + property + " references " + path + ", expected " + expectedPath);
+        }
+
+        // Visits every GameObject (inactive included) of every existing build scene, one scene at a time, then of every prefab under PrefabsFolder.
+        static void VisitAllObjects(List<string> errors, string prefabsFolder, System.Action<string, GameObject> visit)
+        {
+            foreach (string sceneName in SceneNames.BuildOrder)
+            {
+                string scenePath = AssetPaths.ScenesFolder + "/" + sceneName + ".unity";
+                if (!File.Exists(BuilderUtil.Abs(scenePath))) continue; // BuildScenes reports a missing file
+                ForEachSceneObject(scenePath, errors, go => visit(scenePath, go));
+            }
+            foreach (string guid in AssetDatabase.FindAssets("t:Prefab", new[] { prefabsFolder }))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                GameObject root = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (root == null) continue;
+                foreach (Transform t in root.GetComponentsInChildren<Transform>(true)) visit(path, t.gameObject);
+            }
+        }
+
+        // Opens the scene additively unless it is already loaded, visits all its objects, and closes it (without saving) only if this call opened it; a scene that was already in the hierarchy but unloaded is returned to unloaded, not removed.
+        static void ForEachSceneObject(string scenePath, List<string> errors, System.Action<GameObject> visit)
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                if (!errors.Contains("scene checks need edit mode")) errors.Add("scene checks need edit mode");
+                return;
+            }
+            Scene scene = SceneManager.GetSceneByPath(scenePath);
+            bool wasValid = scene.IsValid();
+            bool opened = !(wasValid && scene.isLoaded);
+            if (opened) scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
+            try
+            {
+                foreach (GameObject root in scene.GetRootGameObjects())
+                    foreach (Transform t in root.GetComponentsInChildren<Transform>(true)) visit(t.gameObject);
+            }
+            finally
+            {
+                if (opened) EditorSceneManager.CloseScene(scene, !wasValid);
+            }
+        }
+
+        static string HierarchyPath(GameObject go)
+        {
+            string path = go.name;
+            for (Transform t = go.transform.parent; t != null; t = t.parent) path = t.name + "/" + path;
+            return path;
         }
 
         static void CheckIgnored(int a, int b, List<string> errors)

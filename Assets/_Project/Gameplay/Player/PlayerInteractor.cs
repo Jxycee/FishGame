@@ -8,6 +8,8 @@ namespace FishGame.Gameplay
     // Authority: owner only (enabled by PlayerNetState). The prompt is local display; a press is only a request sent to the
     // host through PlayerActions.InteractRpc, and the host decides (CanInteract, range, ServerInteract). Spec 7.7.
     // InteractPromptChanged.Prompt is the raw GetPrompt text without the key glyph (T14 composes the key).
+    // after PlayerLocomotion (0): a ladder entered this frame flips the context to Climbing first, so a press on that frame never reaches an interactable (defensive since R70: no press starts a climb)
+    [DefaultExecutionOrder(100)]
     public sealed class PlayerInteractor : MonoBehaviour
     {
         public const float CastRange = 3.0f, CastRadius = 0.15f;
@@ -43,9 +45,10 @@ namespace FishGame.Gameplay
             IInputService input = ResolveInput();
             UnityEngine.Camera view = _playerCamera != null ? _playerCamera.Camera : null;
 
-            // Interactables are live only in Free with no menu open (contract 7.12).
+            // Interactables are live in Free, RodReady and RodWaiting with no menu open (spec 8.2, InputContextRouter.InteractLive;
+            // M2 G5 replaces the M1 "Free only" gate so the rod being out does not block the bell). Not while Swimming: there Interact only climbs at exits.
             bool eligible = input != null && _net != null && view != null
-                && input.GameplayContext == InputContext.Free && !input.MenuOpen;
+                && InputContextRouter.InteractLive(input.GameplayContext) && !input.MenuOpen;
 
             NetworkInteractable found = null;
             if (eligible)

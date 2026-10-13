@@ -10,6 +10,82 @@ namespace FishGame.EditorTools
         public const string RockStream = "lake_dock.rocks";
         public const string TreeStream = "lake_dock.trees";
 
+        // T28 additions. New randomness uses NEW streams only: a draw added to the M1 rock or tree streams would move every later prop.
+        public const string PlankStream = "lake_dock.planks";
+        public const string CanopyStream = "lake_dock.canopy";
+        public const string ReedStream = "lake_dock.reeds";
+        // Seasonal trees (2026-10-13): the round trees' foliage variant is a balanced shuffle drawn from this stream (index 0), after placement,
+        // so the M1 tree stream and the canopy stream keep their draws.
+        public const string FoliageStream = "lake_dock.foliage";
+
+        // T28 mesh asset paths (C 2.6: no AssetPaths edit; LakebedMesh, ShoreMesh and MeshesFolder stay in AssetPaths).
+        public const string WaterMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Water.asset";
+        public const string DockMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Dock.asset";
+        public const string RockMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Rock.asset";
+        public const string TrunkMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Trunk.asset";
+        public const string CanopyRoundMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyRound.asset";
+        public const string CanopyPineMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyPine.asset";
+        // Seasonal trees (2026-10-13): the round canopy's two other foliage variants (same shape, slots FoliageDark / FoliageAlt), the spring
+        // blossom specks (canopy space), the winter pine (the same tiers with snow on the top-facing rings) and the bare winter branches (tree space).
+        public const string CanopyRoundDarkMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyRoundDark.asset";
+        public const string CanopyRoundAltMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyRoundAlt.asset";
+        public const string BlossomsMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Blossoms.asset";
+        public const string CanopyPineSnowMeshPath = AssetPaths.MeshesFolder + "/LakeDock_CanopyPineSnow.asset";
+        public const string BranchesMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Branches.asset";
+        public const string ReedsMeshPath = AssetPaths.MeshesFolder + "/LakeDock_Reeds.asset";
+        // R74 look-dev: smooth VISUAL meshes for the lakebed and shore (same vertex positions as the collider meshes, shared vertices, smooth normals,
+        // world-xz UVs). The MeshColliders keep LakebedMesh / ShoreMesh, which stay byte-identical (physics fingerprint).
+        public const string LakebedVisualMeshPath = AssetPaths.MeshesFolder + "/LakeDock_LakebedVisual.asset";
+        public const string ShoreVisualMeshPath = AssetPaths.MeshesFolder + "/LakeDock_ShoreVisual.asset";
+
+        // Mesh seeds, only for the meshes that use one (fixed: an Inspector edit must never change a generated mesh). The lakebed and shore COLLIDER meshes
+        // (MeshBuilder FaceJitter) take theirs; the rock and the round canopy use theirs for the SmoothMeshBuilder.Noise3 lumps. The other props are
+        // seedless (lathes and rounded boxes), so their seeds were removed with the R74 adoption. The numbering is kept so the values never change.
+        public const uint LakebedMeshSeed = 0x1A4E0B01u, ShoreMeshSeed = 0x1A4E0B02u, RockMeshSeed = 0x1A4E0B04u, CanopyRoundMeshSeed = 0x1A4E0B06u;
+        public const uint BlossomMeshSeed = 0x1A4E0B0Bu;   // speck placement jitter (seasonal trees, 2026-10-13)
+
+        // Water grid: 96 cells x 1.25 m = 120 m (the M1 visual plane). Spec 10.4 wants wavelengths >= 4 cells; T14 seeds at least 6 m.
+        public const int WaterGridCells = 96;
+        public const float WaterCellSize = 1.25f;
+
+        // Palette slot indices (spec 10.2 slotNames order). No shared constant set exists in Core or Data, so they live here.
+        public const byte SlotGrass = 0, SlotFoliage = 1, SlotFoliageDark = 2, SlotWood = 3, SlotWoodDark = 4, SlotSand = 5;
+        public const byte SlotRock = 6, SlotReed = 7, SlotDock = 8, SlotRoof = 9, SlotAccent = 10;
+        public const byte SlotPineLight = 12, SlotPineDark = 13, SlotBlossom = 14, SlotFoliageAlt = 15;
+        // The round trees' foliage variants, in variant order (autumn orange, red, yellow) with their meshes in the same order.
+        public static readonly byte[] RoundFoliageSlots = { SlotFoliage, SlotFoliageDark, SlotFoliageAlt };
+        public static readonly string[] RoundCanopyMeshPaths = { CanopyRoundMeshPath, CanopyRoundDarkMeshPath, CanopyRoundAltMeshPath };
+        // Snow on the winter pine: the Grass slot, which is the ground snow in winter (the winter pine is only ever shown in winter).
+        public const byte SlotPineSnow = SlotGrass;
+
+        // Seasonal trees: blossom specks per round canopy; the snowline of each pine tier (ring t at or above it is snow on the winter pine);
+        // the bare branches' yaw step per tree (golden angle, so neighbouring trees never share an orientation).
+        public const int BlossomCount = 48;
+        public const float PineSnowFromT = 0.4f;
+        public const float BranchesYawStepDegrees = 137.5f;
+
+        // Shore faces whose centre is below this height are Sand, above it Grass.
+        public const float ShoreSandMaxY = 0.3f;
+
+        // Dock visual (planks lie across the deck: 3.0 m in x, 0.26 m in z, 0.1 m thick, 0.04 m gap; 40 planks fill z -52..-40).
+        public const int PlankCount = 40;
+        public const float PlankLength = 3f, PlankWidth = 0.26f, PlankGap = 0.04f, PlankYawDegrees = 0.8f;
+        public const float StringerX = 1.2f, StringerSize = 0.12f;
+        public const float PostRadius = 0.08f;
+        public const float RailSize = 0.05f, RungSpacing = 0.3f, RungThickness = 0.03f, RungDepth = 0.04f, RailInset = 0.2f;
+
+        // Prop mesh shape (unit sizes match the Unity primitives the M1 transforms were authored for).
+        public const float TrunkRadiusBottom = 0.5f, TrunkRadiusTop = 0.42f, TrunkHeight = 2f;
+        public const float PineChance = 0.6f;
+
+        // Reeds: 24 clusters of 4-6 blades in the shallows (bed about -0.5 to -0.08 m).
+        public const int ReedClusterCount = 24, ReedMinBlades = 4, ReedMaxBlades = 6;
+        public const float ReedMinRadius = 46.5f, ReedMaxRadius = 49.5f, ReedClusterSpread = 0.35f, ReedClearance = 4f;
+        public const float ReedMinHeight = 0.9f, ReedMaxHeight = 1.6f, ReedBladeRadius = 0.025f, ReedMaxLeanDegrees = 8f;
+
+        // Index safety for a combined mesh (16-bit indices).
+        public const int MaxCombinedTriangles = 21000;
+
         // Bowl: 0 m at the shoreline (r 50), -6 m at 40 m inward, flat -6 m inside r 10.
         public const float ShoreRadius = 50f, BowlRun = 40f, BowlDepth = 6f;
         public static readonly float[] LakebedRadii = { 0f, 4f, 8f, 10f, 14f, 18f, 22f, 26f, 30f, 34f, 38f, 42f, 46f, 50f };
@@ -22,12 +98,20 @@ namespace FishGame.EditorTools
         public const float DeckWidth = 3f, DeckNearZ = -52f, DeckFarZ = -40f, DeckTopY = 0.6f, DeckThickness = 0.1f;
         public const float PostX = 1.4f, PostSpacing = 2f, PostSize = 0.12f;
         public const float LadderZ = -41.5f, LadderX = 1.58f, LadderThickness = 0.06f, LadderWidth = 0.5f;
+        // R70 walk-in ladder volumes (contract M2-D29), one per ladder, mirrored in x. Tuning knobs for the climb-out: LadderVolumeTopY
+        // (fallback 1.9 if a climb-out test fails, plan risk 1) and LadderVolumeInnerX (move out to ~1.75 if the deck edge feels grabby).
+        public const float LadderVolumeInnerX = 1.55f, LadderVolumeOuterX = 2.55f, LadderVolumeBottomY = -1.4f, LadderVolumeTopY = 1.6f, LadderVolumeDepth = 1f;
 
         // Ramp at x 12, from the lakebed to the shore.
         public const float RampX = 12f;
         public static readonly Vector3 RampLow = new Vector3(12f, -0.9f, -43f);
         public static readonly Vector3 RampHigh = new Vector3(12f, 0.4f, -51f);
         public const float RampWidth = 3f, RampThickness = 0.1f;
+        // R70 shore-ramp foot (the only WaterExit, contract M2-D30): x 10.5..13.5, y -2.4..0.4, z -46..-39 (seaward to where swimmers find
+        // their feet, bed about -1.38 m). Top is the old climb-out point, used only for "pushing toward the ramp".
+        public static readonly Vector3 RampFootCenter = new Vector3(12f, -1.0f, -42.5f);
+        public static readonly Vector3 RampFootSize = new Vector3(3f, 2.8f, 7f);
+        public static readonly Vector3 RampTopPoint = new Vector3(12f, 0.45f, -50.5f);
 
         // Spawns 1.5 m apart on the deck, facing +z.
         public const int SpawnCount = 4;

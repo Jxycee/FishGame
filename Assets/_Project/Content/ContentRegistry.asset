@@ -15,3 +15,34 @@ MonoBehaviour:
   dataVersion: 1
   spots:
   - {fileID: 11400000, guid: aee9431bc88ba5644bd17cfbd0798afb, type: 2}
+  rods:
+  - {fileID: 11400000, guid: da0a6054a661f104c9b641070b065335, type: 2}
+  - {fileID: 11400000, guid: c0cb6abbd95a810498ac23c3d02de77f, type: 2}
+  - {fileID: 11400000, guid: 8bdf87a5bf12d8f459bc5c2ef67914fb, type: 2}
+  - {fileID: 11400000, guid: af6424a193e625a4aa20594b3f4cfc35, type: 2}
+  baits:
+  - {fileID: 11400000, guid: 4cd6b19b89d925548ab2dc772b8c0649, type: 2}
+  - {fileID: 11400000, guid: a5cce2d4e208e3342b6fe3fecfd48b3d, type: 2}
+  - {fileID: 11400000, guid: e6fb6cbff402c5440b75d1f925b08629, type: 2}
+  - {fileID: 11400000, guid: 015ad220891a03341b73589ae4084cdb, type: 2}
+  - {fileID: 11400000, guid: 518b23aebfa0a144fa1343bb1b8edaae, type: 2}
+  - {fileID: 11400000, guid: 47c3293d82d3e204598559f7348200ef, type: 2}
+  fightProfiles:
+  - {fileID: 11400000, guid: 8ae05f71db6755d4bb061b9a172bc485, type: 2}
+  - {fileID: 11400000, guid: e469fc9a4581c0c4fa3645a6055129d4, type: 2}
+  - {fileID: 11400000, guid: de8cfc7ea13e3764b884960d6d4393ae, type: 2}
+  - {fileID: 11400000, guid: ce362fa9ffd8ab14789713925a56a915, type: 2}
+  - {fileID: 11400000, guid: d4dc0e4ff28dbfb4eb31b037d3677bee, type: 2}
+  species:
+  - {fileID: 11400000, guid: b6165142528cfd945b50848c4c3433b2, type: 2}
+  - {fileID: 11400000, guid: da8de3e045334f143857d5a75b775776, type: 2}
+  - {fileID: 11400000, guid: 44a81c349e7d0f247b8432469acdae23, type: 2}
+  - {fileID: 11400000, guid: dbc2ebb35c2a97e45b2f09f575647936, type: 2}
+  - {fileID: 11400000, guid: 2ee339c4f5f30144dbe196dcee5dc100, type: 2}
+  junk:
+  - {fileID: 11400000, guid: b16740ee59c9a7e4484d2a91b7c8f237, type: 2}
+  - {fileID: 11400000, guid: b6435e1ed38ea454c8ae4b0c6fa558ef, type: 2}
+  fishingTuning: {fileID: 11400000, guid: 98263bff774b9bc4d89f8bb375e9e50b, type: 2}
+  sfxCueTable: {fileID: 11400000, guid: 0f6248fb006fe1849952d0df046bbcff, type: 2}
+  artPalette: {fileID: 11400000, guid: ef0e649100bab7e4aa956f076765b2f2, type: 2}
+  waterSettings: {fileID: 11400000, guid: 24e29ea7c0dab844f8633c2e6d4ed1d5, type: 2}

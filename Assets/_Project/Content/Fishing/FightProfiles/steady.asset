@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4051c06ed00fa7346a150298946675a6, type: 3}
+  m_Name: steady
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FightProfileDef
+  id: steady
+  displayName: Steady
+  calmMin: 2
+  calmMax: 4
+  burstMin: 3
+  burstMax: 5
+  flipRate: 0
+  diveChance: 0.15
+  burstRamp: 0.6
+  calmDrift: 0
+  calmDriftRamp: 0
+  flipMinGap: 0.5
+  lateralJitter: 0
+  strainMod: 0.8
+  moveMult: 0.8
+  reelInMult: 1.2
+  wavePeriod: 4

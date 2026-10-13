@@ -1,6 +1,5 @@
 using System;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Collections.Generic;
 using FishGame.Core;
 using FishGame.Gameplay;
 using FishGame.Runtime;
@@ -16,8 +15,6 @@ namespace FishGame.UI
     [DefaultExecutionOrder(-500)]
     public sealed class UiFlowController : MonoBehaviour
     {
-        private enum MenuFocus : byte { Default = 0, Solo = 1, JoinCode = 2 }
-
         private const int MinUiScalePercent = 80;
         private const int MaxUiScalePercent = 150;
 
@@ -47,20 +44,22 @@ namespace FishGame.UI
         private NameplateOverlay _nameplates;
         private IDisposable _toastSoundSubscription;
 
-        private CancellationTokenSource _attempt;
         private UiScreen _screen = UiScreen.None;
         private UiScreen _settingsReturn = UiScreen.MainMenu;
         private UiScreen _pendingScreen = UiScreen.None;
         private bool _hasPendingScreen;
-        private MenuFocus _menuFocus = MenuFocus.Default;
         private bool _initialized;
         private bool _started;
         private bool _bound;
-        private bool _menuActionsEnabled = true;
-        private bool _menuFocusPending;          // a menu focus attempt failed (target disabled) and must be retried
-        private bool _leaving;
         private bool _inGame;
         private int _screenChangedFrame = -1;
+
+        private ServiceRegistry _app;
+        private UiFocusRouter _focus;
+        private UiSessionActions _actions;
+        private readonly List<IHudExtension> _hudExtensions = new List<IHudExtension>();
+        private bool _extensionsBound;
+        private bool _destroyed;
 
         public UiScreen CurrentScreen => _screen;
 
@@ -74,6 +73,7 @@ namespace FishGame.UI
             _session = app.Get<INetworkSession>();
             _bus = app.Get<EventBus>();
             _audio = app.Get<AudioBus>();
+            _app = app;
 
             _settings.Changed += OnSettingsChanged;
             _session.StateChanged += OnSessionStateChanged;
@@ -93,7 +93,7 @@ namespace FishGame.UI
             }
 
             var previous = _screen;
-            _menuFocusPending = false;
+            _focus.ClearPending();
             if (previous == UiScreen.Settings && screen != UiScreen.Settings) CloseSettings();
 
             _screen = screen;
@@ -108,7 +108,7 @@ namespace FishGame.UI
             UiQuery.Show(_hud, _inGame);
             _nameplates.SetActive(_inGame);
 
-            _input.MenuOpen = IsMenuScreen(screen);
+            _input.MenuOpen = UiFocusRouter.IsMenuScreen(screen);
             SetSoloPaused(screen == UiScreen.Pause || settingsOverGame);
             if (screen != UiScreen.Busy) _busyPresenter.Hide();
 
@@ -116,23 +116,32 @@ namespace FishGame.UI
             {
                 case UiScreen.MainMenu:
                     _menu.Refresh();
-                    SetMenuActions(_session.State == ConnState.Offline && _attempt == null, false);
+                    _focus.SetMenuActions(_session.State == ConnState.Offline && !_actions.HasAttempt, false);
                     break;
                 case UiScreen.Settings:
                     _settingsPresenter.Load();
                     _rebind.Refresh();
                     break;
                 case UiScreen.Pause:
-                    ShowPauseData();
+                    _actions.ShowPauseData();
                     break;
                 case UiScreen.Hud:
                     _hudPresenter.Refresh();
                     break;
             }
 
-            if (!IsMenuScreen(screen)) BlurFocus();
+            if (!UiFocusRouter.IsMenuScreen(screen)) _focus.BlurFocus();
             var target = screen;
-            _root.schedule.Execute(() => FocusScreen(target));
+            _root.schedule.Execute(() => _focus.FocusScreen(target));
+        }
+
+        // T2.4 seam for T25/T26. Binds immediately once BindScreens has finished; otherwise BindScreens binds it.
+        internal void AttachHudExtension(IHudExtension ext)
+        {
+            if (ext == null) throw new ArgumentNullException(nameof(ext));
+            if (_destroyed || _hudExtensions.Contains(ext)) return;
+            _hudExtensions.Add(ext);
+            if (_extensionsBound) ext.Bind(_root, _app);
         }
 
         private void Start()
@@ -188,17 +197,10 @@ namespace FishGame.UI
             var nameplateLayer = UiQuery.Req<VisualElement>(_root, "NameplateLayer");
 
             _menu = new MainMenuPresenter(_mainMenu, _settings);
-            _menu.HostRequested += () => StartAttempt("busy.creating", HostAsync);
-            _menu.JoinRequested += OnJoinRequested;
-            _menu.SoloRequested += () => StartAttempt("busy.loading", ct => _session.StartLocalAsync(false, ct));
-            _menu.DevHostRequested += () => StartAttempt("busy.creating", ct => _session.StartLocalAsync(true, ct));
-            _menu.DevJoinRequested += () => StartAttempt("busy.joining",
-                ct => _session.JoinDirectAsync(NetworkConstants.LoopbackAddress, NetworkConstants.DefaultPort, ct));
             _menu.SettingsRequested += () => OpenSettings(UiScreen.MainMenu);
             _menu.QuitRequested += QuitApplication;
 
             _busyPresenter = new BusyPresenter(_busy);
-            _busyPresenter.CancelRequested += CancelAttempt;
 
             _settingsPresenter = new SettingsPresenter(_settingsScreen, _settings);
             _settingsPresenter.BackRequested += () => Show(_settingsReturn);
@@ -207,17 +209,25 @@ namespace FishGame.UI
             _pausePresenter = new PausePresenter(_pause, _settings);
             _pausePresenter.ResumeRequested += () => Show(UiScreen.Hud);
             _pausePresenter.SettingsRequested += () => OpenSettings(UiScreen.Pause);
-            _pausePresenter.LeaveRequested += LeaveSession;
-            _pausePresenter.JoinsToggleRequested += ToggleJoins;
-            _pausePresenter.Copied += () => _bus.Publish(new ToastRequested("pause.copied", null, 2f));
 
             _hudPresenter = new HudPresenter(_hud, _bus, _input);
+            AttachHudExtension(new FishingHudPresenter());
+            if (Debug.isDebugBuild) AttachHudExtension(new DevOverlayPresenter());
             _toasts = new ToastPresenter(_root, _bus, _settings);
             _nameplates = new NameplateOverlay(nameplateLayer);
+
+            _focus = new UiFocusRouter(_root, _mainMenu, _menu, _busyPresenter, _settingsPresenter, _pausePresenter,
+                () => _screen, () => _bound);
+            _actions = new UiSessionActions(_session, _bus, _menu, _busyPresenter, _pausePresenter,
+                Show, () => _screen, _focus.SetMenuActions, () => _bound, () => _initialized && _bound);
+            _actions.Wire();
 
             // Every UXML button plays Ui_Click on press (pointer, keyboard submit and gamepad submit all raise clicked).
             _root.Query<Button>().ForEach(button => button.clicked += PlayClick);
             _toastSoundSubscription = _bus.Subscribe<ToastRequested>(OnToastSound);
+
+            for (int i = 0; i < _hudExtensions.Count; i++) _hudExtensions[i].Bind(_root, _app);
+            _extensionsBound = true;
         }
 
         private void Update()
@@ -229,9 +239,9 @@ namespace FishGame.UI
             {
                 _hudPresenter.Tick();
                 _nameplates.Tick(Camera.main);
+                for (int i = 0; i < _hudExtensions.Count; i++) _hudExtensions[i].Tick(Time.unscaledDeltaTime);
             }
-            if (IsMenuScreen(_screen) && _input.LastDevice == InputDeviceKind.Gamepad && FocusedElement() == null)
-                FocusScreen(_screen);
+            _focus.RefocusIfLost(_screen, _input.LastDevice);
         }
 
         // Single handler for Escape / Start / UI Cancel (D27): no NavigationCancelEvent handlers exist.
@@ -244,7 +254,7 @@ namespace FishGame.UI
                 case UiScreen.Settings:
                     if (!_rebind.IsRebinding) Show(_settingsReturn);
                     break;
-                case UiScreen.Busy: CancelAttempt(); break;
+                case UiScreen.Busy: _actions.CancelAttempt(); break;
             }
         }
 
@@ -262,122 +272,6 @@ namespace FishGame.UI
             _settings.Save();
         }
 
-        private void ShowPauseData()
-        {
-            var state = SessionState.Current;
-            var code = _session.JoinCode;
-            var showCode = _session.Mode == SessionMode.Online && !string.IsNullOrEmpty(code);
-            var showJoins = UiQuery.IsDevBuild && _session.IsHost && _session.Mode != SessionMode.Solo && state != null;
-            _pausePresenter.Show(showCode, code, showJoins, state == null || state.JoinsOpen);
-            _pausePresenter.SetLeaveEnabled(!_leaving);
-        }
-
-        private async void StartAttempt(string messageKey, Func<CancellationToken, Task> operation)
-        {
-            if (_attempt != null || _session.State != ConnState.Offline) return;
-            _menu.CommitName();                                  // the connect payload reads Current.displayName
-            var cts = new CancellationTokenSource();
-            _attempt = cts;
-            _busyPresenter.Show(UiStrings.Get(messageKey));
-            Show(UiScreen.Busy);
-
-            var succeeded = false;
-            try
-            {
-                await operation(cts.Token);
-                succeeded = true;
-            }
-            catch (OperationCanceledException)
-            {
-                // Cancel ends the attempt with UserLeft: no toast.
-            }
-            catch (NetworkSessionException ex)
-            {
-                // Ended(reason) already fired; SceneFlow (T13) publishes the toast (D8). Raw text is logged only.
-                Debug.Log("FishGame UI: session attempt ended: " + ex.Reason);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                _bus.Publish(new ToastRequested("err.generic"));
-            }
-            finally
-            {
-                if (_attempt == cts) _attempt = null;
-                cts.Dispose();
-            }
-
-            if (!_initialized || !_bound) return;
-            if (!succeeded && _screen == UiScreen.Busy) Show(UiScreen.MainMenu);
-            else SetMenuActions(_session.State == ConnState.Offline, true);
-        }
-
-        private async Task HostAsync(CancellationToken ct)
-        {
-            var code = await _session.HostOnlineAsync(ct);
-            if (!string.IsNullOrEmpty(code)) _bus.Publish(new ToastRequested("toast.join_code", code, 10f));
-        }
-
-        private void OnJoinRequested(string code)
-        {
-            if (!JoinCode.IsPlausible(code))
-            {
-                _bus.Publish(new ToastRequested("err.code_not_found"));
-                _menu.FocusJoinCode();                           // text is kept (spec 11.2)
-                return;
-            }
-            StartAttempt("busy.joining", ct => _session.JoinOnlineAsync(code, ct));
-        }
-
-        private void CancelAttempt()
-        {
-            if (_attempt != null)
-            {
-                _attempt.Cancel();
-                return;
-            }
-            // Already connected and waiting for the scene load: Cancel leaves instead.
-            if (_session.State != ConnState.Offline) LeaveSession();
-        }
-
-        private async void LeaveSession()
-        {
-            if (_leaving) return;
-            _leaving = true;
-            if (_bound) _pausePresenter.SetLeaveEnabled(false);
-            try
-            {
-                await _session.LeaveAsync();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-            finally
-            {
-                _leaving = false;
-                if (_initialized && _bound) _pausePresenter.SetLeaveEnabled(true);
-            }
-        }
-
-        // Dev-only host command (criterion 6): SessionState.NetJoinsOpen + Sessions lock.
-        private async void ToggleJoins()
-        {
-            var state = SessionState.Current;
-            if (state == null || !state.IsServer || !_session.IsHost) return;
-            var open = !state.JoinsOpen;
-            state.ServerSetJoinsOpen(open);
-            _pausePresenter.SetJoinsOpen(open);
-            try
-            {
-                await _session.SetJoinableAsync(open);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-        }
-
         private void OnActiveSceneChanged(Scene previous, Scene next)
         {
             if (!_bound) return;
@@ -387,8 +281,7 @@ namespace FishGame.UI
         private void OnSessionEnded(EndReason reason)
         {
             if (!_bound) return;
-            if (reason == EndReason.ServicesUnavailable) _menuFocus = MenuFocus.Solo;        // "Play Solo instead"
-            else if (reason == EndReason.InvalidCode) _menuFocus = MenuFocus.JoinCode;
+            _focus.PreferFocusFor(reason);
             if (_screen == UiScreen.Busy) Show(UiScreen.MainMenu);
         }
 
@@ -397,24 +290,7 @@ namespace FishGame.UI
             if (!_bound) return;
             if (_screen == UiScreen.Busy && current == ConnState.Connected)
                 _busyPresenter.SetMessage(UiStrings.Get("busy.loading"));
-            SetMenuActions(current == ConnState.Offline && _attempt == null, true);
-        }
-
-        // Enables or disables the menu actions. On a disabled -> enabled change while the menu is open, re-applies the
-        // pending focus (the earlier attempt may have left focus on nothing because the target was still disabled).
-        private void SetMenuActions(bool enabled, bool refocus)
-        {
-            var wasEnabled = _menuActionsEnabled;
-            _menuActionsEnabled = enabled;
-            _menu.SetActionsEnabled(enabled);
-            if (!refocus || !enabled || wasEnabled || _screen != UiScreen.MainMenu || !_menuFocusPending) return;
-            // Never steal focus from an enabled control the user is already in inside the menu.
-            if (FocusedElement() is VisualElement current && _mainMenu.Contains(current) && current.enabledInHierarchy)
-            {
-                _menuFocusPending = false;
-                return;
-            }
-            FocusScreen(UiScreen.MainMenu);
+            _focus.SetMenuActions(current == ConnState.Offline && !_actions.HasAttempt, true);
         }
 
         private void OnSettingsChanged(SettingsData data) => ApplyUiScale();
@@ -433,30 +309,6 @@ namespace FishGame.UI
             if (game != null && game.TryGet<IPauseState>(out var pause)) pause.SetPaused(paused);
         }
 
-        private void FocusScreen(UiScreen screen)
-        {
-            if (!_bound || _screen != screen) return;
-            switch (screen)
-            {
-                case UiScreen.MainMenu:
-                    // The pending focus is consumed only once its target could actually take focus.
-                    bool focused;
-                    if (_menuFocus == MenuFocus.Solo) focused = _menu.FocusSolo();
-                    else if (_menuFocus == MenuFocus.JoinCode) focused = _menu.FocusJoinCode();
-                    else focused = _menu.FocusDefault();
-                    _menuFocusPending = !focused;
-                    if (focused) _menuFocus = MenuFocus.Default;
-                    break;
-                case UiScreen.Busy: _busyPresenter.FocusDefault(); break;
-                case UiScreen.Settings: _settingsPresenter.FocusDefault(); break;
-                case UiScreen.Pause: _pausePresenter.FocusDefault(); break;
-            }
-        }
-
-        private Focusable FocusedElement() => _root?.panel?.focusController?.focusedElement;
-
-        private void BlurFocus() => FocusedElement()?.Blur();
-
         private void PlayClick() => _audio.PlayUi(SfxIds.UiClick);
 
         private void OnToastSound(ToastRequested toast)
@@ -465,9 +317,6 @@ namespace FishGame.UI
             if (toast.Key.StartsWith("err.", StringComparison.Ordinal)) _audio.PlayUi(SfxIds.UiError);
             else if (toast.Key == "toast.join_code") _audio.PlayUi(SfxIds.UiConfirm);
         }
-
-        private static bool IsMenuScreen(UiScreen screen) =>
-            screen == UiScreen.MainMenu || screen == UiScreen.Busy || screen == UiScreen.Settings || screen == UiScreen.Pause;
 
         private static UiScreen ScreenForScene(string sceneName)
         {
@@ -494,6 +343,7 @@ namespace FishGame.UI
 
         private void OnDestroy()
         {
+            _destroyed = true;
             if (!_initialized) return;
             _initialized = false;
             SceneManager.activeSceneChanged -= OnActiveSceneChanged;
@@ -503,8 +353,13 @@ namespace FishGame.UI
             _toastSoundSubscription?.Dispose();
             _toasts?.Dispose();
             _hudPresenter?.Dispose();
+            if (_extensionsBound)
+            {
+                for (int i = _hudExtensions.Count - 1; i >= 0; i--) _hudExtensions[i].Unbind();
+                _extensionsBound = false;
+            }
             _rebind?.Dispose();
-            _attempt?.Cancel();
+            _actions?.CancelForDestroy();
             _bound = false;
             if (_panelCopy != null) Destroy(_panelCopy);
         }

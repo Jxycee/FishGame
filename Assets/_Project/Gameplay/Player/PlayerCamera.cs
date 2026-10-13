@@ -24,6 +24,8 @@ namespace FishGame.Gameplay
         private float _trauma;
         private float _traumaSeed;
         private float _kick;
+        private float _fovKickDeg;    // additive vertical-equivalent kick (AddFovKick), decays to 0
+        private float _fovKickRate;   // degrees per second the kick decays at
         private float _bobDistance;
         private float _bobWeight;
         private float _bobY;
@@ -62,6 +64,8 @@ namespace FishGame.Gameplay
             _headPivot.localRotation = Quaternion.identity;
             _trauma = 0f;
             _kick = 0f;
+            _fovKickDeg = 0f;
+            _fovKickRate = 0f;
             _bobWeight = 0f;
             _bobY = 0f;
         }
@@ -70,6 +74,8 @@ namespace FishGame.Gameplay
         {
             _trauma = 0f;
             _kick = 0f;
+            _fovKickDeg = 0f;
+            _fovKickRate = 0f;
             _bobWeight = 0f;
             _bobY = 0f;
             if (_shake != null)
@@ -82,6 +88,14 @@ namespace FishGame.Gameplay
         public void AddTrauma(float amount)
         {
             _trauma = Mathf.Clamp01(_trauma + amount);
+        }
+
+        // Additive vertical-equivalent FOV kick that decays linearly to 0 over `seconds`. Stacking calls add their degrees and the decay rate
+        // is recomputed so the sum still reaches 0 in `seconds`. Scaled by settings.cameraMotion when applied (a motion of 0 shows no kick).
+        public void AddFovKick(float degrees, float seconds)
+        {
+            _fovKickDeg += degrees;
+            _fovKickRate = Mathf.Abs(_fovKickDeg) / Mathf.Max(0.01f, seconds);
         }
 
         private void Update()
@@ -117,7 +131,8 @@ namespace FishGame.Gameplay
             float verticalFov = UnityEngine.Camera.HorizontalToVerticalFieldOfView(horizontalFov, aspect);
             bool sprinting = _locomotion != null && _locomotion.isActiveAndEnabled && _locomotion.IsSprinting;
             _kick = Mathf.MoveTowards(_kick, sprinting ? 1f : 0f, dt / MovementMath.SprintFovKickTime);
-            Camera.fieldOfView = verticalFov + MovementMath.SprintFovKickDeg * _kick * _motion;
+            _fovKickDeg = Mathf.MoveTowards(_fovKickDeg, 0f, _fovKickRate * dt);
+            Camera.fieldOfView = Mathf.Clamp(verticalFov + MovementMath.SprintFovKickDeg * _kick * _motion + _fovKickDeg * _motion, 1f, 179f);
 
             _trauma = Mathf.MoveTowards(_trauma, 0f, MovementMath.TraumaDecayPerSecond * dt);
 

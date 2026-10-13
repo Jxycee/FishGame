@@ -10,10 +10,10 @@ namespace FishGame.Core
 
         private static readonly float[] Rgb =
         {
-            0.90f, 0.36f, 0.24f, // slot 0 coral
-            0.22f, 0.52f, 0.90f, // slot 1 blue
-            0.30f, 0.72f, 0.32f, // slot 2 green
-            0.95f, 0.78f, 0.20f  // slot 3 yellow
+            0.22f, 0.52f, 0.90f, // slot 0 blue (host)
+            0.93f, 0.93f, 0.90f, // slot 1 white (off-white so it doesn't clip under lighting)
+            0.45f, 0.82f, 0.35f, // slot 2 green (light, so it differs from red in lightness too)
+            0.78f, 0.16f, 0.14f  // slot 3 red (dark)
         };
 
         // Throws ArgumentOutOfRangeException when slot is outside 0..Count-1.

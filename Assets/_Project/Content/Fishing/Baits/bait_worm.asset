@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3aa8c832cd0b7be4eb6bc6b8c80ccf5b, type: 3}
+  m_Name: bait_worm
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.BaitDef
+  id: bait_worm
+  displayName: Worm
+  rating: 3
+  stackMax: 3
+  maxRating: 9
+  biteSpeedMod: 0.9
+  junkMult: 1
+  maxNibbles: 2
+  unlimited: 0

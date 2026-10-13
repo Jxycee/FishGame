@@ -19,6 +19,8 @@ namespace FishGame.EditorTools
             SpotDef lakeDock = EnsureLakeDockSpot();
             EnsureRegistry(lakeDock);
             EnsurePanelSettings();
+            FishingContentBuilder.Build();
+            RenderingSetupBuilder.Build();   // T21 (C 2.6): world materials, volume profiles, URP shadow tuning
             AssetDatabase.SaveAssets();
         }
 

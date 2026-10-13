@@ -8,7 +8,10 @@ using UnityEngine;
 
 namespace FishGame.Gameplay
 {
-    // Authority: owner writes NetPitchQ and NetSwimming; host writes NetSlot and NetDisplayName. Every peer reads all four.
+    // Authority: owner writes NetPitchQ, NetSwimming and NetTool; host writes NetSlot and NetDisplayName. Every peer reads all five.
+    // The host also raises ServerInitialized (server only) at the very end of ServerInit (T16, G2): per-player server init for other
+    // components (PlayerCreel, FishingRodNetwork) hangs off it, because PlayerSpawner runs OnNetworkSpawn BEFORE ServerInit and calls only
+    // one IServerPlayerInit.
     // Owner-only components (CharacterController, PlayerLocomotion, PlayerCamera, PlayerInteractor, and the Camera and
     // AudioListener on HeadPivot/Shake/Camera) are enabled here on the owner, never by the prefab. Remotes enable only the
     // CapsuleCollider (layer RemotePlayer) so local players bump remote bodies. Spec 7.2, 7.5; contract 7.12.
@@ -21,6 +24,7 @@ namespace FishGame.Gameplay
         public readonly NetworkVariable<byte> NetSlot = new NetworkVariable<byte>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public readonly NetworkVariable<FixedString32Bytes> NetDisplayName = new NetworkVariable<FixedString32Bytes>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public readonly NetworkVariable<bool> NetSwimming = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        public readonly NetworkVariable<byte> NetTool = new NetworkVariable<byte>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);   // ToolKind
 
         private static readonly List<PlayerNetState> s_active = new List<PlayerNetState>();
         private static PlayerNetState s_local;
@@ -34,9 +38,21 @@ namespace FishGame.Gameplay
         public byte Slot => NetSlot.Value;
         public string DisplayName => NetDisplayName.Value.ToString();
         public bool IsSwimming => NetSwimming.Value;
+        public ToolKind Tool => (ToolKind)NetTool.Value;
+
+        // True after ServerInit has finished (server only); reset on despawn.
+        public bool IsServerInitialized { get; private set; }
 
         public event Action<byte> SlotChanged;
         public event Action<string> DisplayNameChanged;
+
+        // Every peer, the writer included (NetworkVariable raises OnValueChanged on the writer). Not raised for the initial value:
+        // consumers read Tool at spawn, then subscribe (N5).
+        public event Action<ToolKind> ToolChanged;
+
+        // Server only. Raised once per ServerInit, after NetSlot (and, unless the owner already sent it, the name) is written.
+        // A throwing subscriber cannot break PlayerSpawner (EventIsolation).
+        public event Action<PlayerNetState> ServerInitialized;
 
         private PlayerBody _body;
         private PlayerActions _actions;
@@ -95,6 +111,7 @@ namespace FishGame.Gameplay
 
             NetSlot.OnValueChanged += HandleSlotChanged;
             NetDisplayName.OnValueChanged += HandleNameChanged;
+            NetTool.OnValueChanged += HandleToolChanged;
             _subscribed = true;
 
             if (_body != null)
@@ -120,6 +137,7 @@ namespace FishGame.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            IsServerInitialized = false;
             Unsubscribe();
             UnwatchSettings();
             if (_body != null)
@@ -175,6 +193,10 @@ namespace FishGame.Gameplay
             {
                 NetDisplayName.Value = NameWire.ToFixed(DisplayNameRules.Sanitize(displayName, slot));
             }
+
+            // Last statement: NetSlot is written, so subscribers (PlayerCreel mirror, FishingRodNetwork) can read Slot.
+            IsServerInitialized = true;
+            EventIsolation.Invoke(ServerInitialized, this);
         }
 
         // Host only. Called by PlayerActions.SubmitNameRpc with an already sanitised name.
@@ -218,6 +240,21 @@ namespace FishGame.Gameplay
             if (NetSwimming.Value != swimming)
             {
                 NetSwimming.Value = swimming;
+            }
+        }
+
+        // Owner only. Ignored when unchanged (the NetworkVariable would not send anyway, but this also skips the local event).
+        public void OwnerSetTool(ToolKind tool)
+        {
+            if (!IsSpawned || !IsOwner)
+            {
+                return;
+            }
+
+            byte value = (byte)tool;
+            if (NetTool.Value != value)
+            {
+                NetTool.Value = value;
             }
         }
 
@@ -312,6 +349,7 @@ namespace FishGame.Gameplay
 
             NetSlot.OnValueChanged -= HandleSlotChanged;
             NetDisplayName.OnValueChanged -= HandleNameChanged;
+            NetTool.OnValueChanged -= HandleToolChanged;
             _subscribed = false;
         }
 
@@ -323,6 +361,17 @@ namespace FishGame.Gameplay
         private void HandleNameChanged(FixedString32Bytes previous, FixedString32Bytes current)
         {
             DisplayNameChanged?.Invoke(current.ToString());
+        }
+
+        // Internal for the PlayMode test (InternalsVisibleTo). A no-op change raises nothing.
+        internal void HandleToolChanged(byte previous, byte current)
+        {
+            if (previous == current)
+            {
+                return;
+            }
+
+            EventIsolation.Invoke(ToolChanged, (ToolKind)current);
         }
 
         private static void SetEnabled(Behaviour behaviour, bool on)

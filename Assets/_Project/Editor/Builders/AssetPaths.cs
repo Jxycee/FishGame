@@ -30,6 +30,7 @@ namespace FishGame.EditorTools
         public const string ShoreMesh = "Assets/_Project/Content/Meshes/LakeDock_Shore.asset";
         public const string PcRenderPipelineAsset = "Assets/Settings/PC_RPAsset.asset";
         public const string PcRenderer = "Assets/Settings/PC_Renderer.asset";
+        public const string MobileRenderPipelineAsset = "Assets/Settings/Mobile_RPAsset.asset";
         public const string DefaultVolumeProfile = "Assets/Settings/DefaultVolumeProfile.asset";
         public const string TemplateInputActions = "Assets/InputSystem_Actions.inputactions";
         public const string DefaultNetworkPrefabs = "Assets/DefaultNetworkPrefabs.asset";
@@ -40,5 +41,36 @@ namespace FishGame.EditorTools
         public const string ProjectSettingsFile = "ProjectSettings/ProjectSettings.asset";
         public const string EditorBuildSettingsFile = "ProjectSettings/EditorBuildSettings.asset";
         public const string NetcodeSettingsFile = "ProjectSettings/NetcodeForGameObjects.asset";
+
+        // T14 additions (fishing, art and audio data; C 6.2). T20/T21 reuse ModelsFolder; do not redeclare it.
+        public const string FishingFolder = "Assets/_Project/Content/Fishing";
+        public const string RodsFolder = FishingFolder + "/Rods";
+        public const string BaitsFolder = FishingFolder + "/Baits";
+        public const string FightProfilesFolder = FishingFolder + "/FightProfiles";
+        public const string SpeciesFolder = FishingFolder + "/Species";
+        public const string JunkFolder = FishingFolder + "/Junk";
+        public const string FishingTuningAsset = FishingFolder + "/FishingTuning.asset";
+        public const string ArtFolder = "Assets/_Project/Content/Art";
+        public const string ArtPaletteAsset = ArtFolder + "/ArtPalette.asset";
+        public const string WaterSettingsAsset = ArtFolder + "/WaterSettings.asset";
+        public const string AudioFolder = "Assets/_Project/Content/Audio";
+        public const string SfxCueTableAsset = AudioFolder + "/SfxCueTable.asset";
+        public const string ModelsFolder = "Assets/_Project/Content/Models";
+
+        // T20 additions (shaders, Toon materials, body meshes). ModelsFolder is T14's; do not redeclare it.
+        public const string ShadersFolder = "Assets/_Project/Shaders";
+        public const string BodyUnitSphereMesh = MeshesFolder + "/Body_UnitSphere.asset";
+        public const string BodyUnitBoxMesh = MeshesFolder + "/Body_UnitBox.asset";
+        public const string BodyUnitCapsuleMesh = MeshesFolder + "/Body_UnitCapsule.asset";
+
+        // T21 additions (rendering setup: volume profiles).
+        public const string RenderingFolder = "Assets/_Project/Content/Rendering";
+        public const string WarmVolumeProfile = RenderingFolder + "/VP_WarmSunset.asset";
+        public const string CoolVolumeProfile = RenderingFolder + "/VP_CoolNight.asset";
+
+        // R74 look-dev additions (painted texture arrays; PNG sources are Git LFS, imported as Texture2DArray by TextureArrayPostprocessor).
+        public const string TexturesFolder = "Assets/_Project/Content/Textures";
+        public const string EnvDetailArray = TexturesFolder + "/T_EnvDetailArray.png";
+        public const string FishSkinArray = TexturesFolder + "/T_FishSkinArray.png";
     }
 }

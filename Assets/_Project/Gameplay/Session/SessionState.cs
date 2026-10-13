@@ -1,5 +1,9 @@
 // Authority: host writes Roster and NetJoinsOpen; every peer reads. Spawned by AppBootstrap on OnServerStarted with destroyWithScene: false.
 // Roster entries are never removed in M1: a disconnected entry keeps its slot (Connected = false) so the same identity can reclaim it.
+// M2 (T16): ServerCreels is the host-only, slot-keyed creel store (R46: a creel survives a disconnect and rejoin). It is a plain C# object,
+// never networked: created in OnNetworkSpawn when IsServer, null on clients and after despawn. PlayerCreel (server) mirrors it to NetCreel.
+// Slot takeover (T16-R1): Upsert clears that slot's creel and debug coins when the slot passes to a DIFFERENT persistent identity; the same
+// identity rejoining keeps them (R46). The same takeover raises SlotTakenOver so FishingHost resets that slot's rod, bait, stock and pity streak.
 using System;
 using System.Collections.Generic;
 using FishGame.Core;
@@ -19,11 +23,18 @@ namespace FishGame.Gameplay
         public static SessionState Current => current;
         public static event Action<SessionState> CurrentChanged;
 
+        // Host only (Upsert never runs elsewhere). Raised with the slot number after a DIFFERENT persistent identity took that slot over
+        // (never for the same identity rejoining, never for a brand-new slot). Subscribers reset their per-slot host state (FishingHost).
+        public static event Action<int> SlotTakenOver;
+
         public NetworkList<PlayerSlot> Roster;
         public readonly NetworkVariable<bool> NetJoinsOpen = new NetworkVariable<bool>(
             true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         public event Action RosterChanged;
+
+        // Host only (null on clients). Created on server spawn with NetworkConstants.MaxPlayers slots.
+        public CreelLedger ServerCreels { get; private set; }
 
         public bool JoinsOpen => NetJoinsOpen.Value;
 
@@ -45,6 +56,7 @@ namespace FishGame.Gameplay
         {
             current = null;
             CurrentChanged = null;
+            SlotTakenOver = null;
         }
 
         private void Awake()
@@ -62,6 +74,8 @@ namespace FishGame.Gameplay
 
             if (IsServer)
             {
+                ServerCreels = new CreelLedger(NetworkConstants.MaxPlayers);
+
                 var app = ServiceRoots.App;
                 if (app != null && app.TryGet<JoinApprovalBridge>(out var found))
                 {
@@ -90,6 +104,7 @@ namespace FishGame.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            ServerCreels = null;
             if (subscribedManager != null)
             {
                 subscribedManager.OnConnectionEvent -= OnConnectionEvent;
@@ -229,7 +244,7 @@ namespace FishGame.Gameplay
 
         // Host only. The entry holding join.Slot is replaced in place (reclaim, or taking over a disconnected slot); otherwise append.
         // Returns false (roster untouched) if the row holding join.Slot is connected under a different client.
-        private bool Upsert(ApprovedJoin join)
+        internal bool Upsert(ApprovedJoin join)
         {
             for (int i = 0; i < Roster.Count; i++)
             {
@@ -255,7 +270,17 @@ namespace FishGame.Gameplay
             {
                 if (Roster[i].Slot == join.Slot)
                 {
+                    // T16-R1: a different persistent identity taking the slot over starts with a fresh creel and debug wallet;
+                    // the same identity rejoining keeps both (R46).
+                    bool takeover = !Roster[i].Id.Equals(entry.Id);
+                    if (takeover && ServerCreels != null)
+                    {
+                        ServerCreels.ClearSlot(join.Slot);
+                    }
+
                     Roster[i] = entry;
+                    // Host-side fishing state (rod, bait, bait stock, pity streak) is reset by FishingHost through this hook.
+                    if (takeover) EventIsolation.Invoke(SlotTakenOver, (int)join.Slot);
                     return true;
                 }
             }

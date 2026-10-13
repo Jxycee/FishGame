@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd68fce454b2574ba54dbe488b07cd0, type: 3}
+  m_Name: perch
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FishSpeciesDef
+  id: perch
+  displayName: Perch
+  rarity: 0
+  baseValue: 8
+  weightMinG: 300
+  weightMaxG: 1200
+  weightSkew: 2.2
+  lengthShapeK: 1
+  fight: {fileID: 11400000, guid: e469fc9a4581c0c4fa3645a6055129d4, type: 2}
+  bodyShape: 1
+  colorA: {r: 0.62, g: 0.68, b: 0.3, a: 1}
+  colorB: {r: 0.2, g: 0.24, b: 0.16, a: 1}
+  biteWaitMod: 1
+  hookWindow: 0
+  isSpecial: 0
+  minBaitRating: 3
+  minDepth: 1.2
+  model: {fileID: 8609147432232202245, guid: 3fd5c0545229b404fa295c78e6a9b648, type: 3}

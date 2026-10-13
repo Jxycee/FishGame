@@ -3,9 +3,11 @@
 // This file deliberately has no "using UnityEditor;": UnityEditor.SessionState would clash with FishGame.Gameplay.SessionState.
 using FishGame.Core;
 using FishGame.Gameplay;
+using FishGame.Runtime;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace FishGame.EditorTools
 {
@@ -100,22 +102,34 @@ namespace FishGame.EditorTools
             camera.nearClipPlane = MovementMath.NearClip;
             camera.farClipPlane = MovementMath.FarClip;
             camera.enabled = false;
+            BuilderUtil.GetOrAdd<UniversalAdditionalCameraData>(cameraTransform.gameObject).renderPostProcessing = true;   // T21: the volume profiles take effect
             BuilderUtil.GetOrAdd<AudioListener>(cameraTransform.gameObject).enabled = false;
 
-            Prim(t, PlayerRigPaths.Head, PrimitiveType.Sphere, Vector3.zero, new Vector3(0.28f, 0.28f, 0.28f), skin);
-            Prim(t, PlayerRigPaths.Nose, PrimitiveType.Cube, new Vector3(0f, 0f, 0.5f), new Vector3(0.18f, 0.18f, 0.3f), skin);
+            // T20: the body parts draw MeshBuilder unit meshes (vertex colours for FishGame/Toon) instead of Unity's primitives. Transforms are the M1 ones.
+            Mesh unitSphere = SaveMesh(AssetPaths.BodyUnitSphereMesh, BuildUnitSphere());
+            Mesh unitBox = SaveMesh(AssetPaths.BodyUnitBoxMesh, BuildUnitBox());
+            Mesh unitCapsule = SaveMesh(AssetPaths.BodyUnitCapsuleMesh, BuildUnitCapsule());
+
+            UseMesh(Prim(t, PlayerRigPaths.Head, PrimitiveType.Sphere, Vector3.zero, new Vector3(0.28f, 0.28f, 0.28f), skin), unitSphere);
+            UseMesh(Prim(t, PlayerRigPaths.Nose, PrimitiveType.Cube, new Vector3(0f, 0f, 0.5f), new Vector3(0.18f, 0.18f, 0.3f), skin), unitBox);
 
             Empty(t, PlayerRigPaths.Body, Vector3.zero);
-            Prim(t, PlayerRigPaths.Torso, PrimitiveType.Cube, new Vector3(0f, 1.2f, 0f), new Vector3(0.42f, 0.55f, 0.24f), body);
+            UseMesh(Prim(t, PlayerRigPaths.Torso, PrimitiveType.Cube, new Vector3(0f, 1.2f, 0f), new Vector3(0.42f, 0.55f, 0.24f), body), unitBox);
             Empty(t, PlayerRigPaths.ArmL, new Vector3(-0.27f, 1.42f, 0f));
             Empty(t, PlayerRigPaths.ArmR, new Vector3(0.27f, 1.42f, 0f));
-            Prim(t, PlayerRigPaths.ArmLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.25f, 0f), new Vector3(0.12f, 0.25f, 0.12f), body);
-            Prim(t, PlayerRigPaths.ArmRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.25f, 0f), new Vector3(0.12f, 0.25f, 0.12f), body);
+            // R74 floppy proportions (mesh children only; the pivots are the M1 ones): longer, slightly thicker arms that overlap the shoulder, and
+            // chunkier legs that reach up into the torso (no gap at the hip).
+            UseMesh(Prim(t, PlayerRigPaths.ArmLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.24f, 0f), new Vector3(0.13f, 0.29f, 0.13f), body), unitCapsule);
+            UseMesh(Prim(t, PlayerRigPaths.ArmRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.24f, 0f), new Vector3(0.13f, 0.29f, 0.13f), body), unitCapsule);
             Empty(t, PlayerRigPaths.LegL, new Vector3(-0.11f, 0.8f, 0f));
             Empty(t, PlayerRigPaths.LegR, new Vector3(0.11f, 0.8f, 0f));
-            Prim(t, PlayerRigPaths.LegLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.4f, 0f), new Vector3(0.16f, 0.4f, 0.16f), body);
-            Prim(t, PlayerRigPaths.LegRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.4f, 0f), new Vector3(0.16f, 0.4f, 0.16f), body);
+            UseMesh(Prim(t, PlayerRigPaths.LegLMesh, PrimitiveType.Capsule, new Vector3(0f, -0.33f, 0f), new Vector3(0.19f, 0.47f, 0.19f), body), unitCapsule);
+            UseMesh(Prim(t, PlayerRigPaths.LegRMesh, PrimitiveType.Capsule, new Vector3(0f, -0.33f, 0f), new Vector3(0.19f, 0.47f, 0.19f), body), unitCapsule);
             Empty(t, PlayerRigPaths.NameplateAnchor, new Vector3(0f, 2.05f, 0f));
+
+            // T19 hook (C 2.6): the fishing rig, its components after the M1 list, then the presentation hook. RefreshNetworkObjectHash follows in BuildPlayer.
+            PlayerFishingRigBuilder.Build(root);
+            PlayerFishingRigBuilder.AddPresentation(root);
         }
 
         // Contract 6.4.
@@ -128,10 +142,17 @@ namespace FishGame.EditorTools
             box.size = new Vector3(0.6f, 1.6f, 0.6f);
             box.center = new Vector3(0f, 0.8f, 0f);
 
-            BuilderUtil.EnsurePrimitive(root.transform, "Post", PrimitiveType.Cylinder, new Vector3(0f, 0.8f, 0f),
-                Quaternion.identity, new Vector3(0.12f, 0.8f, 0.12f), MaterialLibrary.Get("M_Wood"), false);
-            BuilderUtil.EnsurePrimitive(root.transform, "Bell", PrimitiveType.Sphere, new Vector3(0f, 1.45f, 0f),
-                Quaternion.identity, new Vector3(0.35f, 0.4f, 0.35f), MaterialLibrary.Get("M_Brass"), false);
+            // R74 adoption: same transforms, smooth meshes on the Toon materials (post: wood lathe on M_Toon_Base; bell: a flared bell with a crown
+            // knob on M_Toon_Brass).
+            GameObject post = BuilderUtil.EnsurePrimitive(root.transform, "Post", PrimitiveType.Cylinder, new Vector3(0f, 0.8f, 0f),
+                Quaternion.identity, new Vector3(0.12f, 0.8f, 0.12f), RenderMaterialLibrary.Get("M_Toon_Base"), false);
+            // The bell mesh has its crown at the origin (BellCrownY), so the child sits at the old belly height 1.45 plus crown * scale.y: the bell
+            // looks the same, and DockBell's swing pivots at the top. Only this child moves; the root, its collider and its components are unchanged.
+            const float bellScaleY = 0.4f;
+            GameObject bell = BuilderUtil.EnsurePrimitive(root.transform, "Bell", PrimitiveType.Sphere, new Vector3(0f, 1.45f + BellCrownY * bellScaleY, 0f),
+                Quaternion.identity, new Vector3(0.35f, bellScaleY, 0.35f), RenderMaterialLibrary.Get("M_Toon_Brass"), false);
+            UseMesh(post, SaveMesh(BellPostMesh, BuildBellPost()));
+            UseMesh(bell, SaveMesh(BellMesh, BuildBell()));
             BuilderUtil.SetLayerRecursive(root, Layers.Interactable);
         }
 
@@ -142,6 +163,99 @@ namespace FishGame.EditorTools
             t.localRotation = Quaternion.identity;
             t.localScale = Vector3.one;
             return t;
+        }
+
+        // T20 unit body meshes (plan T20.6). Default face jitter, slot 0 (unused in vertex-colour mode). No colour pass: the half-scale grey
+        // stays as built and the body materials set _JitterEncoded 1 (BF-7). Sizes equal Unity's primitives: sphere diameter 1, cube 1, capsule height 2.
+        // R74 (look-dev 2026-10-12): the same unit volumes, now SMOOTH (SmoothMeshBuilder): a sphere, a pillowy rounded box (torso and nose) and a
+        // smooth capsule. The box and capsule carry the Cloth detail layer (the slot materials' weave); ao a little darker underneath. M_Skin is textured
+        // too (the env array at tiling 1, for the head's face tile), so the NOSE, which shares Body_UnitBox with the torso, shows the cloth weave at
+        // that tiling: a faint value pattern on a small part. A skin-layer nose would need its own box mesh; left as is. Transforms unchanged.
+        static Mesh BuildUnitSphere()
+        {
+            var builder = new SmoothMeshBuilder();
+            // The head: the +Z cube face carries the face decal (one tile: dot eyes and a smile around the nose); every other face is neutral.
+            builder.Radial(Vector3.zero, d => 0.5f, 8, Quaternion.identity, Vector3.one, 0, EnvTextureLayers.None, SmoothMeshBuilder.MappingUv,
+                d => 0.82f + 0.18f * (d.y * 0.5f + 0.5f), 0.5f, f => f.z > 0.5f ? EnvTextureLayers.Face : EnvTextureLayers.None, new Vector2(0.5f, 0.5f));
+            return builder.ToMesh("Body_UnitSphere");
+        }
+
+        static Mesh BuildUnitBox()
+        {
+            var builder = new SmoothMeshBuilder();
+            builder.RoundedBox(Vector3.zero, Vector3.one, 0.42f, Quaternion.identity, 0, EnvTextureLayers.Cloth, 0.25f, 2);
+            return builder.ToMesh("Body_UnitBox");
+        }
+
+        static Mesh BuildUnitCapsule()
+        {
+            var builder = new SmoothMeshBuilder();
+            builder.Lathe(Vector3.zero, t =>
+            {
+                float y = Mathf.Abs(-1f + 2f * t);
+                return y <= 0.5f ? 0.5f : Mathf.Sqrt(Mathf.Max(0f, 0.25f - (y - 0.5f) * (y - 0.5f)));
+            }, 2f, 16, 24, Quaternion.identity, 0, EnvTextureLayers.Cloth, SmoothMeshBuilder.MappingUv, t => 0.8f + 0.2f * t, 0.5f);
+            return builder.ToMesh("Body_UnitCapsule");
+        }
+
+        const string BellPostMesh = AssetPaths.MeshesFolder + "/Bell_Post.asset";
+        const string BellMesh = AssetPaths.MeshesFolder + "/Bell_Bell.asset";
+
+        // Unity cylinder volume (radius 0.5, height 2): a wooden post with a rounded top, grain up, darker at the foot. Palette slot Wood (3).
+        static Mesh BuildBellPost()
+        {
+            var builder = new SmoothMeshBuilder();
+            builder.Lathe(Vector3.zero, t => t > 0.97f ? 0.42f * Mathf.Sqrt(Mathf.Max(0f, 1f - (t - 0.97f) / 0.03f)) : 0.42f, 2f, 14, 6, Quaternion.identity,
+                3, EnvTextureLayers.Wood, SmoothMeshBuilder.MappingUv, t => 0.65f + 0.35f * Mathf.Sqrt(t), 0.42f, true);
+            return builder.ToMesh("Bell_Post");
+        }
+
+        // Mesh-local height of the bell's domed crown before the pivot shift. DockBell swings the "Bell" transform about its origin, so the mesh is
+        // built with the crown AT the origin (the bell hangs from the top: the swing reads as a pendulum, not a spin about the belly) and the Bell
+        // child is raised by CrownY * its scale.y to leave the bell exactly where it was.
+        const float BellCrownY = 0.4f;
+
+        // Unit sphere volume: a bell flaring to the mouth at the bottom, a domed crown and a knob; darker toward the lip (ao). The mouth is closed by
+        // a shallow downward-pointing cap just inside the lip, so the underside is never open (a lathe has no end caps). The crown is at the origin.
+        static Mesh BuildBell()
+        {
+            var builder = new SmoothMeshBuilder();
+            // Mouth cap: apex on the mouth plane (y -0.5), radius growing to the lip radius at y -0.48 (lip(t = 0.0222) = 0.4222).
+            builder.Lathe(new Vector3(0f, -0.49f - BellCrownY, 0f), t => 0.4222f * t, 0.02f, 20, 3, Quaternion.identity, 0, EnvTextureLayers.None,
+                SmoothMeshBuilder.MappingUv, t => 0.45f, 0.4f);
+            builder.Lathe(new Vector3(0f, -0.05f - BellCrownY, 0f), t =>
+            {
+                float crown = Mathf.Sqrt(Mathf.Max(0f, 1f - Mathf.Pow(Mathf.Clamp01((t - 0.72f) / 0.28f), 2f)));
+                float body = Mathf.Lerp(0.48f, 0.30f, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.72f)));
+                float lip = t < 0.08f ? Mathf.Lerp(0.40f, 0.48f, t / 0.08f) : body;
+                return t < 0.72f ? lip : 0.30f * crown;
+            }, 0.9f, 20, 14, Quaternion.identity, 0, EnvTextureLayers.None, SmoothMeshBuilder.MappingUv, t => 0.7f + 0.3f * Mathf.Clamp01(t * 3f), 0.4f);
+            builder.Radial(new Vector3(0f, 0.45f - BellCrownY, 0f), d => 0.07f, 3, Quaternion.identity, Vector3.one, 0, EnvTextureLayers.None, SmoothMeshBuilder.MappingUv,
+                d => 0.9f, 0.1f);
+            return builder.ToMesh("Bell_Bell");
+        }
+
+        static void UseMesh(GameObject part, Mesh mesh)
+        {
+            part.GetComponent<MeshFilter>().sharedMesh = mesh;
+        }
+
+        // Existing asset: copy the built data into it (GUID and fileID stay, rebuilds are byte-identical) and return the asset.
+        // (Same pattern as PlayerFishingRigBuilder.SaveMesh, which is private to T19's file.)
+        static Mesh SaveMesh(string assetPath, Mesh built)
+        {
+            BuilderUtil.EnsureFolder(BuilderUtil.Folder(assetPath));
+            Mesh existing = UnityEditor.AssetDatabase.LoadAssetAtPath<Mesh>(assetPath);
+            if (existing != null)
+            {
+                UnityEditor.EditorUtility.CopySerialized(built, existing);
+                UnityEditor.EditorUtility.SetDirty(existing);
+                Object.DestroyImmediate(built);
+                return existing;
+            }
+
+            UnityEditor.AssetDatabase.CreateAsset(built, assetPath);
+            return built;
         }
 
         static GameObject Prim(Transform root, string path, PrimitiveType type, Vector3 localPosition, Vector3 localScale, Material material)

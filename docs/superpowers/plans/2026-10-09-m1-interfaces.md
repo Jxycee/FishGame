@@ -253,7 +253,7 @@ Physics matrix (T15 applies): Fish ignores Player and RemotePlayer; Ragdoll igno
 public static class SlotPalette
 {
     public const int Count = 4;
-    // slot 0 coral (0.90,0.36,0.24); 1 blue (0.22,0.52,0.90); 2 green (0.30,0.72,0.32); 3 yellow (0.95,0.78,0.20); skin (0.96,0.80,0.66)
+    // slot 0 blue (0.22,0.52,0.90); 1 white (0.93,0.93,0.90); 2 green (0.45,0.82,0.35); 3 red (0.78,0.16,0.14); skin (0.96,0.80,0.66)
     public static void GetRgb(int slot, out float r, out float g, out float b); // ArgumentOutOfRangeException outside 0..3
     public static void GetSkinRgb(out float r, out float g, out float b);
 }
@@ -381,7 +381,7 @@ NetworkManager configured by the builder: `NetworkConfig.NetworkTransport` = the
 | `Lakebed` | procedural mesh + MeshCollider. Shoreline radius R = 50; depth at distance d inward from the shoreline = −6·clamp(d/40, 0, 1) (0 m at the shoreline, −6 m at 40 m out) | Ground |
 | `Shore` | ring mesh from r 49 (y −0.2) rising to y 1.0 at r 56, flat to r 90 + MeshCollider; seeded rocks (r 48–54) and trees (r 58–85) as primitive children | Shore |
 | `Dock` | deck 3 × 12 m (x ∈ [−1.5, 1.5], z ∈ [−52, −40]), top at y 0.6, thickness 0.1; posts every 2 m at x ±1.4 down to the lakebed; ladders at z −41.5 on both sides | Structure |
-| `Exits` | three `WaterExit` (T11) trigger boxes: `LadderL` at (−2.1, −0.8, −41.5) size (1.2, 2.6, 1.2) with child `Top` at (−0.9, 0.65, −41.5); `LadderR` mirrored (x +2.1, Top x +0.9); `Ramp` at (12, −0.9, −44) size (3, 2.4, 4) (lakebed there ≈ −0.66 m, so wading players are inside it) with `Top` at (12, 0.45, −50.5); plus a sloped `RampDeck` box (layer Structure) from the lakebed at about (12, −0.9, −43) up to the shore at about (12, 0.4, −51) | Water (volumes) |
+| `Exits` | three `WaterExit` (T11) trigger boxes: `LadderL` at (−2.1, −0.8, −41.5) size (1.2, 2.6, 1.2) with child `Top` at (−0.9, 0.65, −41.5); `LadderR` mirrored (x +2.1, Top x +0.9); `Ramp` at (12, −0.9, −44) size (3, 2.4, 4) (lakebed there ≈ −0.66 m, so wading players are inside it) with `Top` at (12, 0.45, −50.5); plus a sloped `RampDeck` box (layer Structure) from the lakebed at about (12, −0.9, −43) up to the shore at about (12, 0.4, −51). Superseded by R70 (2026-10-12; M2 contract M2-D29, M2-D30, 6.4): the ladder exits are now Ladders/LadderL|R LadderVolumes, and Exits/Ramp is the ramp foot | Water (volumes) |
 | `BellAnchor` | `NetSpawnAnchor` (T12), prefab = DockBell, at (1.1, 0.6, −40.6) | Default |
 
 ### 6.6 Editor menu items (single owners)
@@ -1825,7 +1825,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File C:\Dev\FishGame\Tools\unity.
 | D31 | Physics/layers | `Water` = built-in layer 4. Other layers are pinned at 6–13 (§5.3). | F18. |
 | D32 | PlayerSlot field names | PascalCase public fields (`ClientId`, `Id`, `Name`, `Slot`, `Connected`, `Ready`). | C# convention. Same fields as spec 6.2. |
 | D33 | Commit trailer | `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` (implementers are Sonnet), as the workflow instructs. This differs from spec 4.1 #4 (Opus). **Resolved 2026-10-09: Sonnet; spec 4.1 #4 updated to match.** | Attribution follows the actual author. |
-| D36 | Water exits | A `WaterExit` climb triggers while wading **or** swimming (`MovementMath.IsInWater`, root below surface − 0.3 m), not only while swimming. The ramp volume sits where the lakebed is about −0.66 m. | With the spec's lakebed slope, a swimmer touches bottom about 8 m before the ramp, so a swim-only exit would never fire there. |
+| D36 | Water exits | A `WaterExit` climb triggers while wading **or** swimming (`MovementMath.IsInWater`, root below surface − 0.3 m), not only while swimming. The ramp volume sits where the lakebed is about −0.66 m. | With the spec's lakebed slope, a swimmer touches bottom about 8 m before the ramp, so a swim-only exit would never fire there. Superseded in part by R70 (2026-10-12): ladders are walk-in LadderVolumes; this in-water gate now drives only the shore-ramp foot assist (M2 contract M2-D30). |
 | D37 | "Established" on the host | Fired after `StartHost()` returns true (Local), or after `CreateSessionAsync` returns with `IsServer && IsListening` (UGS). Not inside `OnServerStarted`. The `SessionState` spawn does hook `OnServerStarted`. | NGO raises `OnServerStarted` synchronously inside `StartHost` (2.13.3 `HostServerInitialize`). Firing Established there would start a scene load re-entrantly. |
 | D38 | SDK and our approval seam | Verified that multiplayer 2.3.3 never assigns `ConnectionApprovalCallback` or `NetworkConfig.ConnectionData` (it touches only the transport). Our approver and payload therefore survive the online path. | grep of the package source |
 | D39 | Integration fixes | T15–T17 may fix earlier-task files and add asmdef references (§2.6), with the public surface frozen. | Integration bugs first surface in T15/T16. Without this rule they would deadlock. |

@@ -44,6 +44,18 @@ namespace FishGame.Tests.EditMode
             Assert.IsTrue(new PlayerKey(IdentityKind.Local, "a").IsValid);
         }
 
+        // Catches: MaxIdLength above the FixedString64Bytes capacity (61), so a "valid" 62..64 char id is silently byte-truncated on the roster
+        // (the roster identity then differs from the connecting key and a slot reclaim or takeover check compares the wrong ids).
+        [Test]
+        public void PlayerKey_MaxIdLength_MatchesRosterIdCapacity_AndRoundTripsThroughNetPlayerId()
+        {
+            Assert.AreEqual(new Unity.Collections.FixedString64Bytes().Capacity, PlayerKey.MaxIdLength, "MaxIdLength must equal the roster FixedString64Bytes capacity");
+            var key = new PlayerKey(IdentityKind.Ugs, new string('k', PlayerKey.MaxIdLength));
+            Assert.IsTrue(key.IsValid);
+            Assert.AreEqual(key, FishGame.Gameplay.NetPlayerId.From(key).ToKey(), "a maximum-length valid id survives the roster form unchanged");
+            Assert.IsFalse(new PlayerKey(IdentityKind.Ugs, new string('k', 62)).IsValid, "62 chars no longer fit the roster id");
+        }
+
         [Test]
         public void PlayerKey_ToString_IsKindColonId()
         {

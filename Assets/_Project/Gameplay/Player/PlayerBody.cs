@@ -16,7 +16,7 @@ namespace FishGame.Gameplay
         private const float LegSwingDeg = 30f;
         private const float ArmSwingDeg = 20f;
         private const float PitchSmoothing = 15f;
-        private const float RemoteRightArmRaiseDeg = 70f;
+        private const float RemoteRightArmRaiseDeg = 90f;
         private const float OwnerRightArmPitchDeg = -90f;
         private const float SwingMinSpeed = 0.2f;
         private const float SwingMaxSpeed = 10f;

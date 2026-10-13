@@ -6,7 +6,8 @@ namespace FishGame.Core
     // Equal when Kind matches and Id matches by ordinal (case-sensitive) comparison.
     public readonly struct PlayerKey : IEquatable<PlayerKey>
     {
-        public const int MaxIdLength = 64;
+        // Matches SessionText.IdCapacityBytes (FixedString64Bytes = 61 UTF-8 bytes): an id that fits is never byte-truncated on the roster.
+        public const int MaxIdLength = 61;
 
         public readonly IdentityKind Kind;
         public readonly string Id;

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace FishGame.Runtime
 {
-    // M1 settings (spec 11.6). Serialized with JsonUtility: public fields only, unknown/missing fields keep defaults.
+    // M1 + M2 settings (spec 11.6). Serialized with JsonUtility: public fields only, unknown/missing fields keep defaults.
     // Clamp() runs on every Load, NotifyChanged and Save.
     [Serializable]
     public sealed class SettingsData
@@ -21,6 +21,9 @@ namespace FishGame.Runtime
         public float cameraMotion = 1f;            // 0..1
         public bool sprintToggle = false, aimToggle = false, streamerMode = false;
         public int uiScalePercent = 100;           // 80..150
+        public int lineGauge = 0;                  // 0..2 = FishGame.Core.LineGaugeMode (Off, Arc, Bar)
+        public bool captions = true;
+        public bool fishingAssist = false;         // assist-on sets the gauge to Arc: UI rule (T25, ruling G-Q4), never coupled in Clamp
         public string bindingOverridesJson = "";   // InputActionAsset.SaveBindingOverridesAsJson output
         public string localPlayerId = "";          // GUID "N" format, created once per instance file
 
@@ -38,6 +41,7 @@ namespace FishGame.Runtime
             fieldOfView = ClampFloat(fieldOfView, 80f, 110f, 90f);
             cameraMotion = ClampFloat(cameraMotion, 0f, 1f, 1f);
             uiScalePercent = ClampInt(uiScalePercent, 80, 150);
+            lineGauge = ClampInt(lineGauge, 0, 2);
             if (bindingOverridesJson == null) bindingOverridesJson = "";
             if (localPlayerId == null) localPlayerId = "";
         }

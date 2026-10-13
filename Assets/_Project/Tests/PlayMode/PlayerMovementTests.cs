@@ -33,14 +33,11 @@ namespace FishGame.Tests.PlayMode
 
             Vector3 start = player.transform.position;
             fake.Frame = new PlayerInputFrame { MoveY = 1f };
-            float elapsed = 0f;
-            int frames = 0;
-            while (elapsed < 1f)
-            {
-                yield return null;
-                elapsed += Time.deltaTime;
-                frames++;
-            }
+            float t0 = Time.time;
+            int f0 = Time.frameCount;
+            yield return PlayModeHarness.WaitGameSeconds(1f, PlayModeHarness.DefaultTimeoutSeconds, "Forward walk never accumulated 1 s of game time");
+            float elapsed = Time.time - t0;
+            int frames = Time.frameCount - f0;
             fake.Frame = default;
 
             Vector3 delta = player.transform.position - start;
@@ -67,7 +64,7 @@ namespace FishGame.Tests.PlayMode
 
             // Walk first, so that "zero velocity after teleport" is not trivially true.
             fake.Frame = new PlayerInputFrame { MoveY = 1f };
-            yield return new WaitForSeconds(0.4f);
+            yield return PlayModeHarness.WaitGameSeconds(0.4f, PlayModeHarness.DefaultTimeoutSeconds, "Walk precondition never accumulated 0.4 s of game time");
             float walkSpeed = new Vector2(locomotion.Velocity.x, locomotion.Velocity.z).magnitude;
             Assert.That(walkSpeed, Is.GreaterThan(1f), $"Precondition: the player must be walking before the teleport (speed {walkSpeed:F3})");
             fake.Frame = default;

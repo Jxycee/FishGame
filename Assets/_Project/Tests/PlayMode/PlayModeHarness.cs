@@ -1,6 +1,7 @@
 // Authority: test-only (no networked state). Drives the real App through Bootstrap -> Menu -> solo host -> leave for PlayMode tests.
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FishGame.App;
@@ -19,14 +20,44 @@ namespace FishGame.Tests.PlayMode
         public const float DefaultTimeoutSeconds = 10f;
         private const float SessionTimeoutSeconds = 20f;
         private const float TeardownTimeoutSeconds = 20f;
+        private const float RecoveryTimeoutSeconds = 10f;
+        private const string ResetSceneName = "FG_TestReset";
 
         public static IEnumerator LoadBootstrapAndWaitForMenu()
         {
             // AppBootstrap's duplicate guard would destroy the NEW App if a stale one survived, so refuse to continue on a leak.
-            Assert.That(AppBootstrap.Current, Is.Null,
-                "A previous test leaked the App (AppBootstrap.Current is not null); fix the first failing test's teardown first");
-            Assert.That(Unity.Netcode.NetworkManager.Singleton, Is.Null,
-                "A previous test leaked a NetworkManager (NetworkManager.Singleton is not null)");
+            // Recover first (fresh empty scene, other scenes unloaded) so tests after the failing one start clean.
+            string leak = null;
+            if (AppBootstrap.Current != null)
+            {
+                leak = "A previous test leaked the App (AppBootstrap.Current is not null); fix the first failing test's teardown first";
+            }
+            else if (Unity.Netcode.NetworkManager.Singleton != null)
+            {
+                leak = "A previous test leaked a NetworkManager (NetworkManager.Singleton is not null)";
+            }
+            else if (ServiceRoots.Game != null)
+            {
+                leak = "A previous test leaked ServiceRoots.Game (a gameplay scene's GameScope survived)";
+            }
+            if (leak != null)
+            {
+                var stale = AppBootstrap.Current;
+                if (stale != null)
+                {
+                    try
+                    {
+                        stale.DestroyForTests();
+                    }
+                    catch (Exception e)
+                    {
+                        TestContext.WriteLine("leak recovery: DestroyForTests threw: " + e.GetBaseException().Message);
+                    }
+                }
+                TestContext.WriteLine("LoadBootstrapAndWaitForMenu: " + leak);   // before recovery, so the original cause survives a recovery failure
+                yield return RecoverFromLeakedScenes();
+                Assert.Fail(leak);
+            }
 
             AppBootstrap.SuppressDevAutoStart = true;
             SceneManager.LoadScene(SceneNames.Bootstrap, LoadSceneMode.Single);
@@ -47,7 +78,9 @@ namespace FishGame.Tests.PlayMode
             var session = app.Services.Get<INetworkSession>();
             Assert.That(session.State, Is.EqualTo(ConnState.Offline), "Solo start requested while the session is not Offline");
 
-            yield return Await(session.StartLocalAsync(false, CancellationToken.None), SessionTimeoutSeconds);
+            var cts = new CancellationTokenSource();
+            yield return Await(session.StartLocalAsync(false, cts.Token), SessionTimeoutSeconds, cts);
+            cts.Dispose();
             yield return WaitUntil(
                 () => PlayerNetState.Local != null && SceneManager.GetActiveScene().name == SceneNames.SpotLakeDock,
                 SessionTimeoutSeconds,
@@ -77,74 +110,257 @@ namespace FishGame.Tests.PlayMode
         // Never asserts before DestroyForTests: a failing teardown must still remove the App, or every later test is poisoned.
         public static IEnumerator TearDownApp()
         {
-            string problem = null;
-            var app = AppBootstrap.Current;
-            if (app != null)
+            try
             {
-                INetworkSession session = null;
-                if (app.Services != null && app.Services.TryGet<INetworkSession>(out var found))
+                string problem = null;
+                var app = AppBootstrap.Current;
+                if (app != null)
                 {
-                    session = found;
+                    INetworkSession session = null;
+                    if (app.Services != null && app.Services.TryGet<INetworkSession>(out var found))
+                    {
+                        session = found;
+                    }
+
+                    if (session != null && session.State != ConnState.Offline)
+                    {
+                        Task leave = null;
+                        try
+                        {
+                            leave = session.LeaveAsync();
+                        }
+                        catch (Exception e)
+                        {
+                            problem = "LeaveAsync threw: " + e.GetBaseException().Message;
+                        }
+
+                        if (leave != null)
+                        {
+                            double leaveDeadline = Time.realtimeSinceStartupAsDouble + TeardownTimeoutSeconds;
+                            while (!leave.IsCompleted && Time.realtimeSinceStartupAsDouble < leaveDeadline)
+                            {
+                                yield return null;
+                            }
+
+                            if (!leave.IsCompleted)
+                            {
+                                problem = $"LeaveAsync did not complete within {TeardownTimeoutSeconds} s";
+                            }
+                            else if (leave.IsFaulted)
+                            {
+                                problem = "LeaveAsync faulted: " + leave.Exception.GetBaseException().Message;
+                            }
+                        }
+                    }
+
+                    app.DestroyForTests();
                 }
 
-                if (session != null && session.State != ConnState.Offline)
+                double deadline = Time.realtimeSinceStartupAsDouble + TeardownTimeoutSeconds;
+                while ((AppBootstrap.Current != null || Unity.Netcode.NetworkManager.Singleton != null || PlayerNetState.Active.Count > 0
+                        || ServiceRoots.App != null || ServiceRoots.Game != null)
+                       && Time.realtimeSinceStartupAsDouble < deadline)
                 {
-                    Task leave = null;
-                    try
-                    {
-                        leave = session.LeaveAsync();
-                    }
-                    catch (Exception e)
-                    {
-                        problem = "LeaveAsync threw: " + e.GetBaseException().Message;
-                    }
+                    yield return null;
+                }
+                yield return null;
+                yield return null;
 
-                    if (leave != null)
-                    {
-                        double leaveDeadline = Time.realtimeSinceStartupAsDouble + TeardownTimeoutSeconds;
-                        while (!leave.IsCompleted && Time.realtimeSinceStartupAsDouble < leaveDeadline)
-                        {
-                            yield return null;
-                        }
+                if (problem == null && AppBootstrap.Current != null)
+                {
+                    problem = "AppBootstrap.Current is still set after DestroyForTests";
+                }
+                if (problem == null && Unity.Netcode.NetworkManager.Singleton != null)
+                {
+                    problem = "NetworkManager.Singleton is still set after DestroyForTests";
+                }
+                if (problem == null && PlayerNetState.Active.Count > 0)
+                {
+                    problem = $"{PlayerNetState.Active.Count} PlayerNetState(s) still registered after DestroyForTests";
+                }
+                if (problem == null && ServiceRoots.App != null)
+                {
+                    problem = "ServiceRoots.App is still set after DestroyForTests";
+                }
+                if (problem == null && ServiceRoots.Game != null)
+                {
+                    problem = "ServiceRoots.Game is still set (gameplay scene not unloaded)";
+                }
+                if (ServiceRoots.Game != null || ServiceRoots.App != null)
+                {
+                    // Recover so later tests start clean; the failure below still reports the original problem.
+                    TestContext.WriteLine("TearDownApp: " + (problem ?? "App/Game service roots survived DestroyForTests"));   // before recovery
+                    yield return RecoverFromLeakedScenes();
+                }
+                if (problem != null)
+                {
+                    Assert.Fail("TearDownApp: " + problem);
+                }
+            }
+            finally
+            {
+                // Reset even if DestroyForTests, NGO shutdown, or an Assert below throws, so the flag cannot leak into the next test.
+                AppBootstrap.SuppressDevAutoStart = false;
+            }
+        }
 
-                        if (!leave.IsCompleted)
-                        {
-                            problem = $"LeaveAsync did not complete within {TeardownTimeoutSeconds} s";
-                        }
-                        else if (leave.IsFaulted)
-                        {
-                            problem = "LeaveAsync faulted: " + leave.Exception.GetBaseException().Message;
-                        }
-                    }
+        // Puts a fresh empty scene in place, unloads every other loaded scene, then waits (bounded) for the service roots to clear.
+        // Used only after a leak was detected; the caller still fails the test with the original message.
+        private static IEnumerator RecoverFromLeakedScenes()
+        {
+            double deadline = Time.realtimeSinceStartupAsDouble + RecoveryTimeoutSeconds;
+
+            List<Scene> toUnload = PrepareResetScene();
+
+            foreach (Scene scene in toUnload)
+            {
+                if (!scene.isLoaded)
+                {
+                    continue;
                 }
 
-                app.DestroyForTests();
+                AsyncOperation op = null;
+                try
+                {
+                    op = SceneManager.UnloadSceneAsync(scene);
+                }
+                catch (Exception e)
+                {
+                    TestContext.WriteLine("leak recovery: could not unload scene '" + scene.name + "': " + e.GetBaseException().Message);
+                }
+
+                while (op != null && !op.isDone && Time.realtimeSinceStartupAsDouble < deadline)
+                {
+                    yield return null;
+                }
             }
 
-            double deadline = Time.realtimeSinceStartupAsDouble + TeardownTimeoutSeconds;
-            while ((AppBootstrap.Current != null || Unity.Netcode.NetworkManager.Singleton != null || PlayerNetState.Active.Count > 0)
-                   && Time.realtimeSinceStartupAsDouble < deadline)
+            while ((ServiceRoots.Game != null || ServiceRoots.App != null) && Time.realtimeSinceStartupAsDouble < deadline)
             {
                 yield return null;
             }
-            yield return null;
-            yield return null;
 
-            if (problem == null && AppBootstrap.Current != null)
+            // Last resort so the next test is not poisoned by a stale static; the caller still reports the leak.
+            if (ServiceRoots.Game != null)
             {
-                problem = "AppBootstrap.Current is still set after DestroyForTests";
+                ServiceRoots.SetGame(null);
             }
-            if (problem == null && Unity.Netcode.NetworkManager.Singleton != null)
+            if (ServiceRoots.App != null)
             {
-                problem = "NetworkManager.Singleton is still set after DestroyForTests";
+                ServiceRoots.SetApp(null);
             }
-            if (problem == null && PlayerNetState.Active.Count > 0)
+            yield return null;
+        }
+
+        // Not an iterator, so it may catch: a failure here (CreateScene, SetActiveScene or the scan) is logged and recovery carries on
+        // with whatever it could list, instead of escaping and replacing the original leak message. The reset scene is reused when an
+        // earlier recovery left it loaded (CreateScene would throw on the duplicate name), and the unload list has its own try, so a
+        // CreateScene failure still lists every other loaded scene for unloading.
+        private static List<Scene> PrepareResetScene()
+        {
+            var toUnload = new List<Scene>();
+            Scene reset = default;
+            try
             {
-                problem = $"{PlayerNetState.Active.Count} PlayerNetState(s) still registered after DestroyForTests";
+                reset = SceneManager.GetSceneByName(ResetSceneName);
+                if (!reset.IsValid() || !reset.isLoaded)
+                {
+                    reset = SceneManager.CreateScene(ResetSceneName);
+                }
+
+                SceneManager.SetActiveScene(reset);
             }
-            if (problem != null)
+            catch (Exception e)
             {
-                Assert.Fail("TearDownApp: " + problem);
+                TestContext.WriteLine("leak recovery: could not prepare the reset scene: " + e.GetBaseException().Message);
+            }
+
+            try
+            {
+                for (int i = 0; i < SceneManager.sceneCount; i++)
+                {
+                    Scene scene = SceneManager.GetSceneAt(i);
+                    bool isReset = reset.IsValid() && scene.handle == reset.handle;
+                    if (scene.isLoaded && !isReset)
+                    {
+                        toUnload.Add(scene);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                TestContext.WriteLine("leak recovery: could not list the loaded scenes: " + e.GetBaseException().Message);
+            }
+
+            return toUnload;
+        }
+
+        // Records Warning/Error/Exception/Assert log entries while alive. Wrap a region in using and call AssertNoWarnings at its end.
+        public sealed class LogCapture : IDisposable
+        {
+            // The only tolerated line: Unity licensing noise that appears on machines without a signed-in Hub session.
+            private const string BenignLicensingSubstring = "Access token is unavailable";
+
+            private readonly object _gate = new object();
+            private readonly List<string> _entries = new List<string>();
+            private bool _disposed;
+
+            public LogCapture()
+            {
+                Application.logMessageReceivedThreaded += OnLog;
+            }
+
+            public int Count
+            {
+                get
+                {
+                    lock (_gate)
+                    {
+                        return _entries.Count;
+                    }
+                }
+            }
+
+            private void OnLog(string condition, string stackTrace, LogType type)
+            {
+                if (type == LogType.Log)
+                {
+                    return;
+                }
+                if (condition != null && condition.Contains(BenignLicensingSubstring))
+                {
+                    return;
+                }
+
+                lock (_gate)
+                {
+                    _entries.Add("[" + type + "] " + condition);
+                }
+            }
+
+            public void AssertNoWarnings(string context)
+            {
+                string[] snapshot;
+                lock (_gate)
+                {
+                    snapshot = _entries.ToArray();
+                }
+
+                if (snapshot.Length > 0)
+                {
+                    Assert.Fail(context + ": " + snapshot.Length + " warning/error log entr" + (snapshot.Length == 1 ? "y" : "ies")
+                                + " captured:\n" + string.Join("\n", snapshot));
+                }
+            }
+
+            public void Dispose()
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+                _disposed = true;
+                Application.logMessageReceivedThreaded -= OnLog;
             }
         }
 
@@ -161,7 +377,39 @@ namespace FishGame.Tests.PlayMode
             }
         }
 
-        public static IEnumerator Await(Task task, float timeoutSeconds)
+        // Frames AND realtime: a fixed sleep proves little on a slow machine, a frame count alone proves little on a fast one.
+        public static IEnumerator WaitFrames(int frames, float minRealtimeSeconds)
+        {
+            if (frames <= 0 && minRealtimeSeconds <= 0f)
+            {
+                yield break;
+            }
+
+            int startFrame = Time.frameCount;
+            double startTime = Time.realtimeSinceStartupAsDouble;
+            while (Time.frameCount - startFrame < frames || Time.realtimeSinceStartupAsDouble - startTime < minRealtimeSeconds)
+            {
+                yield return null;
+            }
+        }
+
+        // Game-time wait with a realtime guard, so a paused or zero timeScale fails fast instead of hanging.
+        public static IEnumerator WaitGameSeconds(float seconds, float realtimeTimeoutSeconds, string failMessage)
+        {
+            double deadline = Time.realtimeSinceStartupAsDouble + realtimeTimeoutSeconds;
+            float elapsed = 0f;
+            while (elapsed < seconds)
+            {
+                if (Time.realtimeSinceStartupAsDouble >= deadline)
+                {
+                    Assert.Fail($"{failMessage} (game time {elapsed:F3} of {seconds} s after {realtimeTimeoutSeconds} s realtime; timeScale {Time.timeScale})");
+                }
+                yield return null;
+                elapsed += Time.deltaTime;
+            }
+        }
+
+        public static IEnumerator Await(Task task, float timeoutSeconds, CancellationTokenSource cancelOnTimeout = null)
         {
             Assert.That(task, Is.Not.Null, "Await: task is null");
             double deadline = Time.realtimeSinceStartupAsDouble + timeoutSeconds;
@@ -169,6 +417,9 @@ namespace FishGame.Tests.PlayMode
             {
                 if (Time.realtimeSinceStartupAsDouble >= deadline)
                 {
+                    cancelOnTimeout?.Cancel();
+                    // Observe a late fault so it cannot surface as an unobserved task exception during a later test.
+                    task.ContinueWith(t => { var unused = t.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
                     Assert.Fail($"Task did not complete within {timeoutSeconds} s");
                 }
                 yield return null;

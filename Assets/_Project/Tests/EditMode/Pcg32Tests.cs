@@ -71,5 +71,52 @@ namespace FishGame.Tests.EditMode
                 Assert.That(r, Is.LessThan(3f));
             }
         }
+
+        [Test]
+        public void Pcg32_RangeFloat_NeverReturnsMax()
+        {
+            float top = 0.99999994f; // largest NextFloat value
+            float r1 = Pcg32.MapUnitToRange(top, 1f, 2f);
+            Assert.That(r1, Is.LessThan(2f));
+            Assert.That(r1, Is.EqualTo(BitConverter.Int32BitsToSingle(0x3FFFFFFF)));
+
+            float r2 = Pcg32.MapUnitToRange(top, -2f, -1f);
+            Assert.That(r2, Is.LessThan(-1f));
+            Assert.That(r2, Is.EqualTo(BitConverter.Int32BitsToSingle(unchecked((int)0xBF800001))));
+
+            Assert.That(Pcg32.MapUnitToRange(1f, -1f, 0f), Is.EqualTo(-float.Epsilon));
+            Assert.That(Pcg32.MapUnitToRange(0f, 1f, 2f), Is.EqualTo(1f));
+        }
+
+        [Test]
+        public void Pcg32_RangeFloat_MaxNotAboveMin_Throws()
+        {
+            var a = new Pcg32(5, 2);
+            Assert.Throws<ArgumentException>(() => a.Range(1f, 1f));
+            Assert.Throws<ArgumentException>(() => a.Range(2f, 1f));
+            Assert.Throws<ArgumentException>(() => a.Range(float.NaN, 1f));
+            Assert.Throws<ArgumentException>(() => a.Range(0f, float.NaN));
+            var fresh = new Pcg32(5, 2);
+            Assert.That(a.NextUInt(), Is.EqualTo(fresh.NextUInt()), "a rejected call must not advance the stream");
+        }
+
+        [Test]
+        public void Pcg32_RangeFloat_DrawCountUnchanged()
+        {
+            var a = new Pcg32(99, 3);
+            var b = new Pcg32(99, 3);
+            for (int i = 0; i < 10000; i++)
+            {
+                float x = a.Range(-3f, 5f);
+                float u = b.NextFloat();
+                float old = -3f + u * (5f - -3f);
+                Assert.That(x, Is.EqualTo(Pcg32.MapUnitToRange(u, -3f, 5f)), "draw " + i);
+                if (old < 5f) Assert.That(x, Is.EqualTo(old), "M1 value preserved, draw " + i);
+            }
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.That(a.NextUInt(), Is.EqualTo(b.NextUInt()), "tail " + i);
+            }
+        }
     }
 }

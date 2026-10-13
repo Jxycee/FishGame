@@ -17,6 +17,11 @@ namespace FishGame.EditorTools
             Add(all, "Manifest", Validators.Manifest());
             Add(all, "ProjectSettings", Validators.ProjectSettingsInvariants());
             Add(all, "AssetsLayout", Validators.AssetsLayout());
+            Add(all, "MeshReferences", Validators.MeshReferences());
+            Add(all, "MissingScripts", Validators.MissingScripts());
+            Add(all, "BootstrapReferences", Validators.BootstrapReferences());
+            all.AddRange(FishingValidators.All());
+            Add(all, "Render", RenderValidators.All());
             return all;
         }
 

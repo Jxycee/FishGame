@@ -11,10 +11,10 @@ namespace FishGame.Tests.EditMode
         {
             float[,] expected =
             {
-                { 0.90f, 0.36f, 0.24f },
                 { 0.22f, 0.52f, 0.90f },
-                { 0.30f, 0.72f, 0.32f },
-                { 0.95f, 0.78f, 0.20f }
+                { 0.93f, 0.93f, 0.90f },
+                { 0.45f, 0.82f, 0.35f },
+                { 0.78f, 0.16f, 0.14f }
             };
             Assert.That(SlotPalette.Count, Is.EqualTo(4));
             for (int slot = 0; slot < SlotPalette.Count; slot++)

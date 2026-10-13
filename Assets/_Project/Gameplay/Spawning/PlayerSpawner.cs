@@ -170,7 +170,8 @@ namespace FishGame.Gameplay
         }
 
         // Idempotent: a client that already has a player object is skipped.
-        private void SpawnPlayerIfMissing(NetworkManager manager, ulong clientId)
+        // Internal for the PlayMode respawn test (InternalsVisibleTo FishGame.Tests.PlayMode on this assembly).
+        internal void SpawnPlayerIfMissing(NetworkManager manager, ulong clientId)
         {
             if (manager.SpawnManager.GetPlayerNetworkObject(clientId) != null) return;
 

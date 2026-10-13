@@ -1,0 +1,21 @@
+// Tests/EditMode/Compute/WaveParity.compute - GPU side of the C#/HLSL wave parity test (WaveGpuParityTests). Test asset only: never in a build.
+// Evaluates the REAL FG_WaveHeight from Shaders/FishGameCommon.hlsl at the sample points (x, z, t) and echoes the _Waves array back as raw
+// floats so the test can prove NaN / Infinity fields reached the shader unchanged (a NaN-sanitising upload would make the guard cases vacuous).
+#pragma kernel CSMain
+
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+#include "Assets/_Project/Shaders/FishGameCommon.hlsl"
+
+StructuredBuffer<float3> _Samples;      // (x, z, t)
+RWStructuredBuffer<float> _Heights;
+RWStructuredBuffer<float4> _WavesEcho;  // 4 entries, a copy of _Waves
+uint _Count;
+
+[numthreads(64, 1, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 4) _WavesEcho[id.x] = _Waves[id.x];
+    if (id.x >= _Count) return;
+    float3 s = _Samples[id.x];
+    _Heights[id.x] = FG_WaveHeight(s.xy, s.z);
+}

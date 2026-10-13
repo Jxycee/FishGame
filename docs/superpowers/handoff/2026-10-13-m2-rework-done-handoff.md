@@ -1,0 +1,43 @@
+# FishGame - Handoff: M2 rework built, look-dev waiting, M3 planned (2026-10-13)
+
+Supersedes `2026-10-12-m2-rework-handoff.md` (its sections 2, 3.2, 3.3 and 7 are done; see below).
+
+## Paste this to start the next conversation
+
+> Read `docs/superpowers/handoff/2026-10-13-m2-rework-done-handoff.md` and `CLAUDE.md`, then continue. Start with section 2 (the user's answers and check results), then section 3.
+
+## 1. Where things stand
+
+- **Branch `m2-fishing-core`** (pushed, NOT merged to `main`). The rework is built and reviewed: smooth water (R73), RV-style ladders (R70), the Rust-faithful fight with five styles kept as quirks (R72), network ProtocolVersion 3. Full `check` PASS on be8d7c5: build, EditMode 946 (945 pass, 1 skipped GPU test), PlayMode 83/83. The final Opus xhigh branch review is approved with fixes; that fix round landed in 975a6f0 (ladder top-out velocity clamp, latched spent-fish state), 63e8c9c (F10 cycles the forced species, host-only, dev builds), 15a374a and 2a39077 (docs). Full `check` PASS on 63e8c9c: build, EditMode 957 (956 pass, 1 skipped), PlayMode 83/83; bot numbers unchanged from acceptance K.1. Known minor: if the spent latch clears mid-run, the remote raises SideRun when FlagBurst reappears while the owner raises nothing (cosmetic).
+- **Branch `m2-lookdev`** (worktree `C:\Dev\FishGame-lookdev`, own Library, not pushed, not merged): the R74 "realistic toon" look-dev. The soft toon shader (ramp, sky fill, rim, highlight), painted texture arrays generated in Blender (`Art/Blender/fishgame_lookdev.blend`, text block `fg_textures.py`), rounded dock/rock/trees, a pillowy player, a painted bluegill. Colliders are byte-identical. Style guide: `docs/superpowers/research/2026-10-12-art-direction-lookdev.md` (on that branch). Sheet: `docs/superpowers/handoff/img/2026-10-12-lookdev-realistic-toon.png`. **Waiting on the user's approval.** Adoption steps are in the look-dev report and style guide ("Adopting this across M2"): the other four fish, reeds/bell/rod/bobber, a shader keyword split for the mapping mode, a perf measure, a palette check, the spec 10 rewrite.
+- **M3 (fish ecology) planned:** contract `docs/superpowers/plans/2026-10-13-m3-interfaces.md` (rulings to M3-D77), skeleton `2026-10-13-m3-plan-skeleton.md` (25 tasks, 7 sections), section plans A-D written (`-carry-migration`, `-core`, `-data-coverage`, `-host-world`). Sections E-G (maps, presentation, journal/UI/art) wait for the R74 look approval. M3 protocol bump = 4. When the M3 branch is cut, apply the pending spec deltas M3-D65 (13.3 "at most two adjacent bands"), M3-D66 (12.9/13.3 definitions) and M3-D74 (minLandDepth 0.5, unless the user picks a lake-bed shelf).
+- **Progress board (this rework):** https://claude.ai/artifact/SSE5uoZ7ELPyZP5A11qdXR (db collections `status`, `phases`, `tasks` with `stream`/`code`, `todos`, `decisions`, `research`, `agents`). Old M2 board: https://claude.ai/artifact/JuQGKUKKWbK1eYdzmUBdkN (history).
+
+## 1b. In flight when this was last saved (2026-10-13, user at work; usage may run out before 2am)
+
+- **User answers (2026-10-13):** the R74 look is APPROVED ("loving how it's looking"; some areas still oddly blocky; the player model needs a proper redesign later, not now). Water and fog are kept, with no haze. All M3 defaults are accepted (minLandDepth 0.5, models don't gate M3, fixed dev seed). Recorded in dd4cfb5 (spec R74 + M3 skeleton). The user can't do the 30-min short check until home.
+- **Look adoption (worktree `C:\Dev\FishGame-lookdev`, branch `m2-lookdev`):** step 1 merges m2-fishing-core (dd4cfb5) into m2-lookdev, rebuilds scenes, verifies colliders against m2-fishing-core and runs `check`. Step 2 adopts: the other four fish in Blender, the flat props (reeds, bell, rod, bobber), a blocky-sweep of the lake dock, a shader keyword split by mapping mode, a season palette check, perf numbers and a spec 10 rewrite. The new sheet goes to `docs/superpowers/handoff/img/2026-10-13-r74-adoption.png`. When it's done: fast-forward (or merge) m2-fishing-core to m2-lookdev, push, and delete the worktree only with the user's OK. If the run was cut off: check `git -C C:/Dev/FishGame-lookdev log` and status, and resume from the last commit.
+- **M3 sections E-G** (maps, presentation, journal/UI/art) are being written by three Opus authors as uncommitted files: `docs/superpowers/plans/2026-10-13-m3-plan-{maps,presentation,journal-ui}.md`. Each lists contract change requests at the top. Resolve them like A-D (the controller rules, a Sonnet docs pass applies and commits). If a file is partial, re-dispatch that section author.
+- **Then:** apply the pending M3 spec deltas (M3-D65/D66/D74) when the M3 branch is cut. M3 code can start with the tasks that don't depend on fight feel (T1-T3 carry/migration, T5-T8 core) even before the user's short check. The friendlier fight tuning waits for the user's play.
+
+## 2. Waiting on the user (all on the board's "Waiting on you")
+
+1. **New look verdict:** approve or adjust; water shallows a touch greener/less neon (about (0.32, 0.80, 0.74, 0.66))? light RV-style haze (day fog about 0.012)?
+2. **Short check before M3 code (about 30 min):** play the new fight (acceptance section K.2, M1-M9; F10 forces a species), the ladders and ramp, the water in motion plus frame time, and one Direct 4P two-window catch. Then say what feels too harsh: that starts the friendlier tuning pass.
+3. **M3 questions** (defaults apply): reeds depth (minLandDepth 0.5 vs a lake shelf); the 20 new fish models do not gate M3's exit; fixed dev seed.
+4. **Fight open questions** (acceptance K.3): Steady strainMod 0.8 vs 0.6; an unattended fish clears only at 120 s; the Steady Nerves headroom x1.15 placeholder.
+5. **Later:** the full acceptance pass (the rest of Part A, Part B MPPM, Part C builds, Part D sounds and fallback fish), then the friend playtest (30+ fights), then the decision to merge M2 into `main`.
+
+## 3. Next work
+
+- After the user's look approval: adopt R74 on `m2-lookdev` (or rebase it onto `m2-fishing-core`; it predates the ladder/fight commits, so expect conflicts in `LakeDockBuilder`, `PrefabBuilder` and `RenderMaterialLibrary`), then merge it into `m2-fishing-core`, then write M3 sections E-G.
+- After the short check: the friendlier fight tuning pass with the user (data only; R72 values are the baseline), then cut `m3-fish-ecology` and run M3 T1 onwards.
+- Carry items: swim-depth hysteresis beside the ladders (the bed is about -1.26 m, right at the swim threshold; the rod stow animation makes the flicker visible) if the user's ladder check shows it; the tighter host Landed floor using the tire ramp (M5 anti-cheat); the far-distance water shimmer guard (R73 note) if seen in motion.
+
+## 4. Process notes from this session
+
+- Rust Dedicated Server: SteamCMD anonymous works (memory `reverse-engineering-tools`); the exact fight maths are in research section 8.
+- Two worktrees can run Unity in parallel with a copied Library, but PlayMode runs collide on the UDP port: check for another `-testPlatform PlayMode` Unity first (memory `unity-worktree-playmode`).
+- Agents still slipped in `sed` twice; restate "Write/Edit only" in every brief.
+- Unity runs churn the three scenes: `git restore Assets/_Project/Scenes/*.unity`; delete the untracked `dev/` folder (git LFS hooks) after git commands.
+- Agent roles unchanged (CLAUDE.md).

@@ -7,7 +7,10 @@ namespace FishGame.Core
     // Loops are a whole number of base periods: the wind gain LFO completes exactly one cycle per loop.
     // Noise loops get a 20 ms crossfade, then a tiny linear seam correction so s[last] == s[0].
     // Every recipe is peak-normalized to 0.9.
-    public static class SfxRecipes
+    // Partial (ruling C-Q11): this file holds M1, All, TryGet, Generate dispatch and the M1 generators; SfxRecipes.M2.cs holds the M2 table
+    // and generators. Static initializers of a partial class run in an unspecified file order, so All is built lazily, never from a field
+    // initializer that reads the other file.
+    public static partial class SfxRecipes
     {
         public const int SampleRate = 44100;
 
@@ -42,13 +45,37 @@ namespace FishGame.Core
 
         public static IReadOnlyList<SfxRecipe> M1 => M1ReadOnly;
 
+        private static SfxRecipe[] _allTable;
+        private static IReadOnlyList<SfxRecipe> _allReadOnly;
+
+        // M1 rows then M2 rows (19), one cached read-only list. TryGet and Generate cover every row.
+        public static IReadOnlyList<SfxRecipe> All
+        {
+            get
+            {
+                if (_allReadOnly == null) BuildAll();
+                return _allReadOnly;
+            }
+        }
+
+        private static void BuildAll()
+        {
+            var table = new SfxRecipe[M1Table.Length + M2Table.Length];
+            Array.Copy(M1Table, 0, table, 0, M1Table.Length);
+            Array.Copy(M2Table, 0, table, M1Table.Length, M2Table.Length);
+            _allTable = table;
+            _allReadOnly = Array.AsReadOnly(table);
+        }
+
         public static bool TryGet(string id, out SfxRecipe recipe)
         {
-            for (int i = 0; i < M1Table.Length; i++)
+            if (_allTable == null) BuildAll();
+            SfxRecipe[] table = _allTable;
+            for (int i = 0; i < table.Length; i++)
             {
-                if (string.Equals(M1Table[i].Id, id, StringComparison.Ordinal))
+                if (string.Equals(table[i].Id, id, StringComparison.Ordinal))
                 {
-                    recipe = M1Table[i];
+                    recipe = table[i];
                     return true;
                 }
             }
@@ -82,7 +109,7 @@ namespace FishGame.Core
                 case SfxIds.WindAmbient: samples = WindLoop(n, sampleRate, ref rng); break;
                 case SfxIds.WaterLap: samples = LapBurst(n, ref rng); break;
                 case SfxIds.BellRing: samples = Bell(n, sampleRate); break;
-                default: throw new ArgumentException("No generator for SFX id: " + id, nameof(id));
+                default: samples = GenerateM2(id, n, sampleRate, ref rng); break;
             }
 
             NormalizePeak(samples, PeakTarget);

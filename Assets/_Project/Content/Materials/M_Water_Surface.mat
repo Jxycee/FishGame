@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_Water_Surface
+  m_Shader: {fileID: 4800000, guid: 7a13c265d78f8e44a95776f7f452e557, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _AmbientStrength: 0.35
+    - _BedCover: 0.35
+    - _CausticStrength: 0.15
+    - _CrestAmount: 0.35
+    - _CrestHeight: 0.11
+    - _DepthRange: 1.6
+    - _DetailFade: 60
+    - _DetailScale: 1.6
+    - _DetailSpeed: 0.3
+    - _DetailStrength: 0.12
+    - _FoamWidth: 0.35
+    - _FogAmount: 0.35
+    - _FresnelPower: 4
+    - _GlintFlatten: 0.7
+    - _GlintNear: 6
+    - _GlintPower: 96
+    - _GlintRipple: 3
+    - _GlintStrength: 1
+    - _GlintThreshold: 0.5
+    - _LightTint: 0.35
+    - _NormalBoost: 6
+    - _ReflectStrength: 0.4
+    - _ReflectZenith: 0.6
+    - _Saturation: 1.15
+    - _ShadeContrast: 0.14
+    - _ShadeSoft: 0.2
+    m_Colors:
+    - _DeepColor: {r: 0.03, g: 0.36, b: 0.62, a: 0.97}
+    - _FoamColor: {r: 0.96, g: 0.99, b: 1, a: 1}
+    - _ShallowColor: {r: 0.3, g: 0.86, b: 0.8, a: 0.68}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

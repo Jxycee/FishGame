@@ -10,6 +10,7 @@
         "FishGame.Gameplay",
         "FishGame.Fishing",
         "FishGame.App",
+        "FishGame.UI",
         "Unity.Netcode.Runtime",
         "Unity.Collections",
         "Unity.InputSystem"

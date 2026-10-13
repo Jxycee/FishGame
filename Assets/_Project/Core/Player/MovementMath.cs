@@ -12,7 +12,9 @@ namespace FishGame.Core
         public const float JumpHeight = 1.1f, CoyoteTime = 0.1f, JumpBufferTime = 0.1f;
         public const float SwimGravity = -4f, SwimEnterDepth = 1.2f, SwimEyeAboveSurface = 0.15f, WadeDepth = 0.3f;
         public const float SwimBuoyancyStiffness = 12f, SwimBuoyancyDamping = 5f, SwimMaxVerticalSpeed = 3f;
-        public const float ClimbDuration = 0.4f, WaterTimeoutSeconds = 60f, OutOfBoundsY = -20f;
+        public const float WaterTimeoutSeconds = 60f, OutOfBoundsY = -20f;
+        public const float ClimbSpeed = 2.4f, ClimbReentryGrace = 0.25f;   // R70 ladders [tune]
+        public const float RampAssistKick = 2.0f;   // R70 ramp foot: one upward kick, m/s [tune] (~9 cm step-up)
         public const float EyeHeight = 1.62f, CapsuleHeight = 1.8f, CapsuleRadius = 0.35f, CapsuleCenterY = 0.9f;
         public const float StepOffset = 0.35f, SlopeLimit = 45f, SkinWidth = 0.08f;
         public const float PitchLimit = 85f, NearClip = 0.05f, FarClip = 400f;
@@ -108,10 +110,67 @@ namespace FishGame.Core
             return rootY < surfaceY - SwimEnterDepth;
         }
 
-        // Wading or swimming (root more than WadeDepth below the surface); gates WaterExit climbs (contract D36).
+        // Wading or swimming (root more than WadeDepth below the surface); gates the ramp foot assist (contract D36, M2-D30).
         public static bool IsInWater(float rootY, float surfaceY)
         {
             return rootY < surfaceY - WadeDepth;
+        }
+
+        // DA7's facing rule, kept only for the R70 ramp-foot kick: forward input (moveY > 0.5) while facing the target (flat dot > 0), or
+        // standing on it (flat distance under 1 cm).
+        public static bool PushingToward(float moveY, float forwardX, float forwardZ, float toX, float toZ)
+        {
+            if (!(moveY > 0.5f)) return false;
+            return toX * toX + toZ * toZ < 0.0001f || forwardX * toX + forwardZ * toZ > 0f;
+        }
+
+        // R70 ladder climb: W/S along the camera look (yaw and pitch; pitch positive = look up), A/D along the flat right vector.
+        // The input length is clamped to 1 (never normalised up), times ClimbSpeed. No gravity and no acceleration ramp: zero input gives
+        // exactly zero (the climber hangs). Pitch is clamped to +-PitchLimit. Any non-finite input gives zero.
+        // forward = (sin yaw cos pitch, sin pitch, cos yaw cos pitch); right = (cos yaw, 0, -sin yaw) (Unity: +y up, yaw clockwise from +z).
+        public static void ClimbWish(float yawDeg, float pitchDeg, float moveX, float moveY, out float x, out float y, out float z)
+        {
+            x = 0f;
+            y = 0f;
+            z = 0f;
+            if (!IsFinite(yawDeg) || !IsFinite(pitchDeg) || !IsFinite(moveX) || !IsFinite(moveY)) return;
+
+            float len2 = moveX * moveX + moveY * moveY;
+            if (len2 <= 0f) return;
+
+            float scale = len2 > 1f ? ClimbSpeed / MathF.Sqrt(len2) : ClimbSpeed;
+            float pitch = MathF.Min(MathF.Max(pitchDeg, -PitchLimit), PitchLimit) * (MathF.PI / 180f);
+            float yaw = yawDeg * (MathF.PI / 180f);
+            float sinYaw = MathF.Sin(yaw), cosYaw = MathF.Cos(yaw);
+            float sinPitch = MathF.Sin(pitch), cosPitch = MathF.Cos(pitch);
+
+            x = (sinYaw * cosPitch * moveY + cosYaw * moveX) * scale;
+            y = sinPitch * moveY * scale;
+            z = (cosYaw * cosPitch * moveY - sinYaw * moveX) * scale;
+        }
+
+        // R70: the velocity a climber keeps when the climb ends. The CharacterController's own velocity is position delta over time, so a
+        // depenetration or step-up on the last climb move can read above ClimbSpeed; clamping its length to ClimbSpeed (direction kept)
+        // stops that spike from launching the climber off the ladder top. Non-finite input gives zero.
+        public static void ClampClimbCarry(ref float vx, ref float vy, ref float vz)
+        {
+            if (!IsFinite(vx) || !IsFinite(vy) || !IsFinite(vz))
+            {
+                vx = vy = vz = 0f;
+                return;
+            }
+
+            float len2 = vx * vx + vy * vy + vz * vz;
+            if (len2 <= ClimbSpeed * ClimbSpeed) return;
+            float scale = ClimbSpeed / MathF.Sqrt(len2);
+            vx *= scale;
+            vy *= scale;
+            vz *= scale;
+        }
+
+        private static bool IsFinite(float v)
+        {
+            return !float.IsNaN(v) && !float.IsInfinity(v);
         }
     }
 }
