@@ -82,5 +82,18 @@ namespace FishGame.Core
         }
 
         private static float Clamp01(float v) => v < 0f ? 0f : (v > 1f ? 1f : v);
+
+        // States in which the bobber is on the water (BobberView).
+        public static bool IsLineOut(RodState state)
+        {
+            return state == RodState.Casting || state == RodState.Waiting || state == RodState.Bite || state == RodState.Hooked || state == RodState.Escaped;
+        }
+
+        // BobberView: a recall arc starts when a shown bobber's observed state leaves the line-out set. With an aim held, the owner passes through
+        // Idle for a single frame after a terminal beat (S10 carry), so a remote usually observes Escaped -> Readying and never sees Idle.
+        public static bool RecallOnLeavingLineOut(RodState from, RodState to)
+        {
+            return !IsLineOut(to) && IsLineOut(from);   // any exit, not only Idle: Landed and Snapped are forced Hidden by the caller before this runs
+        }
     }
 }

@@ -128,6 +128,7 @@ namespace FishGame.Core
             if (surge)
             {
                 float open = 1f + (_t.ReelOpenMult - 1f) * (1f - Clamp01(_s.Elapsed / _t.ReelOpenSeconds));
+                if (open > _t.TireReelMaxMult) open = _t.TireReelMaxMult;   // belt and braces: the validator keeps ReelOpenMult <= TireReelMaxMult (host MaxReelSpeed)
                 if (open > reelMult) reelMult = open;
                 backRamp = Clamp01(_s.Elapsed / _t.ReelOpenSeconds);
             }
@@ -163,7 +164,7 @@ namespace FishGame.Core
             if (_s.Tension > FishingConstants.NearSnapHigh) _nearSnapArmed = true;
             else if (_nearSnapArmed && _s.Tension < FishingConstants.NearSnapLow) { _nearSnapArmed = false; _s.NearSnapRecoveries++; }
 
-            // 9. endings (priority: Landed, Snapped, Timeout); a fish has no pinned or slack escape (Rust has neither)
+            // 9. endings (priority: Landed, Snapped, Timeout, Idle escape); a fish has no pinned or slack escape (Rust has neither)
             if (reel && _s.LineLength <= _t.LandDistance) return End(FightOutcome.Landed, EscapeReason.None);
             if (_s.Strain > _snapStrain) return End(FightOutcome.Snapped, EscapeReason.None);
             if (_s.Elapsed >= _t.FightTimeout - TimeEps) return End(FightOutcome.Escaped, EscapeReason.Timeout);
