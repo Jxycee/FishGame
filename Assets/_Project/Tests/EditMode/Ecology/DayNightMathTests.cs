@@ -2,7 +2,11 @@
 // and SeasonTint_TexturedEnvMaterial_TakesHueFromPalette to this file; T8's tests stay as they are.
 using System;
 using FishGame.Core;
+using FishGame.Data;
+using FishGame.EditorTools;
 using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
 
 namespace FishGame.Tests.EditMode
 {
@@ -157,6 +161,72 @@ namespace FishGame.Tests.EditMode
             Assert.IsFalse(DayNightMath.IsReadable(float.NaN));
             Assert.AreEqual(25f, DayNightMath.ReadabilityDistanceM);
             Assert.AreEqual(0.5f, DayNightMath.ReadabilityMinFactor);
+        }
+
+        // ---- T18: the shipped art palette (C 10.4) ----
+
+        // The DayNightController caps fog at 0.0333 (a safety net only). This proves the shipped data never needs the cap: every phase x every
+        // weather look is readable at 25 m on its own. Phase blends and look blends are convex combinations of the endpoints and the readable
+        // set {density <= 0.0333} is convex, so the 4 x 3 endpoint pairs cover every blended value.
+        // Catches: a Fog look with fogDensityMin 0.04; Night fog 0.03 x Rain 1.2 = 0.036; a look list of 2; a blend window outside (0, 0.1].
+        [Test]
+        public void DayNightMath_RealPalette_EveryPhaseAndWeatherReadable()
+        {
+            var art = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
+            Assert.IsNotNull(art, "missing " + AssetPaths.ArtPaletteAsset);
+            Assert.AreEqual(4, art.Phases.Count, "four day phases");
+            for (int i = 1; i < art.Phases.Count; i++)
+                Assert.Greater(art.Phases[i].startFraction, art.Phases[i - 1].startFraction, "phase starts strictly increasing at " + i);
+            Assert.AreEqual(3, art.WeatherLooks.Count, "weather looks: Clear, Rain, Fog");
+            Assert.Greater(art.SunMoon.blendWindow, 0f, "blendWindow > 0");
+            Assert.LessOrEqual(art.SunMoon.blendWindow, 0.1f, "blendWindow <= 0.1");
+
+            WeatherAmbient[] looks = new WeatherAmbient[art.WeatherLooks.Count];
+            for (int i = 0; i < looks.Length; i++) looks[i] = art.WeatherLooks[i];
+
+            for (int p = 0; p < art.Phases.Count; p++)
+            {
+                for (int w = 0; w < looks.Length; w++)
+                {
+                    float uncapped = Mathf.Max(art.Phases[p].fogDensity * looks[w].fogDensityMult, looks[w].fogDensityMin);
+                    Assert.IsTrue(DayNightMath.IsReadable(uncapped), "phase " + p + " x look " + w + ": fog density " + uncapped + " is not readable at 25 m");
+                }
+            }
+            Assert.IsTrue(DayNightMath.IsReadable(0.0333f), "the controller's cap constant must itself be readable");
+            Assert.GreaterOrEqual(looks[2].fogDensityMin, 0.025f, "the Fog look must be visibly foggy (M3-D21: toward 0.03)");
+        }
+
+        // CCR-F1 guard (M3-D78): under the R74 standard the season reaches textured environment albedo through the _FGPalette swap
+        // (palette hue x value-only detail texture), so T18 adds no shader term. If a material stops taking its hue from the palette the season
+        // would stop reaching it. Both textured env materials are checked: M_Toon_Base (uv0) and M_Toon_Tri (world triplanar: rocks, canopies).
+        // Catches: _UsePalette 0 on EITHER env material; the detail texture dropped or its weight/gain changed; two identical season palettes.
+        [Test]
+        public void SeasonTint_TexturedEnvMaterial_TakesHueFromPalette()
+        {
+            foreach (string name in new[] { "M_Toon_Base", "M_Toon_Tri" })
+            {
+                Material m = RenderMaterialLibrary.Get(name);
+                Assert.AreEqual("FishGame/Toon", m.shader.name, name + ": shader");
+                AssertEnvMaterialTakesHueFromPalette(m, name);
+            }
+
+            var art = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
+            Assert.IsNotNull(art, "missing " + AssetPaths.ArtPaletteAsset);
+            PaletteSeason summer = art.Seasons[SeasonalLook.Summer], autumn = art.Seasons[SeasonalLook.Autumn];
+            foreach (int slot in new[] { 0, 1 })   // Grass, Foliage
+            {
+                Color a = summer.colors[slot], b = autumn.colors[slot];
+                float delta = Mathf.Max(Mathf.Abs(a.r - b.r), Mathf.Max(Mathf.Abs(a.g - b.g), Mathf.Abs(a.b - b.b)));
+                Assert.Greater(delta, 0.05f, "palette slot " + slot + ": Summer and Autumn must differ visibly or the season swap shows nothing");
+            }
+        }
+
+        static void AssertEnvMaterialTakesHueFromPalette(Material m, string name)
+        {
+            Assert.AreEqual(1f, m.GetFloat("_UsePalette"), name + ": _UsePalette (hue comes from the palette slot)");
+            Assert.Greater(m.GetFloat("_FGTexWeight"), 0f, name + ": _FGTexWeight (textured)");
+            Assert.AreEqual(2f, m.GetFloat("_FGArrayGain"), name + ": _FGArrayGain (value-only detail centred on 0.5)");
+            Assert.IsNotNull(m.GetTexture("_FGAlbedoArray"), name + ": _FGAlbedoArray");
         }
     }
 }

@@ -1,5 +1,6 @@
 // Scene objects of the world presentation (contract 7.22). Called from LakeDockBuilder.Build right after FishingSceneObjects.AddTo.
-// "Presentation" is a plain GameObject (C 2.8 #15: no in-scene NetworkObjects) holding the three scene-level drivers.
+// "Presentation" is a plain GameObject (C 2.8 #15: the only in-scene NetworkObject is the World root, #24) holding the four scene-level drivers
+// (PaletteGlobals, WaterTimeDriver, RippleField, and T18's DayNightController; T19 adds WeatherFx and HotspotFx).
 // Assets are loaded here, after NewScene (C 2.8 #14); a missing asset is a build error, not a silent null.
 using FishGame.Core;
 using FishGame.Data;
@@ -7,6 +8,7 @@ using FishGame.Presentation;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
 namespace FishGame.EditorTools
@@ -37,11 +39,28 @@ namespace FishGame.EditorTools
             PaletteGlobals globals = BuilderUtil.GetOrAdd<PaletteGlobals>(root);
             WaterTimeDriver driver = BuilderUtil.GetOrAdd<WaterTimeDriver>(root);
             BuilderUtil.GetOrAdd<RippleField>(root);
+            DayNightController dayNight = BuilderUtil.GetOrAdd<DayNightController>(root);
 
             SetReference(globals, "palette", palette);
             SetReference(driver, "waterSettings", water);
+            SetReference(dayNight, "palette", palette);
+            SetReference(dayNight, "sun", FindRoot<Light>(scene, "Sun"));
+            SetReference(dayNight, "warmVolume", FindRoot<Volume>(scene, "WarmVolume"));
+            SetReference(dayNight, "coolVolume", FindRoot<Volume>(scene, "CoolVolume"));
 
             EditorSceneManager.MarkSceneDirty(scene);
+        }
+
+        // The component of the scene root with that name (C 6.3: every Spot scene has Sun, WarmVolume and CoolVolume before this runs).
+        private static T FindRoot<T>(Scene scene, string name) where T : Component
+        {
+            foreach (GameObject candidate in scene.GetRootGameObjects())
+            {
+                if (candidate.name != name) continue;
+                T component = candidate.GetComponent<T>();
+                if (component != null) return component;
+            }
+            throw new System.InvalidOperationException("Spot scene '" + scene.name + "' has no root '" + name + "' with a " + typeof(T).Name + " (C 6.3)");
         }
 
         private static void SetReference(Object target, string field, Object value)

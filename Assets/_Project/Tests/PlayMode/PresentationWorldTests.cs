@@ -6,6 +6,7 @@ using System.Collections;
 using System.Reflection;
 using FishGame.Core;
 using FishGame.Data;
+using FishGame.Gameplay;
 using FishGame.Runtime;
 using NUnit.Framework;
 using UnityEngine;
@@ -119,6 +120,9 @@ namespace FishGame.Tests.PlayMode
 
         // Catches: the palette pushed in gamma space (the Toon shader treats the array as linear: ruling F3); the day phase colours or the
         // fog not applied in play; the palette rebuilt every frame (PaletteVectors allocates; carry-forward C 16.2: enable/validate only).
+        // T18 (CCR-F3, M3-D80): from T18 the clock drives the look and the solo world starts at minute 0 (Dawn) in the rolled season, so this
+        // test pins the world first (clock stopped, minute 300 = the pure Day phase, Clear = the neutral weather look, the M2 season).
+        // Every assertion after the pin is unchanged.
         [UnityTest]
         public IEnumerator PresentationWorld_Palette_IsLinearAndAppliedOnce()
         {
@@ -128,6 +132,13 @@ namespace FishGame.Tests.PlayMode
 
             ArtPaletteDef art = Registry().ArtPalette;
             Assert.That(art, Is.Not.Null, "registry ArtPalette");
+            yield return PlayModeHarness.WaitUntil(() => WorldState.Current != null && WorldState.Current.HasState, 10f, "WorldState.Current did not spawn with state");
+            DevWorldDriver driver = WorldState.Current.GetComponent<DevWorldDriver>();
+            driver.DevSetClockRunning(false);
+            driver.DevSetMinute(300);
+            driver.DevSetWeatherOverride(WeatherMask.Clear);
+            driver.DevSetSeason((Season)art.M2Season);
+            yield return PlayModeHarness.WaitFrames(3, 4.5f);   // any weather fade has finished
             Assert.That(QualitySettings.activeColorSpace, Is.EqualTo(ColorSpace.Linear), "the project is Linear (F3)");
 
             Vector4[] authored = art.PaletteVectors(art.M2Season);
