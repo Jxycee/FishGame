@@ -1,7 +1,7 @@
 // Authority: local client only. Reads hardware input once per frame; nothing here is networked.
 // The only reader of InputActions (spec 8.1). Single owner of the cursor lock policy (contract D28) and of binding overrides.
 // Works on a runtime Instantiate copy of the serialized asset, so rebinding never dirties the asset (contract D15).
-// Journal is bound in the asset but not routed in M1 (no PlayerInputFrame field and no journal UI yet).
+// Journal (J / Select) is read into PlayerInputFrame.JournalPressed; the router passes it in Free, RodReady and RodWaiting only (M3-D27).
 // Dev keys F3-F7, F9 are read directly from Keyboard.current (not part of the rebindable asset); dev builds only.
 using System;
 using FishGame.Core;
@@ -17,7 +17,7 @@ namespace FishGame.Runtime
         private ISettings _settings;
 
         private InputActionMap _playerMap, _fishingMap, _uiMap;
-        private InputAction _move, _look, _jump, _sprint, _primary, _secondary, _interact, _shove, _drop, _equip, _pause;
+        private InputAction _move, _look, _jump, _sprint, _primary, _secondary, _interact, _shove, _drop, _equip, _journal, _pause;
         private InputAction _reel, _steer, _uiCancel;
         private InputAction[] _deviceProbe = Array.Empty<InputAction>();
 
@@ -114,6 +114,7 @@ namespace FishGame.Runtime
             _shove = _actions.FindAction(InputActionNames.Shove, throwIfNotFound: true);
             _drop = _actions.FindAction(InputActionNames.Drop, throwIfNotFound: true);
             _equip = _actions.FindAction(InputActionNames.Equip, throwIfNotFound: true);
+            _journal = _actions.FindAction(InputActionNames.Journal, throwIfNotFound: true);
             _pause = _actions.FindAction(InputActionNames.Pause, throwIfNotFound: true);
             _reel = _actions.FindAction(InputActionNames.Reel, throwIfNotFound: true);
             _steer = _actions.FindAction(InputActionNames.Steer, throwIfNotFound: true);
@@ -191,7 +192,8 @@ namespace FishGame.Runtime
             f.ShovePressed = _shove.WasPressedThisFrame();
             f.DropPressed = _drop.WasPressedThisFrame();
             f.EquipPressed = _equip.WasPressedThisFrame();
-            f.PausePressed = Context == InputContext.Menu ? _uiCancel.WasPressedThisFrame() : _pause.WasPressedThisFrame();
+            f.JournalPressed = _journal.WasPressedThisFrame();   // the Player map is disabled in the Menu context, so this reads false there
+            f.PausePressed = Context ==InputContext.Menu ? _uiCancel.WasPressedThisFrame() : _pause.WasPressedThisFrame();
             f.Steer = _steer.ReadValue<float>();
             f.Reel = _reel.IsPressed();
             return f;

@@ -282,6 +282,23 @@ namespace FishGame.Tests.EditMode
             Assert.IsFalse(InputContextRouter.Route(InputContext.Swimming, AllActive()).InteractPressed, "Swimming zeroes Interact");
         }
 
+        // M3-D27: the journal key passes on foot and with the rod ready or waiting only. Catches: J reaching gameplay while aiming or
+        // fighting, in Menu, or through the fall-through contexts (Seated, Carrying, ...) that route like Free.
+        [Test]
+        public void InputContextRouter_Journal_PassesInFreeRodReadyRodWaitingOnly()
+        {
+            PlayerInputFrame f = AllActive();
+            f.JournalPressed = true;
+            int passed = 0;
+            foreach (InputContext ctx in (InputContext[])Enum.GetValues(typeof(InputContext)))
+            {
+                bool expected = ctx == InputContext.Free || ctx == InputContext.RodReady || ctx == InputContext.RodWaiting;
+                Assert.AreEqual(expected, InputContextRouter.Route(ctx, in f).JournalPressed, ctx.ToString());
+                if (expected) passed++;
+            }
+            Assert.AreEqual(3, passed);
+        }
+
         [Test]
         public void InputContextRouter_NonM1Contexts_RouteLikeFree()
         {

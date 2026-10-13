@@ -9,6 +9,7 @@ namespace FishGame.Core
         public bool PrimaryHeld, PrimaryPressed, PrimaryReleased;
         public bool SecondaryHeld, SecondaryPressed, SecondaryReleased;
         public bool InteractPressed, ShovePressed, DropPressed, EquipPressed;
+        public bool JournalPressed;                // Player/Journal (J / Select); the router passes it in Free, RodReady, RodWaiting only
         public bool PausePressed;                  // Player/Pause in gameplay contexts; UI/Cancel in Menu
         public float Steer;                        // Fishing map, -1..1
         public bool Reel;                          // Fishing map

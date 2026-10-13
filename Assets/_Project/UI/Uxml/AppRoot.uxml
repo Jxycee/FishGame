@@ -17,6 +17,7 @@
         <ui:VisualElement name="ScreenMainMenu" class="screen hidden">
             <ui:VisualElement class="panel">
                 <ui:Label name="MenuTitle" class="title" />
+                <ui:Label name="MetaSummary" class="hint summary" />
                 <ui:Button name="HostButton" class="menu-button" />
                 <ui:Label name="JoinCodeLabel" class="label" />
                 <ui:VisualElement class="row">
@@ -24,7 +25,10 @@
                     <ui:Button name="JoinButton" class="menu-button join-button" />
                 </ui:VisualElement>
                 <ui:Button name="SoloButton" class="menu-button" />
-                <ui:Button name="SettingsButton" class="menu-button" />
+                <ui:VisualElement class="row">
+                    <ui:Button name="SettingsButton" class="menu-button half" />
+                    <ui:Button name="JournalButton" class="menu-button half" />
+                </ui:VisualElement>
                 <ui:Button name="QuitButton" class="menu-button" />
                 <ui:TextField name="NameField" class="setting" />
                 <ui:VisualElement name="DevRow" class="row">
@@ -107,6 +111,30 @@
                 </ui:VisualElement>
                 <ui:Button name="JoinsButton" class="menu-button" />
                 <ui:Button name="LeaveButton" class="menu-button" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="JournalModal" class="screen journal hidden">
+            <ui:VisualElement name="JournalPanel" class="panel journal-panel">
+                <ui:VisualElement class="row journal-header">
+                    <ui:VisualElement class="journal-heading">
+                        <ui:Label name="JournalTitle" class="title small journal-title" />
+                        <ui:Label name="JournalCompletion" class="label journal-completion" />
+                    </ui:VisualElement>
+                    <ui:Button name="JournalClose" class="menu-button journal-close" />
+                </ui:VisualElement>
+                <ui:VisualElement name="JournalProgress" class="journal-progress">
+                    <ui:VisualElement name="JournalProgressFill" class="journal-progress-fill" />
+                </ui:VisualElement>
+                <ui:VisualElement name="JournalFilters" class="row journal-filters">
+                    <ui:Button name="JournalFilterAll" class="journal-filter" />
+                    <ui:VisualElement name="JournalSpotFilters" class="row journal-spot-filters" />
+                    <ui:Toggle name="JournalFilterBiting" class="setting journal-filter-biting" />
+                </ui:VisualElement>
+                <ui:ScrollView name="JournalScroll" class="grow">
+                    <ui:VisualElement name="JournalGrid" class="journal-grid" />
+                    <ui:Label name="JournalEmpty" class="journal-empty hidden" />
+                </ui:ScrollView>
             </ui:VisualElement>
         </ui:VisualElement>
 

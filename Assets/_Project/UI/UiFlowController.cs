@@ -40,6 +40,7 @@ namespace FishGame.UI
         private RebindPresenter _rebind;
         private PausePresenter _pausePresenter;
         private HudPresenter _hudPresenter;
+        private JournalPresenter _journal;
         private ToastPresenter _toasts;
         private NameplateOverlay _nameplates;
         private IDisposable _toastSoundSubscription;
@@ -61,7 +62,36 @@ namespace FishGame.UI
         private bool _extensionsBound;
         private bool _destroyed;
 
+        // T21: one HUD-level modal at a time (the journal; T22's dev panel). Opening sets IInputService.MenuOpen, so the Menu context applies:
+        // cursor free, gameplay input off, UI map on (spec 11.1). Closing restores the screen's own value. Show() and HandleBack close it first.
+        // The game is never paused by a modal (spec 12.10: the journal may stay open while the bobber is out).
+        private object _modalOwner;
+        private Action _modalClosed;
+
         public UiScreen CurrentScreen => _screen;
+
+        internal bool ModalOpen => _modalOwner != null;
+
+        internal bool TryOpenModal(object owner, Action closed)
+        {
+            if (owner == null) throw new ArgumentNullException(nameof(owner));
+            if (_modalOwner != null) return ReferenceEquals(_modalOwner, owner);
+            if (_screen != UiScreen.Hud && _screen != UiScreen.MainMenu) return false;
+            _modalOwner = owner;
+            _modalClosed = closed;
+            _input.MenuOpen = true;
+            return true;
+        }
+
+        internal void CloseModal(object owner)
+        {
+            if (_modalOwner == null || !ReferenceEquals(_modalOwner, owner)) return;
+            Action closed = _modalClosed;
+            _modalOwner = null;
+            _modalClosed = null;
+            _input.MenuOpen = UiFocusRouter.IsMenuScreen(_screen);
+            closed?.Invoke();
+        }
 
         public void Initialize(ServiceRegistry app)
         {
@@ -92,6 +122,7 @@ namespace FishGame.UI
                 return;
             }
 
+            if (_modalOwner != null) CloseModal(_modalOwner);
             var previous = _screen;
             _focus.ClearPending();
             if (previous == UiScreen.Settings && screen != UiScreen.Settings) CloseSettings();
@@ -116,6 +147,7 @@ namespace FishGame.UI
             {
                 case UiScreen.MainMenu:
                     _menu.Refresh();
+                    _menu.SetMetaSummary(JournalPresenter.SummaryText(_app));
                     _focus.SetMenuActions(_session.State == ConnState.Offline && !_actions.HasAttempt, false);
                     break;
                 case UiScreen.Settings:
@@ -199,6 +231,8 @@ namespace FishGame.UI
             _menu = new MainMenuPresenter(_mainMenu, _settings);
             _menu.SettingsRequested += () => OpenSettings(UiScreen.MainMenu);
             _menu.QuitRequested += QuitApplication;
+            _menu.JournalRequested += OpenJournal;
+            _journal = new JournalPresenter(_root, _app, () => CloseModal(_journal));
 
             _busyPresenter = new BusyPresenter(_busy);
 
@@ -234,6 +268,9 @@ namespace FishGame.UI
         {
             if (!_bound) return;
             if (_input.Intent.PausePressed && Time.frameCount != _screenChangedFrame) HandleBack();
+            if (_screen == UiScreen.Hud && _modalOwner == null && _input.Intent.JournalPressed && Time.frameCount != _screenChangedFrame)
+                OpenJournal();
+            if (_journal.IsOpen) _journal.Tick(Time.unscaledDeltaTime);     // also over the main menu
             if (_screen == UiScreen.Pause) _pausePresenter.Tick();
             if (_inGame)
             {
@@ -241,12 +278,40 @@ namespace FishGame.UI
                 _nameplates.Tick(Camera.main);
                 for (int i = 0; i < _hudExtensions.Count; i++) _hudExtensions[i].Tick(Time.unscaledDeltaTime);
             }
-            _focus.RefocusIfLost(_screen, _input.LastDevice);
+            if (_modalOwner != null) _journal.RecoverFocus(_input.LastDevice == InputDeviceKind.Gamepad);   // the menu behind a modal is hidden
+            else _focus.RefocusIfLost(_screen, _input.LastDevice);
+        }
+
+        // T21.2: the journal over the HUD (J) or over the main menu (the Journal button). Refused during the local bite or fight.
+        private void OpenJournal()
+        {
+            var inGame = _screen == UiScreen.Hud;
+            if (!_journal.CanOpen(inGame)) return;
+            if (!TryOpenModal(_journal, OnJournalClosed)) return;
+            if (_screen == UiScreen.MainMenu) UiQuery.Show(_mainMenu, false);   // gamepad navigation must not reach the menu behind it
+            _journal.Open(inGame);
+        }
+
+        private void OnJournalClosed()
+        {
+            _journal.Hide();
+            if (_screen != UiScreen.MainMenu) return;
+            UiQuery.Show(_mainMenu, true);
+            _menu.SetMetaSummary(JournalPresenter.SummaryText(_app));
+            _root.schedule.Execute(() =>
+            {
+                if (_screen == UiScreen.MainMenu && _modalOwner == null) _menu.FocusJournal();
+            });
         }
 
         // Single handler for Escape / Start / UI Cancel (D27): no NavigationCancelEvent handlers exist.
         private void HandleBack()
         {
+            if (_modalOwner != null)
+            {
+                CloseModal(_modalOwner);                        // Esc and gamepad B close the modal, never Pause behind it
+                return;
+            }
             switch (_screen)
             {
                 case UiScreen.Hud: Show(UiScreen.Pause); break;
@@ -359,6 +424,7 @@ namespace FishGame.UI
                 _extensionsBound = false;
             }
             _rebind?.Dispose();
+            _journal?.Dispose();
             _actions?.CancelForDestroy();
             _bound = false;
             if (_panelCopy != null) Destroy(_panelCopy);
