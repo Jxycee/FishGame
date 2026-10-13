@@ -27,9 +27,8 @@ namespace FishGame.Core
             return default;
         }
 
-        // World interactables (PlayerInteractor): Free, RodReady, RodWaiting -> true (spec 8.2). Swimming is false: its Interact column is "climb at exits"
-        // only, and that climb reads the routed Interact straight from RouteSwimming (PlayerLocomotion.TryBeginClimb), not through this gate.
-        // Carrying is false in M2: the context is unused (ruling C-Q2; M5 revisits).
+        // World interactables (PlayerInteractor): Free, RodReady, RodWaiting -> true (spec 8.2). Swimming and Climbing are false and their
+        // routes zero Interact too (R70: nothing is interacted with from the water or a ladder). Carrying is false in M2 (ruling C-Q2; M5 revisits).
         public static bool InteractLive(InputContext context)
         {
             switch (context)
@@ -92,11 +91,12 @@ namespace FishGame.Core
             return i;
         }
 
-        // Swimming: Move, Look, Jump, Interact (climb at exits), Pause pass. Sprint, Primary*, Secondary*, Shove, Drop, Equip zeroed.
+        // Swimming: Move, Look, Jump, Pause pass. Sprint, Primary*, Secondary*, Interact, Shove, Drop, Equip zeroed (R70: no climb-at-exit press).
         private static PlayerIntent RouteSwimming(in PlayerInputFrame f)
         {
             PlayerIntent i = CopyAll(in f);
             i.SprintHeld = false;
+            i.InteractPressed = false;
             i.PrimaryHeld = false;
             i.PrimaryPressed = false;
             i.PrimaryReleased = false;

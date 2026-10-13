@@ -8,7 +8,7 @@ namespace FishGame.Gameplay
     // Authority: owner only (enabled by PlayerNetState). The prompt is local display; a press is only a request sent to the
     // host through PlayerActions.InteractRpc, and the host decides (CanInteract, range, ServerInteract). Spec 7.7.
     // InteractPromptChanged.Prompt is the raw GetPrompt text without the key glyph (T14 composes the key).
-    // after PlayerLocomotion (0): a climb started this frame flips the context to Climbing first, so the same press never reaches an interactable
+    // after PlayerLocomotion (0): a ladder entered this frame flips the context to Climbing first, so a press on that frame never reaches an interactable (defensive since R70: no press starts a climb)
     [DefaultExecutionOrder(100)]
     public sealed class PlayerInteractor : MonoBehaviour
     {

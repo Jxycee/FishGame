@@ -57,7 +57,7 @@ namespace FishGame.Tests.EditMode
         }
 
         [Test]
-        public void InputContextRouter_Swimming_BlocksSprintAndShove()
+        public void InputContextRouter_Swimming_BlocksSprintShoveAndInteract()
         {
             PlayerIntent i = InputContextRouter.Route(InputContext.Swimming, AllActive());
             Assert.AreEqual(0.5f, i.MoveX, 1e-6f);
@@ -65,7 +65,7 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(5f, i.LookYawDeg, 1e-6f);
             Assert.AreEqual(2f, i.LookPitchDeg, 1e-6f);
             Assert.IsTrue(i.JumpPressed, "Jump");
-            Assert.IsTrue(i.InteractPressed, "Interact");
+            Assert.IsFalse(i.InteractPressed, "Interact (R70: no climb-at-exit press)");
             Assert.IsTrue(i.PausePressed, "Pause");
             Assert.IsFalse(i.SprintHeld, "Sprint");
             Assert.IsFalse(i.ShovePressed, "Shove");
@@ -273,13 +273,13 @@ namespace FishGame.Tests.EditMode
             Assert.IsFalse(InputContextRouter.InteractLive(InputContext.Carrying), "C-Q2: Carrying is false in M2");
         }
 
-        // Spec 8.2 Swimming row: Interact = "climb at exits" only. World interactables (the bell) are not live while swimming, yet the router
-        // still passes Interact so PlayerLocomotion can climb at a WaterExit.
+        // R70: no button climbs out of the water any more (ladders are walk-in, the ramp is a slope), so Swimming zeroes Interact and stays
+        // dead for interactables. Catches: a swimmer's E reaching the bell through the router or through PlayerInteractor.
         [Test]
-        public void InputContextRouter_Swimming_InteractClimbsButDoesNotReachInteractables()
+        public void InputContextRouter_Swimming_InteractIsZeroedAndNotLive()
         {
             Assert.IsFalse(InputContextRouter.InteractLive(InputContext.Swimming), "swimming must not drive PlayerInteractor");
-            Assert.IsTrue(InputContextRouter.Route(InputContext.Swimming, AllActive()).InteractPressed, "the climb at exits still reads Interact");
+            Assert.IsFalse(InputContextRouter.Route(InputContext.Swimming, AllActive()).InteractPressed, "Swimming zeroes Interact");
         }
 
         [Test]

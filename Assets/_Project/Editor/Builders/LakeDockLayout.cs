@@ -72,6 +72,9 @@ namespace FishGame.EditorTools
         public const float DeckWidth = 3f, DeckNearZ = -52f, DeckFarZ = -40f, DeckTopY = 0.6f, DeckThickness = 0.1f;
         public const float PostX = 1.4f, PostSpacing = 2f, PostSize = 0.12f;
         public const float LadderZ = -41.5f, LadderX = 1.58f, LadderThickness = 0.06f, LadderWidth = 0.5f;
+        // R70 walk-in ladder volumes (contract M2-D29), one per ladder, mirrored in x. Tuning knobs for the climb-out: LadderVolumeTopY
+        // (fallback 1.9 if a climb-out test fails, plan risk 1) and LadderVolumeInnerX (move out to ~1.75 if the deck edge feels grabby).
+        public const float LadderVolumeInnerX = 1.55f, LadderVolumeOuterX = 2.55f, LadderVolumeBottomY = -1.4f, LadderVolumeTopY = 1.6f, LadderVolumeDepth = 1f;
 
         // Ramp at x 12, from the lakebed to the shore.
         public const float RampX = 12f;

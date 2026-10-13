@@ -1,5 +1,5 @@
 // Authority: none (pure EditMode tests). Per-frame script order of the owner player components, read from [DefaultExecutionOrder] by reflection
-// (no attribute = 0). Spec 8.2: a ladder climb press must flip the context to Climbing before PlayerInteractor looks at it.
+// (no attribute = 0). Spec 8.2: a ladder entry must flip the context to Climbing before PlayerInteractor looks at it.
 using System;
 using FishGame.Fishing;
 using FishGame.Gameplay;
@@ -17,8 +17,8 @@ namespace FishGame.Tests.EditMode
             return attribute != null ? attribute.order : 0;
         }
 
-        // Catches: PlayerInteractor updating at the same order as (or before) PlayerLocomotion. While wading at a WaterExit the context is still Free,
-        // so an interactor that runs first would see Free, send InteractRpc for the bell, and then the locomotion would climb on the same press.
+        // Catches: PlayerInteractor updating at the same order as (or before) PlayerLocomotion: on the frame a player walks into a ladder the context
+        // is still Free when an early interactor runs, so an E press on that frame could reach the bell. Defensive since R70 (no press climbs).
         [Test]
         public void PlayerInteractor_RunsAfterPlayerLocomotion()
         {

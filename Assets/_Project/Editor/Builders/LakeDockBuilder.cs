@@ -1,6 +1,6 @@
 // Builds Spot_LakeDock.unity (contract 6.5, spec 17.1 item 9, D34, D36; M2 look: contract 6.4 / 7.28, spec 10.1-10.4). Owned by T15; T28 owns the M2 rebuild.
 // Deterministic: fixed build order, fixed names, seeded Pcg32 streams (Rng.Stream); the meshes are saved in place (GUIDs kept).
-// Physics fingerprint (plan T28.1): every M1 collider, exit, spawn, the bell anchor and the lakebed and shore numbers are unchanged. The M2 look is
+// Physics fingerprint (plan T28.1): every M1 collider, exit, spawn, the bell anchor and the lakebed and shore numbers are unchanged. R70 (ladders plan L5/L7) changes it on purpose: the ladder exits became Ladders/LadderL|R LadderVolumes (layer Default), and Exits/Ramp is the ramp foot (Appendix B of the plan). The M2 look is
 // MeshBuilder props on M_Toon_Base (collider-only primitives underneath), the FishGame/Water grid, ApplySceneLighting (sky + fog) and the two volumes.
 // Order in Build(): meshes, NewScene, load assets (C 2.8 #14), roots in M1 order, ApplySceneLighting, volumes, both hooks, stats line, save.
 // Never name SessionState in this file: with "using UnityEditor;" it would be ambiguous (CS0104).
@@ -70,6 +70,7 @@ namespace FishGame.EditorTools
             AddDock(art);
             AddReeds(art);
             AddExits();
+            AddLadders();
             AddBellAnchor(bellPrefab);
             RenderingSetupBuilder.ApplySceneLighting(); // RenderSettings are per scene: skybox M_Sky, ExponentialSquared fog 0.008, flat ambient
             AddVolume("WarmVolume", art.WarmProfile);
@@ -313,14 +314,37 @@ namespace FishGame.EditorTools
             volume.sharedProfile = profile;
         }
 
-        // Contract 6.5 exits: trigger boxes plus a child "Top" at the climb-out point.
+        // Contract 6.5 exits. R70: only the shore ramp keeps a WaterExit; the ladders are LadderVolumes (AddLadders). L7 turns this into the
+        // ramp foot.
         static void AddExits()
         {
             GameObject exits = Root("Exits", Layers.Water);
-            AddExit(exits.transform, "LadderL", new Vector3(-2.1f, -0.8f, -41.5f), new Vector3(1.2f, 2.6f, 1.2f), new Vector3(-0.9f, 0.65f, -41.5f));
-            AddExit(exits.transform, "LadderR", new Vector3(2.1f, -0.8f, -41.5f), new Vector3(1.2f, 2.6f, 1.2f), new Vector3(0.9f, 0.65f, -41.5f));
             AddExit(exits.transform, "Ramp", new Vector3(12f, -0.9f, -44f), new Vector3(3f, 2.4f, 4f), new Vector3(12f, 0.45f, -50.5f));
             BuilderUtil.SetLayerRecursive(exits, Layers.Water);
+        }
+
+        // R70 (contract M2-D29): one walk-in LadderVolume per ladder, mirrored in x, on layer Default so CastProbe's water mask never sees it.
+        static void AddLadders()
+        {
+            GameObject root = Root("Ladders", Layers.Default);
+            AddLadderVolume(root.transform, "LadderL", -1f);
+            AddLadderVolume(root.transform, "LadderR", 1f);
+        }
+
+        static void AddLadderVolume(Transform parent, string name, float side)
+        {
+            var go = new GameObject(name);
+            go.layer = Layers.Default;
+            go.transform.SetParent(parent, false);
+            go.transform.position = new Vector3(
+                side * (LakeDockLayout.LadderVolumeInnerX + LakeDockLayout.LadderVolumeOuterX) * 0.5f,
+                (LakeDockLayout.LadderVolumeBottomY + LakeDockLayout.LadderVolumeTopY) * 0.5f,
+                LakeDockLayout.LadderZ);
+            BoxCollider box = go.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            box.size = new Vector3(LakeDockLayout.LadderVolumeOuterX - LakeDockLayout.LadderVolumeInnerX,
+                LakeDockLayout.LadderVolumeTopY - LakeDockLayout.LadderVolumeBottomY, LakeDockLayout.LadderVolumeDepth);
+            go.AddComponent<LadderVolume>();
         }
 
         static void AddExit(Transform parent, string name, Vector3 center, Vector3 size, Vector3 topWorld)
