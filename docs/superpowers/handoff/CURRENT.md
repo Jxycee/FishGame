@@ -78,5 +78,12 @@ Also on the board:
 - winter tree colliders;
 - the online-cancel message.
 
+## 10. Harbour detail pass (user, 2026-10-14) - in flight
+- User: the harbour is "decent but very simple". Wants all of: shaped land, harbour life + clutter, shoreline + vegetation, backdrop/skyline; cozy-busy; "don't be afraid to add triangles" (user has an RTX 5070). Perf target revised: GTX 900-series at LOW-MEDIUM settings.
+- Story (user): each map must feel like a stop on the downriver run ("they drove the boat to that area"): the crew's getaway boat moored as a hero prop (FBX Harbour_Core_CrewBoat, reused for the M4 boat ride), a river mouth in the backdrop, light mafia hints (wanted poster, dark boat on the horizon), the world continuing past the walls. Life from noise/clutter/details (REPO, PEAK) and realism + scale (RV There Yet).
+- Blender artist (Opus) on worktree C:\Dev\FishGame-harbour-art, branch harbour-art2 (from af95354). Output: Harbour_Core_*, Harbour_Detail_*, *_Col FBX + manifest (animHint per object for Unity sway/bob/smoke/gull wiring). Screenshots 15+ go to the build log.
+- Then a Unity task (post-M3, fix round): place the new meshes, colliders, a Low-preset Detail toggle, simple animation + ambient sound emitters from animHint; harbour grid must stay byte-identical unless re-baked on purpose.
+- Carry the same map-feel rules into the M4 river maps and the design session.
+
 ## 9. Live pages this round
 - Harbour build log (screenshots as the map is built): https://claude.ai/artifact/TmqCpXrHJBXRZBhZMKkMhW (db `shots`, `meta/status`; images uploaded as assets).
