@@ -621,9 +621,9 @@ namespace FishGame.Tests.EditMode
             CheckWave("W0", w.W0, 20f, 0.050f, 9.0f, 1.2f);
             CheckWave("W1", w.W1, 75f, 0.040f, 7.0f, 1.0f);
             CheckWave("W2", w.W2, 320f, 0.025f, 6.5f, 0.8f);
-            C("shallow", new Color(0.36f, 0.72f, 0.70f, 0.75f), FishingSeedData.WaterShallowColor);
-            C("deep", new Color(0.14f, 0.42f, 0.58f, 0.85f), FishingSeedData.WaterDeepColor);
-            Assert.AreEqual(3.0f, FishingSeedData.WaterDepthRange, 0f);
+            C("shallow", new Color(0.30f, 0.86f, 0.80f, 0.68f), FishingSeedData.WaterShallowColor);
+            C("deep", new Color(0.03f, 0.36f, 0.62f, 0.97f), FishingSeedData.WaterDeepColor);
+            Assert.AreEqual(1.6f, FishingSeedData.WaterDepthRange, 0f);
             Assert.AreEqual(0.35f, FishingSeedData.WaterFoamWidth, 0f);
 
             IReadOnlyList<SfxCueRow> rows = FishingSeedData.CueRows();

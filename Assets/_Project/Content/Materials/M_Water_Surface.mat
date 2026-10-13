@@ -25,13 +25,29 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _DepthRange: 3
+    - _AmbientStrength: 0.35
+    - _CrestAmount: 0.35
+    - _CrestHeight: 0.11
+    - _DepthRange: 1.6
+    - _FacetBoost: 7
+    - _FacetContrast: 0.14
+    - _FacetFade: 55
+    - _FacetSoft: 0.02
     - _FoamWidth: 0.35
-    - _RampMid: 0.78
-    - _RampSoft: 0.04
+    - _FogAmount: 0.35
+    - _FresnelPower: 4
+    - _GlintFlatten: 0.7
+    - _GlintNear: 6
+    - _GlintPower: 96
+    - _GlintStrength: 1
+    - _GlintThreshold: 0.5
+    - _LightTint: 0.35
+    - _ReflectStrength: 0.4
+    - _ReflectZenith: 0.6
+    - _Saturation: 1.15
     m_Colors:
-    - _DeepColor: {r: 0.14, g: 0.42, b: 0.58, a: 0.85}
-    - _FoamColor: {r: 0.92, g: 0.96999997, b: 1, a: 1}
-    - _ShallowColor: {r: 0.35999998, g: 0.72, b: 0.7, a: 0.75}
+    - _DeepColor: {r: 0.03, g: 0.36, b: 0.62, a: 0.97}
+    - _FoamColor: {r: 0.96, g: 0.99, b: 1, a: 1}
+    - _ShallowColor: {r: 0.3, g: 0.86, b: 0.8, a: 0.68}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

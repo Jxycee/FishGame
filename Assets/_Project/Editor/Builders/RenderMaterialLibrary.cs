@@ -3,6 +3,7 @@
 // only when it differs (and then the Lit keyword leftovers are cleared); each property is set only when it differs; SetDirty only on a change.
 // Ruling BF-7: _JitterEncoded is 1 for every material drawn on a MeshBuilder mesh (half-scale grey vertex colour, doubled by the shader) and
 // 0 for M_Toon_Fish, whose Blender fish models carry full-scale linear albedo.
+using System.Collections.Generic;
 using FishGame.Core;
 using UnityEditor;
 using UnityEngine;
@@ -17,6 +18,29 @@ namespace FishGame.EditorTools
         static readonly int JitterEncodedId = Shader.PropertyToID("_JitterEncoded");
         static readonly int RampMidId = Shader.PropertyToID("_RampMid");
         static readonly int RampSoftId = Shader.PropertyToID("_RampSoft");
+
+        // FishGame/Water look parameters (variant C of the 2026-10-12 water look-dev); keep equal to the shader property defaults.
+        static readonly KeyValuePair<string, float>[] WaterLook =
+        {
+            new KeyValuePair<string, float>("_LightTint", 0.35f),
+            new KeyValuePair<string, float>("_AmbientStrength", 0.35f),
+            new KeyValuePair<string, float>("_FacetBoost", 7f),
+            new KeyValuePair<string, float>("_FacetContrast", 0.14f),
+            new KeyValuePair<string, float>("_FacetSoft", 0.02f),
+            new KeyValuePair<string, float>("_FacetFade", 55f),
+            new KeyValuePair<string, float>("_CrestAmount", 0.35f),
+            new KeyValuePair<string, float>("_CrestHeight", 0.11f),
+            new KeyValuePair<string, float>("_GlintPower", 96f),
+            new KeyValuePair<string, float>("_GlintThreshold", 0.5f),
+            new KeyValuePair<string, float>("_GlintStrength", 1f),
+            new KeyValuePair<string, float>("_GlintFlatten", 0.7f),
+            new KeyValuePair<string, float>("_GlintNear", 6f),
+            new KeyValuePair<string, float>("_ReflectStrength", 0.4f),
+            new KeyValuePair<string, float>("_ReflectZenith", 0.6f),
+            new KeyValuePair<string, float>("_FresnelPower", 4f),
+            new KeyValuePair<string, float>("_Saturation", 1.15f),
+            new KeyValuePair<string, float>("_FogAmount", 0.35f),
+        };
         static readonly int DesaturateId = Shader.PropertyToID("_Desaturate");
         static readonly int RimPowId = Shader.PropertyToID("_RimPow");
         static readonly int RimStrengthId = Shader.PropertyToID("_RimStrength");
@@ -55,8 +79,9 @@ namespace FishGame.EditorTools
             surfaceChanged |= SetColor(surface, Shader.PropertyToID("_DeepColor"), water.DeepColor);
             surfaceChanged |= SetFloat(surface, Shader.PropertyToID("_DepthRange"), water.DepthRange);
             surfaceChanged |= SetFloat(surface, Shader.PropertyToID("_FoamWidth"), water.FoamWidth);
-            surfaceChanged |= SetFloat(surface, RampMidId, 0.78f);    // water-specific ramp: facets band against the sun (pinned so an existing material follows the shader default)
-            surfaceChanged |= SetFloat(surface, RampSoftId, 0.04f);
+            // The stylised look parameters (FishGame/Water header) are pinned to the shader defaults so an existing material follows a shader retune.
+            foreach (var p in WaterLook) surfaceChanged |= SetFloat(surface, Shader.PropertyToID(p.Key), p.Value);
+            surfaceChanged |= SetColor(surface, Shader.PropertyToID("_FoamColor"), new Color(0.96f, 0.99f, 1.0f, 1.0f));
             if (surfaceChanged) EditorUtility.SetDirty(surface);
 
             Material line = EnsureMaterial("M_Line", RequireShader("FishGame/Line"), out bool lineChanged);   // shader defaults

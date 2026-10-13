@@ -316,9 +316,10 @@ namespace FishGame.EditorTools
             };
         }
 
-        internal static readonly Color WaterShallowColor = new Color(0.36f, 0.72f, 0.70f, 0.75f);
-        internal static readonly Color WaterDeepColor = new Color(0.14f, 0.42f, 0.58f, 0.85f);
-        internal const float WaterDepthRange = 3.0f;
+        // Water look (FishGame/Water): saturated shallow teal -> deep blue over a vertical depth range; alpha is opacity (the bed shows only in the shallows).
+        internal static readonly Color WaterShallowColor = new Color(0.30f, 0.86f, 0.80f, 0.68f);
+        internal static readonly Color WaterDeepColor = new Color(0.03f, 0.36f, 0.62f, 0.97f);
+        internal const float WaterDepthRange = 1.6f;
         internal const float WaterFoamWidth = 0.35f;
 
         // One row per recipe in SfxRecipes.All order, mixing fields copied from the Core recipe (maxDistance 0 stays 0: the AudioBus default 30).

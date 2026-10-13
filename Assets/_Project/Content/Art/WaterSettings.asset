@@ -16,7 +16,7 @@ MonoBehaviour:
   - {x: 20, y: 0.05, z: 9, w: 1.2}
   - {x: 75, y: 0.04, z: 7, w: 1}
   - {x: 320, y: 0.025, z: 6.5, w: 0.8}
-  shallowColor: {r: 0.36, g: 0.72, b: 0.7, a: 0.75}
-  deepColor: {r: 0.14, g: 0.42, b: 0.58, a: 0.85}
-  depthRange: 3
+  shallowColor: {r: 0.3, g: 0.86, b: 0.8, a: 0.68}
+  deepColor: {r: 0.03, g: 0.36, b: 0.62, a: 0.97}
+  depthRange: 1.6
   foamWidth: 0.35
