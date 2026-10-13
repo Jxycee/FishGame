@@ -343,9 +343,10 @@ namespace FishGame.Gameplay
             MovementMath.ClimbWish(transform.eulerAngles.y, pitch, moveX, moveY, out float wx, out float wy, out float wz);
             float len = Mathf.Sqrt(wx * wx + wy * wy + wz * wz);
             bool holding = len > 0f;
-            float boost = _climbMomentum.Step(holding, holding ? wy / len : 0f, dt);
+            float cdt = Mathf.Min(dt, 0.05f);   // a frame hitch must not turn the 5.5 m/s climb into a multi-metre jump in one step
+            float boost = _climbMomentum.Step(holding, holding ? wy / len : 0f, cdt);
             _climbWish = new Vector3(wx, wy, wz) * boost;
-            _cc.Move(_climbWish * dt);
+            _cc.Move(_climbWish * cdt);
             Velocity = _cc.velocity;
             SecondsInWater = 0f;
 

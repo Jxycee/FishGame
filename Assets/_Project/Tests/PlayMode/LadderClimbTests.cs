@@ -269,9 +269,8 @@ namespace FishGame.Tests.PlayMode
             Assert.That(flatSpeed, Is.GreaterThan(ClimbMomentum.LaunchForward * 0.6f), "the launch carried out of the box (input already cleared)");
             Assert.That(flatSpeed, Is.LessThanOrEqualTo(ClimbMomentum.LaunchForward + 0.1f), "the launch is the cap (final review I4: no spike)");
 
-            // Follow the hop: peak height above the deck, and never off the planks or into the water on the far side.
+            // Follow the hop: peak height above the deck, and never off the planks (the 3 m deck's far edge is 3 m away, so the travel bound below covers it).
             float peakY = rig.Player.transform.position.y;
-            float minX = rig.Player.transform.position.x;
             double settleBy = Time.realtimeSinceStartupAsDouble + 3.0;
             Vector3 last = rig.Player.transform.position;
             float stillSince = -1f;
@@ -281,7 +280,6 @@ namespace FishGame.Tests.PlayMode
                 yield return null;
                 Vector3 p = rig.Player.transform.position;
                 peakY = Mathf.Max(peakY, p.y);
-                minX = Mathf.Min(minX, p.x);
                 Assert.That(p.y, Is.GreaterThan(DeckTopY - 0.15f), "dropped off the planks at " + p);
                 bool still = rig.Locomotion.IsGrounded && (p - last).magnitude < 0.0005f;
                 if (!still) stillSince = -1f;
@@ -296,7 +294,7 @@ namespace FishGame.Tests.PlayMode
             Assert.That(peakY - exitPos.y, Is.LessThan(0.4f), "no floaty hop above the exit");
             Assert.That(traveled, Is.LessThan(1.2f), "no overshoot past about a metre");
             Assert.That(traveled, Is.GreaterThan(0.3f), "a real step onto the deck");
-            Assert.That(minX, Is.GreaterThan(-1.2f), "never near the far edge of the 3 m deck");
+            Assert.That(rest.x, Is.LessThanOrEqualTo(DeckEdgeX - 0.3f), "rests at least 0.3 m inboard of the deck edge, not on the lip (at " + rest + ")");
 
             // Past the grace, then 0.5 s more: the climber must stay off the ladder.
             yield return PlayModeHarness.WaitUntil(() => Time.time - exitTime >= MovementMath.ClimbReentryGrace, 2f, "grace wait");
