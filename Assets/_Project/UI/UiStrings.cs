@@ -167,6 +167,7 @@ namespace FishGame.UI
             ["dev.weather_track"] = "Track",
             ["dev.clock_running"] = "Dev clock running",
             ["dev.new_day"] = "New day",
+            ["dev.day_over"] = "Day over (stop at 2:00 AM)",
             ["dev.scrub_hint"] = "Hold F8: clock x60",
             ["dev.spawn_hotspot"] = "Spawn hotspot at crosshair",
             ["dev.run_seed"] = "Run seed",

@@ -39,6 +39,8 @@ namespace FishGame.EditorTools
 
         public static void Bake()
         {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+                throw new System.InvalidOperationException("FishIconBaker needs a graphics device (run without -nographics)");
             // The empty scene first: opening it unloads unused assets, so everything is loaded after it.
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 

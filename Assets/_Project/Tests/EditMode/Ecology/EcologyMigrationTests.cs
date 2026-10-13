@@ -19,7 +19,8 @@ namespace FishGame.Tests.EditMode
     public class EcologyMigrationTests
     {
         private const string TempParent = "Assets/_Project/Tests/__Temp";
-        private const string RootBase = TempParent + "/EcologyMigrationTests";
+        // A unique prefix per run (the fixtures share the gitignored __Temp parent, which is never deleted); the per-test serial follows it.
+        private static readonly string RootBase = TempParent + "/EcologyMigrationTests_" + Guid.NewGuid().ToString("N").Substring(0, 8);
 
         // A fresh folder per test: rebuilding the same asset paths right after deleting them makes the FishingContentBuilder wrong-type guard
         // trip on the stale GUID entry of the deleted file ("asset exists but is not a ...").
@@ -51,10 +52,6 @@ namespace FishGame.Tests.EditMode
                 foreach (string folder in AssetDatabase.GetSubFolders(TempParent))
                     if (folder.StartsWith(RootBase, StringComparison.Ordinal)) AssetDatabase.DeleteAsset(folder);   // this run's and any leftover one
             }
-            if (AssetDatabase.IsValidFolder(TempParent)
-                && AssetDatabase.GetSubFolders(TempParent).Length == 0
-                && AssetDatabase.FindAssets("", new[] { TempParent }).Length == 0)
-                AssetDatabase.DeleteAsset(TempParent);
         }
 
         [OneTimeTearDown]

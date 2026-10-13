@@ -123,6 +123,7 @@ namespace FishGame.Tests.PlayMode
             FishingDebugSettings.ForcedSpeciesId = null;
             FishingDebugSettings.TwitchyHook = false;
             FishingDebugSettings.ForceJunk = false;
+            FishingDebugSettings.Luck = 0f;
         }
 
         // Bootstrap -> Menu -> solo host -> the Handmade loadout mirrored (rod_handmade, 20 worms) -> optionally the G9 teleport.
