@@ -61,6 +61,9 @@ namespace FishGame.Fishing
             s_current = this;
             _registered = true;
 
+            ServiceRegistry app = ServiceRoots.App;
+            if (app != null && app.TryGet(out INetworkSession session)) FishingDebugSettings.ClearOnSessionEnd(session);   // F6/F7 clear when the session ends
+
             ResolveNetworkManager();   // may still be null here; resolved lazily on first server use
             FishingRodNetwork.Despawned += HandleRodDespawned;
             SessionState.SlotTakenOver += HandleSlotTakenOver;
@@ -84,9 +87,7 @@ namespace FishGame.Fishing
             SessionState.SlotTakenOver -= HandleSlotTakenOver;
             Ledger = null;
             if (s_current == this) s_current = null;
-            // F6 (forced bite) and F7 (twitchy hook) are session toggles on statics: a new session must not inherit them (final review M-5).
-            FishingDebugSettings.ForcedBiteWait = 0f;
-            FishingDebugSettings.TwitchyHook = false;
+            // F6/F7 clear on INetworkSession.Ended (FishingDebugSettings.ClearOnSessionEnd), not here: a Spot load must keep them (M3 map switch).
         }
 
         private bool IsServerActive

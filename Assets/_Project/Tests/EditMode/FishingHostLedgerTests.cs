@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using FishGame.Core;
 using NUnit.Framework;
+using UnityEngine.TestTools.Constraints;
+using Is = UnityEngine.TestTools.Constraints.Is;   // extends NUnit's Is with AllocatingGCMemory(); the alias avoids the ambiguity
 
 namespace FishGame.Tests.EditMode
 {
@@ -14,6 +16,7 @@ namespace FishGame.Tests.EditMode
         const ulong Client = 100;
         const float HookDistance = 8.5f + FishingConstants.HookedLineSlack;   // host distance whose LineLength0 is exactly 8.5
         const ulong Seed = 42;
+        private static object s_allocSink;   // keeps the positive control's allocations observable
         static readonly float Tf = CastMath.FlightTime(CastMath.Distance(0.5f, 2.5f, 18f));
 
         // ---- helpers -----------------------------------------------------------------------------------------------
@@ -939,11 +942,16 @@ namespace FishGame.Tests.EditMode
             var sink = new List<CommitDecision>(8);
             l.Tick(0.01, false, sink);
             Assert.That(sink, Is.Empty);
-            long before = System.GC.GetAllocatedBytesForCurrentThread();
-            for (int i = 0; i < 100; i++) l.Tick(0.01, false, sink);
-            long allocated = System.GC.GetAllocatedBytesForCurrentThread() - before;
+            // C2 16.1 carry: System.GC.GetAllocatedBytesForCurrentThread() reads 0 on Unity's Mono even for 100 real array allocations (the first
+            // version of this positive control failed on exactly that), so the old "allocated == 0" proved nothing. The Unity Test Framework
+            // constraint uses the profiler's GC.Alloc marker instead; the control below must see an allocation or the assert above is vacuous.
+            Assert.That(() => { for (int i = 0; i < 100; i++) l.Tick(0.01, false, sink); }, Is.Not.AllocatingGCMemory(), "Tick must not allocate");
             Assert.That(sink, Is.Empty);
-            Assert.That(allocated, Is.EqualTo(0L), "Tick must not allocate");
+
+            // Positive control: the same probe must detect 100 small array allocations. Catches an inert probe (an always-"no allocation" probe
+            // passes for any code).
+            Assert.That(() => { for (int i = 0; i < 100; i++) s_allocSink = new object[4]; }, Is.AllocatingGCMemory(),
+                "positive control: the allocation probe must detect allocations on this runtime");
 
             List<CommitDecision> late = Tick(l, Tf + 2.0 + 31.0);
             Assert.That(late.Count, Is.EqualTo(4));

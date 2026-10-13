@@ -202,6 +202,7 @@ namespace FishGame.Fishing
                 _fightAccumulator = 0f;
             }
 
+            RefreshDrawnMarker();   // C2 16.1 carry: the drawn marker shows the post-tick charge (and hides on the release frame), never a frame behind
             PublishView();
         }
 
@@ -336,7 +337,7 @@ namespace FishGame.Fishing
                 f.SecondaryPressed = intent.SecondaryPressed; f.SecondaryReleased = intent.SecondaryReleased; f.SecondaryHeld = intent.SecondaryHeld;
             }
 
-            f.MarkerValid = UpdateMarker();   // Ready/Charging only; false otherwise
+            f.MarkerValid = ProbeMarker(out _);   // the cast gate: THIS frame's pose and the pre-tick charge; Ready/Charging only; writes no public property
             Vector3 root = transform.position;
             f.PlayerToBobber = _hasLanding ? Flat(root, _landing) : 0f;
             f.TipToBobber = _hasLanding ? Flat(RodTipPosition, _landing) : 0f;
@@ -344,25 +345,31 @@ namespace FishGame.Fishing
             return f;
         }
 
-        // Spec 9.3: the landing the cast would make right now, probed every frame. On a disagreement the host wins (recall).
+        // Spec 9.3: the landing the cast would make right now. On a disagreement the host wins (recall).
         // R67: dist is measured from the rod tip; CastMath.Landing adds the fixed FishingConstants.CastTipReach, exactly as the host does.
-        private bool UpdateMarker()
+        // A pure probe (no field writes). BuildFrame uses it before the machine tick as the cast gate (M-4: marker == cast == host landing);
+        // RefreshDrawnMarker uses it after the tick for what is drawn.
+        // T15: M3 owner gates go here (C 2.8 #26)
+        private bool ProbeMarker(out Vector3 position)
         {
-            MarkerVisible = Machine.MarkerOn && RodOut;
-            if (!MarkerVisible)
-            {
-                MarkerValid = false;
-                return false;
-            }
-
+            position = Vector3.zero;
+            if (!(Machine.MarkerOn && RodOut)) return false;
             float charge = Machine.State == RodState.Charging ? Machine.ChargeNorm : 0f;
             float dist = CastMath.Distance(charge, _tuning.CastMinDist, Rod.CastMaxDist);
             Vector3 root = transform.position;
             CastMath.Landing(root.x, root.z, transform.eulerAngles.y, dist, out float lx, out float lz);
             WaterProbe probe = CastProbe.Probe(lx, lz);
-            MarkerValid = CastMath.IsValidLanding(in probe, _tuning.MinLandDepth);
-            MarkerPosition = new Vector3(lx, probe.FirstHitIsWater ? probe.WaterY : WaterSurface.HeightAt(lx, lz), lz);
-            return MarkerValid;
+            position = new Vector3(lx, probe.FirstHitIsWater ? probe.WaterY : WaterSurface.HeightAt(lx, lz), lz);
+            return CastMath.IsValidLanding(in probe, _tuning.MinLandDepth);
+        }
+
+        // The only writer of MarkerVisible / MarkerValid / MarkerPosition besides OnDisable (C2 16.1 carry): the drawn marker shows the
+        // post-tick charge, hides on the release frame, and is never a frame behind the machine.
+        private void RefreshDrawnMarker()
+        {
+            MarkerVisible = Machine.MarkerOn && RodOut;
+            MarkerValid = ProbeMarker(out Vector3 p);   // false when the marker is off
+            if (MarkerVisible) MarkerPosition = p;
         }
 
         // ------------------------------------------------------------------ effects
