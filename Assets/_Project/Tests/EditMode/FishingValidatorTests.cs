@@ -199,14 +199,14 @@ namespace FishGame.Tests.EditMode
             ("tuning", "", "castChargeTime", 0.6f, 1.5f, false), ("tuning", "", "castMinDist", 2f, 4f, false),
             ("tuning", "", "minLandDepth", 0.5f, 1.5f, false), ("tuning", "", "biteWaitMin", 2f, 8f, false),
             ("tuning", "", "biteWaitMax", 10f, 30f, false), ("tuning", "", "minBiteWait", 0.5f, 2f, false),
-            ("tuning", "", "hookBeat", 0.15f, 0.4f, false), ("tuning", "", "landDistance", 1.5f, 3f, false),
+            ("tuning", "", "hookBeat", 0.15f, 0.4f, false), ("tuning", "", "landDistance", 0.5f, 3f, false),
             ("tuning", "", "reelStrainBurst", 0.2f, 0.45f, false), ("tuning", "", "counterRelief", 0.3f, 0.7f, false),
             ("tuning", "", "steerStrain", 0f, 0.08f, false), ("tuning", "", "outOfWindowStrain", 0.1f, 0.4f, false),
             ("tuning", "", "spoolStrain", 0.3f, 0.8f, false), ("tuning", "", "spoolExtra", 6f, 20f, false),
-            ("tuning", "", "relaxRate", 0.3f, 0.7f, false), ("tuning", "", "relaxWhileReeling", 0.05f, 0.2f, false),
+            ("tuning", "", "relaxRate", 0.5f, 3f, false), ("tuning", "", "relaxWhileReeling", 0.05f, 0.2f, false),
             ("tuning", "", "reelBurstPenalty", 0.6f, 1.2f, false), ("tuning", "", "diveRunMult", 1.2f, 2f, false),
             ("tuning", "", "snapGrace", 0.2f, 0.75f, false), ("tuning", "", "snapGraceAssist", 0.2f, 0.75f, false),
-            ("tuning", "", "strainScale", 0.5f, 1.5f, false), ("tuning", "", "strainScaleAssist", 0.3f, 1f, false),
+            ("tuning", "", "strainScale", 0.3f, 1.5f, false), ("tuning", "", "strainScaleAssist", 0.2f, 1f, false),
             ("tuning", "", "pinEscapeTime", 4f, 10f, false), ("tuning", "", "slackEscapeTime", 8f, 20f, false),
             ("tuning", "", "fishStaminaRegen", 0.02f, 0.08f, false), ("tuning", "", "calmCenterPull", 0.05f, 0.3f, false),
             ("tuning", "", "lateralMaxDeg", 60f, 85f, false), ("tuning", "", "hookedLeash", 2f, 5f, false),
@@ -229,7 +229,7 @@ namespace FishGame.Tests.EditMode
             ("tuning", "", "fightTimeout", 30f, 300f, false),
 
             ("rod", "rod_handmade", "tier", 0f, 3f, true), ("rod", "rod_handmade", "castMaxDist", 8f, 40f, false),
-            ("rod", "rod_handmade", "reelSpeed", 0.5f, 2f, false), ("rod", "rod_handmade", "lineStrength", 0.5f, 2.5f, false),
+            ("rod", "rod_handmade", "reelSpeed", 0.3f, 2f, false), ("rod", "rod_handmade", "lineStrength", 0.5f, 2.5f, false),
             ("rod", "rod_handmade", "angleWindow", 0.3f, 0.9f, false), ("rod", "rod_handmade", "steerRate", 0.3f, 1.2f, false),
             ("rod", "rod_handmade", "relaxMult", 0.5f, 1.5f, false), ("rod", "rod_handmade", "shopCost", 0f, Open, true),
             ("rod", "rod_handmade", "firstCamp", 0f, 6f, true),
@@ -416,16 +416,16 @@ namespace FishGame.Tests.EditMode
             CollectionAssert.IsEmpty(Check(set));
             SetNum(set.ById["bait_worm"], "maxRating", 9);
 
-            SetNum(set.ById["steady"], "calmMax", 0.9);          // calmMin 1.0
-            AssertContains(Check(set), "profile steady: calmMax = 0.9 outside [1, 6]");
+            SetNum(set.ById["steady"], "calmMax", 1.9);          // calmMin 2.0 (R72)
+            AssertContains(Check(set), "profile steady: calmMax = 1.9 outside [2, 6]");
             SetNum(set.ById["steady"], "calmMax", 6.5);
-            AssertContains(Check(set), "profile steady: calmMax = 6.5 outside [1, 6]");
-            SetNum(set.ById["steady"], "calmMax", 2.5);
-            SetNum(set.ById["steady"], "burstMax", 1.4);         // burstMin 1.5
-            AssertContains(Check(set), "profile steady: burstMax = 1.4 outside [1.5, 8]");
-            SetNum(set.ById["steady"], "burstMax", 8.5);
-            AssertContains(Check(set), "profile steady: burstMax = 8.5 outside [1.5, 8]");
-            SetNum(set.ById["steady"], "burstMax", 2.5);
+            AssertContains(Check(set), "profile steady: calmMax = 6.5 outside [2, 6]");
+            SetNum(set.ById["steady"], "calmMax", 4);
+            SetNum(set.ById["steady"], "burstMax", 2.9);         // burstMin 3.0 (R72)
+            AssertContains(Check(set), "profile steady: burstMax = 2.9 outside [3, 10]");
+            SetNum(set.ById["steady"], "burstMax", 10.5);
+            AssertContains(Check(set), "profile steady: burstMax = 10.5 outside [3, 10]");
+            SetNum(set.ById["steady"], "burstMax", 5);
             CollectionAssert.IsEmpty(Check(set));
         }
 

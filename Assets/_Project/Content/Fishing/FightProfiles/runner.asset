@@ -18,12 +18,12 @@ MonoBehaviour:
   lateralSpeed: 0.8
   runSpeed: 0.8
   staminaDrain: 0.035
-  calmMin: 1
-  calmMax: 2
-  burstMin: 2.5
-  burstMax: 4
-  flipRate: 0.1
-  diveChance: 0.25
+  calmMin: 2
+  calmMax: 3.5
+  burstMin: 5
+  burstMax: 9
+  flipRate: 0
+  diveChance: 0.3
   burstRamp: 0.8
   calmDrift: 0
   calmDriftRamp: 0

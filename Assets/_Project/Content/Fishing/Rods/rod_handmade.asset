@@ -16,10 +16,10 @@ MonoBehaviour:
   displayName: Handmade Rod
   tier: 1
   castMaxDist: 18
-  reelSpeed: 1
+  reelSpeed: 0.6
   lineStrength: 1
   angleWindow: 0.6
-  steerRate: 0.6
+  steerRate: 0.8
   relaxMult: 1
   shopCost: 120
   firstCamp: 1

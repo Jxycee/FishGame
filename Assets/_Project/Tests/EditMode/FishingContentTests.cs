@@ -123,22 +123,22 @@ namespace FishGame.Tests.EditMode
             R(v, "tuning minBiteWait", t.MinBiteWait, 0.5f, 2f);
             Rule(v, "tuning", t.MinBiteWait <= t.BiteWaitMin, "minBiteWait <= biteWaitMin");
             R(v, "tuning hookBeat", t.HookBeat, 0.15f, 0.4f);
-            R(v, "tuning landDistance", t.LandDistance, 1.5f, 3f);
+            R(v, "tuning landDistance", t.LandDistance, 0.5f, 3f);
             R(v, "tuning reelStrainBurst", t.ReelStrainBurst, 0.2f, 0.45f);
             R(v, "tuning counterRelief", t.CounterRelief, 0.3f, 0.7f);
             R(v, "tuning steerStrain", t.SteerStrain, 0f, 0.08f);
             R(v, "tuning outOfWindowStrain", t.OutOfWindowStrain, 0.1f, 0.4f);
             R(v, "tuning spoolStrain", t.SpoolStrain, 0.3f, 0.8f);
             R(v, "tuning spoolExtra", t.SpoolExtra, 6f, 20f);
-            R(v, "tuning relaxRate", t.RelaxRate, 0.3f, 0.7f);
+            R(v, "tuning relaxRate", t.RelaxRate, 0.5f, 3f);
             R(v, "tuning relaxWhileReeling", t.RelaxWhileReeling, 0.05f, 0.2f);
             R(v, "tuning reelBurstPenalty", t.ReelBurstPenalty, 0.6f, 1.2f);
             R(v, "tuning diveRunMult", t.DiveRunMult, 1.2f, 2f);
             R(v, "tuning snapGrace", t.SnapGrace, 0.2f, 0.75f);
             R(v, "tuning snapGraceAssist", t.SnapGraceAssist, 0.2f, 0.75f);
             Rule(v, "tuning", t.SnapGraceAssist >= t.SnapGrace, "snapGraceAssist >= snapGrace");
-            R(v, "tuning strainScale", t.StrainScale, 0.5f, 1.5f);
-            R(v, "tuning strainScaleAssist", t.StrainScaleAssist, 0.3f, 1f);
+            R(v, "tuning strainScale", t.StrainScale, 0.3f, 1.5f);
+            R(v, "tuning strainScaleAssist", t.StrainScaleAssist, 0.2f, 1f);
             Rule(v, "tuning", t.StrainScaleAssist <= t.StrainScale, "strainScaleAssist <= strainScale");
             R(v, "tuning pinEscapeTime", t.PinEscapeTime, 4f, 10f);
             R(v, "tuning slackEscapeTime", t.SlackEscapeTime, 8f, 20f);
@@ -185,7 +185,7 @@ namespace FishGame.Tests.EditMode
                 R(v, l + " tier", r.Tier, 0f, 3f);
                 R(v, l + " castMaxDist", r.CastMaxDist, 8f, 40f);
                 Rule(v, l, r.CastMaxDist > t.CastMinDist, "castMaxDist > castMinDist");
-                R(v, l + " reelSpeed", r.ReelSpeed, 0.5f, 2f);
+                R(v, l + " reelSpeed", r.ReelSpeed, 0.3f, 2f);
                 R(v, l + " lineStrength", r.LineStrength, 0.5f, 2.5f);
                 R(v, l + " angleWindow", r.AngleWindow, 0.3f, 0.9f);
                 Rule(v, l, r.AngleWindow < FishingConstants.PinnedLateral, "angleWindow < PinnedLateral");
@@ -219,7 +219,7 @@ namespace FishGame.Tests.EditMode
                 R(v, l + " calmMin", p.CalmMin, 0.2f, 5f);
                 R(v, l + " calmMax", p.CalmMax, p.CalmMin, 6f);
                 R(v, l + " burstMin", p.BurstMin, 0.3f, 6f);
-                R(v, l + " burstMax", p.BurstMax, p.BurstMin, 8f);
+                R(v, l + " burstMax", p.BurstMax, p.BurstMin, 10f);
                 R(v, l + " flipRate", p.FlipRate, 0f, 2f);
                 R(v, l + " diveChance", p.DiveChance, 0f, 1f);
                 R(v, l + " burstRamp", p.BurstRamp, 0f, 2f);
@@ -485,26 +485,26 @@ namespace FishGame.Tests.EditMode
             Tn("biteWaitMax", 18f, t.BiteWaitMax);
             Tn("minBiteWait", 1.0f, t.MinBiteWait);
             Tn("hookBeat", 0.25f, t.HookBeat);
-            Tn("landDistance", 2.0f, t.LandDistance);
+            Tn("landDistance", 1.0f, t.LandDistance);
             Tn("reelStrainBurst", 0.30f, t.ReelStrainBurst);
             Tn("counterRelief", 0.5f, t.CounterRelief);
             Tn("steerStrain", 0.03f, t.SteerStrain);
             Tn("outOfWindowStrain", 0.20f, t.OutOfWindowStrain);
             Tn("spoolStrain", 0.50f, t.SpoolStrain);
             Tn("spoolExtra", 12f, t.SpoolExtra);
-            Tn("relaxRate", 0.45f, t.RelaxRate);
+            Tn("relaxRate", 1.5f, t.RelaxRate);
             Tn("relaxWhileReeling", 0.10f, t.RelaxWhileReeling);
             Tn("reelBurstPenalty", 1.0f, t.ReelBurstPenalty);
             Tn("diveRunMult", 1.5f, t.DiveRunMult);
             Tn("snapGrace", 0.25f, t.SnapGrace);
             Tn("snapGraceAssist", 0.75f, t.SnapGraceAssist);
-            Tn("strainScale", 1.0f, t.StrainScale);
-            Tn("strainScaleAssist", 0.6f, t.StrainScaleAssist);
+            Tn("strainScale", 0.75f, t.StrainScale);
+            Tn("strainScaleAssist", 0.45f, t.StrainScaleAssist);
             Tn("pinEscapeTime", 5f, t.PinEscapeTime);
             Tn("slackEscapeTime", 12f, t.SlackEscapeTime);
             Tn("fishStaminaRegen", 0.04f, t.FishStaminaRegen);
             Tn("calmCenterPull", 0.15f, t.CalmCenterPull);
-            Tn("lateralMaxDeg", 75f, t.LateralMaxDeg);
+            Tn("lateralMaxDeg", 60f, t.LateralMaxDeg);
             Tn("hookedLeash", 3f, t.HookedLeash);
             Tn("junkDragSpeed", 3f, t.JunkDragSpeed);
             Tn("resultTimeout", 3f, t.ResultTimeout);
@@ -540,10 +540,11 @@ namespace FishGame.Tests.EditMode
             Tn("fightTimeout", 120f, t.FightTimeout);
 
             Assert.AreEqual(4, FishingSeedData.Rods.Count, "rod count");
-            Rod("rod_twig", "Twig Rod", 0, 14f, 0.9f, 0.8f, 0.50f, 0.50f, 0.9f, 0, 0);
-            Rod("rod_handmade", "Handmade Rod", 1, 18f, 1.0f, 1.0f, 0.60f, 0.60f, 1.0f, 120, 1);
-            Rod("rod_carbon", "Carbon Rod", 2, 24f, 1.2f, 1.3f, 0.70f, 0.70f, 1.1f, 300, 2);
-            Rod("rod_deepsea", "Deep-Sea Rod", 3, 30f, 1.3f, 1.6f, 0.75f, 0.80f, 1.2f, 600, 4);
+            // R72: reelSpeed and steerRate follow Rust's rod (Handmade 0.6 / 0.8) with the pre-R72 ratios between rods.
+            Rod("rod_twig", "Twig Rod", 0, 14f, 0.54f, 0.8f, 0.50f, 0.67f, 0.9f, 0, 0);
+            Rod("rod_handmade", "Handmade Rod", 1, 18f, 0.6f, 1.0f, 0.60f, 0.8f, 1.0f, 120, 1);
+            Rod("rod_carbon", "Carbon Rod", 2, 24f, 0.72f, 1.3f, 0.70f, 0.93f, 1.1f, 300, 2);
+            Rod("rod_deepsea", "Deep-Sea Rod", 3, 30f, 0.78f, 1.6f, 0.75f, 1.07f, 1.2f, 600, 4);
 
             Assert.AreEqual(6, FishingSeedData.Baits.Count, "bait count");
             Bait("bait_bare_hook", "Bare Hook", 1, 1, 1, 1.30f, 1.5f, 1, true);
@@ -553,15 +554,16 @@ namespace FishGame.Tests.EditMode
             Bait("bait_shrimp", "Shrimp", 5, 2, 10, 0.80f, 0.8f, 1, false);
             Bait("bait_raw_meat", "Raw Meat", 10, 1, 10, 0.70f, 0.5f, 0, false);
 
-            // Spec 9.6 columns, with the C 7.7 motion seeds (bold in plan 1.4): Darter calm 0.3-0.8, burst 0.4-0.9, flipRate 1.0, gap 0.3;
-            // Steady burstRamp 0.6; Bulldog drift 0.12 / 2.5; Thrasher jitter 0.3; Runner burstRamp 0.8; every other motion field 0, gap 0.5.
+            // R72: Rust tiers plus the five per-profile quirks (spec 9.6); the quirks change only how the fish moves.
             Assert.AreEqual(5, FishingSeedData.Profiles.Count, "profile count");
-            // R72 tiers (spec 9.6): small 0.8 / 0.8 / 1.2, medium 1 / 1 / 1, large 1.25 / 1.25 / 0.9; wavePeriod 4 s (Thrasher 1.5 s).
-            Profile("steady", "Steady", 0.30f, 0.60f, 0.30f, 0.08f, 1.0f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0.6f, 0f, 0f, 0.5f, 0f, 0.8f, 0.8f, 1.2f, 4f);
-            Profile("darter", "Darter", 0.45f, 0.70f, 0.40f, 0.07f, 0.3f, 0.8f, 0.4f, 0.9f, 1.0f, 0f, 0f, 0f, 0f, 0.3f, 0f, 1.0f, 1.0f, 1.0f, 4f);
-            Profile("bulldog", "Bulldog", 0.60f, 0.60f, 0.50f, 0.06f, 1.0f, 3.0f, 2.0f, 4.0f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f);
-            Profile("thrasher", "Thrasher", 0.70f, 1.00f, 0.60f, 0.09f, 1.0f, 2.5f, 1.5f, 3.0f, 0.5f, 0f, 0f, 0f, 0f, 0.5f, 0.3f, 1.0f, 1.0f, 1.0f, 1.5f);
-            Profile("runner", "Runner", 0.85f, 0.80f, 0.80f, 0.05f, 1.0f, 2.0f, 2.5f, 4.0f, 0.1f, 0.25f, 0.8f, 0f, 0f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f);
+            // R72: Rust tiers (spec 9.6: small 0.8 / 0.8 / 1.2, medium 1 / 1 / 1, large 1.25 / 1.25 / 0.9) plus the five per-profile quirks
+            // (rest, run, back chance, flips, ramp, creep, jitter, wave 4 s; Thrasher 1.5 s); the quirks change only how the fish moves.
+            // The pull/lateral/run/drain columns are retired (F7 removes them) and keep their pre-R72 values.
+            Profile("steady", "Steady", 0.30f, 0.60f, 0.30f, 0.08f, 2f, 4f, 3f, 5f, 0f, 0.15f, 0.6f, 0f, 0f, 0.5f, 0f, 0.8f, 0.8f, 1.2f, 4f);
+            Profile("darter", "Darter", 0.45f, 0.70f, 0.40f, 0.07f, 1f, 2f, 2f, 3.5f, 1.0f, 0.15f, 0f, 0f, 0f, 0.3f, 0f, 1.0f, 1.0f, 1.0f, 4f);
+            Profile("bulldog", "Bulldog", 0.60f, 0.60f, 0.50f, 0.06f, 2f, 4f, 2.5f, 4.5f, 0f, 0.55f, 0f, 0.06f, 2.5f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f);
+            Profile("thrasher", "Thrasher", 0.70f, 1.00f, 0.60f, 0.09f, 1.5f, 3f, 3f, 5f, 0.4f, 0.20f, 0f, 0f, 0f, 0.5f, 0.3f, 1.0f, 1.0f, 1.0f, 1.5f);
+            Profile("runner", "Runner", 0.85f, 0.80f, 0.80f, 0.05f, 2f, 3.5f, 5f, 9f, 0f, 0.30f, 0.8f, 0f, 0f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f);
 
             Assert.AreEqual(5, FishingSeedData.Species.Count, "species count");
             Species("bluegill", "Bluegill", "steady", 200, 800, 5, 0.9f, 1, 0.8f, FishRarity.Common, BodyShape.Round,

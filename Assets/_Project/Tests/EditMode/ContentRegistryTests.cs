@@ -156,7 +156,7 @@ namespace FishGame.Tests.EditMode
             FightProfileDef steady = MakeAsset<FightProfileDef>();
             steady.Configure("steady", "Steady", 0.3f, 0.6f, 0.3f, 0.08f, 1f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0.6f, 0f, 0f, 0.5f, 0f, 1f, 1f, 1f, 4f);
             FightProfileDef bulldog = MakeAsset<FightProfileDef>();
-            bulldog.Configure("bulldog", "Bulldog", 0.6f, 0.6f, 0.5f, 0.06f, 1f, 3f, 2f, 4f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f, 1f, 1f, 1f, 4f);
+            bulldog.Configure("bulldog", "Bulldog", 0.6f, 0.6f, 0.5f, 0.06f, 1f, 3f, 2f, 4f, 0f, 0.55f, 0f, 0.06f, 2.5f, 0.5f, 0f, 1f, 1f, 1f, 4f);   // R72: diveChance 0.55, calmDrift 0.06
             set.Profiles = new[] { steady, bulldog };
 
             FishSpeciesDef carp = MakeAsset<FishSpeciesDef>();
@@ -534,7 +534,7 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(24f, db.Rods[reg.RodIndex("rod_carbon")].CastMaxDist);
             Assert.AreEqual(1.2f, db.Species[reg.SpeciesIndex("carp")].BiteWaitMod);
             Assert.AreEqual(0.9f, db.Species[reg.SpeciesIndex("bluegill")].BiteWaitMod);
-            Assert.AreEqual(0.35f, db.Profiles[reg.FightProfileIndex("bulldog")].DiveChance);
+            Assert.AreEqual(0.55f, db.Profiles[reg.FightProfileIndex("bulldog")].DiveChance);
 
             FishingTuning expected = set.Tuning.ToCore();
             Assert.AreEqual(expected.CastChargeTime, db.Tuning.CastChargeTime);

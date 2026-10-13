@@ -16,10 +16,10 @@ MonoBehaviour:
   displayName: Twig Rod
   tier: 0
   castMaxDist: 14
-  reelSpeed: 0.9
+  reelSpeed: 0.54
   lineStrength: 0.8
   angleWindow: 0.5
-  steerRate: 0.5
+  steerRate: 0.67
   relaxMult: 0.9
   shopCost: 0
   firstCamp: 0
