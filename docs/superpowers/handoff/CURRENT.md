@@ -84,6 +84,7 @@ Also on the board:
 - Blender artist (Opus) on worktree C:\Dev\FishGame-harbour-art, branch harbour-art2 (from af95354). Output: Harbour_Core_*, Harbour_Detail_*, *_Col FBX + manifest (animHint per object for Unity sway/bob/smoke/gull wiring). Screenshots 15+ go to the build log.
 - Then a Unity task (post-M3, fix round): place the new meshes, colliders, a Low-preset Detail toggle, simple animation + ambient sound emitters from animHint; harbour grid must stay byte-identical unless re-baked on purpose.
 - Carry the same map-feel rules into the M4 river maps and the design session.
+- Crew boat = TUGBOAT (user, 2026-10-14; spec R78 on m3-fish-ecology fa09d49): Rust tug silhouette reference, walkable interior storage, fits 4, several fishing spots aboard; per-player placeable ice chests that store fish until sold, lost if left behind at day end. Harbour pass places a moored tug (inside the breakwater) with 4 placeholder chests; driving and chest rules are M4 design-session items.
 
 ## 11. M3 branch review (Opus xhigh, 2026-10-14): MERGE WITH FIXES
 - Fix wave in flight: worktree C:\Dev\FishGame-t15, branch m3-final-fixes (acceptance-doc fixes + dev panel "Day over" button; host ignores rod/bait selection in release builds; __Temp test flake; FishIconBaker GPU guard; dev panel closes on a bite; contract M3-D97 for T17-B). Then full check, merge into m3-fish-ecology, merge M3 into main (merge commit, no PR).
