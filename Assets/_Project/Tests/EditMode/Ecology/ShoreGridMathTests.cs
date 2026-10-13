@@ -78,7 +78,8 @@ namespace FishGame.Tests.EditMode
             ushort[] dm = { 0xFFFF, 5, 15, 25, 35, 45, 55, 65, 105, 125 };
             var castable = new bool[10];
             var reachable = new bool[10];
-            for (int i = 1; i < 10; i++) { castable[i] = true; reachable[i] = i != 9; }
+            // Cell 0 is land (0xFFFF) but castable AND reachable on purpose: only the IsWater filter keeps it out of the counts.
+            for (int i = 0; i < 10; i++) { castable[i] = true; reachable[i] = i != 9; }
             var grid = new ShoreGrid(10, 1, 1f, 0f, 0f, dm, ShoreGridMath.PackBits(castable), ShoreGridMath.PackBits(reachable));
 
             var bands = new[]

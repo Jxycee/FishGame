@@ -24,6 +24,7 @@ namespace FishGame.Tests.PlayMode
         public bool ReportOnCancel;
         public bool CancelSeen;
         public int HostCalls;
+        public int LeaveCalls;
 
         public ConnState State { get; private set; }
         public SessionMode Mode => State == ConnState.Offline ? SessionMode.None : SessionMode.Online;
@@ -79,6 +80,7 @@ namespace FishGame.Tests.PlayMode
 
         public Task LeaveAsync()
         {
+            LeaveCalls++;
             CompleteLate();
             if (State != ConnState.Offline) SetState(ConnState.Offline);
             return Task.CompletedTask;
@@ -205,6 +207,13 @@ namespace FishGame.Tests.PlayMode
                 Assert.That(_toasts, Is.EqualTo(0));
                 capture.AssertNoWarnings("cancel losing the race to Connected");
             }
+
+            // The attempt is over and the game is loading: a Cancel press now leaves the session (CancelAttempt -> LeaveSession, #9).
+            Assert.That(_fake.LeaveCalls, Is.EqualTo(0), "nothing has left the session yet");
+            Click(_root.Q<Button>("CancelButton"));
+            Assert.That(_fake.LeaveCalls, Is.EqualTo(1), "a Cancel press after the race leaves the session");
+            Assert.That(_fake.State, Is.EqualTo(ConnState.Offline));
+            Assert.That(_root.Q<Label>("BusyLabel").text, Is.EqualTo("Cancelling..."));
         }
 
         // Catches: a cancel reported inside Cancel() (LocalNetworkSession style) that leaves Busy up because neither the handler nor the

@@ -76,9 +76,13 @@ namespace FishGame.Gameplay
         public override void OnNetworkSpawn()
         {
             if (s_current != null && s_current != this)
+            {
+                // The second instance stays inert: no driver init (it would overwrite the first one's run state), no IWorldContext replace,
+                // no subscription, and _spawnedHere stays false so HasState is false for it.
                 Debug.LogError("WorldState: two WorldState objects in one scene; keeping the first.", this);
-            else
-                s_current = this;
+                return;
+            }
+            s_current = this;
 
             if (IsServer)
             {

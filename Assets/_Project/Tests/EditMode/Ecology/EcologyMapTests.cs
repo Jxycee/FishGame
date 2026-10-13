@@ -65,7 +65,8 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void Validation_EcologyMaps_Pass() => AssertNoErrors(EcologyValidators.MapChecks());
 
-        // Catches: a missing half-cell offset; the bake treating void as land; metres and decimetres swapped; Ground left out of the mask.
+        // Catches: a missing half-cell offset; the bake treating void as land; metres and decimetres swapped; Shore removed from the mask
+        // (the wet rocks sit on the Shore layer, so without it they would read as water).
         [Test]
         public void ShoreGridBaker_LakeGrid_ShoreDistanceMatchesBowlGeometry()
         {

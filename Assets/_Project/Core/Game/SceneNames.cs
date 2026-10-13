@@ -8,6 +8,8 @@ namespace FishGame.Core
         public const string Bootstrap = "Bootstrap";
         public const string Menu = "Menu";
         public const string SpotLakeDock = "Spot_LakeDock";
+        // Not in BuildOrder yet: T17 adds the scene to the build order (until then the ecology builder keeps the harbour spot unregistered, CR-4).
+        public const string SpotHarbourPier = "Spot_HarbourPier";
         public const string SpotPrefix = "Spot_";
         public static readonly string[] BuildOrder = { Bootstrap, Menu, SpotLakeDock };
 

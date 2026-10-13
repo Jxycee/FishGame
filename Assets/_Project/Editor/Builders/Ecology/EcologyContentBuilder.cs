@@ -18,7 +18,7 @@ namespace FishGame.EditorTools
     public static class EcologyContentBuilder
     {
         private const string RealContentRoot = "Assets/_Project/Content";
-        private const string HarbourScene = "Spot_HarbourPier";   // literal: T17 adds SceneNames.SpotHarbourPier with the same value (CR-4)
+        private const string HarbourScene = SceneNames.SpotHarbourPier;   // not in SceneNames.BuildOrder until T17 (CR-4)
 
         public static void Build()
         {
@@ -189,8 +189,7 @@ namespace FishGame.EditorTools
             var asset = AssetDatabase.LoadAssetAtPath<T>(path);
             if (asset == null)
             {
-                // OnlyExistingAssets: the default also reports recently deleted assets, which would block re-creating a deleted asset.
-                if (File.Exists(BuilderUtil.Abs(path)) || !string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(path, AssetPathToGUIDOptions.OnlyExistingAssets)))
+                if (BuilderUtil.AssetPathOccupied(path))
                     throw new InvalidOperationException($"asset exists but is not a {typeof(T).Name}: {path}");
                 asset = ScriptableObject.CreateInstance<T>();
                 configureNew(asset);

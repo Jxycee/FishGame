@@ -141,12 +141,17 @@ namespace FishGame.Data
                 zonesById = BuildIndex(zones, d => d.Id, out zonesIndex);
                 ecology = null;
                 if (zones.Count == 0 || fishing == null) return;
+                // Validate() rejects both defects before Build() gets here; these guards name the culprit instead of a bare NullReferenceException
+                // if a registry is mutated after it was built.
+                if (ecologyTuning == null) throw new InvalidOperationException("ContentRegistry: ecologyTuning is missing; the ecology database cannot be built.");
                 var zoneData = new ZoneData[zonesIndex.Count];
                 for (ushort i = 0; i < zoneData.Length; i++) zoneData[i] = zonesById[zonesIndex.IdAt(i)].ToCore(this);
                 var spotData = new SpotEcologyData[spotsIndex.Count];
                 for (ushort i = 0; i < spotData.Length; i++)
                 {
                     SpotDef spot = spotsById[spotsIndex.IdAt(i)];
+                    if (spot.Zone == null)
+                        throw new InvalidOperationException("ContentRegistry: spot '" + spot.Id + "' has no zone; the ecology database cannot be built.");
                     spotData[i] = new SpotEcologyData { ZoneIndex = zonesIndex.IndexOf(spot.Zone.Id), MapOrder = (byte)spot.MapOrder };
                 }
                 EcologyTuning tuning = ecologyTuning.ToCore();

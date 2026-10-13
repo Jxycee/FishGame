@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using FishGame.Core;
 using FishGame.Data;
 using NUnit.Framework;
@@ -787,6 +788,46 @@ namespace FishGame.Tests.EditMode
             regNoTuning.ConfigureEcology(new[] { noTuning.ZoneA, noTuning.ZoneB }, null);
             CollectionAssert.AreEqual(new[] { "ecologyTuning is missing." }, regNoTuning.Validate());
             Assert.Throws<InvalidOperationException>(() => regNoTuning.Build());
+        }
+
+        // Runs the private BuildEcology on an already-built registry and returns the exception it throws (unwrapped). Validate() runs in
+        // Build() first and rejects both defects below, so BuildEcology's own guards are only reachable by mutating after the build.
+        private static Exception RunBuildEcology(ContentRegistry reg)
+        {
+            MethodInfo build = typeof(ContentRegistry).GetMethod("BuildEcology", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(build, "ContentRegistry.BuildEcology was renamed: update this test");
+            try
+            {
+                build.Invoke(reg, null);
+            }
+            catch (TargetInvocationException ex)
+            {
+                return ex.InnerException;
+            }
+            return null;
+        }
+
+        // Catches: a bare NullReferenceException from BuildEcology when a spot has no zone or the tuning is missing (#7): the error must be
+        // an InvalidOperationException that names the spot or the tuning asset.
+        [Test]
+        public void ContentRegistry_BuildEcology_NamesTheMissingZoneOrTuning()
+        {
+            EcoSet noZone = MakeEcologySet();
+            ContentRegistry regNoZone = MakeEcologyRegistry(noZone);
+            Assert.IsNotNull(regNoZone.Ecology);   // built
+            noZone.SpotB.Configure("spot_b", "Spot B", "Spot_spot_b", 2, null);
+            Exception zoneError = RunBuildEcology(regNoZone);
+            Assert.IsInstanceOf<InvalidOperationException>(zoneError);
+            StringAssert.Contains("spot_b", zoneError.Message);
+            StringAssert.Contains("zone", zoneError.Message);
+
+            EcoSet noTuning = MakeEcologySet();
+            ContentRegistry regNoTuning = MakeEcologyRegistry(noTuning);
+            Assert.IsNotNull(regNoTuning.Ecology);
+            typeof(ContentRegistry).GetField("ecologyTuning", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(regNoTuning, null);
+            Exception tuningError = RunBuildEcology(regNoTuning);
+            Assert.IsInstanceOf<InvalidOperationException>(tuningError);
+            StringAssert.Contains("ecologyTuning", tuningError.Message);
         }
 
         // Applies one mutation to a fresh set (zone_a first in the list) and returns the single validation error.

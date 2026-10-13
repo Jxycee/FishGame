@@ -171,15 +171,15 @@ namespace FishGame.Tests.EditMode
             Assert.Catch<ArgumentException>(() => Database(lake: junkZone), "junk index 4");
 
             EcologyTuning t = Tuning();
-            Assert.Catch<ArgumentException>(() => new EcologyDatabase(EcologyCoreTestData.Fishing(),new[] { Lake(), Harbour() },
+            Assert.Catch<ArgumentException>(() => new EcologyDatabase(EcologyCoreTestData.Fishing(), new[] { Lake(), Harbour() },
                 new[] { new SpotEcologyData { ZoneIndex = 2, MapOrder = 0 } }, in t), "spot zone 2");
             Assert.Catch<ArgumentException>(() => new EcologyDatabase(null, new[] { Lake() },
                 new[] { new SpotEcologyData { ZoneIndex = 0 } }, in t), "null fishing");
-            Assert.Catch<ArgumentException>(() => new EcologyDatabase(EcologyCoreTestData.Fishing(),new ZoneData[] { Lake(), null },
+            Assert.Catch<ArgumentException>(() => new EcologyDatabase(EcologyCoreTestData.Fishing(), new ZoneData[] { Lake(), null },
                 new[] { new SpotEcologyData { ZoneIndex = 0 } }, in t), "null zone element");
-            Assert.Catch<ArgumentException>(() => new EcologyDatabase(EcologyCoreTestData.Fishing(),null,
+            Assert.Catch<ArgumentException>(() => new EcologyDatabase(EcologyCoreTestData.Fishing(), null,
                 new[] { new SpotEcologyData { ZoneIndex = 0 } }, in t), "null zones");
-            Assert.Catch<ArgumentException>(() => new EcologyDatabase(EcologyCoreTestData.Fishing(),new[] { Lake() }, null, in t), "null spots");
+            Assert.Catch<ArgumentException>(() => new EcologyDatabase(EcologyCoreTestData.Fishing(), new[] { Lake() }, null, in t), "null spots");
         }
 
         // ---- CatchLedger ----

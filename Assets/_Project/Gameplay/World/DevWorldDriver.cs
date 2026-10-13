@@ -40,7 +40,7 @@ namespace FishGame.Gameplay
             _world = world;
             ResolveZone();                                  // registry.Ecology -> Spots[SpotIndex(world.SpotId)].ZoneIndex -> Zones[i]: Weather, Grid; eco.Tuning
             HookPause();                                    // ServiceRoots.Game IPauseState: read Paused now, subscribe Changed
-            _clock.SetPaused(0.0, _pause != null && _pause.Paused);   // anchor not yet written: the return value is ignored
+            _clock.SetPaused(Now, _pause != null && _pause.Paused);   // anchor not yet written: the return value is ignored
             Adopt(EcologySession.GetOrCreate(FishingConstants.DefaultDevRunSeed));   // CCR-D3: M3 keeps the fixed dev run seed (M3-D57)
         }
 

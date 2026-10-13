@@ -186,7 +186,7 @@ namespace FishGame.EditorTools
             var asset = AssetDatabase.LoadAssetAtPath<T>(path);
             if (asset == null)
             {
-                if (File.Exists(BuilderUtil.Abs(path)) || !string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(path)))
+                if (BuilderUtil.AssetPathOccupied(path))
                     throw new InvalidOperationException($"asset exists but is not a {typeof(T).Name}: {path}");
                 asset = ScriptableObject.CreateInstance<T>();
                 configureNew(asset);

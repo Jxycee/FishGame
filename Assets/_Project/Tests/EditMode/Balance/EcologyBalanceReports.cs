@@ -285,7 +285,7 @@ namespace FishGame.Tests.EditMode
         }
 
         // Mean value and mean kilograms of one species over its weight distribution (M3 neutral luck): midpoint rule over u.
-        internal static void MeanValue(in FishSpeciesData s, out double coins, out double kg)
+        private static void MeanValue(in FishSpeciesData s, out double coins, out double kg)
         {
             double c = 0, w = 0;
             float skew = CatchMath.Skew(s.WeightSkew, 0f);
@@ -301,14 +301,14 @@ namespace FishGame.Tests.EditMode
         }
 
         // Inputs of one economy evaluation that the real run measures and a unit check can stub.
-        internal struct EconomyInputs
+        private struct EconomyInputs
         {
             public Func<int, (double coins, double kg)> MeanValueOf;        // species index -> mean coins and kg of one landed fish
             public Func<int, int, (double median, double land)> FightOf;    // (profile index, rod tier) -> median seconds and landed fraction
         }
 
         // The renewal-reward rate of one context (plan 5.4): expected coins and kg per real minute at neutral bait.
-        internal static void Economy(EcologyDatabase db, EconomyInputs inp, in FishingContext ctx, out double coinsPerMin, out double kgPerMin)
+        private static void Economy(EcologyDatabase db, EconomyInputs inp, in FishingContext ctx, out double coinsPerMin, out double kgPerMin)
         {
             var resolver = new FishingResolver(db);
             ZoneData zone = db.Zones[ctx.ZoneIndex];
