@@ -4,7 +4,7 @@
 
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
-_Last updated: 2026-10-13, late, end of the M2-rework / M3 session._
+_Last updated: 2026-10-13, late. Fun-formula doc added, review tiers scaled to risk, Ideas box on the Test Notes board._
 
 ## 1. Read these next (in order)
 1. `C:\Dev\FishGame-m3\CLAUDE.md`: project rules (Git: no PRs; merge yourself when reviewed and green; PlayMode guard).
@@ -29,11 +29,15 @@ _Last updated: 2026-10-13, late, end of the M2-rework / M3 session._
 3. As tasks land, add their new checks to the board (for example M6 after T17/T21/T22).
 
 ## 4. After M3
-Merge M3 into main. Then the fix round from the user's board notes (including the friendlier fight tuning; re-run EcologyBalanceReports after any fight retune). Then write the M4 handoff: the R76 river run, starfish god camp, boat ride, mafia escalation, escape reward, cutscenes, and quota growth calibration (earnings grow only ~1.2-1.4x from day 1 to day 7; the spec assumes ~2.35x).
+Merge M3 into main. Then the fix round from the user's board notes (including the friendlier fight tuning; re-run EcologyBalanceReports after any fight retune).
+
+Then a **design session with the user** (superpowers:brainstorming, about an hour). Input: `docs/superpowers/design/2026-10-13-fun-formula.md`, the user's reasons for loving Gamble With Your Friends, RV There Yet, REPO and PEAK, plus the board's "Ideas for the game" box (`notes/ideas`). Decide the core ingredients, items, gambling, the mafia, map size, failure, and the first vertical-slice day. Target: about 70 fish, a third of them with gameplay quirks.
+
+Then write the M4 handoff: the R76 river run, starfish god camp, boat ride, mafia escalation, escape reward, cutscenes, and quota growth calibration (earnings grow only ~1.2-1.4x from day 1 to day 7; the spec assumes ~2.35x).
 
 ## 5. Boards
 - Progress: https://claude.ai/artifact/SSE5uoZ7ELPyZP5A11qdXR. Keep `status/now`, `tasks`, `todos` and `agents` current.
-- Test notes (the user writes here): https://claude.ai/artifact/NAcGRrYJYuPs2Rw6SBa93C
+- Test notes (the user writes here): https://claude.ai/artifact/NAcGRrYJYuPs2Rw6SBa93C. Collections: `checks`, `results/{id}`, `notes/general`, and `notes/ideas` (game ideas; each has a `text` and a Claude `reply`).
 
 ## 6. Working rules (short)
 - **Roles:** the controller delegates. Sonnet implements; Opus high reviews integration work; Sonnet reviews Core/data/docs; Opus xhigh does the branch review.

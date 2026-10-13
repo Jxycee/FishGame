@@ -30,4 +30,11 @@ Co-op (1–4) friend-slop rogue-lite fishing game. Unity 6000.6.5f1 (URP), Netco
 - Never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`, `*.csproj`, `*.slnx`.
 
 ## Agent roles (user preference)
+**Scale reviews to risk (2026-10-13, usage analysis):**
+- Opus reviews only networking, anti-cheat/host validation, save data and milestone merges.
+- Sonnet reviews data, art, presentation and docs.
+- A fix of 30 lines or fewer in one area gets the controller's own diff read, with no review agent.
+- Batch small tasks into one implementer run and one review.
+- Plan big features in a short design session before any code.
+
 Tiered for cost (from M2): no research swarm by default; one Opus (effort high) author per plan section; Sonnet implements integration tasks, Haiku only when the brief contains complete code; Opus (high) reviews integration tasks, Sonnet reviews pure-Core/data/docs and small fixes; Opus (xhigh) final branch review; Fable is the escalation fixer for anything the others can't solve. Haiku for mechanical scans. Details: `docs/superpowers/handoff/2026-10-10-m2-handoff.md`.
