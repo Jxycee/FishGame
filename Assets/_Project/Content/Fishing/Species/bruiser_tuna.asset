@@ -27,7 +27,5 @@ MonoBehaviour:
   biteWaitMod: 1
   hookWindow: 0
   isSpecial: 0
-  minBaitRating: 0
-  minDepth: 0
-  model: {fileID: 0}
+  model: {fileID: -2536657605087572812, guid: 02f5d1d195443684eb9fee159d4582a3, type: 3}
   tags: 2
