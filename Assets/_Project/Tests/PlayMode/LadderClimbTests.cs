@@ -338,6 +338,61 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("swim in and out of the ladder volume");
         }
 
+        // Catches (finding 4): looking almost straight up and holding W bobs at the top (the climber leaves through the top, the fall is caught
+        // again after the 0.25 s grace). The rod must not pop out in the air and be stowed again: it comes back only once the player is on the
+        // deck.
+        [UnityTest]
+        public IEnumerator Ladder_TopOutBobAtAlmostStraightUp_RodStaysAwayUntilGrounded()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            PlayerCamera camera = rig.Player.GetComponent<PlayerCamera>();
+
+            yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { EquipPressed = true });
+            rig.Fake.Frame = default;
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 2f, "Equip never set the Rod tool");
+            yield return FishingPlayModeDriver.SetPitch(rig, camera, 85f);
+
+            rig.Locomotion.ApplyTeleport(new Vector3(3.0f, -1.2f, LadderZ), -90f);
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.None, PlayModeHarness.DefaultTimeoutSeconds, "the rod was not put away in the water");
+            yield return PlayModeHarness.WaitFrames(3, 0.05f);
+
+            int topOuts = 0, equips = 0;
+            bool wasClimbing = false, wasGrounded = false, wasRod = false;
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            float until = Time.time + 2.5f;
+            while (Time.time < until)
+            {
+                yield return null;
+                if (wasClimbing && !rig.Locomotion.IsClimbing) topOuts++;
+                wasClimbing = rig.Locomotion.IsClimbing;
+                bool rod = rig.Player.Tool == ToolKind.Rod;
+                if (rod && !wasRod)
+                {
+                    equips++;
+                    // The controller runs before the locomotion, so it saw last frame's grounded flag: accept either. (The first equip is the
+                    // wader at x 3.0, where the bed is too shallow to swim: wading never stows the rod.)
+                    Assert.That(rig.Locomotion.IsGrounded || wasGrounded, Is.True, "the rod came out in the air at " + rig.Player.transform.position);
+                    Assert.That(rig.Locomotion.LadderCatchPending, Is.False, "the rod came out with a ladder about to retake the player at " + rig.Player.transform.position);
+                }
+
+                wasRod = rod;
+                wasGrounded = rig.Locomotion.IsGrounded;
+            }
+
+            TestContext.WriteLine($"top-out bob at pitch 85: {topOuts} exits, {equips} equips in 2.5 s");
+            Assert.That(topOuts, Is.GreaterThanOrEqualTo(1), "precondition: the climber topped out at least once");
+
+            // Come down on the deck: look 45 deg up so the next top-out lands on the planks; the rod returns once grounded.
+            yield return FishingPlayModeDriver.SetPitch(rig, camera, 45f);
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            yield return PlayModeHarness.WaitUntil(() => OnDeck(rig), 6f, "never got onto the deck (at " + rig.Player.transform.position + ")");
+            rig.Fake.Frame = default;
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 1f, "the rod never came back once on the deck");
+            rig.Log.AssertEmpty("top-out bob");
+        }
+
         // Catches (finding 2): ladder entry while movement is locked (RodFighting or any source's LocksMovement): the player would be pulled
         // onto a ladder and hang mid-fight. Entry must wait for the lock to end.
         [UnityTest]

@@ -15,6 +15,15 @@ namespace FishGame.Fishing
             return swimming || climbing;
         }
 
+        // The away flag the controller feeds to AwayStep. Coming back is held until the player is grounded and no ladder can retake them: a
+        // climber who tops out is in the air for a moment, or lands on the rail inside the volume, and the ladder catches the fall again (the
+        // re-entry grace is 0.25 s), which would equip the rod and stow it again with a visible half-animation. Swimming or climbing is
+        // always away.
+        public static bool EffectiveAway(bool swimming, bool climbing, bool wasAway, bool grounded, bool ladderCatchPending)
+        {
+            return IsAway(swimming, climbing) || (wasAway && (!grounded || ladderCatchPending));
+        }
+
         // Edge-driven: Stow when going away with the rod out (remembered), Equip when coming back if it was put away by this rule.
         public static RodAwayAction AwayStep(ref bool wasAway, ref bool stowedByAway, bool away, bool rodOut)
         {

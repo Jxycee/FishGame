@@ -238,7 +238,8 @@ namespace FishGame.Fishing
         private void HandleSwim()
         {
             bool swimming = _locomotion.IsSwimming;
-            bool away = RodControllerRules.IsAway(swimming, _locomotion.IsClimbing);
+            bool away = RodControllerRules.EffectiveAway(swimming, _locomotion.IsClimbing, _wasAway, _locomotion.IsGrounded,
+                _locomotion.LadderCatchPending);
             switch (RodControllerRules.AwayStep(ref _wasAway, ref _awayStowed, away, RodOut))
             {
                 case RodAwayAction.Stow:

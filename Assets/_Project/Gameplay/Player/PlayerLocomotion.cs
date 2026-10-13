@@ -24,6 +24,10 @@ namespace FishGame.Gameplay
         public bool IsClimbing { get; private set; }
         public float SecondsInWater { get; private set; }
 
+        // True while a ladder may (re)take the player at once: inside the re-entry grace after a top-out, or with the capsule centre inside a
+        // LadderVolume. FishingRodController holds the rod away while this is true, so a top-out bob does not equip and stow it again.
+        public bool LadderCatchPending => _cc != null && (!_climbGate.CanEnter || LadderVolume.FindContaining(CapsuleCenter()) != null);
+
         // Owner only. Raised as the last statement of ApplyTeleport (TeleportRpc, out-of-bounds and water-timeout recovery).
         public event Action Teleported;
 
