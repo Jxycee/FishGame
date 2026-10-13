@@ -295,7 +295,9 @@ namespace FishGame.Presentation
             }
 
             float u = now - _nibbleAt;
-            if (u >= 0f && u < NibbleSeconds) y -= NibbleDip * Mathf.Sin(Mathf.PI * u / NibbleSeconds);
+            // The dip scales with the bobber (DistanceScale), so a nibble stays visible on a far, enlarged float.
+            if (u >= 0f && u < NibbleSeconds)
+                y -= NibbleDip * FightViewMath.DistanceScale(Vector3.Distance(Position, TipPosition())) * Mathf.Sin(Mathf.PI * u / NibbleSeconds);
             return new Vector3(x, y, z);
         }
 

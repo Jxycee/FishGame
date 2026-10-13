@@ -868,11 +868,35 @@ namespace FishGame.Tests.PlayMode
 
                 // Line out, no tension: the slight sag lowers the tip (a pose, so it stays at motion 0).
                 float restY = visual.position.y;
+                bobber = Bobber(8f, -38f);   // well off to the side, so the sag axis differs from the direction to the world origin (the recall below)
                 SetView(rig, RodState.Waiting, 0, 0f, bobber, 5);
                 yield return PlayModeHarness.WaitFrames(3, 1.6f);
                 float sagDrop = restY - visual.position.y;
                 Assert.That(sagDrop, Is.GreaterThan(0.01f), "line out: the tip sags (dropped " + sagDrop + " m)");
                 Assert.That(sagDrop, Is.LessThan(0.15f), "the sag is slight");
+
+                // A recall: the controller sets BobberPos to Vector3.zero in Idle (and the network view snaps to it) while the sag is still easing
+                // out. The sag must keep its last line-out axis, never swing toward the world origin: the tip eases back along the straight path
+                // from the sag pose to the rest pose (the bobber is off to the side, so that path is not the pitch plane), never off it by more than
+                // a few mm, and its distance to the rest pose never grows.
+                Vector3 sagPose = visual.localPosition;
+                Vector3 path = restLocal - sagPose;
+                float maxOff = 0f, maxGrowth = 0f;
+                float lastDist = path.magnitude;
+                SetView(rig, RodState.Idle, 0, 0f, Vector3.zero, 5);
+                yield return SampleVector(() => visual.localPosition, 0.6, (p) =>
+                {
+                    Vector3 off = Vector3.Cross(p - sagPose, path.normalized);
+                    maxOff = Mathf.Max(maxOff, off.magnitude);
+                    float dist = Vector3.Distance(p, restLocal);
+                    maxGrowth = Mathf.Max(maxGrowth, dist - lastDist);
+                    lastDist = dist;
+                });
+                Assert.That(path.magnitude, Is.GreaterThan(0.01f), "the sag pose differs from the rest pose");
+                Assert.That(maxOff, Is.LessThan(0.004f), "recall: the sag eases out along its own path, no sideways kick (max " + maxOff + " m off it)");
+                Assert.That(maxGrowth, Is.LessThan(0.001f), "recall: the tip only ever moves toward the rest pose (grew by " + maxGrowth + " m)");
+                SetView(rig, RodState.Waiting, 0, 0f, bobber, 5);   // line out again, the sag back to full before the strain check
+                yield return PlayModeHarness.WaitFrames(3, 1.6f);
 
                 // A clear strain bend: idle motion has faded out completely, even at motion 1, so the pose is steady (tension 0.65 is in the Creak
                 // band: bend 0.5, no shake yet).
@@ -894,6 +918,62 @@ namespace FishGame.Tests.PlayMode
             }
 
             rig.Log.AssertEmpty("rod idle life");
+        }
+
+        // Catches: a sign error in RodPresenter.TrackLag. The hand is moved up and to the player's right at about 12 m/s (a world-space step per
+        // frame; PlayerBody poses the arm, not the Hand), and the tip must TRAIL: down (rod-local Y falls) and left (rod-local X falls) against
+        // a stationary baseline. Rod-local, so the player's own motion and the arm pose cancel out.
+        [UnityTest]
+        public IEnumerator RodViewSolo_RodIdleLife_TipLagsDownAndLeftWhenMovingUpAndRight()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            Assert.That(ServiceRoots.App.TryGet(out ISettings settings), Is.True, "ISettings");
+            float originalMotion = settings.Current.cameraMotion;
+            Transform player = rig.Player.transform;
+            Transform hand = player.Find(PlayerRigPaths.Hand);
+            Vector3 handRest = hand.localPosition;
+
+            try
+            {
+                settings.Current.cameraMotion = 1f;
+                settings.NotifyChanged();
+                yield return DriveView(rig);
+                Transform visual = player.Find(PlayerRigPaths.RodTipVisual);
+
+                // Baseline: stationary, averaged over 1.5 s (a whole number of nothing in particular: the breath is +-0.02 m, the lag is larger).
+                Vector3 sum = Vector3.zero;
+                int n = 0;
+                yield return SampleVector(() => visual.localPosition, 1.5, (p) => { sum += p; n++; });
+                Vector3 baseline = sum / Mathf.Max(1, n);
+
+                // Moving: 5 m/s up and right; average the second half of 0.8 s, when the springs have caught up.
+                const float speed = 12f;
+                Vector3 worldStep = (player.right + Vector3.up).normalized * speed;
+                sum = Vector3.zero;
+                n = 0;
+                float t0 = Time.time;
+                while (Time.time - t0 < 0.8f)
+                {
+                    yield return null;
+                    hand.localPosition += hand.parent.InverseTransformVector(worldStep * Time.deltaTime);
+                    if (Time.time - t0 > 0.4f) { sum += visual.localPosition; n++; }
+                }
+
+                Vector3 moving = sum / Mathf.Max(1, n);
+                Assert.That(moving.x - baseline.x, Is.LessThan(-0.02f), "moving right: the tip trails LEFT (rod-local X fell by " + (baseline.x - moving.x) + " m)");
+                Assert.That(moving.y - baseline.y, Is.LessThan(-0.015f), "moving up: the tip trails DOWN (rod-local Y fell by " + (baseline.y - moving.y) + " m)");
+            }
+            finally
+            {
+                hand.localPosition = handRest;
+                settings.Current.cameraMotion = originalMotion;
+                settings.NotifyChanged();
+                if (rig.Controller != null) rig.Controller.enabled = true;
+            }
+
+            rig.Log.AssertEmpty("rod lag");
         }
 
         // ------------------------------------------------------------------ helpers

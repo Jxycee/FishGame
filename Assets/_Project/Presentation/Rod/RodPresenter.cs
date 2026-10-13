@@ -46,6 +46,7 @@ namespace FishGame.Presentation
 
         // F6 idle life: the sag blend (0 = none, 1 = line out) and the two lag springs (position deg, velocity deg/s) about the rod's local X and Y.
         private float _sag01;
+        private Vector3 _sagAxis = Vector3.right;   // the last line-out bend axis (Rod space)
         private float _lagX, _lagVX, _lagY, _lagVY;
         private Vector3 _lastAnchor;
         private bool _haveLastAnchor;
@@ -104,6 +105,7 @@ namespace FishGame.Presentation
         private void ResetIdle()
         {
             _sag01 = 0f;
+            _sagAxis = Vector3.right;
             _lagX = _lagVX = _lagY = _lagVY = 0f;
             _haveLastAnchor = false;
         }
@@ -153,7 +155,10 @@ namespace FishGame.Presentation
             _sag01 = RodIdleMath.Ease(_sag01, IsLineOut(vs.State) ? 1f : 0f, SagEaseRate, dt);
             if (_sag01 < 0.002f) _sag01 = 0f;
             float bendDeg = RodIdleMath.TotalBendDeg(MaxBendDeg, bend01, _sag01);
-            if (bendDeg > 0f) axis = BendAxis(vs.BobberPos);
+            // The bend axis follows the line while it is out and holds its last value afterwards: in Idle the controller sets BobberPos to the world
+            // origin (and the network view snaps to it), so a recall's sag easing out must not swing toward it.
+            if (IsLineOut(vs.State) && IsFinite(vs.BobberPos)) _sagAxis = BendAxis(vs.BobberPos);
+            if (bendDeg > 0f) axis = _sagAxis;
 
             // F6 idle life: a slow breath plus a spring-damped lag of the tip behind the player's own movement and look, all faded out by the strain
             // bend (S12: a near-snap reads from the rod alone), by camera motion 0 and by the stow.
@@ -202,6 +207,11 @@ namespace FishGame.Presentation
             _haveLastAnchor = true;
             RodIdleMath.SpringStep(ref _lagX, ref _lagVX, RodIdleMath.LagXDeg(vy), dt);
             RodIdleMath.SpringStep(ref _lagY, ref _lagVY, RodIdleMath.LagYDeg(vx), dt);
+        }
+
+        private static bool IsFinite(Vector3 v)
+        {
+            return !(float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsNaN(v.z) || float.IsInfinity(v.x) || float.IsInfinity(v.y) || float.IsInfinity(v.z));
         }
 
         private static bool IsLineOut(RodState state)
