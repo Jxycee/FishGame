@@ -20,8 +20,10 @@ namespace FishGame.Data
     public sealed class SfxCueTableDef : ScriptableObject
     {
         [SerializeField] private List<SfxCueRow> rows = new List<SfxCueRow>();
+        [SerializeField] private SeasonAmbience[] seasonAmbience;   // M3 (T9): index = Season; written by the content builder through SerializedObject
 
         public IReadOnlyList<SfxCueRow> Rows => rows;
+        public IReadOnlyList<SeasonAmbience> SeasonAmbience => seasonAmbience ?? new SeasonAmbience[0];
 
         // Used by the content builder and by tests.
         public void Configure(IEnumerable<SfxCueRow> rows)

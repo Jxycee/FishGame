@@ -7,9 +7,10 @@ namespace FishGame.Data
 {
     // Content data only (not networked). Host and clients build the same ordinal indices from the same ids,
     // and the ContentHash over those ids goes in the connect payload.
-    // Categories: spots (M1), rods, baits, fight_profiles, species, junk (M2). Fishing database built in Build() when fishing content is present.
+    // Categories: spots (M1), rods, baits, fight_profiles, species, junk (M2), zones (M3; ecology database built in Build when zones exist).
+    // Fishing database built in Build() when fishing content is present.
     // Changing a SpotDef's id after Build() is not tracked; call Configure or Build again.
-    public sealed class ContentRegistry : ScriptableObject
+    public sealed partial class ContentRegistry : ScriptableObject
     {
         public const string CategorySpots = "spots";
         public const string CategoryRods = "rods", CategoryBaits = "baits", CategoryFightProfiles = "fight_profiles",
@@ -143,6 +144,7 @@ namespace FishGame.Data
                 if (waterSettings == null) errors.Add("waterSettings is missing.");
                 if (!HasUnlimitedBait()) errors.Add("baits has no unlimited bait.");
             }
+            ValidateEcology(errors);
             return errors;
         }
 
@@ -173,6 +175,7 @@ namespace FishGame.Data
 
             fishing = HasFishingContent() ? BuildDatabase() : null;
             built = true;
+            BuildEcology();   // after built = true: it calls SpeciesIndex/JunkIndex, which EnsureBuilt
         }
 
         public ushort SpotIndex(string id)
@@ -289,6 +292,7 @@ namespace FishGame.Data
             if (fightProfiles.Count > 0) categories.Add(new ContentCategoryIds(CategoryFightProfiles, profilesIndex.SortedIds));
             if (species.Count > 0) categories.Add(new ContentCategoryIds(CategorySpecies, speciesIndex.SortedIds));
             if (junk.Count > 0) categories.Add(new ContentCategoryIds(CategoryJunk, junkIndex.SortedIds));
+            AddEcologyCategories(categories);
             return ContentHash.Compute(categories, dataVersion);
         }
 
@@ -318,6 +322,7 @@ namespace FishGame.Data
             speciesById = null;
             junkById = null;
             fishing = null;
+            ClearEcologyCache();
         }
 
         private bool HasFishingContent()

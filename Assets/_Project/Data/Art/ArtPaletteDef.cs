@@ -29,6 +29,11 @@ namespace FishGame.Data
         [SerializeField] private Color uiPanel;
         [SerializeField] private Color uiText;
         [SerializeField] private int m2Season = 1;   // Summer; the only initialiser (C 7.13)
+        [SerializeField] private SunMoonSettings sunMoon;           // M3 (T9): set by ConfigureM3
+        [SerializeField] private WeatherAmbient[] weatherLooks;     // M3 (T9): index Clear 0, Rain 1, Fog 2
+
+        public SunMoonSettings SunMoon => sunMoon;
+        public IReadOnlyList<WeatherAmbient> WeatherLooks => weatherLooks ?? new WeatherAmbient[0];
 
         public IReadOnlyList<string> SlotNames => slotNames ?? NoStrings;
         public IReadOnlyList<PaletteSeason> Seasons => seasons ?? NoSeasons;
@@ -60,6 +65,13 @@ namespace FishGame.Data
             this.uiPanel = uiPanel;
             this.uiText = uiText;
             this.m2Season = m2Season;
+        }
+
+        // M3 (T9): the sun/moon settings and the three weather looks. The array is copied (null stays null). The M2 Configure leaves both alone.
+        public void ConfigureM3(in SunMoonSettings sunMoon, WeatherAmbient[] weatherLooks)
+        {
+            this.sunMoon = sunMoon;
+            this.weatherLooks = weatherLooks == null ? null : (WeatherAmbient[])weatherLooks.Clone();
         }
 
         private static PaletteSeason[] CopySeasons(IEnumerable<PaletteSeason> source)

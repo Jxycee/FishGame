@@ -572,5 +572,231 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual((ushort)1, reg.SpotIndex("pond_north"));
             Assert.AreNotEqual(before, reg.ComputeContentHash());
         }
+
+        // ---- T9: ecology zones, the Core ecology database, spot lookup by scene -------------------------------------------------
+
+        private sealed class EcoSet
+        {
+            public FishingSet Fishing;
+            public FishingZoneDef ZoneA, ZoneB;
+            public WeatherTableDef Weather;
+            public EcologyTuningDef Tuning;
+            public SpotDef SpotA, SpotB;
+        }
+
+        private static List<SubAreaBand> TwoBands()
+        {
+            return new List<SubAreaBand>
+            {
+                new SubAreaBand { id = "near", minShoreM = 0f, maxShoreM = 5f, junkChance = 0.1f },
+                new SubAreaBand { id = "far", minShoreM = 5f, maxShoreM = 0f, junkChance = 0.2f },
+            };
+        }
+
+        private static SpawnRule EcoRule(FishSpeciesDef fish, params string[] subAreaIds)
+        {
+            return new SpawnRule { fish = fish, subAreaIds = subAreaIds, seasons = SeasonMask.All, weather = WeatherMask.All, bands = TimeBandMask.All, weight = 1f };
+        }
+
+        private static void FillZone(FishingZoneDef zone, string id, SpawnRule rule, JunkDef junk, WeatherTableDef weather, List<SubAreaBand> bands = null)
+        {
+            zone.Configure(id, id, bands ?? TwoBands(), new List<SpawnRule> { rule }, new List<JunkWeight> { new JunkWeight { junk = junk, weight = 1f } }, weather, null);
+        }
+
+        // zone_b (carp) and zone_a (bluegill); spot_a -> zone_b (mapOrder 1) and spot_b -> zone_a (mapOrder 2), so zone and spot index mix-ups show.
+        private EcoSet MakeEcologySet()
+        {
+            var e = new EcoSet { Fishing = MakeFishingSet() };
+            FishSpeciesDef carp = e.Fishing.Species[0], bluegill = e.Fishing.Species[1];
+            e.Weather = MakeAsset<WeatherTableDef>();
+            e.Weather.Configure("weather_temperate", new float[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, new float[] { 1, 1.5f, 1, 1, 1, 1, 1, 1, 0.3f, 1, 1, 1.3f });
+            e.ZoneB = MakeAsset<FishingZoneDef>();
+            FillZone(e.ZoneB, "zone_b", EcoRule(carp, "far"), e.Fishing.Junk[0], e.Weather);
+            e.ZoneA = MakeAsset<FishingZoneDef>();
+            FillZone(e.ZoneA, "zone_a", EcoRule(bluegill, "near", "far"), e.Fishing.Junk[0], e.Weather);
+            e.Tuning = MakeAsset<EcologyTuningDef>();
+            e.Tuning.Configure(60, 120, 61, 121, 45, 60, 3f);
+            e.SpotA = MakeSpot("spot_a");
+            e.SpotA.Configure("spot_a", "Spot A", "Spot_spot_a", 1, e.ZoneB);
+            e.SpotB = MakeSpot("spot_b");
+            e.SpotB.Configure("spot_b", "Spot B", "Spot_spot_b", 2, e.ZoneA);
+            return e;
+        }
+
+        private ContentRegistry MakeEcologyRegistry(EcoSet e, bool zoneBFirst = true)
+        {
+            ContentRegistry reg = MakeFishingRegistry(e.Fishing, e.SpotA, e.SpotB);
+            reg.ConfigureEcology(zoneBFirst ? new[] { e.ZoneB, e.ZoneA } : new[] { e.ZoneA, e.ZoneB }, e.Tuning);
+            return reg;
+        }
+
+        // Catches: zones hashed when empty (would change every M2 hash); list-order hashing; the category missing from the hash or misnamed.
+        [Test]
+        public void ContentRegistry_Zones_IndexedOrdinalAndHashedWhenNonEmpty()
+        {
+            EcoSet e = MakeEcologySet();
+            ContentRegistry reg = MakeEcologyRegistry(e);
+            Assert.AreEqual("zones", ContentRegistry.CategoryZones);
+            Assert.AreEqual((ushort)0, reg.ZoneIndex("zone_a"));
+            Assert.AreEqual((ushort)1, reg.ZoneIndex("zone_b"));
+            Assert.AreEqual("zone_b", reg.ZoneAt(1).Id);
+            Assert.AreSame(e.ZoneA, reg.ZoneAt(0));
+            Assert.Throws<KeyNotFoundException>(() => reg.ZoneIndex("zone_x"));
+            Assert.Throws<ArgumentOutOfRangeException>(() => reg.ZoneAt(2));
+            Assert.AreEqual(2, reg.Zones.Count);
+            Assert.AreSame(e.Tuning, reg.EcologyTuning);
+
+            // A fishing-only registry hashes as in M2: no zones category.
+            var spotsWithoutZone = new[] { MakeSpot("spot_a"), MakeSpot("spot_b") };
+            ContentRegistry fishingOnly = MakeFishingRegistry(MakeFishingSet(), spotsWithoutZone);
+            ulong m2Hash = ContentHash.Compute(new[]
+            {
+                new ContentCategoryIds(ContentRegistry.CategorySpots, new[] { "spot_a", "spot_b" }),
+                new ContentCategoryIds(ContentRegistry.CategoryRods, new[] { "rod_carbon", "rod_twig" }),
+                new ContentCategoryIds(ContentRegistry.CategoryBaits, new[] { "bait_bare_hook", "bait_worm" }),
+                new ContentCategoryIds(ContentRegistry.CategoryFightProfiles, new[] { "bulldog", "steady" }),
+                new ContentCategoryIds(ContentRegistry.CategorySpecies, new[] { "bluegill", "carp" }),
+                new ContentCategoryIds(ContentRegistry.CategoryJunk, new[] { "old_boot" }),
+            }, 1);
+            Assert.AreEqual(m2Hash, fishingOnly.ComputeContentHash());
+
+            ulong withZones = reg.ComputeContentHash();
+            Assert.AreNotEqual(m2Hash, withZones);
+            ulong expected = ContentHash.Compute(new[]
+            {
+                new ContentCategoryIds(ContentRegistry.CategorySpots, new[] { "spot_a", "spot_b" }),
+                new ContentCategoryIds(ContentRegistry.CategoryRods, new[] { "rod_carbon", "rod_twig" }),
+                new ContentCategoryIds(ContentRegistry.CategoryBaits, new[] { "bait_bare_hook", "bait_worm" }),
+                new ContentCategoryIds(ContentRegistry.CategoryFightProfiles, new[] { "bulldog", "steady" }),
+                new ContentCategoryIds(ContentRegistry.CategorySpecies, new[] { "bluegill", "carp" }),
+                new ContentCategoryIds(ContentRegistry.CategoryJunk, new[] { "old_boot" }),
+                new ContentCategoryIds(ContentRegistry.CategoryZones, new[] { "zone_a", "zone_b" }),
+            }, 1);
+            Assert.AreEqual(expected, withZones);
+
+            EcoSet other = MakeEcologySet();
+            Assert.AreEqual(withZones, MakeEcologyRegistry(other, zoneBFirst: false).ComputeContentHash(), "list order does not matter");
+        }
+
+        // Catches: recursion (stack overflow: BuildEcology must run after built = true), a stale or half-built cache, a spot/zone index mix-up.
+        [Test]
+        public void ContentRegistry_Ecology_BuildsDatabase()
+        {
+            EcoSet e = MakeEcologySet();
+            ContentRegistry reg = MakeEcologyRegistry(e);
+            EcologyDatabase db = reg.Ecology;
+            Assert.IsNotNull(db);
+            Assert.AreSame(reg.Fishing, db.Fishing);
+            Assert.AreEqual(2, db.Zones.Count);
+            // zone_a (index 0) holds bluegill (species index 0) with the mask of near + far; zone_b (index 1) holds carp (species index 1).
+            Assert.AreEqual((ushort)0, db.Zones[0].Rules[0].SpeciesIndex);
+            Assert.AreEqual((byte)0b11, db.Zones[0].Rules[0].SubAreaMask);
+            Assert.AreEqual((ushort)1, db.Zones[1].Rules[0].SpeciesIndex);
+            Assert.AreEqual((byte)0b10, db.Zones[1].Rules[0].SubAreaMask);
+            Assert.AreEqual(2, db.Spots.Count);
+            Assert.AreEqual(1, db.Spots[0].ZoneIndex, "spot_a (index 0) -> zone_b (index 1)");
+            Assert.AreEqual(1, db.Spots[0].MapOrder);
+            Assert.AreEqual(0, db.Spots[1].ZoneIndex, "spot_b (index 1) -> zone_a (index 0)");
+            Assert.AreEqual(2, db.Spots[1].MapOrder);
+            EcologyTuning expected = e.Tuning.ToCore();
+            Assert.AreEqual(expected.HotspotGapMin, db.Tuning.HotspotGapMin);
+            Assert.AreEqual(expected.HotspotRadiusM, db.Tuning.HotspotRadiusM);
+            Assert.AreEqual(61, db.Tuning.HotspotGapMin);
+
+            // A fishing-only registry has no ecology.
+            ContentRegistry fishingOnly = MakeFishingRegistry(MakeFishingSet(), MakeSpot("spot_a"));
+            Assert.IsNull(fishingOnly.Ecology);
+
+            // ConfigureEcology after a build: the next access reflects the new zones.
+            FishingZoneDef zoneC = MakeAsset<FishingZoneDef>();
+            FillZone(zoneC, "zone_c", EcoRule(e.Fishing.Species[0], "near"), e.Fishing.Junk[0], e.Weather);
+            reg.ConfigureEcology(new[] { e.ZoneA, e.ZoneB, zoneC }, e.Tuning);
+            Assert.AreEqual(3, reg.Ecology.Zones.Count);
+
+            // A zone that passes Validate but fails in ZoneData (a gap between bands): Ecology throws, and throws again (no half-built cache).
+            var gap = new List<SubAreaBand>
+            {
+                new SubAreaBand { id = "near", minShoreM = 0f, maxShoreM = 5f, junkChance = 0.1f },
+                new SubAreaBand { id = "far", minShoreM = 6f, maxShoreM = 0f, junkChance = 0.2f },
+            };
+            FillZone(e.ZoneA, "zone_a", EcoRule(e.Fishing.Species[1], "near"), e.Fishing.Junk[0], e.Weather, gap);
+            reg.ConfigureEcology(new[] { e.ZoneA, e.ZoneB }, e.Tuning);
+            Assert.AreEqual(0, reg.Validate().Count, "the gap is a data-quality problem, not a registry error");
+            Assert.Throws<ArgumentException>(() => { var x = reg.Ecology; });
+            Assert.Throws<ArgumentException>(() => { var x = reg.Ecology; }, "the second access throws again instead of returning null");
+        }
+
+        // Catches: a culture compare, a null crash.
+        [Test]
+        public void ContentRegistry_TryGetSpotByScene_Resolves()
+        {
+            EcoSet e = MakeEcologySet();
+            ContentRegistry reg = MakeEcologyRegistry(e);
+            Assert.IsTrue(reg.TryGetSpotByScene("Spot_spot_b", out SpotDef found));
+            Assert.AreSame(e.SpotB, found);
+            Assert.IsFalse(reg.TryGetSpotByScene("spot_spot_b", out SpotDef none), "ordinal: case matters");
+            Assert.IsNull(none);
+            Assert.IsFalse(reg.TryGetSpotByScene("Nope", out _));
+            Assert.IsFalse(reg.TryGetSpotByScene(null, out _));
+
+            ContentRegistry spotsOnly = MakeRegistry(1, MakeSpot("pond_north"));
+            Assert.IsTrue(spotsOnly.TryGetSpotByScene("Spot_pond_north", out SpotDef pond));
+            Assert.AreEqual("pond_north", pond.Id);
+            Assert.IsFalse(spotsOnly.TryGetSpotByScene("Spot_x", out _));
+        }
+
+        // Catches: weak validation letting Build throw an index exception at app start.
+        [Test]
+        public void ContentRegistry_RuleWithForeignSpecies_FailsValidate()
+        {
+            // The foreign species is not listed in species.
+            EcoSet e = MakeEcologySet();
+            FishSpeciesDef stray = MakeAsset<FishSpeciesDef>();
+            stray.Configure("stray", "Stray", FishRarity.Common, 5, 200, 800, 2.2f, 1f, e.Fishing.Profiles[0], BodyShape.Round, Color.red, Color.green, 1f, 0f, false, 0, 0f, null);
+            FillZone(e.ZoneA, "zone_a", EcoRule(stray, "near"), e.Fishing.Junk[0], e.Weather);
+            ContentRegistry reg = MakeEcologyRegistry(e, zoneBFirst: false);
+            IReadOnlyList<string> errors = reg.Validate();
+            Assert.AreEqual(1, errors.Count);
+            Assert.AreEqual("zones[0] 'zone_a' rules[0] fish 'stray' is not listed in species.", errors[0]);
+            Assert.Throws<InvalidOperationException>(() => reg.Build());
+
+            // Other exact messages, one defect each (zone_a first in the list; spot_b is spots[1]).
+            Assert.AreEqual("zones[0] 'zone_a' rules[0] has no fish.", OnlyError(z => FillZone(z.ZoneA, "zone_a", EcoRule(null, "near"), z.Fishing.Junk[0], z.Weather)));
+            Assert.AreEqual("zones[0] 'zone_a' rules[0] fish 'bluegill' names unknown sub-area 'nowhere'.",
+                OnlyError(z => FillZone(z.ZoneA, "zone_a", EcoRule(z.Fishing.Species[1], "near", "nowhere"), z.Fishing.Junk[0], z.Weather)));
+            JunkDef strayJunk = MakeAsset<JunkDef>();
+            strayJunk.Configure("tin_can", "Tin Can", 2, BodyShape.Round, Color.gray);
+            Assert.AreEqual("zones[0] 'zone_a' junk[0] 'tin_can' is not listed in junk.",
+                OnlyError(z => FillZone(z.ZoneA, "zone_a", EcoRule(z.Fishing.Species[1], "near"), strayJunk, z.Weather)));
+            Assert.AreEqual("zones[0] 'zone_a' junk[0] has no junk item.",
+                OnlyError(z => FillZone(z.ZoneA, "zone_a", EcoRule(z.Fishing.Species[1], "near"), null, z.Weather)));
+            Assert.AreEqual("spots[1] 'spot_b' has no zone.", OnlyError(z => z.SpotB.Configure("spot_b", "Spot B", "Spot_spot_b", 2, null)));
+            FishingZoneDef foreignZone = MakeAsset<FishingZoneDef>();
+            FillZone(foreignZone, "zone_x", EcoRule(e.Fishing.Species[1], "near"), e.Fishing.Junk[0], e.Weather);
+            Assert.AreEqual("spots[1] 'spot_b' zone 'zone_x' is not listed in zones.", OnlyError(z => z.SpotB.Configure("spot_b", "Spot B", "Spot_spot_b", 2, foreignZone)));
+            WeatherTableDef shortWeather = MakeAsset<WeatherTableDef>();
+            shortWeather.Configure("weather_short", new float[8], new float[12]);
+            Assert.AreEqual("zones[0] 'zone_a' weather 'weather_short' needs 9 base and 12 season values.",
+                OnlyError(z => FillZone(z.ZoneA, "zone_a", EcoRule(z.Fishing.Species[1], "near"), z.Fishing.Junk[0], shortWeather)));
+            Assert.AreEqual("zones[0] 'zone_a' has no weather table.", OnlyError(z => z.ZoneA.Configure("zone_a", "zone_a", TwoBands(),
+                new List<SpawnRule> { EcoRule(z.Fishing.Species[1], "near") }, new List<JunkWeight> { new JunkWeight { junk = z.Fishing.Junk[0], weight = 1f } }, null, null)));
+
+            // A missing tuning (set through ConfigureEcology with null).
+            EcoSet noTuning = MakeEcologySet();
+            ContentRegistry regNoTuning = MakeEcologyRegistry(noTuning, zoneBFirst: false);
+            regNoTuning.ConfigureEcology(new[] { noTuning.ZoneA, noTuning.ZoneB }, null);
+            CollectionAssert.AreEqual(new[] { "ecologyTuning is missing." }, regNoTuning.Validate());
+            Assert.Throws<InvalidOperationException>(() => regNoTuning.Build());
+        }
+
+        // Applies one mutation to a fresh set (zone_a first in the list) and returns the single validation error.
+        private string OnlyError(Action<EcoSet> mutate)
+        {
+            EcoSet e = MakeEcologySet();
+            mutate(e);
+            IReadOnlyList<string> errors = MakeEcologyRegistry(e, zoneBFirst: false).Validate();
+            Assert.AreEqual(1, errors.Count, string.Join(" | ", errors));
+            return errors[0];
+        }
     }
 }
