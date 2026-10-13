@@ -1,6 +1,6 @@
 // Scene objects of the world presentation (contract 7.22). Called from LakeDockBuilder.Build right after FishingSceneObjects.AddTo.
-// "Presentation" is a plain GameObject (C 2.8 #15: the only in-scene NetworkObject is the World root, #24) holding the four scene-level drivers
-// (PaletteGlobals, WaterTimeDriver, RippleField, and T18's DayNightController; T19 adds WeatherFx and HotspotFx).
+// "Presentation" is a plain GameObject (C 2.8 #15: the only in-scene NetworkObject is the World root, #24) holding the six scene-level drivers
+// (PaletteGlobals, WaterTimeDriver, RippleField, T18's DayNightController, and T19's WeatherFx and HotspotFx).
 // Assets are loaded here, after NewScene (C 2.8 #14); a missing asset is a build error, not a silent null.
 using FishGame.Core;
 using FishGame.Data;
@@ -40,6 +40,9 @@ namespace FishGame.EditorTools
             WaterTimeDriver driver = BuilderUtil.GetOrAdd<WaterTimeDriver>(root);
             BuilderUtil.GetOrAdd<RippleField>(root);
             DayNightController dayNight = BuilderUtil.GetOrAdd<DayNightController>(root);
+            WeatherFx weatherFx = BuilderUtil.GetOrAdd<WeatherFx>(root);
+            HotspotFx hotspotFx = BuilderUtil.GetOrAdd<HotspotFx>(root);
+            Material particle = RenderMaterialLibrary.Get("M_Particle");   // throws InvalidOperationException naming the material when it is not built
 
             SetReference(globals, "palette", palette);
             SetReference(driver, "waterSettings", water);
@@ -47,6 +50,8 @@ namespace FishGame.EditorTools
             SetReference(dayNight, "sun", FindRoot<Light>(scene, "Sun"));
             SetReference(dayNight, "warmVolume", FindRoot<Volume>(scene, "WarmVolume"));
             SetReference(dayNight, "coolVolume", FindRoot<Volume>(scene, "CoolVolume"));
+            SetReference(weatherFx, "particleMaterial", particle);
+            SetReference(hotspotFx, "particleMaterial", particle);
 
             EditorSceneManager.MarkSceneDirty(scene);
         }

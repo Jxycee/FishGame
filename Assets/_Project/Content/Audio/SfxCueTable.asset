@@ -146,6 +146,13 @@ MonoBehaviour:
     maxDistance: 35
     minInterval: 0.15
     spatial: 1
+  - id: Rain_Patter
+    category: 1
+    baseVolume: 0.45
+    minDistance: 1
+    maxDistance: 0
+    minInterval: 0
+    spatial: 0
   seasonAmbience:
   - windGain: 1.1
     windLfoHz: 0.08

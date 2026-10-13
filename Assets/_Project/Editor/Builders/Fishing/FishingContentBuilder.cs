@@ -101,6 +101,7 @@ namespace FishGame.EditorTools
                 d.Configure(in t);
             });
             var cues = Ensure<SfxCueTableDef>(Rooted(AssetPaths.SfxCueTableAsset), d => d.Configure(FishingSeedData.CueRows()));
+            AppendMissingCueRows(cues);   // M3 T19 (C2 D-Q9): a table made before a new recipe existed gets the new rows; existing rows are never touched
             var palette = Ensure<ArtPaletteDef>(Rooted(AssetPaths.ArtPaletteAsset), d =>
                 d.Configure(FishingSeedData.PaletteSlotNames, FishingSeedData.PaletteSeasons(), FishingSeedData.PaletteFaceJitter,
                     FishingSeedData.PaletteSkinTone, FishingSeedData.PalettePhases(), FishingSeedData.PaletteUiAccent, FishingSeedData.PaletteUiGood,
@@ -119,6 +120,41 @@ namespace FishGame.EditorTools
 
             FillSpeciesModels(species, ModelsFolderAt(contentRoot));
             WireRegistry(registry, rods, baits, profiles, species, junk, tuning, cues, palette, water);
+        }
+
+        // M3 T19 (allowed in-place edit, C 2.6 and C2 D-Q9): appends the seed cue rows whose id the table does not hold yet, in seed order. Existing
+        // rows are never read for change and never rewritten (a tuned row keeps its values). Nothing is touched when nothing is missing, so a second
+        // build leaves the asset byte-identical. `category` is an enum of consecutive values from 0 (Sfx, Ambience, Music, Ui, Voice), so
+        // enumValueIndex equals the enum value.
+        private static void AppendMissingCueRows(SfxCueTableDef cues)
+        {
+            var so = new SerializedObject(cues);
+            SerializedProperty rows = so.FindProperty("rows");
+            if (rows == null) throw new InvalidOperationException("SfxCueTableDef has no serialized field 'rows'");
+            var have = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < rows.arraySize; i++) have.Add(rows.GetArrayElementAtIndex(i).FindPropertyRelative("id").stringValue);
+
+            bool appended = false;
+            foreach (SfxCueRow r in FishingSeedData.CueRows())
+            {
+                if (have.Contains(r.id)) continue;
+                int index = rows.arraySize;
+                rows.InsertArrayElementAtIndex(index);
+                SerializedProperty row = rows.GetArrayElementAtIndex(index);
+                row.FindPropertyRelative("id").stringValue = r.id;
+                row.FindPropertyRelative("category").enumValueIndex = (int)r.category;
+                row.FindPropertyRelative("baseVolume").floatValue = r.baseVolume;
+                row.FindPropertyRelative("minDistance").floatValue = r.minDistance;
+                row.FindPropertyRelative("maxDistance").floatValue = r.maxDistance;
+                row.FindPropertyRelative("minInterval").floatValue = r.minInterval;
+                row.FindPropertyRelative("spatial").boolValue = r.spatial;
+                have.Add(r.id);
+                appended = true;
+                Debug.Log("FG CONTENT cue row appended: " + r.id);
+            }
+            if (!appended) return;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(cues);
         }
 
         // Re-roots one AssetPaths constant: contentRoot replaces RealContentRoot as the path prefix.

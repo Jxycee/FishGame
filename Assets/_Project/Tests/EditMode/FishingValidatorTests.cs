@@ -620,14 +620,15 @@ namespace FishGame.Tests.EditMode
             return -1;
         }
 
-        // Catches: the seed cue rows (five with maxDistance 0) failing because the raw maxDistance was compared with minDistance.
+        // Catches: the seed cue rows (six with maxDistance 0) failing because the raw maxDistance was compared with minDistance.
+        // T19: the count is six now, the five M1 2D/ambience rows plus the 2D Rain_Patter loop (default max distance).
         [Test]
         public void FishingValidators_CueRowsWithZeroMaxDistance_UseTheDefault30()
         {
             SeedSet set = MakeSeedSet();
             int zero = 0;
             foreach (SfxCueRow r in set.Cues.Rows) if (r.maxDistance == 0f) zero++;
-            Assert.AreEqual(5, zero, "the five M1 2D/ambience rows have maxDistance 0");
+            Assert.AreEqual(6, zero, "the five M1 2D/ambience rows and Rain_Patter have maxDistance 0");
             CollectionAssert.IsEmpty(Check(set));
         }
 
