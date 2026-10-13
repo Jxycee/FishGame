@@ -76,7 +76,7 @@ Owned files are exactly C 12 (shared edits per C 2.6). "Deps" means the task mus
 | T11 | Coverage | Data hard-fail rules, V1-V3, 13.3 variety (M3 part), fightability on the R72 Rhythm bot; `ValidationRunner` hook | T10 | Sonnet | Sonnet |
 | T12 | Balance reports | V4 expedition sim, V5 economy and the M4 quota-calibration print; retune data or record tuning items | T11, R72 F8 | Sonnet | Sonnet (Opus high if a target needs more than data) |
 | T13 | Host roll | `FishingHostLedger` on the resolver with a host-built context; M3 cast checks (grid water, day over); catch-limit reservations; cast counter in the run state; `PlaceholderRoller` and species-level gates removed | T6, T10 | Sonnet | Opus high |
-| T14 | World state | `WorldState` (4 NetworkVariables, `IWorldContext`), `ClockAnchor`/`HotspotState` wire, `DevWorldDriver` (dev clock, weather track, hotspots, pause, auto new day), `EcologySession`, ProtocolVersion 3 | T7, T10 | Sonnet | Opus high |
+| T14 | World state | `WorldState` (4 NetworkVariables, `IWorldContext`), `ClockAnchor`/`HotspotState` wire, `DevWorldDriver` (dev clock, weather track, hotspots, pause, auto new day), `EcologySession`, ProtocolVersion 4 (R72 took 3) | T7, T10 | Sonnet | Opus high |
 | T15 | Fishing integration | `FishingHost` builds the context from `WorldState` and the zone grid (replacing T13's interim context); owner marker runs the same gates (`CastingOpen`, grid water); `FishingDebugSettings.Luck`; `DevLoadSpotRequested` -> `SceneFlow` map switch | T13, T14, T16 | Sonnet | Opus high |
 | T16 | Lake world and bake (NOT LD; runs before T15) | `StandPoint`s, `ShoreGridBaker` (castable + reachable bits), `WorldSceneObjects` (first in-scene NetworkObject: MPPM sync check, fallback C M3-D18), map validators (reachability, water layer, layer split, WorldState hash) | T11, T14 | Sonnet | Opus high |
 | T17 | Harbour Pier map (LD) | `HarbourPierBuilder/Layout/Meshes` in the R74 style (C M3-D40 starting layout), every per-scene hook (C 6.3), build order index 3, grid bake | T4, T15, T16 | Sonnet | Opus high (+ user look check) |
@@ -179,7 +179,7 @@ Authors may run in parallel (each writes only its own plan file). Cross-section 
 - **T11:** the V1-V3 and variety reports are printed in the task report. Any fightability miss is an approved tuning item with numbers.
 - **T12:** the V4/V5 tables are pasted in the report. Misses are retuned in data (asset + seed + deviation map) or listed for T25.
 - **T13:** every C2 ledger test name still passes against the resolver. A limit-1 special can't be landed twice by two concurrent casts.
-- **T14:** the late joiner sees the same minute within a frame of rounding. Solo pause stops the clock. The protocol is 3.
+- **T14:** the late joiner sees the same minute within a frame of rounding. Solo pause stops the clock. The protocol is 4 (R72 took 3).
 - **T15:** an honest cast at the grid edge is never host-rejected (owner and host gates agree). The map switch keeps the cast counter.
 - **T16:** reachability passes for all three lake sub-areas (needs Q1). `WorldState` syncs under MPPM with a non-zero hash. The scene is committed whole.
 - **T17:** the harbour plays end to end (spawn, swim, ladder, cast in all three sub-areas, bell); the user checks the look.

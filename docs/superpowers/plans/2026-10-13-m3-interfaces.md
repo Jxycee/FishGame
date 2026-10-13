@@ -154,7 +154,7 @@ Per task in the skeleton (C2 2.5 shape). Haiku implements only when the section 
 | Shaders (`Shaders/*.shader`, `FishGameCommon.hlsl`) | T4 (look-dev standard), T18 (the season-tint multiply on textured albedo if the standard does not already include it; M3-D23). |
 | `Runtime/Audio/AmbienceBed.cs` | T19 (season parameter sets, M3-D22). |
 | `Core/Audio/SfxIds.cs`, new `SfxRecipes.M3.cs` | T19 (`Rain_Patter`). |
-| `Core/Versioning/BuildInfo.cs`, `Tests/EditMode/BuildInfoTests.cs` | T14 (`ProtocolVersion = 3`; history line). |
+| `Core/Versioning/BuildInfo.cs`, `Tests/EditMode/BuildInfoTests.cs` | T14 (`ProtocolVersion = 4`; history line; R72 took 3). |
 | `Gameplay/AssemblyInfo.cs` | Moved to T2 (see above). T14 does not edit it; the `InternalsVisibleTo("FishGame.Tests.EditMode")` line is already present for its wire and dev-world tests. |
 | `Core/Fishing/{FishingHostLedger,CatchValidator,HostCastView}.cs` | T13 only. |
 | `Core/Fishing/{BitePlanner,RollOverrides,FishingRoll}.cs` | T13 (comments only: reword `PlaceholderRoller` to `FishingRoller`; M3-D55). |
@@ -212,7 +212,7 @@ Serial execution (one Unity lock, one git index); reviews pipeline per the skele
 | T11 Coverage: data validators, V1-V3, 13.3 variety, fightability | T10 |
 | T12 Balance reports V4/V5 | T11, gate R72 F8 |
 | T13 Host roll: ledger on the resolver, M3 cast checks, catch limits, run state; PlaceholderRoller removed | T6, T10 |
-| T14 `WorldState`, wire structs, `DevWorldDriver`, ProtocolVersion 3 | T7, T10 |
+| T14 `WorldState`, wire structs, `DevWorldDriver`, ProtocolVersion 4 | T7, T10 |
 | T16 Lake map: StandPoints, ShoreGrid bake, WorldState placement, map validators (runs BEFORE T15; no look-dev wait) | T11, T14 |
 | T15 Fishing host/owner integration, dev map switch plumbing | T13, T14, T16 |
 | T17 Harbour Pier map (waits for T4) | T4, T15, T16 |
@@ -290,7 +290,7 @@ public static class EcologyStreams
 
 | Constant | Value | Owner / file |
 |---|---|---|
-| `BuildInfo.ProtocolVersion` | `3` (new in-scene `WorldState` NetworkObject and its NetworkVariables) | T14 |
+| `BuildInfo.ProtocolVersion` | `4` (R72 took 3; new in-scene `WorldState` NetworkObject and its NetworkVariables) | T14 |
 | `ContentRegistry` `dataVersion` (asset) | `1 -> 2` (bumped once by the migration; spec 12.6) | T3 |
 | `ContentRegistry.CategoryZones` | `"zones"` (hashed only when non-empty, like C2 D-Q1) | T9 |
 | `ContentIds.HarbourPier` | `"harbour_pier"` (`ContentIds.LakeDock` exists) | T10 (it creates the harbour `SpotDef`) |
@@ -843,7 +843,7 @@ public static class EcologySession { public static EcologyRunState GetOrCreate(u
 ```
 Host behaviour (`DevWorldDriver`): on the first host spawn of a session `EcologySession.GetOrCreate(FishingConstants.DefaultDevRunSeed)` (or the instance `SetRunSeed` created); season = the run state's season (rolled by `WeatherDirector.RollSeason(runSeed)` at creation); `Weather = new WeatherDirector(zone weather, season, runSeed)` (rebuilt, not stored in the run state); clock anchor at minute 0, rate `DayClock.DefaultMinutesPerSecond`, running; each frame: minute -> segment -> `ServerSetWeather` on change; `HotspotPlanner.Advance(minute)` -> `ServerSetHotspot` on change; when the clock is RUNNING and reaches 1200, auto `DevNewDay()` (M3-D11); a clock stopped by the dev panel (or a test) at 1200 stays there with `CastingOpen` false; solo pause (`IPauseState.Paused`) re-anchors with `Running = false` and back on resume (R34). A Spot load keeps season, day, cast counter and catch ledger (run state), rebuilds the identical weather track and resumes the clock from minute 0 of the current day (M3-D31).
 
-`BuildInfo.ProtocolVersion = 3`.
+`BuildInfo.ProtocolVersion = 4` (R72 already moved it 2 -> 3).
 
 ### 7.15 T15 - Fishing host and owner integration (asm FishGame.Fishing, App)
 - `FishingHost`: builds `HostCastView.Context` from `WorldState` (Season, Weather, Minute, `IsInHotspot(landing)`), the zone of `WorldState.SpotId` (`ZoneIndex`, `SubAreaIndex = zone.SubAreaIndexFor(grid.ShoreM(landing))`), `Luck = FishingDebugSettings.Luck`, `PlayersInSession` = connected roster count, `Events/Skills` neutral; `GridWater = grid.IsWater(landing)`; `CastingAllowed = WorldState.CastingOpen`. Creates its ledger with `EcologySession.GetOrCreate(RunSeed)` (cast counter persists; `SetRunSeed` before the first cast of the SESSION creates a fresh run state). No world, zone or grid (a non-ecology scene or a missing bake) -> logs once and rejects casts `NotAllowedNow` (never rolls without a context).
@@ -992,7 +992,7 @@ No new RPCs. Dev panel writes are host-local calls; clients are read-only (spec 
 | Day-night, palette tint, weather looks, hotspot VFX, ambience | L | derived from `WorldState` |
 
 ### 8.3 Protocol and content versions
-- `BuildInfo.ProtocolVersion` 2 -> 3 (T14): a networked scene object and four NetworkVariables are added. The R72 and R70 reworks do not bump it (their plans say so).
+- `BuildInfo.ProtocolVersion` 3 -> 4 (T14): a networked scene object and four NetworkVariables are added. The R72 rework already bumped it 2 -> 3 (FlagRight, FlagDive = back pull with a side, no run flags on a spent fish, host fight validation); the R70 rework does not bump it.
 - `ContentRegistry.dataVersion` 1 -> 2 (T3). `ContentHash` also changes with the new species, junk and `zones` ids. MPPM check: an instance with a bumped `dataVersion` is rejected at approval with the version message (spec 12.9 manual).
 
 ---
@@ -1070,7 +1070,7 @@ EditMode files under `Tests/EditMode/` (ecology ones may sit in `Tests/EditMode/
 | T13 | `FishingHostLedgerTests.cs` (rewrite against `EcologyTestData`) | every C2 ledger test name kept (roll-content tests re-pointed at the resolver), plus `FishingHostLedger_Roll_UsesResolverWithHostContext`, `FishingHostLedger_HostRodTierAndBait_OverrideContext`, `FishingHostLedger_GridNotWater_RejectedNotWater`, `FishingHostLedger_DayOver_RejectedNotAllowedNow`, `FishingHostLedger_CastCounter_LivesInRunState`, `FishingHostLedger_LimitedSpecies_ReservedThenCommittedOnLanded`, `FishingHostLedger_LimitedSpecies_ReleasedOnLossCancelAndDisconnect`, `FishingHostLedger_RollSeed_DerivesFromRunSeedAndCounter` (kept name, run-state counter), and one interim test `FishingHostLedger_InterimLakeContext_BluegillEligible` (T15 deletes it together with the interim context). Deleted by T13 (V3 replaces them, M3-D55): `FishingValidators_UnreachableSpecies_IsReported`, `FishingData_EverySpecies_ReachableWithSomeBaitAndDepth`; `PlaceholderRollerTests` is `git rm`ed. Re-pointed with names kept: `FishingRollValidationTests` (both tests), `FishingWireTests` (`FishingRollNet_RoundTrip_PreservesRoll`, `FishingRollNet_Flags_OnlyBitZeroIsPity`, `FishingRollNet_InsaneRoll_TryToCoreFalse`) |
 | T13 | `CatchValidatorTests.cs` (add) | `CatchValidator_ValidateCast_GridCheckAfterProbe`, `CatchValidator_ValidateCast_CastingNotAllowedFirst` |
 | T14 | `WorldWireTests.cs` | `ClockAnchor_FromToCore_RoundTripAndEquality`, `HotspotState_FromToCore_RoundTripAndEquality`, `ClockAnchor_Size_AtMostTwentyFourBytes` |
-| T14 | `BuildInfoTests.cs` (edit) | expectation 2 -> 3 |
+| T14 | `BuildInfoTests.cs` (edit) | expectation 3 -> 4 |
 | T14 | `DevWorldTests.cs` (extra, M3-D58) | `DevClock_*` (pause freezes and resumes continuously, scrub x60 continuous, toggles while dev-stopped write nothing, auto new day only while effectively running at 1200, `StartAt` clamps, rate never zero), `EcologySession_*` (existing run state wins and ignores the seed, season from seed and Day 1, `Clear` gives a fresh instance, stale session dropped), `DevWorld_MapSwitchResume_RebuiltTrackIdentical`, `DevWorld_WeatherOverride_OnlyNoneOrSingleM3Weather` (exact names in the section D plan) |
 | T15 | `SpotEcologyTests.cs` (extra, M3-D58) | `SpotEcology_OwnerAndHostGates_AgreeAcrossGridEdge`, `SpotEcology_WorldContext_MapsWorldValuesAndSubArea`, `SpotEcology_TryResolve_FalseWithoutStateSpotOrGrid`, `FishingDebugSettings_Luck_ClampedAndHonouredAsSet` |
 | T15 | `Tests/PlayMode/FishingWorldTests.cs` (extra, M3-D58) | `FishingWorld_UnforcedCast_AcceptedWithWorldContext`, `FishingWorld_LakeReload_KeepsRunStateAndCastCounter` (a lake -> lake reload before the harbour exists; T24 repeats the switch with the harbour) |
@@ -1186,7 +1186,7 @@ Each row is a ruling where the spec is silent or contradicts itself, marked [rul
 | M3-D34 | Junk values [ruling, tune] | `old_boot` 2, `tin_can` 2 (existing), `soggy_newspaper` 0, `lost_sock` 1, `rope_scrap` 1, `seaweed_clump` 0, `empty_bait_tub` 2; equal weights per spot (12.6). | Spec R51 range 0-5, no values. |
 | M3-D35 | Species presentation fields [ruling, tune] | `weightSkew` 2.2, `biteWaitMod` 1.0, `hookWindow` 0 (auto-hook; the user can set a twitchy fish in the Inspector, spec 19 #4), `lengthShapeK` 1.0 except `glimmer_eel` 1.6, `grumpy_puffer` 0.8. Body shapes: Eel `glimmer_eel`; Squid `moon_squid`; Flat `sneaky_flounder`, `storm_ray`; Long `lake_pike`, `pier_sardine`, `ice_herring`, `grumble_mackerel`, `silver_mullet`, `lanternfish`, `frost_char`, `sunny_trout`, `sleepy_sturgeon`, `mirror_minnow`, `bruiser_tuna`; Round for the rest. Colours: two contrasting colours per species, chosen by T10 (comic, recognisable). | Spec 12.3 defaults only. |
 | M3-D36 | `minPlayersInSession` now [ruling] | The `SpawnRule` field exists from M3 (value 0); the gate is live. | Avoids an M5 data migration. |
-| M3-D37 | Versions | ProtocolVersion 3, dataVersion 2. | 8.3. |
+| M3-D37 | Versions | ProtocolVersion 4 (R72 took 3), dataVersion 2. | 8.3. |
 | M3-D38 | Fightability under R72 [ruling] | A fightability miss on the Rust-faithful baseline is recorded as an `EcologyTuningItems` entry; M3 never retunes R72 fight numbers the user is playing. | R72 owns the fight; the user tunes it in the friendlier pass. |
 | M3-D39 | Balance inputs [ruling] | V4 spreads casts uniformly over sub-areas and minutes; V5 cycle time = R72 F8 median cast-to-land for the profile on the day's rod + 10 s walking. | Spec gives the measures, not the sampling or the walking time. The fight medians come from T12's own Rhythm-bot runs on all four rods (M3-D64), not from F8 alone. |
 | M3-D40 | Harbour layout (starting numbers) [ruling] | Water box 120 x 120 at y 0 (centre (0, 0)); coast along z = -45 (land z < -45: Shore, beach slope y -0.3 at z -43 to 1.2 at z -55); seabed Ground at depth 0.25 x shore distance, max 9 m; a 3 m wide pier (Structure, deck y 1.5) from the beach at x 0 out to z -5 with a 10 m T-head; a stone breakwater (Shore) at x 30 running 20 m out; ladders (`LadderVolume`, Default) at the T-head and mid-pier; spawns on the pier near land; bell anchor at the pier root. StandPoints: 5 beach points, pier middle (z -25, both sides), T-head (both sides, end), breakwater tip. Sub-areas 0-5 / 5-12 / 12+. The section author may move things while reachability holds. | Spec gives sub-areas only. |

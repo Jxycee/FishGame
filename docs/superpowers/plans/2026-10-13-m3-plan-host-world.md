@@ -5,7 +5,7 @@
 - **Spec:** `docs/superpowers/specs/2026-10-09-fishgame-design.md` 9.3 (cast validity, "from M3 the bobber cell must also be a water cell"), 9.9 (host ledger and the CastRequest checks, "from M3 also: grid cell is water, minute < 1200"), 12.2, 12.4, 12.7, 12.8, 12.11, 14.2 (clock replication), R34 (solo pause never touches `Time.timeScale`).
 - **Scope:**
   - T13: the host roll on the resolver, the M3 cast checks, catch-limit reservations and the run-state cast counter. `PlaceholderRoller` is removed.
-  - T14: `WorldState`, the wire structs, `DevWorldDriver`, `EcologySession`, ProtocolVersion 3.
+  - T14: `WorldState`, the wire structs, `DevWorldDriver`, `EcologySession`, ProtocolVersion 4 (R72 took 3).
   - T15: the world-built host context, the owner marker gates, `Luck`, and the dev map switch.
 - **Serial order (skeleton 3):** T13 -> T14 -> (T16, section E) -> T15. T15 needs T16's `World` object and the baked lake grid.
 - **Code note:** this file holds code only where skeleton 2.3 allows it:
@@ -404,7 +404,7 @@ If `Tests/EditMode/Ecology/` is a new folder, also add `Assets/_Project/Tests/Ed
 - `WorldState`: the in-scene NetworkBehaviour with four NetworkVariables, implementing `IWorldContext`.
 - `DevWorldDriver`: host dev clock, weather track, hotspot schedule, pause, scrub, auto new day, map-switch resume.
 - `EcologySession`: the session-level run state.
-- `ProtocolVersion = 3`.
+- `ProtocolVersion = 4` (R72 took 3).
 
 **Owned files (C 12 + CCR-D4):**
 - `Gameplay/World/{ClockAnchor,HotspotState,WorldState,DevWorldDriver,EcologySession,DevClock}.cs`;
@@ -732,7 +732,7 @@ public sealed class DevWorldDriver : MonoBehaviour
   - `ResolveZone` failure (no ecology database, unknown spot, spot without a zone): `LogWarning` once. The clock still runs, the weather stays Clear, and there are no hotspots. C2 #9 makes a PlayMode run with that warning fail, which is intended.
 - **12.7 cut-line:** if the controller calls it, `NewPlanner` returns null always (one line, commented). Nothing else changes.
 
-**`BuildInfo` (edit):** `ProtocolVersion = 3`. History line: `3 = M3 (T14: in-scene WorldState NetworkObject with NetSeason, NetWeather, NetClock, NetHotspot)`. `BuildInfoTests` expects 3.
+**`BuildInfo` (edit):** `ProtocolVersion = 4`. History line: `4 = M3 (T14: in-scene WorldState NetworkObject with NetSeason, NetWeather, NetClock, NetHotspot)` (the existing `3 = R72 ...` line stays). `BuildInfoTests` expects 4.
 
 ### Steps (TDD)
 1. Write `WorldWireTests.cs` and `DevWorldTests.cs`. Change `BuildInfoTests` to 3. Run `test-edit -Filter "FishGame.Tests.EditMode.(WorldWireTests|DevWorldTests|BuildInfoTests)"`. Red is `CS0246` for the new types.
@@ -787,7 +787,7 @@ public sealed class DevWorldDriver : MonoBehaviour
 - `DevWorld_MapSwitchResume_RebuiltTrackIdentical`: run `{seed 7, Season Autumn, Day 3}`. `new WeatherDirector(table, Autumn, 7)`, `EnsureDay(3)`, then `At(3, m)` for m in {0, 240, 480, 720, 960} equals a second, freshly built director's values. This is what `Adopt` relies on for a Spot load.
 - `DevWorld_WeatherOverride_OnlyNoneOrSingleM3Weather`: None, Clear, Rain and Fog are valid; Storm, Heatwave and `Rain|Fog` are invalid.
 
-**`BuildInfoTests.cs`:** the expectation changes 2 -> 3.
+**`BuildInfoTests.cs`:** the expectation changes 3 -> 4.
 
 ### Acceptance (reviewer checks)
 - Authority comments open `ClockAnchor`, `HotspotState`, `WorldState`, `DevWorldDriver`, `EcologySession` and `DevClock`.
@@ -802,13 +802,13 @@ public sealed class DevWorldDriver : MonoBehaviour
 - **Where each skeleton T14 acceptance item is proven:**
   - "late joiner sees the same minute": T16's MPPM sync check, T24 `EcologySolo_WorldState_SyncedWithNonZeroHash`, and the T25 manual MPPM list;
   - "solo pause stops the clock": `DevClock_Pause_FreezesMinuteAndResumeIsContinuous` here, and T24 `EcologySolo_WorldClock_RunsAndStopsInSoloPause`;
-  - "protocol 3": `BuildInfoTests`.
+  - "protocol 4": `BuildInfoTests`.
 - `test-edit` and `test-play` PASS. Scenes are untouched.
 
 ### Commit
 ```powershell
 git add Assets/_Project/Gameplay/World/ClockAnchor.cs Assets/_Project/Gameplay/World/ClockAnchor.cs.meta Assets/_Project/Gameplay/World/HotspotState.cs Assets/_Project/Gameplay/World/HotspotState.cs.meta Assets/_Project/Gameplay/World/WorldState.cs Assets/_Project/Gameplay/World/WorldState.cs.meta Assets/_Project/Gameplay/World/DevWorldDriver.cs Assets/_Project/Gameplay/World/DevWorldDriver.cs.meta Assets/_Project/Gameplay/World/EcologySession.cs Assets/_Project/Gameplay/World/EcologySession.cs.meta Assets/_Project/Gameplay/World/DevClock.cs Assets/_Project/Gameplay/World/DevClock.cs.meta Assets/_Project/Core/Versioning/BuildInfo.cs Assets/_Project/Tests/EditMode/BuildInfoTests.cs Assets/_Project/Tests/EditMode/WorldWireTests.cs Assets/_Project/Tests/EditMode/WorldWireTests.cs.meta Assets/_Project/Tests/EditMode/DevWorldTests.cs Assets/_Project/Tests/EditMode/DevWorldTests.cs.meta
-git commit -m "m3(world): WorldState (4 NetworkVariables, IWorldContext), ClockAnchor/HotspotState wire, DevWorldDriver dev clock, EcologySession, protocol 3" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
+git commit -m "m3(world): WorldState (4 NetworkVariables, IWorldContext), ClockAnchor/HotspotState wire, DevWorldDriver dev clock, EcologySession, protocol 4" -m "Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
 ```
 
 ---

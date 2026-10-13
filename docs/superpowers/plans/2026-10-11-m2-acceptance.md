@@ -32,7 +32,7 @@
 | 8 | Bots meet the 9.12 targets (a failure passes only with numbers recorded as a tuning item) | Claude | `test-edit -Filter "FishGame.Tests.EditMode.FishingBots"` | PASS (R72 baseline, section K.1): 8 of 8, every asserted target met, no tuning item |
 | 9 | All tuning lives in assets; Core holds none except test defaults | Claude + User | Branch-review grep, then the Inspector edit | Review pending; manual open |
 | 10 | Assist, line gauge, captions and Camera motion behave as 9.11 defines | User | Settings toggles in a fight | Open (user) |
-| 11 | `FightSim` costs < 0.05 ms per step | Claude + User | Printed per-step time of `FishingBots_FightSimStep_UnderFiftyMicroseconds` | PASS: 0.16 us per step (0.00016 ms) |
+| 11 | `FightSim` costs < 0.05 ms per step | Claude + User | Printed per-step time of `FishingBots_FightSimStep_UnderFiftyMicroseconds` | PASS: 0.13-0.14 us per step (re-measured on the R72 sim) |
 
 ### Criterion 1: Solo, Idle to landed fish, both devices
 - [ ] **Owner:** User. **How to check:** Solo with Auto Solo on and the Console cleared (Clear before pressing Play).
@@ -103,9 +103,9 @@
 
 ### Criterion 11: `FightSim` cost
 - [x] **Owner:** Claude + User.
-- **Claude:** the printed line of `FishingBots_FightSimStep_UnderFiftyMicroseconds` (the test fails only above 0.2 ms, so its pass is not the criterion; the printed number is): `FG PERF FightSim.Tick 0.16 us/step over 200000 steps`. That is 0.00016 ms per step, against the limit of 0.05 ms (50 us). It was measured in an EditMode run in the editor (Mono), not in a player build.
+- **Claude:** the printed line of `FishingBots_FightSimStep_UnderFiftyMicroseconds` (the test fails only above 0.2 ms, so its pass is not the criterion; the printed number is): `FG PERF FightSim.Tick 0.13 us/step over 200000 steps` (0.13-0.14 us in repeated runs on the R72 sim, re-measured 2026-10-12; 0.16 us was the pre-R72 figure). That is about 0.00014 ms per step, against the limit of 0.05 ms (50 us). It was measured in an EditMode run in the editor (Mono), not in a player build.
 - **User option:** Profiler deep profile of a fight in a development build.
-- **Result:** PASS 2026-10-12 (0.16 us per step).
+- **Result:** PASS 2026-10-12 (0.13-0.14 us per step, R72 sim).
 
 ## B. Manual MPPM list (spec 17.2)
 
@@ -198,7 +198,7 @@ Save as `FunGateStats.ps1` and run `powershell -NoProfile -ExecutionPolicy Bypas
 1. imports every `fight-log*.csv` (`Import-Csv`) and parses numbers with `CultureInfo.InvariantCulture`;
 2. reads `outcome` and `reason` as enum names, and maps digits through the contract enum order if a log holds digits; reads `assist`, `clean`, `pity` as `true` or `1`;
 3. defines the row sets: all rows (casts that reached Waiting); bite rows (`castToBite > 0`); hooked (outcome Landed or Snapped, or Escaped with a reason other than Missed and Invalid); landed (outcome Landed); fish rows (profile not empty and not a junk species);
-4. prints the totals and the hooked fights per profile (the gate needs at least 30 hooked, at least 5 per profile), the median and p90 of `castToBite` (median 6-12 s, p90 at most 20 s), the cancel-or-timeout rate (under 10%), the per-profile median `fightSec` over landed fish rows (Steady/Darter 15-30 s, Bulldog/Thrasher 35-55 s, Runner 60-110 s; the hooked median for information), the overall median of `castToBite + fightSec` over landed fish rows (35-80 s), the snap rate (10-30%), the near-snap recovery share for Bulldog, Thrasher and Runner (at least 40%), and, for information, the clean-catch rate, the number of instant landings (Landed with `fightSec` under 1 s), the assist row count and the pity numbers;
+4. prints the totals and the hooked fights per profile (the gate needs at least 30 hooked, at least 5 per profile), the median and p90 of `castToBite` (median 6-12 s, p90 at most 20 s), the cancel-or-timeout rate (under 10%), the per-profile median `fightSec` over landed fish rows (R72: RECORDED, no target and no verdict; the bot baseline is Steady about 14 s, Darter 19, Thrasher 18, Runner 26, Bulldog 31 on Handmade; the pre-R72 targets are retired; the hooked median for information), the overall median of `castToBite + fightSec` over landed fish rows (R72: recorded, no verdict), the snap rate (10-30%), the near-snap recovery share for Bulldog, Thrasher and Runner (at least 40%), and, for information, the clean-catch rate, the number of instant landings (Landed with `fightSec` under 1 s), the assist row count and the pity numbers;
 5. marks each target PASS or FAIL. Percentiles use linear interpolation between ranks.
 
 Note: an `Escaped` row with reason `Timeout` counts as hooked by this definition even when the timeout happened in Waiting (`castToBite` 0). If such rows appear, read them by hand.
@@ -281,17 +281,16 @@ $cancelTimeout = @($all | Where-Object { $_.Outcome -eq 'Cancelled' -or $_.Reaso
 $cr = Share $cancelTimeout $all.Count
 Write-Output ('cancel-or-timeout rate ' + (Fmt $cr) + ' % [< 10] ' + $(if ($null -eq $cr) { 'n/a' } elseif ($cr -lt 10) { 'PASS' } else { 'FAIL' }))
 
-$targets = @{ steady = @(15, 30); darter = @(15, 30); bulldog = @(35, 55); thrasher = @(35, 55); runner = @(60, 110) }
+# R72: the per-profile fight lengths are recorded for the friendlier tuning pass; the pre-R72 targets (15-30 / 35-55 / 60-110 s) are retired (spec 17.2).
 foreach ($name in @('steady', 'darter', 'bulldog', 'thrasher', 'runner')) {
     $lf = @($landedFish | Where-Object { $_.Profile -eq $name } | ForEach-Object { $_.Fight })
     $hk = @($hooked | Where-Object { $_.Profile -eq $name } | ForEach-Object { $_.Fight })
     $m = Pct $lf 0.5
-    $t = $targets[$name]
-    Write-Output ('fightSec ' + $name + ' landed median ' + (Fmt $m) + ' s [' + $t[0] + '-' + $t[1] + '] ' + (Verdict $m $t[0] $t[1]) + '   (landed ' + $lf.Count + '; hooked median ' + (Fmt (Pct $hk 0.5)) + ' s, info)')
+    Write-Output ('fightSec ' + $name + ' landed median ' + (Fmt $m) + ' s (recorded, R72 baseline)   (landed ' + $lf.Count + '; hooked median ' + (Fmt (Pct $hk 0.5)) + ' s, info)')
 }
 
 $tot = Pct @($landedFish | ForEach-Object { $_.Bite + $_.Fight }) 0.5
-Write-Output ('cast-to-land (castToBite + fightSec) median ' + (Fmt $tot) + ' s [35-80] ' + (Verdict $tot 35 80) + '   (landed fish rows ' + $landedFish.Count + ')')
+Write-Output ('cast-to-land (castToBite + fightSec) median ' + (Fmt $tot) + ' s (recorded, R72 baseline)   (landed fish rows ' + $landedFish.Count + ')')
 
 $snapped = @($hooked | Where-Object { $_.Outcome -eq 'Snapped' }).Count
 $sr = Share $snapped $hooked.Count
@@ -316,6 +315,8 @@ $rl = @($rest | Where-Object { $_.Outcome -eq 'Landed' }).Count
 Write-Output ('pity rows: ' + $pity.Count + '   landed share of pity casts ' + (Fmt (Share $pl $pity.Count)) + ' % vs the rest ' + (Fmt (Share $rl $rest.Count)) + ' % (info, R65)')
 ```
 
+**R72 note (after the fight rework):** the self-test below was run on the pre-R72 script. Since R72 the script prints the per-profile `fightSec` medians and the cast-to-land median as "(recorded, R72 baseline)" with no verdict, so on that CSV the three PASS verdicts for steady / bulldog / runner now read as plain recorded medians (20.0 / 40.0 / 70.0 s) and the cast-to-land line has no [35-80] band. Every other line is unchanged. The script was not re-run.
+
 **Self-test (done by Claude on 2026-10-12, in the scratchpad):** run on this hand-made 6-row CSV, the script printed hooked 5 (bulldog 2, darter 1, runner 1, steady 1), castToBite median 9.0 s and p90 12.4 s, cancel-or-timeout 16.7% (FAIL), steady / bulldog / runner landed medians 20.0 / 40.0 / 70.0 s (PASS), cast-to-land median 50.0 s, snap rate 20.0%, bulldog near-snap recovery 100%, runner 0%, clean-catch rate 66.7% (2 of 3), assist rows 1, pity rows 1 with landed share 0.0% against 60.0% for the rest. A second CSV with an `Escaped/Missed` row (a bite row, not hooked), an `Escaped/Invalid` row, a landed `old_boot` (not a fish row) and an `Escaped/Timeout` row printed the matching exclusions. The same file with digits instead of enum names printed identical numbers, and a copy of the real `fight-log_fgtest.csv` parsed.
 
 ```
@@ -337,19 +338,19 @@ Fill this after the stats script runs. A failed target is **tuning data, not new
 | castToBite median 6-12 s | ______ | ______ |
 | castToBite p90 at most 20 s | ______ | ______ |
 | Cancel-or-timeout rate under 10% | ______ | ______ |
-| Steady median fight 15-30 s | ______ | ______ |
-| Darter median fight 15-30 s | ______ | ______ |
-| Bulldog median fight 35-55 s | ______ | ______ |
-| Thrasher median fight 35-55 s | ______ | ______ |
-| Runner median fight 60-110 s | ______ | ______ |
-| Overall median cast-to-land 35-80 s | ______ | ______ |
+| Steady median fight (recorded, R72 baseline; bots 14 s) | ______ | n/a |
+| Darter median fight (recorded; bots 19 s) | ______ | n/a |
+| Bulldog median fight (recorded; bots 31 s) | ______ | n/a |
+| Thrasher median fight (recorded; bots 18 s) | ______ | n/a |
+| Runner median fight (recorded; bots 26 s) | ______ | n/a |
+| Overall median cast-to-land (recorded, R72 baseline) | ______ | n/a |
 | Snap rate 10-30% | ______ | ______ |
 | Bulldog near-snap recovery at least 40% | ______ | ______ |
 | Thrasher near-snap recovery at least 40% | ______ | ______ |
 | Runner near-snap recovery at least 40% | ______ | ______ |
 | Info: clean-catch rate (R64) / instant landings / assist rows / pity rows | ______ | n/a |
 
-- **Near-snap recovery of at least 40% is a HUMAN fun-gate metric (2026-10-12, contract 16.2).** The T15 bots only print it (the Rhythm bot at `5a652bd`: bulldog 3%, thrasher 6%, runner 57.5%; bots do not model a human reacting to the warn cue). Read this row from the playtest CSVs, never from `FishingBots`. If the Bulldog or Thrasher share is low: `tuning.relaxWhileReeling` already sits at 0.20, the TOP of the 9.12 range (no headroom upward). The ruling's hints are to lower `relaxWhileReeling` toward 0.15, or raise the Thrasher `pullStrength`; and, because relax is at its ceiling, prefer raising the Bulldog/Thrasher `pullStrength` or lowering their calm minimum over relax. Record the per-profile shares and the chosen change: ______
+- **Near-snap recovery of at least 40% is a HUMAN fun-gate metric (2026-10-12, contract 16.2).** The T15 bots only print it (the Rhythm bot at `5a652bd`: bulldog 3%, thrasher 6%, runner 57.5%; bots do not model a human reacting to the warn cue). Read this row from the playtest CSVs, never from `FishingBots`. If the Bulldog or Thrasher share is low (R72: `relaxWhileReeling` and `pullStrength` no longer exist; a recovery now means the bar went over full and came back under half): the friendlier tuning pass can shorten a profile's rests, raise its `strainMod`, or lower the release drain `relaxRate`. Record the per-profile shares and the chosen change: ______
 - **Duration notes for the playtest:** the Twig-rod Thrasher trophy (weightT 0.9) has a bot median of about 93 s, and the Bulldog Rhythm median is 37.4 s against the 35 s floor. Watch both in real fights. If testers find the 93 s fight tedious, retune in data (assets plus seeds plus `TunedDeviations`; `thrasher.staminaDrain` is 0.035 after T15) and let the controller pick the lever. Notes: ______
 
 ### Blind tell-apart sheet
@@ -590,7 +591,7 @@ Start a solo run, equip the Handmade rod, and use the dev keys (README, "Fishing
 - [ ] **M2 (greed on a bluegill).** Reel non-stop into a bluegill's runs without steering: it should snap in about 5-8 s (decision 3, open question Q2). Result: ______
 - [ ] **M3 (counter a catfish).** Counter-steer a run without reeling. The fish visibly comes back toward the cast line, its runs get shorter, and the reel gets faster once it is tired. Watch for jitter near the centre line (a steer that carries the fish across the line is dropped on the next tick). Result: ______
 - [ ] **M4 (greed on a catfish).** Reel into a catfish run: it snaps in about 3.4 s. Result: ______
-- [ ] **M5 (creak).** Silent at low tension, rising steeply near the top, fading out over a quarter second when you let go. Result: ______
+- [ ] **M5 (creak).** Silent at low tension (below 10% of the bar), rising steeply near the top. When you let go, the strain drains at 1.5 per second, so the creak follows it down for about 3.4 s from a full bar; the 0.25 s fade-out is only the tail once the bar falls to 10%. Result: ______
 - [ ] **M6 (bobber).** The bobber leans toward the pull side, less on a back pull; another peer sees the same lean. Result: ______
 - [ ] **M7 (unattended).** An unattended fish escapes at 2 minutes (a fish; junk still clears at 12 s). Result: ______
 - [ ] **M8 (assist).** Assist on: the same greedy reel snaps later (strain gains x0.6). Result: ______

@@ -893,7 +893,7 @@ Notes for the implementer:
 - `perch`, `carp`, `trout` and `catfish` `.asset` and `.meta` are deleted. `Content/Models/*` is untouched.
 
 ### T3.8 Behaviour after T3 (for the reviewer)
-Until T13, the M2 `PlaceholderRoller` rolls only bluegill or junk: bluegill's gates are 0/0, so every bait reaches it. That is expected; T10 adds the roster and T13 the resolver. PlayMode tests force `bluegill` already. `ContentHash` changes because `dataVersion` is now 2. Old builds cannot join new ones, which is expected; `ProtocolVersion` moves in T14.
+Until T13, the M2 `PlaceholderRoller` rolls only bluegill or junk: bluegill's gates are 0/0, so every bait reaches it. That is expected; T10 adds the roster and T13 the resolver. PlayMode tests force `bluegill` already. `ContentHash` changes because `dataVersion` is now 2. Old builds cannot join new ones, which is expected; `ProtocolVersion` moves 3 -> 4 in T14 (R72 took 2 -> 3).
 
 ### T3.9 Tests: `Tests/EditMode/Ecology/EcologyMigrationTests.cs` (exact names; cases)
 **Fixture** (`[SetUp]`, fresh per test, all under `Root = "Assets/_Project/Tests/__Temp/EcologyMigrationTests"`):
