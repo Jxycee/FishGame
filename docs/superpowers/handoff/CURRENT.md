@@ -85,5 +85,15 @@ Also on the board:
 - Then a Unity task (post-M3, fix round): place the new meshes, colliders, a Low-preset Detail toggle, simple animation + ambient sound emitters from animHint; harbour grid must stay byte-identical unless re-baked on purpose.
 - Carry the same map-feel rules into the M4 river maps and the design session.
 
+## 11. M3 branch review (Opus xhigh, 2026-10-14): MERGE WITH FIXES
+- Fix wave in flight: worktree C:\Dev\FishGame-t15, branch m3-final-fixes (acceptance-doc fixes + dev panel "Day over" button; host ignores rod/bait selection in release builds; __Temp test flake; FishIconBaker GPU guard; dev panel closes on a bite; contract M3-D97 for T17-B). Then full check, merge into m3-fish-ecology, merge M3 into main (merge commit, no PR).
+- Deferred to M4 / post-merge round (from the review):
+  - Cancel-reroll: the owner learns the species at cast accept and Cancel refunds bait (R45), so a modded client can re-roll for specials and hold a catch-limit reservation up to 240 s. Send the species only at hook, or stop refunding after the bobber lands.
+  - The 3 m cast-origin slack (M2) now reaches deeper sub-areas.
+  - In-scene WorldState GlobalObjectIdHash changes on every Build All and is not in ContentHash: put each Spot's World hash in the approval payload (or pin file ids).
+  - Newer-schema meta.json that fails to parse is treated as corrupt: read schemaVersion first.
+  - Journal saves do a synchronous Flush per change on every peer: debounce / background.
+  - Loadouts and pity streak reset on a map switch; quota calibration (earnings 1.14-1.38x over 7 days vs spec ~2.35x); journal level-1 sub-areas; Esc HandleBack test.
+
 ## 9. Live pages this round
 - Harbour build log (screenshots as the map is built): https://claude.ai/artifact/TmqCpXrHJBXRZBhZMKkMhW (db `shots`, `meta/status`; images uploaded as assets).
