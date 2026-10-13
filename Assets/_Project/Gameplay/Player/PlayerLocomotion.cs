@@ -350,14 +350,17 @@ namespace FishGame.Gameplay
 
         // Leaving the volume ends the climb. The applied climb velocity carries on (RV's flying -> falling keeps it), so a climber who tops
         // out keeps moving onto the deck; next frame is ordinary walking, falling or swimming. Topping out starts the re-entry grace.
+        // The carried speed is clamped to ClimbSpeed: _cc.velocity is a position delta, so a depenetration spike must not become a launch.
         private void EndLadderClimb(bool throughTop)
         {
             Vector3 v = Velocity;
+            float cx = v.x, cy = v.y, cz = v.z;
+            MovementMath.ClampClimbCarry(ref cx, ref cy, ref cz);
             IsClimbing = false;
             _ladder = null;
-            _vx = v.x;
-            _vz = v.z;
-            _vy = v.y;
+            _vx = cx;
+            _vz = cz;
+            _vy = cy;
             _kx = _kz = 0f;
             _jump = JumpAssist.Create();
             IsGrounded = false;

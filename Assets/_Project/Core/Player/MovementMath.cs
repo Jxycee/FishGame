@@ -149,6 +149,25 @@ namespace FishGame.Core
             z = (cosYaw * cosPitch * moveY - sinYaw * moveX) * scale;
         }
 
+        // R70: the velocity a climber keeps when the climb ends. The CharacterController's own velocity is position delta over time, so a
+        // depenetration or step-up on the last climb move can read above ClimbSpeed; clamping its length to ClimbSpeed (direction kept)
+        // stops that spike from launching the climber off the ladder top. Non-finite input gives zero.
+        public static void ClampClimbCarry(ref float vx, ref float vy, ref float vz)
+        {
+            if (!IsFinite(vx) || !IsFinite(vy) || !IsFinite(vz))
+            {
+                vx = vy = vz = 0f;
+                return;
+            }
+
+            float len2 = vx * vx + vy * vy + vz * vz;
+            if (len2 <= ClimbSpeed * ClimbSpeed) return;
+            float scale = ClimbSpeed / MathF.Sqrt(len2);
+            vx *= scale;
+            vy *= scale;
+            vz *= scale;
+        }
+
         private static bool IsFinite(float v)
         {
             return !float.IsNaN(v) && !float.IsInfinity(v);

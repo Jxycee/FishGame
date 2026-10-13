@@ -251,6 +251,8 @@ namespace FishGame.EditorTools
             Range(e, l, "reelSpeed", r.ReelSpeed, 0.3f, 2f);
             Range(e, l, "lineStrength", r.LineStrength, 0.5f, 2.5f);
             Range(e, l, "angleWindow", r.AngleWindow, 0.3f, 0.9f);
+            // PARKED (R72): angleWindow and PinnedLateral are unused by the baseline fight (no pinned state, no out-of-window strain). The rule and
+            // the range above stay so the parked data keeps a sane shape for the friendlier pass; neither feeds any fight maths today.
             Rule(e, l, r.AngleWindow < FishingConstants.PinnedLateral, "angleWindow < PinnedLateral");
             Range(e, l, "steerRate", r.SteerRate, 0.3f, 1.2f);
             Range(e, l, "relaxMult", r.RelaxMult, 0.5f, 1.5f);

@@ -542,7 +542,7 @@ namespace FishGame.Fishing
                 lateral = fs.Lateral;
                 tension = fs.Tension;
                 if (s == RodState.Hooked)
-                    flags |= RodControllerRules.HookedFlags(fs.Phase, fs.BurstDir, fs.Back, _lastFightInput.Reel, fight.Exhausted, fs.SnapTimer);   // FlagGrace: over the full bar
+                    flags |= RodControllerRules.HookedFlags(fs.Phase, fs.BurstDir, fs.Back, _lastFightInput.Reel, Machine.Spent, fs.SnapTimer);   // FlagGrace: over the full bar; Spent is the latched flag (M1)
             }
 
             if (Machine.Recalling) flags |= RodWireQuant.FlagRecall;

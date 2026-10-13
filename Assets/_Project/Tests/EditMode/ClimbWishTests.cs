@@ -119,5 +119,57 @@ namespace FishGame.Tests.EditMode
                 Assert.IsTrue(x == 0f && y == 0f && z == 0f, "moveY " + b);
             }
         }
+
+        // Catches (final review I4): the top-out carry copying a raw CharacterController velocity above ClimbSpeed (a depenetration spike
+        // would launch the climber). The speed never exceeds ClimbSpeed and the direction is kept.
+        [Test]
+        public void ClampClimbCarry_SpikeAboveClimbSpeed_IsClampedKeepingDirection()
+        {
+            float vx = 6f, vy = 8f, vz = 0f;   // length 10
+            MovementMath.ClampClimbCarry(ref vx, ref vy, ref vz);
+            float len = (float)System.Math.Sqrt(vx * vx + vy * vy + vz * vz);
+            Assert.AreEqual(MovementMath.ClimbSpeed, len, Tol, "clamped to exactly ClimbSpeed");
+            Assert.AreEqual(0.6f, vx / len, Tol, "direction kept (x)");
+            Assert.AreEqual(0.8f, vy / len, Tol, "direction kept (y)");
+
+            float a = -50f, b = 20f, c = 30f;
+            MovementMath.ClampClimbCarry(ref a, ref b, ref c);
+            Assert.LessOrEqual(a * a + b * b + c * c, MovementMath.ClimbSpeed * MovementMath.ClimbSpeed + Tol, "any spike stays within ClimbSpeed");
+        }
+
+        // Catches: the clamp touching an ordinary carry (the top-out carry test measures about 1.64 m/s flat) or a hang turning into motion.
+        [Test]
+        public void ClampClimbCarry_AtOrBelowClimbSpeed_IsUnchanged()
+        {
+            float vx = 1.2f, vy = -0.5f, vz = 1.1f;
+            MovementMath.ClampClimbCarry(ref vx, ref vy, ref vz);
+            Assert.AreEqual(1.2f, vx);
+            Assert.AreEqual(-0.5f, vy);
+            Assert.AreEqual(1.1f, vz);
+
+            float ax = MovementMath.ClimbSpeed, ay = 0f, az = 0f;
+            MovementMath.ClampClimbCarry(ref ax, ref ay, ref az);
+            Assert.AreEqual(MovementMath.ClimbSpeed, ax, "exactly ClimbSpeed is kept");
+
+            float zx = 0f, zy = 0f, zz = 0f;
+            MovementMath.ClampClimbCarry(ref zx, ref zy, ref zz);
+            Assert.IsTrue(zx == 0f && zy == 0f && zz == 0f, "a hang stays a hang");
+        }
+
+        // Catches: NaN or infinity reaching the locomotion velocity fields.
+        [Test]
+        public void ClampClimbCarry_NonFinite_IsZero()
+        {
+            float[] bad = { float.NaN, float.PositiveInfinity, float.NegativeInfinity };
+            foreach (float b in bad)
+            {
+                float x = b, y = 1f, z = 1f;
+                MovementMath.ClampClimbCarry(ref x, ref y, ref z);
+                Assert.IsTrue(x == 0f && y == 0f && z == 0f, "x " + b);
+                x = 1f; y = 1f; z = b;
+                MovementMath.ClampClimbCarry(ref x, ref y, ref z);
+                Assert.IsTrue(x == 0f && y == 0f && z == 0f, "z " + b);
+            }
+        }
     }
 }

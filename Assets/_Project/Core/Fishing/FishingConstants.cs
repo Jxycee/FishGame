@@ -12,6 +12,7 @@ namespace FishGame.Core
         public const float CleanClaimClockSlackSeconds = 2.0f;  // |owner fight seconds - host hooked-to-result seconds| bound (clean-catch claim)
         public const float PinnedLateral = 0.95f;            // parked (R72): only the angleWindow validator rule reads it
         public const float NearSnapHigh = 1.0f, NearSnapLow = 0.5f;   // over the full bar (R72)
+        public const float SpentClearBelowTire = 2f;         // the presentation "spent" latch sets at tire >= tireRunFull and clears only below tireRunFull - this (final review M1); the sim keeps its own unlatched Exhausted
         // R72 Rust fight baseline (spec 9.5): structural constants, not tuning.
         public const float PullWavePeak = 2f;                // p = clamp(triangle peaking at 2, floor, 2); Rust: PingPong(t, 2)
         public const float RustWavePeriod = 4f;              // Rust's wave period; used when a profile's WavePeriod is not > 0

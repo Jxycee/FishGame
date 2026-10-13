@@ -624,7 +624,8 @@ namespace FishGame.Tests.PlayMode
                 yield return PlayModeHarness.WaitFrames(5, 0.4f);
                 Assert.That(ps.particleCount, Is.EqualTo(0), "no splashes while the fish simply pulls");
 
-                // Side run: polled, 20 per second, while Hooked + FlagBurst without FlagDive; the lateral swings.
+                // Side run: polled, 20 per second, while Hooked + FlagBurst; the lateral swings. A back pull (FlagDive) shows the same side
+                // column plus the bobber plunge (spec 9.11), so FlagDive does not switch the splash off.
                 ps.Clear();
                 int maxSide = 0;
                 double until = Time.realtimeSinceStartupAsDouble + 0.6;

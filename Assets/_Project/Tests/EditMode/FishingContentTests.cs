@@ -171,7 +171,7 @@ namespace FishGame.Tests.EditMode
                 R(v, l + " reelSpeed", r.ReelSpeed, 0.3f, 2f);
                 R(v, l + " lineStrength", r.LineStrength, 0.5f, 2.5f);
                 R(v, l + " angleWindow", r.AngleWindow, 0.3f, 0.9f);
-                Rule(v, l, r.AngleWindow < FishingConstants.PinnedLateral, "angleWindow < PinnedLateral");
+                Rule(v, l, r.AngleWindow < FishingConstants.PinnedLateral, "angleWindow < PinnedLateral");   // parked (R72), mirrors the validator
                 R(v, l + " steerRate", r.SteerRate, 0.3f, 1.2f);
                 R(v, l + " relaxMult", r.RelaxMult, 0.5f, 1.5f);
                 R(v, l + " shopCost", r.ShopCost, 0f, 1000000f);

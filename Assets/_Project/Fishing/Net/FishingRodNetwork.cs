@@ -245,12 +245,16 @@ namespace FishGame.Fishing
 
             if (cs == RodState.Hooked)
             {
-                RodCue run = RunCue(prev.Flags, cur.Flags);
-                if (run != RodCue.None) RaiseLocalCue(run, 0);
-
+                // FlagExhausted on the wire is the owner's latched spent state (final review M1), so it rises once per spent spell. While it
+                // is set the owner raises no run cues (a spent fish's zero-length runs), so the remote raises none either.
                 bool wasExhausted = (prev.Flags & RodWireQuant.FlagExhausted) != 0;
                 bool isExhausted = (cur.Flags & RodWireQuant.FlagExhausted) != 0;
                 if (!wasExhausted && isExhausted) RaiseLocalCue(RodCue.Exhausted, 0);
+                else if (!isExhausted)
+                {
+                    RodCue run = RunCue(prev.Flags, cur.Flags);
+                    if (run != RodCue.None) RaiseLocalCue(run, 0);
+                }
             }
         }
 

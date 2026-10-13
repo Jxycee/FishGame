@@ -360,7 +360,7 @@ namespace FishGame.Tests.EditMode
                     AssertContains(Check(set), "rod rod_handmade: castMaxDist > castMinDist");
                     break;
                 case "angleWindow":
-                    SetNum(set.ById["rod_handmade"], "angleWindow", 0.97);   // not below PinnedLateral 0.95 (and outside [0.3, 0.9])
+                    SetNum(set.ById["rod_handmade"], "angleWindow", 0.97);   // not below PinnedLateral 0.95 (and outside [0.3, 0.9]); the field is parked (R72) but its data rule is still checked
                     AssertContains(Check(set), "rod rod_handmade: angleWindow < PinnedLateral");
                     break;
                 case "weightMax":

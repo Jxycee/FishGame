@@ -261,6 +261,7 @@ namespace FishGame.Tests.PlayMode
             float flatSpeed = new Vector2(laterPos.x - exitPos.x, laterPos.z - exitPos.z).magnitude / (Time.time - exitTime);
             TestContext.WriteLine($"top-out release: flat speed over the 0.03 s after the exit {flatSpeed:F2} m/s");
             Assert.That(flatSpeed, Is.GreaterThan(1f), "the climb velocity carried out of the box (input already cleared)");
+            Assert.That(flatSpeed, Is.LessThanOrEqualTo(MovementMath.ClimbSpeed + 0.05f), "the carry never exceeds ClimbSpeed (final review I4)");
 
             yield return PlayModeHarness.WaitUntil(() => OnDeck(rig), 1f, "never landed on the deck from the carried velocity (at " + rig.Player.transform.position + ")");
             TestContext.WriteLine($"top-out release: on the deck {Time.time - exitTime:F2} s after the exit");

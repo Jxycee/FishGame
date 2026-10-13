@@ -1304,5 +1304,85 @@ namespace FishGame.Tests.EditMode
             Assert.That(CueCount(e, RodCue.Calm), Is.EqualTo(0), "no Calm");
             Assert.That(CueCount(e, RodCue.Exhausted), Is.EqualTo(0), "the Exhausted cue is the rising edge only; the fish was already spent");
         }
+
+        // Final review M1: the spent latch sets at tire 20 (once) and the Exhausted cue goes with it.
+        [Test]
+        public void RodStateMachine_Spent_CrossingTwentySetsTheLatchAndCuesOnce()
+        {
+            RodStateMachine m = New();
+            ToHooked(m);
+            Assert.That(m.Spent, Is.False, "a fresh hook is not spent");
+            var s = new FightState { LineLength = 10f, Lateral = 0.3f, Tire = 19.995f, Phase = FightPhase.Calm, PhaseTimer = 5f };
+            m.Fight.ForceState(in s);
+            m.TickFight(In(-1f, false), Fr());
+            Assert.That(m.Spent, Is.True);
+            Assert.That(CueCount(Drain(m), RodCue.Exhausted), Is.EqualTo(1), "the rising edge cues once");
+            for (int i = 0; i < 10; i++) m.TickFight(In(-1f, false), Fr());
+            Assert.That(m.Spent, Is.True);
+            Assert.That(CueCount(Drain(m), RodCue.Exhausted), Is.EqualTo(0), "no second cue while it stays spent");
+        }
+
+        // Final review M1: tire has no hysteresis in the sim (it falls 0.1/s with no steer), so a fish at 19 is "not exhausted" to FightSim
+        // but still spent to the presentation: no flicker, no replayed cue. Only below 18 does it clear.
+        [Test]
+        public void RodStateMachine_Spent_DipToNineteenKeepsTheLatchAndReplaysNoCue_BelowEighteenClears()
+        {
+            RodStateMachine m = New();
+            ToHooked(m);
+            m.Fight.ForceState(new FightState { LineLength = 10f, Tire = 20.5f, Phase = FightPhase.Calm, PhaseTimer = 5f });
+            m.TickFight(In(0f, false), Fr());
+            Assert.That(m.Spent, Is.True);
+            Drain(m);
+
+            m.Fight.ForceState(new FightState { LineLength = 10f, Tire = 19f, Phase = FightPhase.Calm, PhaseTimer = 5f });
+            Assert.That(m.Fight.Exhausted, Is.False, "precondition: the raw sim state no longer reads exhausted");
+            m.TickFight(In(0f, false), Fr());
+            Assert.That(m.Spent, Is.True, "a dip to 19 does not clear the latch");
+            Assert.That(CueCount(Drain(m), RodCue.Exhausted), Is.EqualTo(0), "and does not replay the cue");
+
+            m.Fight.ForceState(new FightState { LineLength = 10f, Tire = 18.05f, Phase = FightPhase.Calm, PhaseTimer = 5f });
+            m.TickFight(In(0f, false), Fr());
+            Assert.That(m.Spent, Is.True, "18.05 is still not below 18");
+
+            m.Fight.ForceState(new FightState { LineLength = 10f, Tire = 17.9f, Phase = FightPhase.Calm, PhaseTimer = 5f });
+            m.TickFight(In(0f, false), Fr());
+            Assert.That(m.Spent, Is.False, "below 18 clears it");
+            Drain(m);
+
+            m.Fight.ForceState(new FightState { LineLength = 10f, Lateral = 0.3f, Tire = 19.995f, Phase = FightPhase.Calm, PhaseTimer = 5f });
+            m.TickFight(In(-1f, false), Fr());
+            Assert.That(m.Spent, Is.True, "a new spell sets it again");
+            Assert.That(CueCount(Drain(m), RodCue.Exhausted), Is.EqualTo(1), "and cues again, once");
+        }
+
+        // Final review M1: a fish at tire 19 starts real but near-zero runs (tire01 0.95). While the latch holds they raise no SideRun or Dive;
+        // once it clears (tire 17.9) the same setup raises a run cue again.
+        [Test]
+        public void RodStateMachine_Spent_NearZeroRunsWhileLatchedRaiseNoRunCues()
+        {
+            RodStateMachine m = New();
+            ToHooked(m);
+            m.Fight.ForceState(new FightState { LineLength = 10f, Tire = 20.5f, Phase = FightPhase.Calm, PhaseTimer = 5f });
+            m.TickFight(In(0f, false), Fr());
+            Assert.That(m.Spent, Is.True);
+            Drain(m);
+
+            for (int i = 0; i < 40; i++)
+            {
+                m.Fight.ForceState(new FightState { LineLength = 10f, Tire = 19f, Phase = FightPhase.Calm, PhaseTimer = 0f });
+                m.TickFight(In(0f, false), Fr());
+                Assert.That(m.Spent, Is.True, "still latched, run " + i);
+            }
+            List<RodEffect> e = Drain(m);
+            Assert.That(CueCount(e, RodCue.SideRun), Is.EqualTo(0), "no SideRun");
+            Assert.That(CueCount(e, RodCue.Dive), Is.EqualTo(0), "no Dive");
+            Assert.That(CueCount(e, RodCue.Calm), Is.EqualTo(0), "no Calm");
+            Assert.That(CueCount(e, RodCue.Exhausted), Is.EqualTo(0), "no Exhausted");
+
+            m.Fight.ForceState(new FightState { LineLength = 10f, Tire = 17.9f, Phase = FightPhase.Calm, PhaseTimer = 0f });
+            m.TickFight(In(0f, false), Fr());
+            e = Drain(m);
+            Assert.That(CueCount(e, RodCue.SideRun) + CueCount(e, RodCue.Dive), Is.EqualTo(1), "unlatched, the next run cues again");
+        }
     }
 }

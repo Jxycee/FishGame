@@ -38,6 +38,12 @@ namespace FishGame.Core
         public bool Assist { get; set; }
         public int IgnoredEventCount { get; private set; }
 
+        // Presentation latch for a spent fish (final review M1). FightSim.Exhausted is tire >= tireRunFull with no hysteresis, and tire falls
+        // 0.1/s with no steer, so a fish hovering around 20 flickered the Exhausted cue, the bobber tilt/roll and FlagExhausted. This sets
+        // when tire reaches tireRunFull and clears only when tire drops below tireRunFull - SpentClearBelowTire. It never feeds back into
+        // FightSim (strain, tire, timing, reel and the draw order are untouched). Flags, cues and the remote view read this, not Exhausted.
+        public bool Spent { get; private set; }
+
         public void SetRod(in RodStats rod)
         {
             if (State != RodState.Idle) { IgnoredEventCount++; return; }
@@ -136,6 +142,7 @@ namespace FishGame.Core
         private void Hook(in RodFrame f)
         {
             Enter(RodState.Hooked);
+            Spent = false;
             Fight = Roll.Catch.IsJunk
                 ? FightSim.ForJunk(_rod, _t, Roll.FightSeed, f.TipToBobber)
                 : new FightSim(_profile, _rod, _t, Roll.WeightT, Roll.FightSeed, f.TipToBobber, _castAssist, Roll.Pity);
@@ -151,14 +158,16 @@ namespace FishGame.Core
             if (State != RodState.Hooked || Fight == null) { IgnoredEventCount++; return; }
             FightPhase phase = Fight.State.Phase;
             sbyte dir = Fight.State.BurstDir;
-            bool wasExhausted = Fight.Exhausted;
+            UpdateSpent();                                                                 // sync the latch with the state the sim holds now (a no-op in play; a forced test state otherwise)
+            bool wasSpent = Spent;
             FightOutcome o = Fight.Tick(input);
+            UpdateSpent();
             if (o == FightOutcome.None)
             {
                 if (Fight.IsJunk) return;
                 FightPhase now = Fight.State.Phase;
-                if (Fight.Exhausted && !wasExhausted) Cue(RodCue.Exhausted);
-                else if (Fight.Exhausted) return;                                          // a spent fish's zero-length runs make no splash
+                if (Spent && !wasSpent) Cue(RodCue.Exhausted);
+                else if (Spent) return;                                                    // a spent fish's zero-length runs make no splash
                 else if (now == FightPhase.Calm && phase == FightPhase.Burst) Cue(RodCue.Calm);
                 else if (now == FightPhase.Burst && phase == FightPhase.Calm)
                     Cue(Fight.State.Back ? RodCue.Dive : RodCue.SideRun);                 // a new run: Dive when it pulls back
@@ -180,6 +189,14 @@ namespace FishGame.Core
                 Cue(RodCue.Snapped);
             }
             else EndEscaped(Fight.State.Reason);                                       // rows: timeout (fish), slack (junk)
+        }
+
+        private void UpdateSpent()
+        {
+            if (Fight.IsJunk) return;
+            float tire = Fight.State.Tire;
+            if (!Spent) { if (Fight.Exhausted) Spent = true; }
+            else if (tire < _t.TireRunFull - FishingConstants.SpentClearBelowTire) Spent = false;
         }
 
         private void TickTerminal()
@@ -280,7 +297,7 @@ namespace FishGame.Core
         private void ResetCast()
         {
             HasResult = false; Roll = default; BiteTimer = 0f; BiteWait = 0f; Fight = null;
-            Outcome = FightOutcome.None; Reason = EscapeReason.None; Recalling = false;
+            Outcome = FightOutcome.None; Reason = EscapeReason.None; Recalling = false; Spent = false;
             _flightOver = false; _nibblesDone = 0; _commitReceived = false;
         }
 
