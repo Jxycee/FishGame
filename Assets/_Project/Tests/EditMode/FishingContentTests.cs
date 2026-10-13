@@ -19,8 +19,17 @@ namespace FishGame.Tests.EditMode
         // Values T15 retuned away from the spec tables. Key "<category>.<id>.<field>" (profile.thrasher.calmMin, rod.rod_twig.lineStrength,
         // bait.bait_worm.rating, species.carp.baseValue, junk.old_boot.valueCoins) or "tuning.<field>" (tuning.relaxRate). Value = the tuned seed.
         // Empty since R72 (the three pre-R72 entries belonged to fields F7 removed); T15 may edit only this map (ruling D-Q2).
+        // User playtest 2026-10-13 (F10, spec 9.12 note): Rhythm-bot fights 21-39% shorter on four profiles with the strain path untouched
+        // (Greedy snap times identical, Reckless pins intact). Value = the shipped seed.
         static readonly Dictionary<string, float> TunedDeviations = new Dictionary<string, float>
         {
+            { "tuning.backMoveSpeed", 1.0f },        // was 1.3
+            { "tuning.tireSteerRate", 1.2f },        // was 0.8
+            { "tuning.tireRunFull", 12f },           // was 20
+            { "profile.darter.reelInMult", 1.3f },   // was 1.0
+            { "profile.bulldog.reelInMult", 1.0f },  // was 0.9
+            { "profile.thrasher.reelInMult", 1.15f },// was 1.0
+            { "profile.runner.reelInMult", 0.95f },  // was 0.9
         };
 
         static float E(string key, float spec)
@@ -161,6 +170,11 @@ namespace FishGame.Tests.EditMode
             R(v, "tuning backPullMargin", t.BackPullMargin, 0f, 10f);
             R(v, "tuning fightTimeout", t.FightTimeout, 30f, 300f);
             Rule(v, "tuning", t.MaxFightTime > t.FightTimeout, "maxFightTime > fightTimeout");
+            R(v, "tuning idleEscapeTime", t.IdleEscapeTime, 10f, 120f);
+            Rule(v, "tuning", t.IdleEscapeTime < t.FightTimeout, "idleEscapeTime < fightTimeout");
+            R(v, "tuning reelOpenMult", t.ReelOpenMult, 1f, 5f);
+            R(v, "tuning reelOpenSeconds", t.ReelOpenSeconds, 0.2f, 3f);
+            Rule(v, "tuning", t.ReelOpenMult <= t.TireReelMaxMult, "reelOpenMult <= tireReelMaxMult");
 
             foreach (RodDef r in reg.Rods)
             {
@@ -514,6 +528,10 @@ namespace FishGame.Tests.EditMode
             Tn("tireReelMaxMult", 3f, t.TireReelMaxMult);
             Tn("backPullMargin", 2f, t.BackPullMargin);
             Tn("fightTimeout", 120f, t.FightTimeout);
+            // User playtest 2026-10-13 (spec 9.12 note): F7 idle escape, F1 opening reel surge.
+            Tn("idleEscapeTime", 30f, t.IdleEscapeTime);
+            Tn("reelOpenMult", 2.5f, t.ReelOpenMult);
+            Tn("reelOpenSeconds", 0.8f, t.ReelOpenSeconds);
 
             Assert.AreEqual(4, FishingSeedData.Rods.Count, "rod count");
             // R72: reelSpeed and steerRate follow Rust's rod (Handmade 0.6 / 0.8) with the pre-R72 ratios between rods.

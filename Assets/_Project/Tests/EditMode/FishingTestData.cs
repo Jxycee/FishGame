@@ -29,6 +29,9 @@ namespace FishGame.Tests.EditMode
             StrainCounterSteer = 0.8f, StrainOtherSteer = 0.5f, SideMoveSpeed = 1.2f, BackMoveSpeed = 1.3f,
             TireSteerRate = 0.8f, TireCounterRate = 1.25f, TireDecayRate = 0.1f, TireRunFull = 20f, TireReelFull = 5f,
             TireReelMaxMult = 3f, BackPullMargin = 2f, FightTimeout = 120f,
+            // User playtest 2026-10-13: the shipped 30 s idle escape. The opening reel surge is OFF here (ReelOpenMult 1) so the Rust hand checks
+            // (FightSimTests, RodStateMachineTests) keep their exact reel maths; FightOpeningAndIdleTests turns it on (Surge()).
+            IdleEscapeTime = 30f, ReelOpenMult = 1f, ReelOpenSeconds = 1.0f,
         };
 
         static RodStats Rod(byte tier, float cast, float reel, float strength, float window, float steer, float relax) =>

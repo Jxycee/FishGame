@@ -663,6 +663,37 @@ namespace FishGame.Tests.EditMode
             Assert.That(res.Reason, Is.EqualTo(EscapeReason.ThrewHook));
         }
 
+        // User playtest 2026-10-13 (F7): a hooked FISH with no input for IdleEscapeTime (30 s) throws the hook. Reason ThrewHook (the host
+        // already accepts it on a hooked cast; Timeout would be refused before 118 s). Reported as a normal Escaped result.
+        [Test]
+        public void RodStateMachine_Hooked_FishIdleThirtySeconds_EscapesThrewHook()
+        {
+            RodStateMachine m = New();
+            ToHooked(m);
+            var s = new FightState { LineLength = 10f, Phase = FightPhase.Calm, PhaseTimer = 5f, IdleTimer = 29.99f };
+            m.Fight.ForceState(in s);
+            m.TickFight(In(0f, false), Fr());
+            Assert.That(m.State, Is.EqualTo(RodState.Escaped));
+            Assert.That(m.Reason, Is.EqualTo(EscapeReason.ThrewHook));
+            List<RodEffect> e = Drain(m);
+            RodEffect res = First(e, RodEffectKind.SendResult);
+            Assert.That(res.Outcome, Is.EqualTo(FightOutcome.Escaped));
+            Assert.That(res.Reason, Is.EqualTo(EscapeReason.ThrewHook));
+            Assert.That(HasCue(e, RodCue.Escaped), Is.True);
+        }
+
+        [Test]
+        public void RodStateMachine_Hooked_FishInputAtTwentyNineSeconds_KeepsTheFishOn()
+        {
+            RodStateMachine m = New();
+            ToHooked(m);
+            var s = new FightState { LineLength = 10f, Phase = FightPhase.Calm, PhaseTimer = 5f, IdleTimer = 29.99f };
+            m.Fight.ForceState(in s);
+            m.TickFight(In(0f, true), Fr());
+            Assert.That(m.State, Is.EqualTo(RodState.Hooked));
+            Assert.That(m.Fight.State.IdleTimer, Is.EqualTo(0f));
+        }
+
         [Test]
         public void RodStateMachine_Hooked_DisplacedBeyondLeash_EscapesDropped()
         {
@@ -771,10 +802,10 @@ namespace FishGame.Tests.EditMode
             Assert.That(HasCue(e, RodCue.Recall), Is.True);
             Assert.That(Count(e, RodEffectKind.SendResult), Is.EqualTo(0));
             Assert.That(Count(e, RodEffectKind.SendCancel), Is.EqualTo(0));
-            m.Tick(1.4f, Fr());
-            Assert.That(m.State, Is.EqualTo(RodState.Escaped), "still the beat at 1.4 s");
+            m.Tick(0.4f, Fr());
+            Assert.That(m.State, Is.EqualTo(RodState.Escaped), "still the beat at 0.4 s");
             m.Tick(0.2f, Fr());
-            Assert.That(m.State, Is.EqualTo(RodState.Idle), "Idle at 1.6 s");
+            Assert.That(m.State, Is.EqualTo(RodState.Idle), "Idle at 0.6 s");
         }
 
         [Test]
@@ -827,10 +858,91 @@ namespace FishGame.Tests.EditMode
             RodStateMachine m = New();
             ToLanded(m);
             m.OnCommit(1u, true, FightOutcome.Landed, EscapeReason.None);
-            m.Tick(1.0f, Fr());
-            Assert.That(m.State, Is.EqualTo(RodState.Landed), "at 1.0 s");
-            m.Tick(0.6f, Fr());
-            Assert.That(m.State, Is.EqualTo(RodState.Idle), "at 1.6 s");
+            m.Tick(0.5f, Fr(sh: false));
+            Assert.That(m.State, Is.EqualTo(RodState.Landed), "at 0.5 s");
+            m.Tick(0.2f, Fr(sh: false));
+            Assert.That(m.State, Is.EqualTo(RodState.Idle), "at 0.7 s (the 0.6 s beat)");
+        }
+
+        // User playtest 2026-10-13 (S10): the terminal beat is 0.6 s (was 1.5 s), shared by Landed, Snapped and Escaped, and a held Secondary
+        // carries from the beat straight into Readying, so a player who pressed aim during the beat is not left waiting for a fresh press.
+        [Test]
+        public void RodStateMachine_Terminal_BeatIsSixTenthsOfASecond_ForEveryTerminalState()
+        {
+            Assert.That(FishingConstants.FeedbackBeatSeconds, Is.EqualTo(0.6f));
+            foreach (RodState end in new[] { RodState.Landed, RodState.Snapped })
+            {
+                RodStateMachine m = New();
+                if (end == RodState.Landed) ToLanded(m); else ToSnapped(m);
+                m.OnCommit(1u, true, end == RodState.Landed ? FightOutcome.Landed : FightOutcome.Snapped, EscapeReason.None);
+                m.Tick(0.59f, Fr(sh: false));
+                Assert.That(m.State, Is.EqualTo(end), end + " at 0.59 s");
+                m.Tick(0.02f, Fr(sh: false));
+                Assert.That(m.State, Is.EqualTo(RodState.Idle), end + " at 0.61 s");
+            }
+        }
+
+        [Test]
+        public void RodStateMachine_Terminal_SecondaryHeldAtBeatEnd_GoesStraightToReadying()
+        {
+            RodStateMachine m = New();
+            ToLanded(m);
+            m.OnCommit(1u, true, FightOutcome.Landed, EscapeReason.None);
+            m.Tick(0.5f, Fr(sh: true));
+            Assert.That(m.State, Is.EqualTo(RodState.Landed), "the beat still runs");
+            m.Tick(0.11f, Fr(sh: true));
+            Assert.That(m.State, Is.EqualTo(RodState.Idle), "Idle for one tick (the controller's Idle bookkeeping runs on entering it)");
+            m.Tick(0.02f, Fr(sh: true));
+            Assert.That(m.State, Is.EqualTo(RodState.Readying), "aim held through the beat: no fresh press needed");
+            m.Tick(0.25f, Fr(sh: true));
+            Assert.That(m.State, Is.EqualTo(RodState.Ready));
+        }
+
+        [Test]
+        public void RodStateMachine_Terminal_SecondaryNotHeld_ReturnsToPlainIdle()
+        {
+            RodStateMachine m = New();
+            ToLanded(m);
+            m.OnCommit(1u, true, FightOutcome.Landed, EscapeReason.None);
+            m.Tick(0.7f, Fr(sh: false));
+            Assert.That(m.State, Is.EqualTo(RodState.Idle));
+            m.Tick(0.5f, Fr(sh: false));
+            Assert.That(m.State, Is.EqualTo(RodState.Idle), "nothing arms the rod by itself");
+        }
+
+        // The measured S10 timeline: Landed at t = 0, the commit already in, aim held, then a press and the shortest valid charge (0.1 s).
+        // 0.6 beat + 0.25 ready hold + 0.1 charge = a cast released about 1.0 s after the catch (it was 1.85 s at best, 3+ s in practice).
+        [Test]
+        public void RodStateMachine_Recast_CanBeReleasedWithinAboutOneSecondOfLanding()
+        {
+            RodStateMachine m = New();
+            ToLanded(m);
+            m.OnCommit(1u, true, FightOutcome.Landed, EscapeReason.None);
+            float t = 0f;
+            const float tick = 0.02f;
+            while (m.State != RodState.Ready && t < 2f) { m.Tick(tick, Fr(sh: true)); t += tick; }
+            Assert.That(m.State, Is.EqualTo(RodState.Ready));
+            Assert.That(t, Is.LessThanOrEqualTo(0.95f), "ready to cast");
+            m.Tick(tick, Fr(sh: true, pp: true, ph: true)); t += tick;
+            Assert.That(m.State, Is.EqualTo(RodState.Charging));
+            for (int i = 0; i < 6; i++) { m.Tick(tick, Fr(sh: true, ph: true)); t += tick; }   // 0.12 s held >= MinChargeNorm
+            m.Tick(tick, Fr(sh: true, pr: true)); t += tick;
+            Assert.That(m.State, Is.EqualTo(RodState.Casting));
+            Assert.That(t, Is.LessThanOrEqualTo(1.2f), "cast released within about a second of the landing");
+        }
+
+        // The host-validation fallback is untouched: no commit still waits for CommitTimeout (3 s).
+        [Test]
+        public void RodStateMachine_Terminal_NoCommit_HeldSecondaryDoesNotSkipTheCommitWait()
+        {
+            RodStateMachine m = New();
+            ToLanded(m);
+            m.Tick(1.0f, Fr(sh: true));
+            Assert.That(m.State, Is.EqualTo(RodState.Landed), "no commit yet: still waiting");
+            m.Tick(2.1f, Fr(sh: true));
+            Assert.That(m.State, Is.EqualTo(RodState.Idle), "CommitTimeout 3 s");
+            m.Tick(0.02f, Fr(sh: true));
+            Assert.That(m.State, Is.EqualTo(RodState.Readying), "then the held aim carries over");
         }
 
         [Test]
@@ -864,10 +976,10 @@ namespace FishGame.Tests.EditMode
             Assert.That(HasCue(e, RodCue.Recall), Is.True);
             Assert.That(Count(e, RodEffectKind.SendResult), Is.EqualTo(0));
             Assert.That(Count(e, RodEffectKind.SendCancel), Is.EqualTo(0));
-            m.Tick(1.4f, Fr());
-            Assert.That(m.State, Is.EqualTo(RodState.Escaped), "still the beat at 1.4 s");
+            m.Tick(0.4f, Fr());
+            Assert.That(m.State, Is.EqualTo(RodState.Escaped), "still the beat at 0.4 s");
             m.Tick(0.2f, Fr());
-            Assert.That(m.State, Is.EqualTo(RodState.Idle), "Idle at 1.6 s, commit already received");
+            Assert.That(m.State, Is.EqualTo(RodState.Idle), "Idle at 0.6 s, commit already received");
             Assert.That(m.HasResult, Is.False);
 
             // a late CastResult for the recalled cast is dropped (state is Idle by now), not applied

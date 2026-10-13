@@ -27,5 +27,5 @@ MonoBehaviour:
   lateralJitter: 0
   strainMod: 1.25
   moveMult: 1.25
-  reelInMult: 0.9
+  reelInMult: 1
   wavePeriod: 4

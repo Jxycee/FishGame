@@ -56,7 +56,7 @@ namespace FishGame.Tests.EditMode
         {
             return a.LineLength == b.LineLength && a.Lateral == b.Lateral && a.Strain == b.Strain && a.Tension == b.Tension && a.Tire == b.Tire
                 && a.Phase == b.Phase && a.PhaseTimer == b.PhaseTimer && a.BurstDir == b.BurstDir && a.Back == b.Back
-                && a.SnapTimer == b.SnapTimer && a.SlackTimer == b.SlackTimer && a.Elapsed == b.Elapsed
+                && a.SnapTimer == b.SnapTimer && a.SlackTimer == b.SlackTimer && a.IdleTimer == b.IdleTimer && a.Elapsed == b.Elapsed
                 && a.NearSnapRecoveries == b.NearSnapRecoveries && a.MaxTension == b.MaxTension
                 && a.Outcome == b.Outcome && a.Reason == b.Reason;
         }
@@ -574,12 +574,16 @@ namespace FishGame.Tests.EditMode
 
         // ---- 21-24: timeout, priority, weight, determinism ----------------------------------------------------------------------------
 
-        // Catches: no fish timeout, a timeout at the old 12 s slack or 240 s host fallback, a ThrewHook reason, a timeout that needs input.
+        // Catches: no fish timeout, a timeout at the old 12 s slack or 240 s host fallback, a ThrewHook reason.
+        // User playtest 2026-10-13 (F7): an UNATTENDED fish now throws the hook at 30 s (FightOpeningAndIdleTests), so the 120 s cap is reached by a
+        // player who touches the reel every 25 s; Timeout stays the overall cap.
         [Test]
         public void FightSim_Timeout_EscapesAtOneTwentySeconds()
         {
             FightSim s = Make(P(Medium), line: 12f, seed: 7);
-            int end = RunUntilEnd(s, In(0f, false), 7000);
+            int end = -1;
+            for (int i = 1; i <= 7000 && end < 0; i++)
+                if (s.Tick(In(0f, i % 1250 == 0)) != FightOutcome.None) end = i;
             Assert.That(end, Is.EqualTo(6000).Within(1));
             Assert.That(s.State.Outcome, Is.EqualTo(FightOutcome.Escaped));
             Assert.That(s.State.Reason, Is.EqualTo(EscapeReason.Timeout));

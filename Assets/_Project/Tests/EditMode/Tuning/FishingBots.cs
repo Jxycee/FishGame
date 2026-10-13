@@ -2,6 +2,9 @@
 // player makes (10-14 m from the rod tip, decision 4) with game-like weights, print distributions and signature stats, and assert the baseline
 // targets. Bots draw nothing random: seeds are a fixed formula. A missed target is reported with its numbers; it is never retuned away from
 // Rust's values (add a TuningItems entry instead and the controller decides).
+// User playtest 2026-10-13 (F10, spec 9.12 note) is the one approved retune: fights were too long for 15 minute days, so backMoveSpeed, tireSteerRate,
+// tireRunFull and four profiles' reelInMult moved (RhythmBands below carry the new medians). The strain path (bar, snap, gains, drain, scale) did not
+// move: Greedy snap times and the Reckless pins are the "same difficulty" guard and are unchanged.
 // BotKind, FightRecord, SeedFor, CastFor and RunFight are internal so M3 tests in this assembly can run the Rhythm bot (contract M3-D60, CR-1).
 // This file must not reference FishingSeedData: data comes from AssetDatabase.LoadAssetAtPath + ToCore().
 using System;
@@ -459,14 +462,17 @@ namespace FishGame.Tests.EditMode
             t.Complete();
         }
 
+        // User playtest 2026-10-13 (F10): re-pinned around the shortened medians (Handmade / Twig). Before: steady 14.0 / 14.4, darter 19.1 / 21.6,
+        // thrasher 17.8 / 21.7, runner 26.2 / 30.5, bulldog 30.9 / 33.7. After: steady 13.7 / 13.9, darter 13.2 / 15.5, thrasher 13.8 / 17.2,
+        // runner ~20.2 / ~22, bulldog 19.3 / 20.5. Bands are about 0.75x to 1.3x the median, the same width logic as the R72 bands.
         static readonly Dictionary<string, double[]> RhythmBands = new Dictionary<string, double[]>
         {
-            { "steady|rod_handmade", new[] { 10.0, 20.0 } }, { "darter|rod_handmade", new[] { 13.0, 27.0 } },
-            { "thrasher|rod_handmade", new[] { 13.0, 27.0 } }, { "runner|rod_handmade", new[] { 20.0, 41.0 } },
-            { "bulldog|rod_handmade", new[] { 23.0, 44.0 } },
-            { "steady|rod_twig", new[] { 10.0, 20.0 } }, { "darter|rod_twig", new[] { 15.0, 30.0 } },
-            { "thrasher|rod_twig", new[] { 16.0, 31.0 } }, { "runner|rod_twig", new[] { 22.0, 44.0 } },
-            { "bulldog|rod_twig", new[] { 23.0, 45.0 } },
+            { "steady|rod_handmade", new[] { 10.0, 18.0 } }, { "darter|rod_handmade", new[] { 10.0, 17.5 } },
+            { "thrasher|rod_handmade", new[] { 10.0, 18.0 } }, { "runner|rod_handmade", new[] { 15.0, 27.0 } },
+            { "bulldog|rod_handmade", new[] { 14.0, 25.0 } },
+            { "steady|rod_twig", new[] { 10.0, 18.0 } }, { "darter|rod_twig", new[] { 11.5, 20.0 } },
+            { "thrasher|rod_twig", new[] { 12.5, 22.0 } }, { "runner|rod_twig", new[] { 16.5, 29.0 } },
+            { "bulldog|rod_twig", new[] { 15.0, 26.5 } },
         };
 
         // Catches: the baseline being unfishable for a player who pumps correctly, or fight lengths drifting out of the band around the model.

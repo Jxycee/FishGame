@@ -222,6 +222,9 @@ namespace FishGame.Tests.EditMode
             ("tuning", "", "tireRunFull", 1f, 100f, false), ("tuning", "", "tireReelFull", 0.5f, 50f, false),
             ("tuning", "", "tireReelMaxMult", 1f, 5f, false), ("tuning", "", "backPullMargin", 0f, 10f, false),
             ("tuning", "", "fightTimeout", 30f, 300f, false),
+            // User playtest 2026-10-13: idle escape and opening reel surge.
+            ("tuning", "", "idleEscapeTime", 10f, 120f, false), ("tuning", "", "reelOpenMult", 1f, 5f, false),
+            ("tuning", "", "reelOpenSeconds", 0.2f, 3f, false),
 
             ("rod", "rod_handmade", "tier", 0f, 3f, true), ("rod", "rod_handmade", "castMaxDist", 8f, 40f, false),
             ("rod", "rod_handmade", "reelSpeed", 0.3f, 2f, false), ("rod", "rod_handmade", "lineStrength", 0.5f, 2.5f, false),
@@ -312,6 +315,8 @@ namespace FishGame.Tests.EditMode
         [TestCase("strainScale")]
         [TestCase("strainSnap")]
         [TestCase("fightTimeout")]
+        [TestCase("idleEscape")]
+        [TestCase("reelOpen")]
         [TestCase("castMaxDist")]
         [TestCase("angleWindow")]
         [TestCase("weightMax")]
@@ -356,6 +361,20 @@ namespace FishGame.Tests.EditMode
                     CollectionAssert.IsEmpty(Check(set), "120 < 180 passes");
                     SetNum(set.Tuning, "fightTimeout", 180);
                     AssertContains(Check(set), "tuning: maxFightTime > fightTimeout");
+                    break;
+                case "idleEscape":
+                    SetNum(set.Tuning, "fightTimeout", 100);
+                    SetNum(set.Tuning, "idleEscapeTime", 60);
+                    CollectionAssert.IsEmpty(Check(set), "60 < 100 passes");
+                    SetNum(set.Tuning, "idleEscapeTime", 100);
+                    AssertContains(Check(set), "tuning: idleEscapeTime < fightTimeout");
+                    break;
+                case "reelOpen":
+                    SetNum(set.Tuning, "tireReelMaxMult", 3);
+                    SetNum(set.Tuning, "reelOpenMult", 3);
+                    CollectionAssert.IsEmpty(Check(set), "surge == tire max passes (the host Landed floor still bounds the reel)");
+                    SetNum(set.Tuning, "reelOpenMult", 3.5);
+                    AssertContains(Check(set), "tuning: reelOpenMult <= tireReelMaxMult");
                     break;
                 case "castMaxDist":
                     SetNum(set.ById["rod_handmade"], "castMaxDist", 2);   // below castMinDist 2.5 (and outside [8, 40])
