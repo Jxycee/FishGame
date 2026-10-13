@@ -257,11 +257,16 @@ namespace FishGame.EditorTools
         // Spring blossom specks in canopy space (the round canopy's unit sphere): BlossomCount small flattened blobs on the canopy surface over its
         // upper three quarters (a golden-angle spiral, jittered by a fixed seed), each flattened along the surface normal and half sunk into the
         // foliage, all inside the collider sphere (radius 0.5). Untextured (layer 0) on slot Blossom; shown in spring only (SeasonalVisibility).
+        // The specks are built BlossomBuildScale times larger and scaled down afterwards: Radial's finite-difference normal of a 3 cm blob is a
+        // cross product below Vector3.normalized's 1e-5 threshold, which returns a zero normal (black in the shader). A uniform scale keeps normals.
+        const float BlossomBuildScale = 100f;
+
         static Mesh BuildBlossoms()
         {
             var b = new SmoothMeshBuilder();
             var rng = new Pcg32(LakeDockLayout.BlossomMeshSeed);
             int count = LakeDockLayout.BlossomCount;
+            const float k = BlossomBuildScale;
             for (int i = 0; i < count; i++)
             {
                 float y = Mathf.Lerp(0.95f, -0.45f, (i + 0.5f) / count);
@@ -271,10 +276,19 @@ namespace FishGame.EditorTools
                 float size = rng.Range(0.026f, 0.036f);
                 const float flat = 0.6f;
                 float r = Mathf.Min(CanopyRoundRadius(d) + 0.2f * size, 0.5f - flat * size);
-                b.Radial(d * r, _ => size, 1, Quaternion.FromToRotation(Vector3.up, d), new Vector3(1f, flat, 1f), LakeDockLayout.SlotBlossom,
+                b.Radial(d * (r * k), _ => size * k, 2, Quaternion.FromToRotation(Vector3.up, d), new Vector3(1f, flat, 1f), LakeDockLayout.SlotBlossom,
                     EnvTextureLayers.None, SmoothMeshBuilder.MappingTriplanar, _ => 0.95f, 0.5f);
             }
-            return b.ToMesh("LakeDock_Blossoms");
+            Mesh mesh = b.ToMesh("LakeDock_Blossoms");
+            Vector3[] vertices = mesh.vertices;
+            for (int i = 0; i < vertices.Length; i++) vertices[i] /= k;
+            var uv0 = new List<Vector2>();
+            mesh.GetUVs(0, uv0);
+            for (int i = 0; i < uv0.Count; i++) uv0[i] /= k;
+            mesh.vertices = vertices;
+            mesh.SetUVs(0, uv0);
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         // Two stacked cones inside the unit sphere (radius 0.5, the canopy collider): the lower dark, the upper light. The lower rim (r 0.3 at y -0.4)

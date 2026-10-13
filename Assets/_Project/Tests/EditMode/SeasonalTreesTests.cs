@@ -291,7 +291,8 @@ namespace FishGame.Tests.EditMode
         }
 
         // Catches: a seasonal mesh poking out of the canopy collider sphere, the wrong slot or mapping on a seasonal mesh, a pine using a seasonal
-        // slot, snow on a downward-facing ring, a foliage variant whose shape differs from the original canopy, a triangle budget blown.
+        // slot, snow on a downward-facing ring, a foliage variant whose shape differs from the original canopy, a triangle budget blown, a zero
+        // normal (tiny Radial blobs: the first blossom capture rendered black).
         [Test]
         public void LakeDock_SeasonalMeshes_StayInsideTheColliderAndUseTheirSlots()
         {
@@ -305,7 +306,11 @@ namespace FishGame.Tests.EditMode
             Mesh blossoms = LoadMesh(LakeDockLayout.BlossomsMeshPath);
             foreach (Vector3 v in blossoms.vertices) Assert.That(v.magnitude, Is.LessThanOrEqualTo(0.5f + 1e-4f), "blossom vertex outside the canopy sphere");
             AssertSlots(blossoms, new[] { LakeDockLayout.SlotBlossom }, SmoothMeshBuilder.MappingTriplanar, "blossoms");
-            Assert.That(Triangles(blossoms), Is.LessThanOrEqualTo(1000), "blossoms triangle budget");
+            Assert.That(Triangles(blossoms), Is.LessThanOrEqualTo(2500), "blossoms triangle budget (spring only)");
+            foreach (string path in new[] { LakeDockLayout.BranchesMeshPath, LakeDockLayout.BlossomsMeshPath, LakeDockLayout.CanopyPineSnowMeshPath,
+                         LakeDockLayout.CanopyRoundDarkMeshPath, LakeDockLayout.CanopyRoundAltMeshPath })
+                foreach (Vector3 n in LoadMesh(path).normals)
+                    Assert.That(n.magnitude, Is.EqualTo(1f).Within(1e-3f), path + ": unit normals (a zero normal renders black)");
 
             Mesh baseCanopy = LoadMesh(LakeDockLayout.RoundCanopyMeshPaths[0]);
             for (int i = 0; i < LakeDockLayout.RoundCanopyMeshPaths.Length; i++)

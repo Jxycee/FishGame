@@ -60,7 +60,7 @@ namespace FishGame.EditorTools
 
         // Seasonal trees: blossom specks per round canopy; the snowline of each pine tier (ring t at or above it is snow on the winter pine);
         // the bare branches' yaw step per tree (golden angle, so neighbouring trees never share an orientation).
-        public const int BlossomCount = 64;
+        public const int BlossomCount = 48;
         public const float PineSnowFromT = 0.4f;
         public const float BranchesYawStepDegrees = 137.5f;
 
