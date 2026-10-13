@@ -72,8 +72,9 @@ namespace FishGame.Tests.EditMode
             {
                 FightProfileDef d = Make<FightProfileDef>();
                 FishFightProfile f = p.profile;
-                d.Configure(p.id, p.name, f.PullStrength, f.LateralSpeed, f.RunSpeed, f.StaminaDrain, f.CalmMin, f.CalmMax, f.BurstMin, f.BurstMax,
-                    f.FlipRate, f.DiveChance, f.BurstRamp, f.CalmDrift, f.CalmDriftRamp, f.FlipMinGap, f.LateralJitter);
+                d.Configure(p.id, p.name, f.CalmMin, f.CalmMax, f.BurstMin, f.BurstMax,
+                    f.FlipRate, f.DiveChance, f.BurstRamp, f.CalmDrift, f.CalmDriftRamp, f.FlipMinGap, f.LateralJitter,
+                    f.StrainMod, f.MoveMult, f.ReelInMult, f.WavePeriod);
                 profiles.Add(d);
                 profileById[p.id] = d;
                 set.ById[p.id] = d;
@@ -198,16 +199,10 @@ namespace FishGame.Tests.EditMode
             ("tuning", "", "castChargeTime", 0.6f, 1.5f, false), ("tuning", "", "castMinDist", 2f, 4f, false),
             ("tuning", "", "minLandDepth", 0.5f, 1.5f, false), ("tuning", "", "biteWaitMin", 2f, 8f, false),
             ("tuning", "", "biteWaitMax", 10f, 30f, false), ("tuning", "", "minBiteWait", 0.5f, 2f, false),
-            ("tuning", "", "hookBeat", 0.15f, 0.4f, false), ("tuning", "", "landDistance", 1.5f, 3f, false),
-            ("tuning", "", "reelStrainBurst", 0.2f, 0.45f, false), ("tuning", "", "counterRelief", 0.3f, 0.7f, false),
-            ("tuning", "", "steerStrain", 0f, 0.08f, false), ("tuning", "", "outOfWindowStrain", 0.1f, 0.4f, false),
-            ("tuning", "", "spoolStrain", 0.3f, 0.8f, false), ("tuning", "", "spoolExtra", 6f, 20f, false),
-            ("tuning", "", "relaxRate", 0.3f, 0.7f, false), ("tuning", "", "relaxWhileReeling", 0.05f, 0.2f, false),
-            ("tuning", "", "reelBurstPenalty", 0.6f, 1.2f, false), ("tuning", "", "diveRunMult", 1.2f, 2f, false),
-            ("tuning", "", "snapGrace", 0.2f, 0.75f, false), ("tuning", "", "snapGraceAssist", 0.2f, 0.75f, false),
-            ("tuning", "", "strainScale", 0.5f, 1.5f, false), ("tuning", "", "strainScaleAssist", 0.3f, 1f, false),
-            ("tuning", "", "pinEscapeTime", 4f, 10f, false), ("tuning", "", "slackEscapeTime", 8f, 20f, false),
-            ("tuning", "", "fishStaminaRegen", 0.02f, 0.08f, false), ("tuning", "", "calmCenterPull", 0.05f, 0.3f, false),
+            ("tuning", "", "hookBeat", 0.15f, 0.4f, false), ("tuning", "", "landDistance", 0.5f, 3f, false),
+            ("tuning", "", "spoolExtra", 6f, 20f, false), ("tuning", "", "relaxRate", 0.5f, 3f, false),
+            ("tuning", "", "strainScale", 0.3f, 1.5f, false), ("tuning", "", "strainScaleAssist", 0.2f, 1f, false),
+            ("tuning", "", "slackEscapeTime", 8f, 20f, false),
             ("tuning", "", "lateralMaxDeg", 60f, 85f, false), ("tuning", "", "hookedLeash", 2f, 5f, false),
             ("tuning", "", "junkDragSpeed", 2f, 5f, false), ("tuning", "", "resultTimeout", 1f, 10f, false),
             ("tuning", "", "commitTimeout", 1f, 10f, false), ("tuning", "", "hookTolerance", 0.5f, 1.5f, false),
@@ -216,9 +211,19 @@ namespace FishGame.Tests.EditMode
             ("tuning", "", "cleanCatchMaxTension", 0.5f, 0.95f, false), ("tuning", "", "pityAfterFailures", 0f, 10f, true),
             ("tuning", "", "pityStrainMult", 0.5f, 1f, false), ("tuning", "", "pityGraceMult", 1f, 3f, false),
             ("tuning", "", "pityHookWindowBonus", 0f, 1f, false),
+            // R72 Rust fight baseline
+            ("tuning", "", "strainBarFull", 1f, 20f, false), ("tuning", "", "strainSnap", 1f, 30f, false),
+            ("tuning", "", "strainRestInput", 0f, 3f, false), ("tuning", "", "strainReelRun", 0f, 6f, false),
+            ("tuning", "", "strainReelBack", 0f, 6f, false), ("tuning", "", "strainCounterSteer", 0f, 3f, false),
+            ("tuning", "", "strainOtherSteer", 0f, 3f, false), ("tuning", "", "sideMoveSpeed", 0f, 5f, false),
+            ("tuning", "", "backMoveSpeed", 0f, 5f, false), ("tuning", "", "tireSteerRate", 0f, 5f, false),
+            ("tuning", "", "tireCounterRate", 0f, 5f, false), ("tuning", "", "tireDecayRate", 0f, 1f, false),
+            ("tuning", "", "tireRunFull", 1f, 100f, false), ("tuning", "", "tireReelFull", 0.5f, 50f, false),
+            ("tuning", "", "tireReelMaxMult", 1f, 5f, false), ("tuning", "", "backPullMargin", 0f, 10f, false),
+            ("tuning", "", "fightTimeout", 30f, 300f, false),
 
             ("rod", "rod_handmade", "tier", 0f, 3f, true), ("rod", "rod_handmade", "castMaxDist", 8f, 40f, false),
-            ("rod", "rod_handmade", "reelSpeed", 0.5f, 2f, false), ("rod", "rod_handmade", "lineStrength", 0.5f, 2.5f, false),
+            ("rod", "rod_handmade", "reelSpeed", 0.3f, 2f, false), ("rod", "rod_handmade", "lineStrength", 0.5f, 2.5f, false),
             ("rod", "rod_handmade", "angleWindow", 0.3f, 0.9f, false), ("rod", "rod_handmade", "steerRate", 0.3f, 1.2f, false),
             ("rod", "rod_handmade", "relaxMult", 0.5f, 1.5f, false), ("rod", "rod_handmade", "shopCost", 0f, Open, true),
             ("rod", "rod_handmade", "firstCamp", 0f, 6f, true),
@@ -227,13 +232,13 @@ namespace FishGame.Tests.EditMode
             ("bait", "bait_worm", "biteSpeedMod", 0.5f, 1.5f, false), ("bait", "bait_worm", "junkMult", 0f, 2f, false),
             ("bait", "bait_worm", "maxNibbles", 0f, 3f, true),
 
-            ("profile", "steady", "pullStrength", 0.1f, 1f, false), ("profile", "steady", "lateralSpeed", 0.2f, 1.5f, false),
-            ("profile", "steady", "runSpeed", 0.1f, 1.5f, false), ("profile", "steady", "staminaDrain", 0.01f, 0.2f, false),
             ("profile", "steady", "calmMin", 0.2f, 5f, false), ("profile", "steady", "burstMin", 0.3f, 6f, false),
             ("profile", "steady", "flipRate", 0f, 2f, false), ("profile", "steady", "diveChance", 0f, 1f, false),
             ("profile", "steady", "burstRamp", 0f, 2f, false), ("profile", "steady", "calmDrift", 0f, 0.5f, false),
             ("profile", "steady", "calmDriftRamp", 0f, 5f, false), ("profile", "steady", "flipMinGap", 0.2f, 2f, false),
             ("profile", "steady", "lateralJitter", 0f, 0.5f, false),
+            ("profile", "steady", "strainMod", 0.1f, 3f, false), ("profile", "steady", "moveMult", 0f, 3f, false),
+            ("profile", "steady", "reelInMult", 0.1f, 5f, false), ("profile", "steady", "wavePeriod", 0.5f, 8f, false),
 
             ("species", "perch", "baseValue", 1f, Open, true), ("species", "perch", "weightMinG", 1f, Open, true),
             ("species", "perch", "weightSkew", 1.2f, 3f, false), ("species", "perch", "lengthShapeK", 0.5f, 2f, false),
@@ -288,7 +293,7 @@ namespace FishGame.Tests.EditMode
 
         // Catches: NaN slipping through a comparison written as (v < min || v > max).
         [Test]
-        public void FishingValidators_NaNValue_IsReportedOutOfRange([Values("castChargeTime", "snapGrace", "cleanCatchMaxTension", "creelMaxKg", "pityGraceMult")] string field)
+        public void FishingValidators_NaNValue_IsReportedOutOfRange([Values("castChargeTime", "strainSnap", "cleanCatchMaxTension", "creelMaxKg", "pityGraceMult")] string field)
         {
             SeedSet set = MakeSeedSet();
             SetNum(set.Tuning, field, double.NaN);
@@ -302,8 +307,9 @@ namespace FishGame.Tests.EditMode
         // the equal case must pass. One case per rule, so a deleted rule fails exactly its own case.
         [TestCase("biteWait")]
         [TestCase("minBiteWait")]
-        [TestCase("snapGrace")]
         [TestCase("strainScale")]
+        [TestCase("strainSnap")]
+        [TestCase("fightTimeout")]
         [TestCase("castMaxDist")]
         [TestCase("angleWindow")]
         [TestCase("weightMax")]
@@ -328,13 +334,6 @@ namespace FishGame.Tests.EditMode
                     SetNum(set.Tuning, "biteWaitMin", 1.9);
                     AssertContains(Check(set), "tuning: minBiteWait <= biteWaitMin");
                     break;
-                case "snapGrace":
-                    SetNum(set.Tuning, "snapGrace", 0.5);
-                    SetNum(set.Tuning, "snapGraceAssist", 0.5);
-                    CollectionAssert.IsEmpty(Check(set), "assist == base passes");
-                    SetNum(set.Tuning, "snapGraceAssist", 0.4);
-                    AssertContains(Check(set), "tuning: snapGraceAssist >= snapGrace");
-                    break;
                 case "strainScale":
                     SetNum(set.Tuning, "strainScale", 0.9);
                     SetNum(set.Tuning, "strainScaleAssist", 0.9);
@@ -342,12 +341,26 @@ namespace FishGame.Tests.EditMode
                     SetNum(set.Tuning, "strainScaleAssist", 0.95);
                     AssertContains(Check(set), "tuning: strainScaleAssist <= strainScale");
                     break;
+                case "strainSnap":
+                    SetNum(set.Tuning, "strainBarFull", 6);
+                    SetNum(set.Tuning, "strainSnap", 6.5);
+                    CollectionAssert.IsEmpty(Check(set), "snap above the full bar passes");
+                    SetNum(set.Tuning, "strainSnap", 6);
+                    AssertContains(Check(set), "tuning: strainSnap > strainBarFull");
+                    break;
+                case "fightTimeout":
+                    SetNum(set.Tuning, "fightTimeout", 120);
+                    SetNum(set.Tuning, "maxFightTime", 180);
+                    CollectionAssert.IsEmpty(Check(set), "120 < 180 passes");
+                    SetNum(set.Tuning, "fightTimeout", 180);
+                    AssertContains(Check(set), "tuning: maxFightTime > fightTimeout");
+                    break;
                 case "castMaxDist":
                     SetNum(set.ById["rod_handmade"], "castMaxDist", 2);   // below castMinDist 2.5 (and outside [8, 40])
                     AssertContains(Check(set), "rod rod_handmade: castMaxDist > castMinDist");
                     break;
                 case "angleWindow":
-                    SetNum(set.ById["rod_handmade"], "angleWindow", 0.97);   // not below PinnedLateral 0.95 (and outside [0.3, 0.9])
+                    SetNum(set.ById["rod_handmade"], "angleWindow", 0.97);   // not below PinnedLateral 0.95 (and outside [0.3, 0.9]); the field is parked (R72) but its data rule is still checked
                     AssertContains(Check(set), "rod rod_handmade: angleWindow < PinnedLateral");
                     break;
                 case "weightMax":
@@ -387,16 +400,16 @@ namespace FishGame.Tests.EditMode
             CollectionAssert.IsEmpty(Check(set));
             SetNum(set.ById["bait_worm"], "maxRating", 9);
 
-            SetNum(set.ById["steady"], "calmMax", 0.9);          // calmMin 1.0
-            AssertContains(Check(set), "profile steady: calmMax = 0.9 outside [1, 6]");
+            SetNum(set.ById["steady"], "calmMax", 1.9);          // calmMin 2.0 (R72)
+            AssertContains(Check(set), "profile steady: calmMax = 1.9 outside [2, 6]");
             SetNum(set.ById["steady"], "calmMax", 6.5);
-            AssertContains(Check(set), "profile steady: calmMax = 6.5 outside [1, 6]");
-            SetNum(set.ById["steady"], "calmMax", 2.5);
-            SetNum(set.ById["steady"], "burstMax", 1.4);         // burstMin 1.5
-            AssertContains(Check(set), "profile steady: burstMax = 1.4 outside [1.5, 8]");
-            SetNum(set.ById["steady"], "burstMax", 8.5);
-            AssertContains(Check(set), "profile steady: burstMax = 8.5 outside [1.5, 8]");
-            SetNum(set.ById["steady"], "burstMax", 2.5);
+            AssertContains(Check(set), "profile steady: calmMax = 6.5 outside [2, 6]");
+            SetNum(set.ById["steady"], "calmMax", 4);
+            SetNum(set.ById["steady"], "burstMax", 2.9);         // burstMin 3.0 (R72)
+            AssertContains(Check(set), "profile steady: burstMax = 2.9 outside [3, 10]");
+            SetNum(set.ById["steady"], "burstMax", 10.5);
+            AssertContains(Check(set), "profile steady: burstMax = 10.5 outside [3, 10]");
+            SetNum(set.ById["steady"], "burstMax", 5);
             CollectionAssert.IsEmpty(Check(set));
         }
 
@@ -421,7 +434,7 @@ namespace FishGame.Tests.EditMode
             AssertContains(Check(set), "profile thrasher: calmMin >= 1.0");
             SetNum(set.ById["thrasher"], "calmMin", 1.0);
             CollectionAssert.IsEmpty(Check(set), "calmMin exactly 1.0 passes");
-            SetNum(set.ById["darter"], "calmMin", 0.3);          // the seed Darter is 0.3: only Thrasher is bound by the rule
+            SetNum(set.ById["darter"], "calmMin", 0.3);          // below 1.0 on Darter (seed 1.0): only Thrasher is bound by the rule
             CollectionAssert.IsEmpty(Check(set));
             SetNum(set.ById["steady"], "calmMin", 0.5);
             CollectionAssert.IsEmpty(Check(set), "other profiles may have a short calm");

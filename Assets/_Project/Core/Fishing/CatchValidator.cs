@@ -52,6 +52,20 @@ namespace FishGame.Core
             return s > 0f ? s : 0f;
         }
 
+        // R72: the fastest the line can come in for this fish on this rod (a fully tired fish reels at TireReelMaxMult). Used for the Landed
+        // floor and clean-claim check (4); junk keeps JunkDragSpeed. Host values only: the host's rod and the rolled species' profile.
+        public static float MaxReelSpeed(in RodStats rod, in FishFightProfile fish, in FishingTuning t)
+        {
+            return rod.ReelSpeed * fish.ReelInMult * t.TireReelMaxMult;
+        }
+
+        // R72: the owner's FightSim ends a fish fight at FightTimeout. The host accepts that claim only when its own clock agrees within
+        // HostTimeoutSlackSeconds (the hook reached the host one latency late; the result arrives one latency after the owner's tick).
+        public static bool OwnerTimeoutPlausible(double now, in ActiveCast cast, float fightTimeout)
+        {
+            return now - cast.THooked >= fightTimeout - FishingConstants.HostTimeoutSlackSeconds;
+        }
+
         // now - THooked < LandedFloorSeconds(LineLength0, landDistance, speed)
         public static bool LandedTooFast(double now, in ActiveCast cast, float landDistance, float speed)
         {
@@ -114,7 +128,7 @@ namespace FishGame.Core
             if (cast.Roll.Catch.IsJunk) return false;                                          // (1)
             float mt = report.MaxTension;
             if (float.IsNaN(mt) || float.IsInfinity(mt) || mt < 0f || mt >= cleanMaxTension) return false;   // (2)
-            if (report.NearSnapRecoveries != 0) return false;                                  // (3) a recovery needs tension > 0.8
+            if (report.NearSnapRecoveries != 0) return false;                                  // (3) a recovery needs tension > 1.0 (over the full bar)
             float fs = report.FightSeconds;
             if (float.IsNaN(fs) || float.IsInfinity(fs)) return false;
             if (fs < LandedFloorSeconds(cast.LineLength0, landDistance, reelSpeed)) return false;           // (4)

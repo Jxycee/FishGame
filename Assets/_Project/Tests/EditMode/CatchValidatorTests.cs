@@ -267,5 +267,27 @@ namespace FishGame.Tests.EditMode
             Assert.That(Accepts(in past, in fish), Is.False, "ahead of the host clock plus slack");
             Assert.That(Accepts(in behind, in fish), Is.True, "an owner clock far behind the host is allowed (frame hitches)");
         }
+
+        // Catches (R72): a floor that uses the rod's plain reel speed instead of rod x ReelInMult x the tire maximum (a tired fish reels 3x faster,
+        // so an honest fast landing would be refused), or a ReelInMult/TireReelMaxMult read from the wrong place.
+        [Test]
+        public void CatchValidator_MaxReelSpeed_IsRodTimesReelInTimesTireMax()
+        {
+            FishingTuning t = FishingTestData.Tuning();
+            RodStats[] rods = FishingTestData.Rods();
+            FishFightProfile[] profiles = FishingTestData.BaseProfiles();
+            Assert.That(CatchValidator.MaxReelSpeed(rods[FishingTestData.RodHandmade], profiles[FishingTestData.ProfileSteady], in t), Is.EqualTo(2.16f).Within(1e-6f));
+            Assert.That(CatchValidator.MaxReelSpeed(rods[FishingTestData.RodTwig], profiles[FishingTestData.ProfileRunner], in t), Is.EqualTo(1.458f).Within(1e-6f));
+            Assert.That(CatchValidator.MaxReelSpeed(rods[FishingTestData.RodHandmade], profiles[FishingTestData.ProfileDarter], in t), Is.EqualTo(1.8f).Within(1e-6f));
+        }
+
+        // Catches (R72): an owner Timeout accepted before the host's own clock is within 2 s of FightTimeout, or refused at the boundary.
+        [Test]
+        public void CatchValidator_OwnerTimeoutPlausible_UsesTwoSecondSlack()
+        {
+            var cast = new ActiveCast { THooked = 100.0 };
+            Assert.That(CatchValidator.OwnerTimeoutPlausible(217.99, in cast, 120f), Is.False);
+            Assert.That(CatchValidator.OwnerTimeoutPlausible(218.0, in cast, 120f), Is.True);
+        }
     }
 }

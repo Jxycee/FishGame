@@ -6,8 +6,9 @@ namespace FishGame.Tests.EditMode
 {
     // Host ledger (T9, spec 9.9). Shared setup: ledger seed 42, handmade rod, worm bait, slot 0 / client 100; cast 0.5 charge has a tip
     // distance of 10.25 (flight 0.573 s) and lands at castTipReach + 10.25 from the origin (R67). Ov forces a 2 s bite on a carp, so HookAt(tf + 2.0) hooks exactly on time. A hook at HookDistance
-    // (8.5 + HookedLineSlack, so it tracks the constant; it was a literal 10 while the slack was 1.5, T19-R1) gives LineLength0 8.5, so the
-    // handmade landing floor is 0.8 x 6.5 / 1.0 - 0.5 = 4.7 s (junk: 0.8 x 6.5 / 3 - 0.5 = 1.233 s).
+    // (8.5 + HookedLineSlack, so it tracks the constant; it was a literal 10 while the slack was 1.5, T19-R1) gives LineLength0 8.5. R72: the
+    // landing floor uses the fastest reel (rod x ReelInMult x 3): handmade carp 0.6 x 0.9 x 3 = 1.62, so 0.8 x 7.5 / 1.62 - 0.5 = 3.2037 s
+    // (junk: 0.8 x 7.5 / 3 - 0.5 = 1.5 s; landDistance is 1).
     public class FishingHostLedgerTests
     {
         const ulong Client = 100;
@@ -591,8 +592,8 @@ namespace FishGame.Tests.EditMode
             FishingHostLedger l = NewLedger();
             Accept(l, 1, Ov);
             HookAt(l, 1);
-            Tick(l, 4.6);
-            CommitDecision d = Result(l, 1, FightOutcome.Landed, EscapeReason.None, NotClean(4.6f));
+            Tick(l, 3.1);
+            CommitDecision d = Result(l, 1, FightOutcome.Landed, EscapeReason.None, NotClean(3.1f));
             Assert.That(d.Outcome, Is.EqualTo(FightOutcome.Escaped));
             Assert.That(d.Reason, Is.EqualTo(EscapeReason.Invalid));
             Assert.That(d.AddToCreel, Is.False);
@@ -602,8 +603,8 @@ namespace FishGame.Tests.EditMode
 
             Accept(l, 2, Ov);
             HookAt(l, 2);
-            Tick(l, 4.8);
-            CommitDecision ok = Result(l, 2, FightOutcome.Landed, EscapeReason.None, NotClean(4.8f));
+            Tick(l, 3.3);
+            CommitDecision ok = Result(l, 2, FightOutcome.Landed, EscapeReason.None, NotClean(3.3f));
             Assert.That(ok.Outcome, Is.EqualTo(FightOutcome.Landed));
             Assert.That(ok.AddToCreel, Is.True);
             Assert.That(ok.Announce, Is.EqualTo(AnnounceKind.Landed));
@@ -617,24 +618,24 @@ namespace FishGame.Tests.EditMode
             CastVerdict v = Accept(l, 1, OvJunk);
             Assert.That(v.Roll.Catch.IsJunk, Is.True);
             HookAt(l, 1);
-            Tick(l, 1.3);
-            CommitDecision d = Result(l, 1, FightOutcome.Landed, EscapeReason.None, NotClean(1.3f));
-            Assert.That(d.Outcome, Is.EqualTo(FightOutcome.Landed), "junk floor is 1.233 s");
+            Tick(l, 1.6);
+            CommitDecision d = Result(l, 1, FightOutcome.Landed, EscapeReason.None, NotClean(1.6f));
+            Assert.That(d.Outcome, Is.EqualTo(FightOutcome.Landed), "junk floor is 1.5 s");
             Assert.That(d.AddToCreel, Is.True);
             Assert.That(d.CleanBonus, Is.False);
 
             Accept(l, 2, Ov);
             HookAt(l, 2);
-            Tick(l, 1.3);
-            CommitDecision fish = Result(l, 2, FightOutcome.Landed, EscapeReason.None, NotClean(1.3f));
-            Assert.That(fish.Outcome, Is.EqualTo(FightOutcome.Escaped), "a fish needs 4.7 s");
+            Tick(l, 1.6);
+            CommitDecision fish = Result(l, 2, FightOutcome.Landed, EscapeReason.None, NotClean(1.6f));
+            Assert.That(fish.Outcome, Is.EqualTo(FightOutcome.Escaped), "a fish needs 3.2 s");
             Assert.That(fish.Reason, Is.EqualTo(EscapeReason.Invalid));
 
             Accept(l, 3, OvJunk);
             HookAt(l, 3);
-            Tick(l, 1.1);
-            CommitDecision tooFastJunk = Result(l, 3, FightOutcome.Landed, EscapeReason.None, NotClean(1.1f));
-            Assert.That(tooFastJunk.Reason, Is.EqualTo(EscapeReason.Invalid), "junk below 1.233 s is still too fast");
+            Tick(l, 1.4);
+            CommitDecision tooFastJunk = Result(l, 3, FightOutcome.Landed, EscapeReason.None, NotClean(1.4f));
+            Assert.That(tooFastJunk.Reason, Is.EqualTo(EscapeReason.Invalid), "junk below 1.5 s is still too fast");
         }
 
         [Test]
@@ -857,7 +858,7 @@ namespace FishGame.Tests.EditMode
                 (FightOutcome.Escaped, EscapeReason.ThrewHook, true, FightOutcome.Escaped, EscapeReason.ThrewHook),
                 (FightOutcome.Escaped, EscapeReason.Dropped, true, FightOutcome.Escaped, EscapeReason.Dropped),
                 (FightOutcome.Escaped, EscapeReason.ThrewHook, false, FightOutcome.Escaped, EscapeReason.Invalid),
-                (FightOutcome.Escaped, EscapeReason.Timeout, true, FightOutcome.Escaped, EscapeReason.Invalid),     // host-only reason
+                (FightOutcome.Escaped, EscapeReason.Timeout, true, FightOutcome.Escaped, EscapeReason.Invalid),     // host-bounded: 10 s is far below FightTimeout (R72)
                 (FightOutcome.Escaped, EscapeReason.None, true, FightOutcome.Escaped, EscapeReason.Invalid),
                 (FightOutcome.Escaped, EscapeReason.Disconnected, true, FightOutcome.Escaped, EscapeReason.Invalid),
                 (FightOutcome.Cancelled, EscapeReason.None, false, FightOutcome.Escaped, EscapeReason.Invalid),     // owner cancels via Cancel, not Result
@@ -875,6 +876,29 @@ namespace FishGame.Tests.EditMode
                 Assert.That(d.Accepted, Is.True, who);
                 Assert.That(l.TryGetActive(Client, out _), Is.False, who + ": every path clears the cast");
             }
+        }
+
+        // Catches (R72): an owner Timeout accepted without the host's clock agreeing (a forged early Timeout would end a fight for free), or
+        // refused when the clock does agree (within HostTimeoutSlackSeconds = 2 s of FightTimeout 120 s).
+        [Test]
+        public void FishingHostLedger_OwnerTimeout_AcceptedOnlyOnTheHostClock()
+        {
+            FishingHostLedger l = NewLedger();
+            Accept(l, 1, Ov);
+            HookAt(l, 1);
+            Tick(l, 118.5);
+            CommitDecision ok = Result(l, 1, FightOutcome.Escaped, EscapeReason.Timeout, NotClean(120f));
+            Assert.That(ok.Outcome, Is.EqualTo(FightOutcome.Escaped));
+            Assert.That(ok.Reason, Is.EqualTo(EscapeReason.Timeout));
+            Assert.That(ok.Announce, Is.EqualTo(AnnounceKind.Lost));
+
+            Accept(l, 2, Ov);
+            HookAt(l, 2);
+            Tick(l, 117.5);
+            CommitDecision early = Result(l, 2, FightOutcome.Escaped, EscapeReason.Timeout, NotClean(120f));
+            Assert.That(early.Outcome, Is.EqualTo(FightOutcome.Escaped));
+            Assert.That(early.Reason, Is.EqualTo(EscapeReason.Invalid));
+            Assert.That(early.Announce, Is.EqualTo(AnnounceKind.None));
         }
 
         [Test]
@@ -981,8 +1005,8 @@ namespace FishGame.Tests.EditMode
         public void FishingHostLedger_ImplausibleCleanClaim_KeepsRolledQuality()
         {
             FishingHostLedger l = NewLedger();
-            // host clock 10 s after the hook: the claim may not exceed 12 s (slack 2) and may not undercut the 4.7 s floor
-            float[] claims = { 12.5f, 4.0f };
+            // host clock 10 s after the hook: the claim may not exceed 12 s (slack 2) and may not undercut the 3.2 s floor
+            float[] claims = { 12.5f, 3.0f };
             uint id = 0;
             foreach (float claim in claims)
             {
@@ -1043,8 +1067,8 @@ namespace FishGame.Tests.EditMode
             FishingHostLedger l = NewLedger();
             CastVerdict v = Accept(l, 1, OvJunk);
             HookAt(l, 1);
-            Tick(l, 1.5);
-            CommitDecision d = Result(l, 1, FightOutcome.Landed, EscapeReason.None, Clean(1.5f));
+            Tick(l, 1.6);
+            CommitDecision d = Result(l, 1, FightOutcome.Landed, EscapeReason.None, Clean(1.6f));
             Assert.That(d.Outcome, Is.EqualTo(FightOutcome.Landed));
             Assert.That(d.CleanBonus, Is.False);
             Assert.That(d.Roll.Catch.IsJunk, Is.True);
@@ -1278,7 +1302,7 @@ namespace FishGame.Tests.EditMode
         }
 
         // The anti-teleport bound (T9-R1). Carbon rod (cast 24 m, reel 1.2), full charge, 2 s bite: the player hooks at the earliest
-        // allowed instant (bite - tolerance) claiming to stand beside the bobber. Without the bound the line is 2.0 and the landing
+        // allowed instant (bite - tolerance) claiming to stand beside the bobber. Without the bound the line is landDistance and the landing
         // floor is 0 s; with it the line is cast - sprint * (hooked - accepted) - HookedLineSlack.
         // Catches: LineLength0 = HostLineLength0 only (no walk bound); the bound using the wrong elapsed time (e.g. Now alone);
         // a sign slip; the bound not floored; the floor not following the bounded length.
@@ -1302,7 +1326,7 @@ namespace FishGame.Tests.EditMode
             Assert.That(expected, Is.GreaterThan(5f), "test sanity: the bound must matter here");
             Assert.That(a.LineLength0, Is.EqualTo(expected).Within(1e-3f));
 
-            float floor = 0.8f * (expected - 2f) / 1.2f - 0.5f;
+            float floor = 0.8f * (expected - 1f) / (0.72f * 0.9f * 3f) - 0.5f;   // R72: carbon x carp (ReelInMult 0.9) at the fastest reel, landDistance 1
             Assert.That(floor, Is.GreaterThan(1.5f), "test sanity: a real landing floor");
             Tick(l, floor - 0.05);
             CommitDecision tooFast = Result(l, 1, FightOutcome.Landed, EscapeReason.None, NotClean((float)floor - 0.05f));
@@ -1347,17 +1371,17 @@ namespace FishGame.Tests.EditMode
             Tick(m, Tf + 2.0);
             m.Hooked(Client, 1, 0f, out _);         // standing on the bobber, bound negative: floors at the landing distance
             m.TryGetActive(Client, out ActiveCast b);
-            Assert.That(b.LineLength0, Is.EqualTo(2f), "floored at landDistance");
+            Assert.That(b.LineLength0, Is.EqualTo(1f), "floored at landDistance");
         }
 
         // Catches: a ledger that ignores the selected rod's reel speed in the landing floor (default rod, rod 0, or the cast's
-        // first rod). Twig rod: reel 0.9, cast 14 m (8.25 m at 0.5 charge), so the floor is 0.8 x 6.5 / 0.9 - 0.5 = 5.278 s;
-        // the Handmade floor (4.7 s) and the Carbon floor (3.83 s) would both accept 5.2 s.
+        // first rod). R72: the host uses the fastest possible reel (rod x ReelInMult x 3). Twig rod, carp (large, ReelInMult 0.9):
+        // 0.54 x 0.9 x 3 = 1.458 m/s, so the floor is 0.8 x 7.5 / 1.458 - 0.5 = 3.6152 s; the Handmade floor (3.2037 s) would accept 3.5 s.
         [Test]
         public void FishingHostLedger_LandedFloor_UsesTheSelectedRodReelSpeed()
         {
-            float floor = CatchValidator.LandedFloorSeconds(8.5f, 2f, 0.9f);
-            Assert.That(floor, Is.EqualTo(5.2778f).Within(1e-3f));
+            float floor = CatchValidator.LandedFloorSeconds(8.5f, 1f, 0.54f * 0.9f * 3f);
+            Assert.That(floor, Is.EqualTo(3.6152f).Within(1e-3f));
             FishingHostLedger l = NewLedger();
             Assert.That(l.SelectRod(Client, 0, FishingTestData.RodTwig), Is.True);
             Accept(l, 1, Ov);
@@ -1365,14 +1389,14 @@ namespace FishGame.Tests.EditMode
             l.TryGetActive(Client, out ActiveCast a);
             Assert.That(a.LineLength0, Is.EqualTo(8.5f).Within(1e-5f));
             Tick(l, floor - 0.08);
-            CommitDecision early = Result(l, 1, FightOutcome.Landed, EscapeReason.None, NotClean(5.2f));
+            CommitDecision early = Result(l, 1, FightOutcome.Landed, EscapeReason.None, NotClean((float)floor - 0.08f));
             Assert.That(early.Outcome, Is.EqualTo(FightOutcome.Escaped));
-            Assert.That(early.Reason, Is.EqualTo(EscapeReason.Invalid), "5.2 s is under the twig floor");
+            Assert.That(early.Reason, Is.EqualTo(EscapeReason.Invalid), "under the twig floor");
 
             Accept(l, 2, Ov);
             HookAt(l, 2);
             Tick(l, floor + 0.05);
-            CommitDecision ok = Result(l, 2, FightOutcome.Landed, EscapeReason.None, NotClean(5.33f));
+            CommitDecision ok = Result(l, 2, FightOutcome.Landed, EscapeReason.None, NotClean((float)floor + 0.05f));
             Assert.That(ok.Outcome, Is.EqualTo(FightOutcome.Landed), "just over the twig floor");
         }
 

@@ -54,8 +54,10 @@ namespace FishGame.Tests.EditMode
             byte[] flags =
             {
                 RodWireQuant.FlagBurst, RodWireQuant.FlagReel, RodWireQuant.FlagDive, RodWireQuant.FlagExhausted, RodWireQuant.FlagRecall, RodWireQuant.FlagGrace,
+                RodWireQuant.FlagRight,
             };
             Assert.That(RodWireQuant.FlagGrace, Is.EqualTo((byte)32));
+            Assert.That(RodWireQuant.FlagRight, Is.EqualTo((byte)64), "R72: the run pulls right (remote bobber tilt)");
             int seen = 0;
             foreach (byte f in flags)
             {
@@ -63,7 +65,7 @@ namespace FishGame.Tests.EditMode
                 Assert.That(seen & f, Is.EqualTo(0), "bit already used: " + f);
                 seen |= f;
             }
-            Assert.That(seen, Is.EqualTo(63), "bits 0..5");
+            Assert.That(seen, Is.EqualTo(127), "bits 0..6");
 
             var a = new FishGame.Fishing.RodStateData { State = 4, Flags = (byte)(RodWireQuant.FlagReel | RodWireQuant.FlagGrace), TensionQ = 255 };
             var b = a;

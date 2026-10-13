@@ -16,10 +16,10 @@ MonoBehaviour:
   displayName: Deep-Sea Rod
   tier: 3
   castMaxDist: 30
-  reelSpeed: 1.3
+  reelSpeed: 0.78
   lineStrength: 1.6
   angleWindow: 0.75
-  steerRate: 0.8
+  steerRate: 1.07
   relaxMult: 1.2
   shopCost: 600
   firstCamp: 4

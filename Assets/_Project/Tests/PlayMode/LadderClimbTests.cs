@@ -1,7 +1,9 @@
 // Authority: test-only. R70 ladders on the real Spot_LakeDock (spec 7.3, contract M2-D29): geometry, climb up from the water at three look
 // pitches (the 7.8 #3 check at 45 deg), stepping off the deck edge to descend, hanging, the deck-edge boundary and the top-out grace.
 // Input is scripted through FakeInputService; the real owner locomotion runs. Times are game time (Time.time).
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using FishGame.Core;
 using FishGame.Fishing;
 using FishGame.Gameplay;
@@ -15,7 +17,17 @@ namespace FishGame.Tests.PlayMode
     public class LadderClimbTests
     {
         private const float LadderZ = -41.5f, DeckTopY = 0.6f, DeckEdgeX = 1.5f;
+        private const float RiseWindow = 0.03f, KickRiseRate = 1.2f;   // the 2 m/s kick averages ~1.7 m/s over its first 0.03 s
         private FishingRig _rig;
+
+        // A movement lock the test can switch (as FishingRodController does while RodFighting): PlayerLocomotion caches the sources in OnEnable.
+        private sealed class LockSource : MonoBehaviour, IPlayerContextSource
+        {
+            public bool Locks;
+
+            public InputContext RequestedContext => InputContext.Free;
+            public bool LocksMovement => Locks;
+        }
 
         [UnityTearDown]
         public IEnumerator TearDown()
@@ -57,6 +69,11 @@ namespace FishGame.Tests.PlayMode
             Assert.That(left && right, Is.True, "one volume on each side of the dock");
             Assert.That(WaterExit.All.Count, Is.EqualTo(1), "only the ramp keeps a WaterExit");
             Assert.That(WaterExit.All[0].name, Is.EqualTo("Ramp"));
+            WaterExit ramp = WaterExit.All[0];
+            Assert.That(ramp.gameObject.layer, Is.EqualTo(Layers.Default), "the ramp foot is off the Water layer (CastProbe)");
+            Bounds rb = ramp.GetComponent<BoxCollider>().bounds;
+            Assert.That(rb.min.z, Is.EqualTo(-46f).Within(1e-3f), "ramp foot landward end");
+            Assert.That(rb.max.z, Is.EqualTo(-39f).Within(1e-3f), "ramp foot seaward end");
 
             WaterProbe probe = CastProbe.Probe(2.05f, LadderZ);
             Assert.That(probe.FirstHitIsWater, Is.True, "a cast beside the ladder still lands on water");
@@ -65,7 +82,8 @@ namespace FishGame.Tests.PlayMode
         }
 
         // Catches (spec 7.8 #3): the climb-out failing or taking longer than 2 s at a 45 deg look-up (pitch sign wrong, Move zeroed while
-        // climbing, the volume top too low, the exit velocity dropped).
+        // climbing, the volume top too low). It does NOT pin the top-out velocity carry: W stays held, so air control lands the player anyway;
+        // Ladder_TopOutThenRelease_CarriedVelocityLandsOnDeckAndStaysOff pins the carry.
         [UnityTest]
         public IEnumerator Ladder_ClimbUpFromWater_Pitch45_LandsOnDeckWithin2s()
         {
@@ -129,10 +147,29 @@ namespace FishGame.Tests.PlayMode
             Assert.That(rig.Locomotion.IsClimbing, Is.True, "still on the ladder");
             Assert.That(Mathf.Abs(rig.Player.transform.position.y - hangY), Is.LessThan(0.005f), "hangs in place with no input");
 
-            // Leave sideways: look level, W toward +x out of the box (outer face x 2.55) into the water.
+            // Leave sideways slowly (a 0.2 stick is 0.48 m/s): look level, W toward +x out of the box (outer face x 2.55) into the water.
+            // A side exit starts NO re-entry grace, so steering straight back in (S) must catch the climber again at once. Catches an exit that
+            // always starts the grace (finding 5: the climber would be held off for 0.25 s with the centre back inside the box).
             yield return FishingPlayModeDriver.SetPitch(rig, camera, 0f);
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 0.2f };
+            yield return PlayModeHarness.WaitUntil(() => !rig.Locomotion.IsClimbing, 5f, "never left the ladder through the outer face");
+            float sideExitTime = Time.time;
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = -1f };
+            int heldOff = 0;
+            yield return PlayModeHarness.WaitUntil(() =>
+            {
+                if (!rig.Locomotion.IsClimbing && LadderVolume.FindContaining(SwimInteractGateTests.Center(rig)) != null) heldOff++;
+                return rig.Locomotion.IsClimbing;
+            }, 2f, "steering straight back in never caught the climber after a side exit");
+            float sideGap = Time.time - sideExitTime;
+            TestContext.WriteLine($"side-exit re-entry after {sideGap:F3} s, {heldOff} frames inside the box without climbing");
+            // One frame is the normal entry latency (the move that brings the centre in happens after that frame's entry check); a 0.25 s grace
+            // would show as hundreds of frames in a headless run.
+            Assert.That(heldOff, Is.LessThanOrEqualTo(2), "a side exit starts no grace: the centre is never held inside the box without climbing");
+
+            // Now leave for good at full speed.
             rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
-            yield return PlayModeHarness.WaitUntil(() => !rig.Locomotion.IsClimbing, 2f, "never left the ladder through the outer face");
+            yield return PlayModeHarness.WaitUntil(() => !rig.Locomotion.IsClimbing, 3f, "never left the ladder through the outer face (second time)");
             rig.Fake.Frame = default;
             yield return PlayModeHarness.WaitFrames(5, 0.1f);
             Assert.That(SwimInteractGateTests.InWater(rig), Is.True, "left the ladder into the water");
@@ -197,6 +234,364 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("top-out grace");
         }
 
+        // Catches (finding 3): the climb velocity not carried out of the box. The input is cleared on the first frame the climb is over, so only
+        // the carried velocity can move the climber from there: one frame later the flat speed must still be well above zero (a zero carry
+        // reads 0), the climber must land on the deck within a second, and the ladder must not catch it again once the grace is over.
+        [UnityTest]
+        public IEnumerator Ladder_TopOutThenRelease_CarriedVelocityLandsOnDeckAndStaysOff()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            PlayerCamera camera = rig.Player.GetComponent<PlayerCamera>();
+            yield return FishingPlayModeDriver.SetPitch(rig, camera, 45f);
+
+            rig.Locomotion.ApplyTeleport(new Vector3(3.0f, -1.2f, LadderZ), -90f);
+            yield return PlayModeHarness.WaitFrames(3, 0.05f);
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsClimbing, 3f, "never reached the ladder");
+            yield return PlayModeHarness.WaitUntil(() => !rig.Locomotion.IsClimbing, 4f, "never topped out");
+            rig.Fake.Frame = default;   // released on the first frame the climb is over
+            float exitTime = Time.time;
+
+            // Flat speed over the next 0.03 s from sampled positions (CharacterController.velocity is noise at the headless frame rate).
+            Vector3 exitPos = rig.Player.transform.position;
+            yield return PlayModeHarness.WaitUntil(() => Time.time - exitTime >= 0.03f, 1f, "sample window");
+            Vector3 laterPos = rig.Player.transform.position;
+            float flatSpeed = new Vector2(laterPos.x - exitPos.x, laterPos.z - exitPos.z).magnitude / (Time.time - exitTime);
+            TestContext.WriteLine($"top-out release: flat speed over the 0.03 s after the exit {flatSpeed:F2} m/s");
+            Assert.That(flatSpeed, Is.GreaterThan(1f), "the climb velocity carried out of the box (input already cleared)");
+            Assert.That(flatSpeed, Is.LessThanOrEqualTo(MovementMath.ClimbSpeed + 0.05f), "the carry never exceeds ClimbSpeed (final review I4)");
+
+            yield return PlayModeHarness.WaitUntil(() => OnDeck(rig), 1f, "never landed on the deck from the carried velocity (at " + rig.Player.transform.position + ")");
+            TestContext.WriteLine($"top-out release: on the deck {Time.time - exitTime:F2} s after the exit");
+
+            // Past the grace, then 0.5 s more: the climber must stay off the ladder.
+            yield return PlayModeHarness.WaitUntil(() => Time.time - exitTime >= MovementMath.ClimbReentryGrace, 2f, "grace wait");
+            float until = Time.time + 0.5f;
+            while (Time.time < until)
+            {
+                Assert.That(rig.Locomotion.IsClimbing, Is.False, "caught by the ladder again at " + rig.Player.transform.position);
+                yield return null;
+            }
+
+            rig.Log.AssertEmpty("top-out release");
+        }
+
+        // Catches (finding 1, regression for the one-frame IsSwimming gap): a swimmer who climbs into a ladder volume and then steps back out
+        // into swim depth. The rod is stowed before the climb, so any ToolChanged afterwards is churn (an Equip on the frame IsSwimming is
+        // false, then a Stow on the next). Deviation from the brief ("swim into LadderR"): the bed beside the dock ladders (about -1.28 m) sits
+        // right at the swim threshold (surface - 1.2 with the swell), so the test builds its own volume in open deep water (bed ~ -1.6 m).
+        [UnityTest]
+        public IEnumerator Ladder_SwimmerLeavingTheVolumeAtSwimDepth_CausesNoRodEquipChurn()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+
+            // x 2.1..3.1, y -2..1, z -39.5..-38.5: clear of the dock ladders and of the ramp foot.
+            var volumeGo = new GameObject("TestLadderDeepWater");
+            volumeGo.transform.position = new Vector3(2.6f, -0.5f, -39.0f);
+            BoxCollider box = volumeGo.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            box.size = new Vector3(1f, 3f, 1f);
+            volumeGo.AddComponent<LadderVolume>();
+
+            Action<ToolKind> onTool = null;
+            try
+            {
+                yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { EquipPressed = true });
+                rig.Fake.Frame = default;
+                yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 2f, "Equip never set the Rod tool");
+
+                rig.Locomotion.ApplyTeleport(new Vector3(2.6f, -1.45f, -37.8f), 180f);   // swimming, facing the shore (-z)
+                yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsSwimming && rig.Player.Tool == ToolKind.None,
+                    PlayModeHarness.DefaultTimeoutSeconds, "never swimming with the rod stowed");
+                yield return PlayModeHarness.WaitFrames(3, 0.1f);
+
+                int toolEvents = 0;
+                bool sawRod = false;
+                onTool = t =>
+                {
+                    toolEvents++;
+                    if (t == ToolKind.Rod) sawRod = true;
+                };
+                rig.Player.ToolChanged += onTool;
+
+                rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+                yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsClimbing, 3f, "swimming into the volume never started a climb");
+                Assert.That(rig.Locomotion.IsSwimming, Is.False, "a climber is not swimming");
+                rig.Fake.Frame = new PlayerInputFrame { MoveY = -1f };   // back out along z, toward the lake
+                yield return PlayModeHarness.WaitUntil(() => !rig.Locomotion.IsClimbing, 3f, "never left the volume along z");
+                Vector3 exitPos = rig.Player.transform.position;
+                Assert.That(rig.Locomotion.IsSwimming, Is.True, "a swimmer leaving the volume at swim depth swims on the same frame (root " + exitPos
+                    + ", surface " + WaterSurface.HeightAt(exitPos.x, exitPos.z) + ")");
+                rig.Fake.Frame = default;
+                yield return PlayModeHarness.WaitFrames(10, 0.3f);
+
+                Assert.That(toolEvents, Is.EqualTo(0), "no NetTool write while climbing in and out of the water");
+                Assert.That(sawRod, Is.False, "the rod never pops out");
+            }
+            finally
+            {
+                if (onTool != null) rig.Player.ToolChanged -= onTool;
+                UnityEngine.Object.Destroy(volumeGo);
+            }
+
+            Assert.That(rig.Player.Tool, Is.EqualTo(ToolKind.None));
+            rig.Log.AssertEmpty("swim in and out of the ladder volume");
+        }
+
+        // Catches (finding 4): looking almost straight up and holding W bobs at the top (the climber leaves through the top, the fall is caught
+        // again after the 0.25 s grace). The rod must not pop out in the air and be stowed again: it comes back only once the player is on the
+        // deck.
+        [UnityTest]
+        public IEnumerator Ladder_TopOutBobAtAlmostStraightUp_RodStaysAwayUntilGrounded()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            PlayerCamera camera = rig.Player.GetComponent<PlayerCamera>();
+
+            yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { EquipPressed = true });
+            rig.Fake.Frame = default;
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 2f, "Equip never set the Rod tool");
+            yield return FishingPlayModeDriver.SetPitch(rig, camera, 85f);
+
+            rig.Locomotion.ApplyTeleport(new Vector3(3.0f, -1.2f, LadderZ), -90f);
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.None, PlayModeHarness.DefaultTimeoutSeconds, "the rod was not put away in the water");
+            yield return PlayModeHarness.WaitFrames(3, 0.05f);
+
+            int topOuts = 0, equips = 0;
+            bool wasClimbing = false, wasGrounded = false, wasRod = false;
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            float until = Time.time + 2.5f;
+            while (Time.time < until)
+            {
+                yield return null;
+                if (wasClimbing && !rig.Locomotion.IsClimbing) topOuts++;
+                wasClimbing = rig.Locomotion.IsClimbing;
+                bool rod = rig.Player.Tool == ToolKind.Rod;
+                if (rod && !wasRod)
+                {
+                    equips++;
+                    // The controller runs before the locomotion, so it saw last frame's grounded flag: accept either. (The first equip is the
+                    // wader at x 3.0, where the bed is too shallow to swim: wading never stows the rod.)
+                    Assert.That(rig.Locomotion.IsGrounded || wasGrounded, Is.True, "the rod came out in the air at " + rig.Player.transform.position);
+                    Assert.That(rig.Locomotion.LadderCatchPending, Is.False, "the rod came out with a ladder about to retake the player at " + rig.Player.transform.position);
+                }
+
+                wasRod = rod;
+                wasGrounded = rig.Locomotion.IsGrounded;
+            }
+
+            TestContext.WriteLine($"top-out bob at pitch 85: {topOuts} exits, {equips} equips in 2.5 s");
+            Assert.That(topOuts, Is.GreaterThanOrEqualTo(1), "precondition: the climber topped out at least once");
+
+            // Come down on the deck: look 45 deg up so the next top-out lands on the planks; the rod returns once grounded.
+            yield return FishingPlayModeDriver.SetPitch(rig, camera, 45f);
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            yield return PlayModeHarness.WaitUntil(() => OnDeck(rig), 6f, "never got onto the deck (at " + rig.Player.transform.position + ")");
+            rig.Fake.Frame = default;
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 1f, "the rod never came back once on the deck");
+            rig.Log.AssertEmpty("top-out bob");
+        }
+
+        // Catches (review must-fix): a manual Equip during the away hold (airborne after a top-out) leaving the away bookkeeping stale, so the
+        // ladder's re-catch never stows the rod again and it stays out while climbing.
+        [UnityTest]
+        public IEnumerator Ladder_ManualEquipDuringTheAwayHold_IsStowedAgainWhenTheLadderRecatches()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            PlayerCamera camera = rig.Player.GetComponent<PlayerCamera>();
+
+            yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { EquipPressed = true });
+            rig.Fake.Frame = default;
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 2f, "Equip never set the Rod tool");
+            yield return FishingPlayModeDriver.SetPitch(rig, camera, 85f);   // the top-out bob: left through the top, caught again after the grace
+
+            rig.Locomotion.ApplyTeleport(new Vector3(3.0f, -1.2f, LadderZ), -90f);
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.None, PlayModeHarness.DefaultTimeoutSeconds, "the rod was not put away in the water");
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsClimbing, 3f, "never reached the ladder");
+            yield return PlayModeHarness.WaitUntil(() => !rig.Locomotion.IsClimbing, 4f, "never topped out");
+            Assert.That(rig.Player.Tool, Is.EqualTo(ToolKind.None), "precondition: the rod is held away right after the top-out");
+
+            // Press Equip once inside the hold (the hold lasts the 0.25 s grace at least).
+            yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { MoveY = 1f, EquipPressed = true });
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            Assert.That(rig.Locomotion.IsClimbing, Is.False, "precondition: still inside the grace when Equip was pressed");
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 1f, "the manual Equip during the hold did nothing");
+
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsClimbing, 2f, "the ladder never caught the fall again");
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.None, 1f, "the rod stayed out while climbing");
+            rig.Fake.Frame = default;
+            rig.Log.AssertEmpty("manual equip during the away hold");
+        }
+
+        // Catches (finding 2): ladder entry while movement is locked (RodFighting or any source's LocksMovement): the player would be pulled
+        // onto a ladder and hang mid-fight. Entry must wait for the lock to end.
+        [UnityTest]
+        public IEnumerator Ladder_EntryWhileMovementLocked_WaitsForTheLockToEnd()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+
+            LockSource source = rig.Player.gameObject.AddComponent<LockSource>();
+            source.Locks = true;
+            rig.Locomotion.enabled = false;   // PlayerLocomotion caches its context sources in OnEnable
+            rig.Locomotion.enabled = true;
+
+            rig.Locomotion.ApplyTeleport(new Vector3(2.05f, -0.9f, LadderZ), 90f);   // centre of LadderR's volume at wading depth
+            float until = Time.time + 0.3f;
+            while (Time.time < until)
+            {
+                Assert.That(rig.Locomotion.IsClimbing, Is.False, "a locked player must not enter the ladder (at " + rig.Player.transform.position + ")");
+                yield return null;
+            }
+
+            Assert.That(LadderVolume.FindContaining(SwimInteractGateTests.Center(rig)), Is.Not.Null, "precondition: the capsule centre is inside the volume");
+
+            source.Locks = false;
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsClimbing, 2f, "the climb never started once the lock ended");
+            rig.Log.AssertEmpty("ladder entry while locked");
+        }
+
+        // Catches (R70, M2-D31): the rod staying out on a ladder, popping back out mid-ladder, or never coming back after the player steps
+        // back onto the deck.
+        [UnityTest]
+        public IEnumerator Ladder_RodOut_StowsOnEntryAndComesBackOnTheDeck()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+
+            yield return FishingPlayModeDriver.Step(rig.Fake, new PlayerInputFrame { EquipPressed = true });
+            rig.Fake.Frame = default;
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 2f, "Equip never set the Rod tool");
+
+            rig.Locomotion.ApplyTeleport(new Vector3(1.2f, 0.65f, LadderZ), 90f);
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsGrounded, PlayModeHarness.DefaultTimeoutSeconds, "never grounded on the deck");
+            Assert.That(rig.Player.Tool, Is.EqualTo(ToolKind.Rod), "precondition: rod out");
+
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };   // walk off the edge (pitch 0)
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsClimbing, 3f, "never stepped onto the ladder");
+            rig.Fake.Frame = default;                                // hang at the edge
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.None, 1f, "the rod was not put away on the ladder");
+            yield return PlayModeHarness.WaitGameSeconds(0.3f, PlayModeHarness.DefaultTimeoutSeconds, "hang");
+            Assert.That(rig.Player.Tool, Is.EqualTo(ToolKind.None), "the rod stays away while climbing");
+            Assert.That(rig.Machine.State, Is.EqualTo(RodState.Idle));
+
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = -1f };  // S at pitch 0: back toward the deck, out through the inner face
+            yield return PlayModeHarness.WaitUntil(() => !rig.Locomotion.IsClimbing, 2f, "never stepped back onto the deck");
+            rig.Fake.Frame = default;
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 1f, "the rod never came back after the ladder");
+            Assert.That(rig.Locomotion.IsSwimming, Is.False);
+            rig.Log.AssertEmpty("rod on a ladder");
+        }
+
+        // Catches: a line left out while its owner climbs (the host cast would stay open), or the cast ending as Escaped instead of a recall
+        // (the bait refund only happens on the cancel path).
+        [UnityTest]
+        public IEnumerator Ladder_LineOut_SteppingOntoTheLadderRecallsTheCast()
+        {
+            FishingDebugSettings.ForcedBiteWait = 30f;   // no bite during the test
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);   // G9: (0, 0.65, -41) facing +z
+            FishingRig rig = _rig;
+
+            yield return FishingPlayModeDriver.EquipAndReady(rig);
+            yield return FishingPlayModeDriver.ChargeAndRelease(rig);
+            yield return FishingPlayModeDriver.WaitForState(rig, RodState.Waiting, 5f);
+            int baitAfterCast = rig.Net.NetSelectedBaitCount.Value;
+
+            // Strafe right (+x) and back (-z) from z -41 so the edge is reached at z ~ -41.6, inside LadderR's z range, passing ~0.5 m
+            // clear of the bell at (1.1, 0.6, -40.6).
+            rig.Fake.Frame = new PlayerInputFrame { MoveX = 1f, MoveY = -0.4f };
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsClimbing, 3f, "never stepped onto the ladder with the line out");
+            rig.Fake.Frame = default;
+
+            yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.None, 1f, "the rod was not put away");
+            yield return FishingPlayModeDriver.WaitForState(rig, RodState.Idle, 5f);
+            yield return PlayModeHarness.WaitUntil(() => rig.Net.NetSelectedBaitCount.Value == baitAfterCast + 1, 3f,
+                "the cast was not recalled with a bait refund (count " + rig.Net.NetSelectedBaitCount.Value + ")");
+            rig.Log.AssertEmpty("line out onto a ladder");
+        }
+
+        // Catches (R70 ramp): a pull or lerp (the player must walk), no kick at the foot, swimming inside the foot, or a ramp that cannot be
+        // walked out of the lake.
+        [UnityTest]
+        public IEnumerator Ramp_SwimmerHoldingForward_KicksAtTheFootAndWalksOut()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+
+            rig.Locomotion.ApplyTeleport(new Vector3(12f, -1.45f, -37f), 180f);   // swimming 2 m seaward of the foot, facing the shore (-z)
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsSwimming, PlayModeHarness.DefaultTimeoutSeconds, "precondition: swimming");
+
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            var heights = new List<Vector2>();   // (game time, root y) per frame; CharacterController.velocity is noise at headless frame rates
+            Vector3 prev = rig.Player.transform.position;
+            double until = Time.realtimeSinceStartupAsDouble + 10.0;
+            while (!(rig.Player.transform.position.z < -50f && rig.Player.transform.position.y > 0.2f && rig.Locomotion.IsGrounded))
+            {
+                Assert.That(Time.realtimeSinceStartupAsDouble < until, Is.True, "never walked out up the ramp (at " + rig.Player.transform.position + ")");
+                yield return null;
+                if (WaterExit.FindContaining(rig.Player.transform.position) != null)   // only from the foot on: swimming up to it also bobs
+                    heights.Add(new Vector2(Time.time, rig.Player.transform.position.y));
+                // IsSwimming was decided from the position at the START of this frame (= prev), not from where the move ended.
+                bool prevInFootWater = WaterExit.FindContaining(prev) != null
+                                       && prev.y < WaterSurface.HeightAt(prev.x, prev.z) - MovementMath.WadeDepth - 0.05f;
+                if (prevInFootWater)
+                    Assert.That(rig.Locomotion.IsSwimming, Is.False, "nobody swims in the ramp foot (from " + prev + ")");
+                prev = rig.Player.transform.position;
+            }
+
+            rig.Fake.Frame = default;
+            float maxUp = MaxRiseRate(heights, RiseWindow);
+            TestContext.WriteLine($"ramp walk-out: max rise rate over {RiseWindow:F2} s = {maxUp:F2} m/s");
+            Assert.That(maxUp, Is.GreaterThan(KickRiseRate), "the foot kick (2 m/s) fired; slope walking alone stays well under it");
+            Assert.That(rig.Locomotion.IsClimbing, Is.False, "no lerp: the ramp is walked");
+            rig.Log.AssertEmpty("ramp walk-out");
+        }
+
+        // Catches: the assist pushing back a player who walks DOWN the ramp into the lake (the facing rule inverted, or a kick without push).
+        [UnityTest]
+        public IEnumerator Ramp_WalkingDownIntoTheLake_IsNotPushedBack()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+
+            rig.Locomotion.ApplyTeleport(new Vector3(12f, 0.5f, -50.5f), 0f);   // on the ramp top, facing the lake (+z)
+            yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsGrounded, PlayModeHarness.DefaultTimeoutSeconds, "never grounded on the ramp");
+
+            rig.Fake.Frame = new PlayerInputFrame { MoveY = 1f };
+            float lastZ = rig.Player.transform.position.z;
+            var heights = new List<Vector2>();
+            double until = Time.realtimeSinceStartupAsDouble + 10.0;
+            while (rig.Player.transform.position.z < -38.5f)
+            {
+                Assert.That(Time.realtimeSinceStartupAsDouble < until, Is.True, "never walked down past the foot (at " + rig.Player.transform.position + ")");
+                float z = rig.Player.transform.position.z;
+                Assert.That(z, Is.GreaterThan(lastZ - 0.02f), "pushed back toward the shore at z " + z);
+                lastZ = z;
+                heights.Add(new Vector2(Time.time, rig.Player.transform.position.y));
+                yield return null;
+            }
+
+            rig.Fake.Frame = default;
+            float maxUp = MaxRiseRate(heights, RiseWindow);
+            TestContext.WriteLine($"ramp walk-down: max rise rate over {RiseWindow:F2} s = {maxUp:F2} m/s");
+            Assert.That(maxUp, Is.LessThan(KickRiseRate), "no kick when walking down");
+            Assert.That(SwimInteractGateTests.InWater(rig), Is.True, "ended in the lake");
+            rig.Log.AssertEmpty("ramp walk-down");
+        }
+
         // Shared body of the three climb-out tests. Starts in the water 0.45 m outside LadderR, facing the dock, with the given look pitch.
         private IEnumerator ClimbUpFromWater(float pitchDeg, float limitSeconds)
         {
@@ -227,6 +622,22 @@ namespace FishGame.Tests.PlayMode
             Assert.That(rig.Locomotion.IsSwimming, Is.False);
             Assert.That(rig.Fake.GameplayContext, Is.EqualTo(InputContext.Free), "back to Free on the deck");
             rig.Log.AssertEmpty("climb out at pitch " + pitchDeg);
+        }
+
+        // Largest average rise rate (m/s) of root y over any stretch at least `window` seconds long. samples = (game time, y) per frame.
+        // CharacterController.velocity is useless for this: at the headless frame rate (over 1000 fps) it reads hundreds of m/s from skin jitter.
+        private static float MaxRiseRate(List<Vector2> samples, float window)
+        {
+            float best = float.NegativeInfinity;
+            int i = 0;
+            for (int j = 0; j < samples.Count; j++)
+            {
+                while (i + 1 < j && samples[j].x - samples[i + 1].x >= window) i++;
+                float dt = samples[j].x - samples[i].x;
+                if (dt >= window) best = Mathf.Max(best, (samples[j].y - samples[i].y) / dt);
+            }
+
+            return best;
         }
 
         private static bool OnDeck(FishingRig rig)

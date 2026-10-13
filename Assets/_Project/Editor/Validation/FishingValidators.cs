@@ -198,27 +198,13 @@ namespace FishGame.EditorTools
             Range(e, L, "minBiteWait", t.MinBiteWait, 0.5f, 2f);
             Rule(e, L, t.MinBiteWait <= t.BiteWaitMin, "minBiteWait <= biteWaitMin");
             Range(e, L, "hookBeat", t.HookBeat, 0.15f, 0.4f);
-            Range(e, L, "landDistance", t.LandDistance, 1.5f, 3f);
-            Range(e, L, "reelStrainBurst", t.ReelStrainBurst, 0.2f, 0.45f);
-            Range(e, L, "counterRelief", t.CounterRelief, 0.3f, 0.7f);
-            Range(e, L, "steerStrain", t.SteerStrain, 0f, 0.08f);
-            Range(e, L, "outOfWindowStrain", t.OutOfWindowStrain, 0.1f, 0.4f);
-            Range(e, L, "spoolStrain", t.SpoolStrain, 0.3f, 0.8f);
+            Range(e, L, "landDistance", t.LandDistance, 0.5f, 3f);
             Range(e, L, "spoolExtra", t.SpoolExtra, 6f, 20f);
-            Range(e, L, "relaxRate", t.RelaxRate, 0.3f, 0.7f);
-            Range(e, L, "relaxWhileReeling", t.RelaxWhileReeling, 0.05f, 0.2f);
-            Range(e, L, "reelBurstPenalty", t.ReelBurstPenalty, 0.6f, 1.2f);
-            Range(e, L, "diveRunMult", t.DiveRunMult, 1.2f, 2f);
-            Range(e, L, "snapGrace", t.SnapGrace, 0.2f, 0.75f);
-            Range(e, L, "snapGraceAssist", t.SnapGraceAssist, 0.2f, 0.75f);
-            Rule(e, L, t.SnapGraceAssist >= t.SnapGrace, "snapGraceAssist >= snapGrace");
-            Range(e, L, "strainScale", t.StrainScale, 0.5f, 1.5f);
-            Range(e, L, "strainScaleAssist", t.StrainScaleAssist, 0.3f, 1f);
+            Range(e, L, "relaxRate", t.RelaxRate, 0.5f, 3f);
+            Range(e, L, "strainScale", t.StrainScale, 0.3f, 1.5f);
+            Range(e, L, "strainScaleAssist", t.StrainScaleAssist, 0.2f, 1f);
             Rule(e, L, t.StrainScaleAssist <= t.StrainScale, "strainScaleAssist <= strainScale");
-            Range(e, L, "pinEscapeTime", t.PinEscapeTime, 4f, 10f);
             Range(e, L, "slackEscapeTime", t.SlackEscapeTime, 8f, 20f);
-            Range(e, L, "fishStaminaRegen", t.FishStaminaRegen, 0.02f, 0.08f);
-            Range(e, L, "calmCenterPull", t.CalmCenterPull, 0.05f, 0.3f);
             Range(e, L, "lateralMaxDeg", t.LateralMaxDeg, 60f, 85f);
             Range(e, L, "hookedLeash", t.HookedLeash, 2f, 5f);
             Range(e, L, "junkDragSpeed", t.JunkDragSpeed, 2f, 5f);
@@ -234,6 +220,26 @@ namespace FishGame.EditorTools
             Range(e, L, "pityStrainMult", t.PityStrainMult, 0.5f, 1f);
             Range(e, L, "pityGraceMult", t.PityGraceMult, 1f, 3f);
             Range(e, L, "pityHookWindowBonus", t.PityHookWindowBonus, 0f, 1f);
+            // R72 Rust fight baseline
+            Range(e, L, "strainBarFull", t.StrainBarFull, 1f, 20f);
+            Range(e, L, "strainSnap", t.StrainSnap, 1f, 30f);
+            Rule(e, L, t.StrainSnap > t.StrainBarFull, "strainSnap > strainBarFull");
+            Range(e, L, "strainRestInput", t.StrainRestInput, 0f, 3f);
+            Range(e, L, "strainReelRun", t.StrainReelRun, 0f, 6f);
+            Range(e, L, "strainReelBack", t.StrainReelBack, 0f, 6f);
+            Range(e, L, "strainCounterSteer", t.StrainCounterSteer, 0f, 3f);
+            Range(e, L, "strainOtherSteer", t.StrainOtherSteer, 0f, 3f);
+            Range(e, L, "sideMoveSpeed", t.SideMoveSpeed, 0f, 5f);
+            Range(e, L, "backMoveSpeed", t.BackMoveSpeed, 0f, 5f);
+            Range(e, L, "tireSteerRate", t.TireSteerRate, 0f, 5f);
+            Range(e, L, "tireCounterRate", t.TireCounterRate, 0f, 5f);
+            Range(e, L, "tireDecayRate", t.TireDecayRate, 0f, 1f);
+            Range(e, L, "tireRunFull", t.TireRunFull, 1f, 100f);
+            Range(e, L, "tireReelFull", t.TireReelFull, 0.5f, 50f);
+            Range(e, L, "tireReelMaxMult", t.TireReelMaxMult, 1f, 5f);
+            Range(e, L, "backPullMargin", t.BackPullMargin, 0f, 10f);
+            Range(e, L, "fightTimeout", t.FightTimeout, 30f, 300f);
+            Rule(e, L, t.MaxFightTime > t.FightTimeout, "maxFightTime > fightTimeout");
         }
 
         private static void CheckRod(List<string> e, RodDef r, FishingTuningDef tuning)
@@ -242,9 +248,11 @@ namespace FishGame.EditorTools
             Range(e, l, "tier", r.Tier, 0f, 3f);
             Range(e, l, "castMaxDist", r.CastMaxDist, 8f, 40f);
             if (tuning != null) Rule(e, l, r.CastMaxDist > tuning.CastMinDist, "castMaxDist > castMinDist");
-            Range(e, l, "reelSpeed", r.ReelSpeed, 0.5f, 2f);
+            Range(e, l, "reelSpeed", r.ReelSpeed, 0.3f, 2f);
             Range(e, l, "lineStrength", r.LineStrength, 0.5f, 2.5f);
             Range(e, l, "angleWindow", r.AngleWindow, 0.3f, 0.9f);
+            // PARKED (R72): angleWindow and PinnedLateral are unused by the baseline fight (no pinned state, no out-of-window strain). The rule and
+            // the range above stay so the parked data keeps a sane shape for the friendlier pass; neither feeds any fight maths today.
             Rule(e, l, r.AngleWindow < FishingConstants.PinnedLateral, "angleWindow < PinnedLateral");
             Range(e, l, "steerRate", r.SteerRate, 0.3f, 1.2f);
             Range(e, l, "relaxMult", r.RelaxMult, 0.5f, 1.5f);
@@ -273,14 +281,10 @@ namespace FishGame.EditorTools
         private static void CheckProfile(List<string> e, FightProfileDef p)
         {
             string l = "profile " + p.Id;
-            Range(e, l, "pullStrength", p.PullStrength, 0.1f, 1f);
-            Range(e, l, "lateralSpeed", p.LateralSpeed, 0.2f, 1.5f);
-            Range(e, l, "runSpeed", p.RunSpeed, 0.1f, 1.5f);
-            Range(e, l, "staminaDrain", p.StaminaDrain, 0.01f, 0.2f);
             Range(e, l, "calmMin", p.CalmMin, 0.2f, 5f);
             Range(e, l, "calmMax", p.CalmMax, p.CalmMin, 6f);
             Range(e, l, "burstMin", p.BurstMin, 0.3f, 6f);
-            Range(e, l, "burstMax", p.BurstMax, p.BurstMin, 8f);
+            Range(e, l, "burstMax", p.BurstMax, p.BurstMin, 10f);
             Range(e, l, "flipRate", p.FlipRate, 0f, 2f);
             Range(e, l, "diveChance", p.DiveChance, 0f, 1f);
             Range(e, l, "burstRamp", p.BurstRamp, 0f, 2f);
@@ -288,6 +292,10 @@ namespace FishGame.EditorTools
             Range(e, l, "calmDriftRamp", p.CalmDriftRamp, 0f, 5f);
             Range(e, l, "flipMinGap", p.FlipMinGap, 0.2f, 2f);
             Range(e, l, "lateralJitter", p.LateralJitter, 0f, 0.5f);
+            Range(e, l, "strainMod", p.StrainMod, 0.1f, 3f);
+            Range(e, l, "moveMult", p.MoveMult, 0f, 3f);
+            Range(e, l, "reelInMult", p.ReelInMult, 0.1f, 5f);
+            Range(e, l, "wavePeriod", p.WavePeriod, 0.5f, 8f);
             if (p.Id == "thrasher") Rule(e, l, p.CalmMin >= 1.0f, "calmMin >= 1.0");
         }
 

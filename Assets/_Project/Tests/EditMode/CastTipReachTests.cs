@@ -197,7 +197,7 @@ namespace FishGame.Tests.EditMode
                     float tipToBobber = TipToBobberFor(distance, out float rootToLanding);
                     float hostLine0 = CatchValidator.HostLineLength0(rootToLanding, t.LandDistance);
                     hostLine0 = CatchValidator.WalkBoundedLineLength0(hostLine0, rootToLanding, CastMath.FlightTime(distance) + 4.0, t.LandDistance);
-                    float floor = CatchValidator.LandedFloorSeconds(hostLine0, t.LandDistance, rod.ReelSpeed);
+                    float floor = float.MaxValue;   // R72: the host floor is per rolled profile (MaxReelSpeed); the print shows the most permissive one
                     Assert.That(tipToBobber, Is.GreaterThan(t.LandDistance), d.RodIds[i] + " charge " + charge);
 
                     var times = new List<float>();
@@ -207,6 +207,8 @@ namespace FishGame.Tests.EditMode
                         for (int s = 0; s < 20; s++)
                         {
                             FishFightProfile profile = d.Profiles[p];
+                            float maxReel = CatchValidator.MaxReelSpeed(rod, profile, in t);
+                            floor = Math.Min(floor, CatchValidator.LandedFloorSeconds(hostLine0, t.LandDistance, maxReel));
                             var sim = new FightSim(profile, rod, t, 0.5f, unchecked(2654435761u * (uint)(s + 1)), tipToBobber, false, false);
                             int maxTicks = (int)Math.Ceiling(t.MaxFightTime / FightSim.Step);
                             for (int k = 0; k < maxTicks; k++)
@@ -220,7 +222,7 @@ namespace FishGame.Tests.EditMode
                             times.Add(f.Elapsed);
                             var report = new FightReport { MaxTension = f.MaxTension, FightSeconds = f.Elapsed, NearSnapRecoveries = f.NearSnapRecoveries };
                             var cast = new ActiveCast { Roll = Roll(), LineLength0 = hostLine0, THooked = 0.0 };
-                            if (CatchValidator.CleanClaimAccepted(in report, f.Elapsed, in cast, t.LandDistance, rod.ReelSpeed, t.CleanCatchMaxTension)) clean++;
+                            if (CatchValidator.CleanClaimAccepted(in report, f.Elapsed, in cast, t.LandDistance, maxReel, t.CleanCatchMaxTension)) clean++;
                         }
                     }
 

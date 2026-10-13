@@ -58,6 +58,19 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(RodAwayAction.None, Step(false, false, false));
         }
 
+        // Catches (finding 4): the rod coming back the instant a climber tops out, while still in the air, and being stowed again when the
+        // ladder catches the fall (a visible half stow animation). Swimming or climbing is away regardless of the ground.
+        [Test]
+        public void EffectiveAway_HeldUntilGroundedAndFreeOfTheLadder_ButSwimmingAndClimbingAreAlwaysAway()
+        {
+            Assert.IsTrue(RodControllerRules.EffectiveAway(false, false, wasAway: true, grounded: false, ladderCatchPending: false), "was away, still in the air");
+            Assert.IsTrue(RodControllerRules.EffectiveAway(false, false, wasAway: true, grounded: true, ladderCatchPending: true), "landed on the rail inside the volume");
+            Assert.IsFalse(RodControllerRules.EffectiveAway(false, false, wasAway: true, grounded: true, ladderCatchPending: false), "landed clear");
+            Assert.IsFalse(RodControllerRules.EffectiveAway(false, false, wasAway: false, grounded: false, ladderCatchPending: true), "never away: a jump near a ladder does not stow the rod");
+            Assert.IsTrue(RodControllerRules.EffectiveAway(true, false, wasAway: false, grounded: true, ladderCatchPending: false));
+            Assert.IsTrue(RodControllerRules.EffectiveAway(false, true, wasAway: false, grounded: true, ladderCatchPending: false));
+        }
+
         // Catches: actions repeated every frame in a steady state.
         [Test]
         public void AwayStep_SteadyState_NoAction()

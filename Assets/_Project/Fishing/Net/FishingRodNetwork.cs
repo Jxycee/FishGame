@@ -245,15 +245,30 @@ namespace FishGame.Fishing
 
             if (cs == RodState.Hooked)
             {
-                bool wasBurst = (prev.Flags & RodWireQuant.FlagBurst) != 0;
-                bool isBurst = (cur.Flags & RodWireQuant.FlagBurst) != 0;
-                if (!wasBurst && isBurst) RaiseLocalCue((cur.Flags & RodWireQuant.FlagDive) != 0 ? RodCue.Dive : RodCue.SideRun, 0);
-                else if (wasBurst && !isBurst) RaiseLocalCue(RodCue.Calm, 0);
-
+                // FlagExhausted on the wire is the owner's latched spent state (final review M1), so it rises once per spent spell. While it
+                // is set the owner raises no run cues (a spent fish's zero-length runs), so the remote raises none either.
                 bool wasExhausted = (prev.Flags & RodWireQuant.FlagExhausted) != 0;
                 bool isExhausted = (cur.Flags & RodWireQuant.FlagExhausted) != 0;
                 if (!wasExhausted && isExhausted) RaiseLocalCue(RodCue.Exhausted, 0);
+                else if (!isExhausted)
+                {
+                    RodCue run = RunCue(prev.Flags, cur.Flags);
+                    if (run != RodCue.None) RaiseLocalCue(run, 0);
+                }
             }
+        }
+
+        // The remote run cue from the Hooked flags (R72), matching the owner's RodStateMachine cues: a new run raises Dive when it also pulls back
+        // (FlagDive) and SideRun otherwise; the end of a run raises Calm; FlagBurst staying set while FlagRight changes is a mid-run side flip
+        // (Darter, Thrasher, or the cone edge) and raises SideRun again.
+        internal static RodCue RunCue(byte prevFlags, byte curFlags)
+        {
+            bool wasBurst = (prevFlags & RodWireQuant.FlagBurst) != 0;
+            bool isBurst = (curFlags & RodWireQuant.FlagBurst) != 0;
+            if (!wasBurst && isBurst) return (curFlags & RodWireQuant.FlagDive) != 0 ? RodCue.Dive : RodCue.SideRun;
+            if (wasBurst && !isBurst) return RodCue.Calm;
+            if (wasBurst && isBurst && ((prevFlags ^ curFlags) & RodWireQuant.FlagRight) != 0) return RodCue.SideRun;
+            return RodCue.None;
         }
 
         // The remote state-transition cue map (plan T17). Nibble, Bite, HookSet, Snapped and Escaped come only from RodEventRpc.

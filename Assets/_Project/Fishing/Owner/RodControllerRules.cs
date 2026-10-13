@@ -15,6 +15,15 @@ namespace FishGame.Fishing
             return swimming || climbing;
         }
 
+        // The away flag the controller feeds to AwayStep. Coming back is held until the player is grounded and no ladder can retake them: a
+        // climber who tops out is in the air for a moment, or lands on the rail inside the volume, and the ladder catches the fall again (the
+        // re-entry grace is 0.25 s), which would equip the rod and stow it again with a visible half-animation. Swimming or climbing is
+        // always away.
+        public static bool EffectiveAway(bool swimming, bool climbing, bool wasAway, bool grounded, bool ladderCatchPending)
+        {
+            return IsAway(swimming, climbing) || (wasAway && (!grounded || ladderCatchPending));
+        }
+
         // Edge-driven: Stow when going away with the rod out (remembered), Equip when coming back if it was put away by this rule.
         public static RodAwayAction AwayStep(ref bool wasAway, ref bool stowedByAway, bool away, bool rodOut)
         {
@@ -81,13 +90,17 @@ namespace FishGame.Fishing
             return IsFinite(candidate) ? candidate : (IsFinite(fallback) ? fallback : Vector3.zero);
         }
 
-        // The Hooked-state wire flags (RodWireQuant.Flag*). A dive is a burst with direction 0. Grace = the snap timer is running, i.e. tension
-        // has been at 1.0 on the last fight tick (spec 9.5); remotes cannot see that in their smoothed Tension, so they read the flag.
-        public static byte HookedFlags(FightPhase phase, sbyte burstDir, bool reeling, bool exhausted, float snapTimer)
+        // R72: FlagBurst while the fish runs (not when spent), FlagRight for a right pull, FlagDive for a back pull; FlagGrace while the
+        // strain is over the full bar (SnapTimer > 0): remotes cannot see that in their smoothed Tension, so they read the flag.
+        public static byte HookedFlags(FightPhase phase, sbyte burstDir, bool back, bool reeling, bool exhausted, float snapTimer)
         {
             byte flags = 0;
-            if (phase == FightPhase.Burst)
-                flags |= burstDir == 0 ? (byte)(RodWireQuant.FlagBurst | RodWireQuant.FlagDive) : RodWireQuant.FlagBurst;
+            if (phase == FightPhase.Burst && !exhausted)
+            {
+                flags |= RodWireQuant.FlagBurst;
+                if (burstDir > 0) flags |= RodWireQuant.FlagRight;
+                if (back) flags |= RodWireQuant.FlagDive;
+            }
             if (reeling) flags |= RodWireQuant.FlagReel;
             if (exhausted) flags |= RodWireQuant.FlagExhausted;
             if (snapTimer > 0f) flags |= RodWireQuant.FlagGrace;

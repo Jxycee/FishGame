@@ -332,6 +332,7 @@ namespace FishGame.Runtime
                 case DevKey.ToggleForcedBite: k = Key.F6; break;
                 case DevKey.ToggleTwitchy: k = Key.F7; break;
                 case DevKey.RippleAtCrosshair: k = Key.F9; break;
+                case DevKey.CycleForcedSpecies: k = Key.F10; break;
                 default: return false;
             }
             return kb[k].wasPressedThisFrame;

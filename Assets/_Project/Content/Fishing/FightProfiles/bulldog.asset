@@ -14,18 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FightProfileDef
   id: bulldog
   displayName: Bulldog
-  pullStrength: 0.6
-  lateralSpeed: 0.6
-  runSpeed: 0.5
-  staminaDrain: 0.06
-  calmMin: 1
-  calmMax: 3
-  burstMin: 2
-  burstMax: 4
+  calmMin: 2
+  calmMax: 4
+  burstMin: 2.5
+  burstMax: 4.5
   flipRate: 0
-  diveChance: 0.35
+  diveChance: 0.55
   burstRamp: 0
-  calmDrift: 0.12
+  calmDrift: 0.06
   calmDriftRamp: 2.5
   flipMinGap: 0.5
   lateralJitter: 0
+  strainMod: 1.25
+  moveMult: 1.25
+  reelInMult: 0.9
+  wavePeriod: 4

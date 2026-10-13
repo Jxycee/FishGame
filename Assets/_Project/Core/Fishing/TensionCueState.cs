@@ -6,6 +6,7 @@ namespace FishGame.Core
         public TensionBand Band;
         public float RodBend01, ReelClickRate, CreakVolume01, CreakPitch, LineWarm01;
         public bool LineWarn, LineDash, Shake, CrackNow;
+        public bool CreakOn;   // R72: the creak loop is wanted (tension above 0.10, or over the full bar)
         public float RumbleLow, RumbleHigh, TraumaPerSecond;
     }
 }

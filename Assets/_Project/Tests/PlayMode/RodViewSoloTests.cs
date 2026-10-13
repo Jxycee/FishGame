@@ -240,7 +240,8 @@ namespace FishGame.Tests.PlayMode
                 // Stowed: the segments follow NetTool.
                 rig.Player.OwnerSetTool(ToolKind.None);
                 yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.None, 2f, "the tool never changed");
-                yield return PlayModeHarness.WaitFrames(2, 0.05f);
+                yield return PlayModeHarness.WaitUntil(() => !Renderer(player, PlayerRigPaths.RodSegmentPrefix + "0").enabled, 1f,
+                    "the rod never hid after the stow animation");
                 for (int i = 0; i < PlayerRigPaths.RodSegmentCount; i++)
                     Assert.That(Renderer(player, PlayerRigPaths.RodSegmentPrefix + i).enabled, Is.False, "Seg" + i + " hidden when stowed");
                 Assert.That(anchor.parent, Is.SameAs(parent), "TipAnchor stays valid while the rod is stowed (never SetActive)");
@@ -432,6 +433,46 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("bobber snap and arc");
         }
 
+        // Catches: the R72 bobber lean pointing the wrong way, not following the wire flags alone (a remote has nothing else), a back pull that is not
+        // halved, or a rest that does not level. The roll is measured about the bobber's own flat tip-to-bobber axis (its forward).
+        [UnityTest]
+        public IEnumerator RodViewSolo_Bobber_TiltsTowardThePullHalvedOnBackPull()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+
+            try
+            {
+                yield return DriveView(rig);
+                Transform bobber = rig.Player.transform.Find(PlayerRigPaths.Bobber);
+                Vector3 spot = Bobber(0f, -36f);
+                Func<float> roll = () => Vector3.SignedAngle(Vector3.up, bobber.up, bobber.forward);
+
+                SetView(rig, RodState.Hooked, RodWireQuant.FlagBurst | RodWireQuant.FlagRight, 0.5f, spot, 21);
+                yield return PlayModeHarness.WaitFrames(3, 4f);
+                Assert.That(roll(), Is.EqualTo(-30f).Within(2f), "right pull: leans right (-30)");
+
+                SetView(rig, RodState.Hooked, RodWireQuant.FlagBurst | RodWireQuant.FlagRight | RodWireQuant.FlagDive, 0.5f, spot, 21);
+                yield return PlayModeHarness.WaitFrames(3, 4f);
+                Assert.That(roll(), Is.EqualTo(-15f).Within(2f), "right back pull: halved");
+
+                SetView(rig, RodState.Hooked, RodWireQuant.FlagBurst, 0.5f, spot, 21);
+                yield return PlayModeHarness.WaitFrames(3, 4f);
+                Assert.That(roll(), Is.EqualTo(30f).Within(2f), "left pull: leans left (+30)");
+
+                SetView(rig, RodState.Hooked, 0, 0.5f, spot, 21);
+                yield return PlayModeHarness.WaitFrames(3, 4f);
+                Assert.That(roll(), Is.EqualTo(0f).Within(2f), "rest: level");
+            }
+            finally
+            {
+                if (rig.Controller != null) rig.Controller.enabled = true;
+            }
+
+            rig.Log.AssertEmpty("bobber tilt");
+        }
+
         // Catches: the bobber steady positions (Bite plunge, Hooked fish point, dive depth, exhausted float), the nibble dip, and the hide rules:
         // Snapped hides the bobber at once and whips the line for 0.2 s, a recall flies the bobber back instead of hiding it.
         [UnityTest]
@@ -539,8 +580,8 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("bobber states");
         }
 
-        // Catches: no splash for a cue; the side-run column emitted from a cue instead of polling, or also during a dive (spec 9.11: a dive has no
-        // sideways splash), or not emitted at all; no slow bubbles for an exhausted fish; bubbles on a recall-escape; a missing particle material.
+        // Catches: no splash for a cue; the side-run column emitted from a cue instead of polling, or dropped during a back pull (R72: a back pull
+        // also pulls to a side, so the column stays), or not emitted at all; no slow bubbles for an exhausted fish; bubbles on a recall-escape; a missing particle material.
         [UnityTest]
         public IEnumerator RodViewSolo_Splash_CuesAndPolledSideRun()
         {
@@ -583,7 +624,8 @@ namespace FishGame.Tests.PlayMode
                 yield return PlayModeHarness.WaitFrames(5, 0.4f);
                 Assert.That(ps.particleCount, Is.EqualTo(0), "no splashes while the fish simply pulls");
 
-                // Side run: polled, 20 per second, while Hooked + FlagBurst without FlagDive; the lateral swings.
+                // Side run: polled, 20 per second, while Hooked + FlagBurst; the lateral swings. A back pull (FlagDive) shows the same side
+                // column plus the bobber plunge (spec 9.11), so FlagDive does not switch the splash off.
                 ps.Clear();
                 int maxSide = 0;
                 double until = Time.realtimeSinceStartupAsDouble + 0.6;
@@ -597,7 +639,7 @@ namespace FishGame.Tests.PlayMode
                 }
                 Assert.That(maxSide, Is.GreaterThanOrEqualTo(5), "the side-run column is emitted by polling");
 
-                // Dive: Burst + Dive, no sideways splash.
+                // Back pull (R72): Burst + Dive keeps the side column (the dive's own plunge is the bobber dip, the thrum and the Dive cue).
                 SetView(rig, RodState.Hooked, 0, 0.5f, spot, 13);
                 yield return PlayModeHarness.WaitFrames(3, 0.1f);
                 ps.Clear();
@@ -611,7 +653,7 @@ namespace FishGame.Tests.PlayMode
                     yield return null;
                     maxDive = Mathf.Max(maxDive, ps.particleCount);
                 }
-                Assert.That(maxDive, Is.EqualTo(0), "a dive has no sideways splash");
+                Assert.That(maxDive, Is.GreaterThanOrEqualTo(5), "R72: a back pull also pulls to a side, so the side column stays during a dive");
 
                 // Exhausted: 3 particles every 0.6 s.
                 SetView(rig, RodState.Hooked, 0, 0.2f, spot, 13);
@@ -675,6 +717,64 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("marker flash");
         }
 
+        // Catches (R70 stow animation): the rod hiding at once on a stow or appearing straight at its rest pose on an equip (no animation),
+        // the animation moving TipAnchor (BF-3: the gameplay tip, reach tests and host slack read it), and the rod not settling back exactly.
+        [UnityTest]
+        public IEnumerator RodViewSolo_StowAndEquip_AnimateThenSettle()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            Transform player = rig.Player.transform;
+            try
+            {
+                yield return DriveView(rig);   // rod out, settled at rest
+                Transform anchor = player.Find(PlayerRigPaths.RodTipAnchor);
+                Transform visual = player.Find(PlayerRigPaths.RodTipVisual);
+                MeshRenderer seg0 = Renderer(player, PlayerRigPaths.RodSegmentPrefix + "0");
+                Vector3 restLocal = visual.localPosition;
+                Vector3 anchorLocal = anchor.localPosition;
+                Quaternion anchorRot = anchor.localRotation;
+
+                rig.Player.OwnerSetTool(ToolKind.None);
+                float t0 = Time.time, maxMove = 0f;
+                bool visibleWhileMoving = false;
+                while (Time.time - t0 < ToolStowAnim.Seconds * 0.9f)
+                {
+                    yield return null;
+                    float move = Vector3.Distance(visual.localPosition, restLocal);
+                    if (seg0.enabled && move > 0.01f) visibleWhileMoving = true;
+                    maxMove = Mathf.Max(maxMove, move);
+                }
+
+                Assert.That(visibleWhileMoving, Is.True, "the rod is still visible while it swings away (max move " + maxMove + ")");
+                yield return PlayModeHarness.WaitUntil(() => !seg0.enabled, 1f, "the rod never hid after the stow animation");
+                Assert.That(Vector3.Distance(anchor.localPosition, anchorLocal), Is.LessThan(1e-6f), "TipAnchor never moves (BF-3)");
+                Assert.That(Quaternion.Angle(anchor.localRotation, anchorRot), Is.LessThan(1e-4f), "TipAnchor never rotates (BF-3)");
+
+                rig.Player.OwnerSetTool(ToolKind.Rod);
+                t0 = Time.time;
+                bool sawRising = false;
+                while (Time.time - t0 < ToolStowAnim.Seconds * 0.9f)
+                {
+                    yield return null;
+                    if (seg0.enabled && Vector3.Distance(visual.localPosition, restLocal) > 0.01f) sawRising = true;
+                }
+
+                Assert.That(sawRising, Is.True, "the equip shows the rod at once and swings it up into place");
+                yield return PlayModeHarness.WaitFrames(3, ToolStowAnim.Seconds + 0.1f);
+                Assert.That(seg0.enabled, Is.True);
+                Assert.That(Vector3.Distance(visual.localPosition, restLocal), Is.LessThan(1e-3f), "settled exactly at the rest pose");
+                Assert.That(Vector3.Distance(anchor.localPosition, anchorLocal), Is.LessThan(1e-6f), "TipAnchor never moves (BF-3)");
+            }
+            finally
+            {
+                if (rig.Controller != null) rig.Controller.enabled = true;
+            }
+
+            rig.Log.AssertEmpty("rod stow animation");
+        }
+
         // ------------------------------------------------------------------ helpers
 
         // Disables the rod controller (so nothing overwrites the pushed view), equips the rod through NetTool and waits for the pose.
@@ -686,7 +786,7 @@ namespace FishGame.Tests.PlayMode
             rig.Player.OwnerSetTool(ToolKind.Rod);
             yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 2f, "the Rod tool never applied");
             SetView(rig, RodState.Idle, 0, 0f, Bobber(0f, -36f), 0);
-            yield return PlayModeHarness.WaitFrames(3, 0.1f);
+            yield return PlayModeHarness.WaitFrames(3, ToolStowAnim.Seconds + 0.1f);   // the equip animation has settled
         }
 
         private static void SetView(FishingRig rig, RodState state, byte flags, float tension, Vector3 bobber, uint castId)

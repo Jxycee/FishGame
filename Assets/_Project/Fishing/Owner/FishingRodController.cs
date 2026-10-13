@@ -212,6 +212,13 @@ namespace FishGame.Fishing
             if (!intent.EquipPressed || !RodControllerRules.EquipAllowed(context)) return;
             if (RodOut) Stow(RodForceReason.Stow);
             else Equip();
+
+            // A manual toggle during the away hold (airborne after a top-out, ladder grace, centre inside a volume) makes the away bookkeeping
+            // stale: with _wasAway still true a later re-catch or a return to swimming would see no edge and never stow the rod. Resync it to
+            // the real state (swimming or climbing now). Preferred over ignoring the key: the key stays responsive, and the edge logic stays
+            // the single place that decides stow/equip.
+            _awayStowed = false;
+            _wasAway = RodControllerRules.IsAway(_locomotion.IsSwimming, _locomotion.IsClimbing);
         }
 
         // Owner Equip/Stow cues come only from these two methods (C 8.1); remotes get theirs from FishingRodNetwork's ToolChanged handler.
@@ -238,7 +245,8 @@ namespace FishGame.Fishing
         private void HandleSwim()
         {
             bool swimming = _locomotion.IsSwimming;
-            bool away = RodControllerRules.IsAway(swimming, _locomotion.IsClimbing);
+            bool away = RodControllerRules.EffectiveAway(swimming, _locomotion.IsClimbing, _wasAway, _locomotion.IsGrounded,
+                _locomotion.LadderCatchPending);
             switch (RodControllerRules.AwayStep(ref _wasAway, ref _awayStowed, away, RodOut))
             {
                 case RodAwayAction.Stow:
@@ -534,7 +542,7 @@ namespace FishGame.Fishing
                 lateral = fs.Lateral;
                 tension = fs.Tension;
                 if (s == RodState.Hooked)
-                    flags |= RodControllerRules.HookedFlags(fs.Phase, fs.BurstDir, _lastFightInput.Reel, fight.Exhausted, fs.SnapTimer);   // FlagGrace: snap timer running
+                    flags |= RodControllerRules.HookedFlags(fs.Phase, fs.BurstDir, fs.Back, _lastFightInput.Reel, Machine.Spent, fs.SnapTimer);   // FlagGrace: over the full bar; Spent is the latched flag (M1)
             }
 
             if (Machine.Recalling) flags |= RodWireQuant.FlagRecall;

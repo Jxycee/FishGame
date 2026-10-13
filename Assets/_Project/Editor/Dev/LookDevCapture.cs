@@ -102,6 +102,18 @@ namespace FishGame.EditorTools
 
         const float LakeDockLayoutDeckTop = 0.6f;
 
+        // Batch entry (no graphics needed): only the collider dump of the scene on disk, colliders_<tag>.txt in -fgLookOut.
+        public static void DumpCollidersBatch()
+        {
+            string outDir = Arg("-fgLookOut");
+            if (string.IsNullOrEmpty(outDir)) throw new System.ArgumentException("-fgLookOut <dir> is required");
+            string tag = Arg("-fgLookTag") ?? "dump";
+            Directory.CreateDirectory(outDir);
+            Scene scene = EditorSceneManager.OpenScene(AssetPaths.LakeDockScene, OpenSceneMode.Single);
+            File.WriteAllText(Path.Combine(outDir, "colliders_" + tag + ".txt"), DumpColliders(scene));
+            Debug.Log("FG LOOKDEV colliders tag=" + tag);
+        }
+
         static string Arg(string name)
         {
             string[] args = System.Environment.GetCommandLineArgs();

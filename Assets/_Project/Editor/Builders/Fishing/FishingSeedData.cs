@@ -50,25 +50,29 @@ namespace FishGame.EditorTools
             s_tuning = new FishingTuning
             {
                 CastChargeTime = 1.0f, ChargePingPong = true, CastMinDist = 2.5f, MinLandDepth = 0.8f,
-                BiteWaitMin = 4f, BiteWaitMax = 18f, MinBiteWait = 1.0f, HookBeat = 0.25f, LandDistance = 2.0f,
-                ReelStrainBurst = 0.30f, CounterRelief = 0.5f, SteerStrain = 0.03f, OutOfWindowStrain = 0.20f, SpoolStrain = 0.50f, SpoolExtra = 12f,
-                RelaxRate = 0.45f, RelaxWhileReeling = 0.20f, ReelBurstPenalty = 1.0f, DiveRunMult = 1.5f,
-                SnapGrace = 0.25f, SnapGraceAssist = 0.75f, StrainScale = 1.0f, StrainScaleAssist = 0.6f,
-                PinEscapeTime = 5f, SlackEscapeTime = 12f, FishStaminaRegen = 0.04f, CalmCenterPull = 0.15f, LateralMaxDeg = 75f,
+                BiteWaitMin = 4f, BiteWaitMax = 18f, MinBiteWait = 1.0f, HookBeat = 0.25f, LandDistance = 1.0f,
+                SpoolExtra = 12f, RelaxRate = 1.5f, StrainScale = 0.75f, StrainScaleAssist = 0.45f,
+                SlackEscapeTime = 12f, LateralMaxDeg = 60f,
                 HookedLeash = 3f, JunkDragSpeed = 3f,
                 ResultTimeout = 3f, CommitTimeout = 3f, HookTolerance = 0.75f, MaxFightTime = 240f, RodStateHz = 15, CancelRefundsBait = true,
                 CreelMaxEntries = 12, CreelMaxWeightG = 15000,
                 CleanCatchMaxTension = 0.8f,
                 PityAfterFailures = 3, PityStrainMult = 0.85f, PityGraceMult = 1.5f, PityHookWindowBonus = 0.3f,
+                // R72 Rust fight baseline (spec 9.12; research note 8). Read by the new FightSim from F2.
+                StrainBarFull = 6f, StrainSnap = 7f, StrainRestInput = 0.5f, StrainReelRun = 2.2f, StrainReelBack = 2.5f,
+                StrainCounterSteer = 0.8f, StrainOtherSteer = 0.5f, SideMoveSpeed = 1.2f, BackMoveSpeed = 1.3f,
+                TireSteerRate = 0.8f, TireCounterRate = 1.25f, TireDecayRate = 0.1f, TireRunFull = 20f, TireReelFull = 5f,
+                TireReelMaxMult = 3f, BackPullMargin = 2f, FightTimeout = 120f,
             };
 
             // Spec 9.7 rods.
             var rods = new List<(string id, string name, RodStats stats, int shopCost, int firstCamp)>
             {
-                ("rod_twig", "Twig Rod", Rod(0, 14f, 0.9f, 0.8f, 0.50f, 0.50f, 0.9f), 0, 0),
-                ("rod_handmade", "Handmade Rod", Rod(1, 18f, 1.0f, 1.0f, 0.60f, 0.60f, 1.0f), 120, 1),
-                ("rod_carbon", "Carbon Rod", Rod(2, 24f, 1.2f, 1.3f, 0.70f, 0.70f, 1.1f), 300, 2),
-                ("rod_deepsea", "Deep-Sea Rod", Rod(3, 30f, 1.3f, 1.6f, 0.75f, 0.80f, 1.2f), 600, 4),
+                // R72: reelSpeed / steerRate follow Rust's rod (Handmade 0.6 / 0.8); the other rods keep their pre-R72 ratios.
+                ("rod_twig", "Twig Rod", Rod(0, 14f, 0.54f, 0.8f, 0.50f, 0.67f, 0.9f), 0, 0),
+                ("rod_handmade", "Handmade Rod", Rod(1, 18f, 0.6f, 1.0f, 0.60f, 0.8f, 1.0f), 120, 1),
+                ("rod_carbon", "Carbon Rod", Rod(2, 24f, 0.72f, 1.3f, 0.70f, 0.93f, 1.1f), 300, 2),
+                ("rod_deepsea", "Deep-Sea Rod", Rod(3, 30f, 0.78f, 1.6f, 0.75f, 1.07f, 1.2f), 600, 4),
             };
             s_rods = new ReadOnlyCollection<(string, string, RodStats, int, int)>(rods);
 
@@ -84,14 +88,16 @@ namespace FishGame.EditorTools
             };
             s_baits = new ReadOnlyCollection<(string, string, BaitStats)>(baits);
 
-            // Spec 9.6 profile columns with the C 7.7 motion seeds (they override the spec Darter row).
+            // R72: Rust tiers plus the five per-profile quirks (spec 9.6); the quirks change only how the fish moves. Columns: calmMin/Max,
+            // burstMin/Max, flipRate, dive, burstRamp, calmDrift, calmDriftRamp, flipMinGap, jitter, then the tier (strainMod, moveMult,
+            // reelInMult) and wavePeriod.
             var profiles = new List<(string id, string name, FishFightProfile profile)>
             {
-                ("steady", "Steady", Profile(0.30f, 0.60f, 0.30f, 0.08f, 1.0f, 2.5f, 1.5f, 2.5f, 0f, 0f, 0.6f, 0f, 0f, 0.5f, 0f)),
-                ("darter", "Darter", Profile(0.45f, 0.70f, 0.40f, 0.07f, 0.3f, 0.8f, 0.4f, 0.9f, 1.0f, 0f, 0f, 0f, 0f, 0.3f, 0f)),
-                ("bulldog", "Bulldog", Profile(0.60f, 0.60f, 0.50f, 0.06f, 1.0f, 3.0f, 2.0f, 4.0f, 0f, 0.35f, 0f, 0.12f, 2.5f, 0.5f, 0f)),
-                ("thrasher", "Thrasher", Profile(0.70f, 1.00f, 0.60f, 0.035f, 1.0f, 2.5f, 1.5f, 3.0f, 0.5f, 0f, 0f, 0f, 0f, 0.5f, 0.3f)),
-                ("runner", "Runner", Profile(0.85f, 0.80f, 0.80f, 0.035f, 1.0f, 2.0f, 2.5f, 4.0f, 0.1f, 0.25f, 0.8f, 0f, 0f, 0.5f, 0f)),
+                ("steady", "Steady", Profile(2f, 4f, 3f, 5f, 0f, 0.15f, 0.6f, 0f, 0f, 0.5f, 0f, 0.8f, 0.8f, 1.2f, 4f)),
+                ("darter", "Darter", Profile(1f, 2f, 2f, 3.5f, 1.0f, 0.15f, 0f, 0f, 0f, 0.3f, 0f, 1.0f, 1.0f, 1.0f, 4f)),
+                ("bulldog", "Bulldog", Profile(2f, 4f, 2.5f, 4.5f, 0f, 0.55f, 0f, 0.06f, 2.5f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f)),
+                ("thrasher", "Thrasher", Profile(1.5f, 3f, 3f, 5f, 0.4f, 0.20f, 0f, 0f, 0f, 0.5f, 0.3f, 1.0f, 1.0f, 1.0f, 1.5f)),
+                ("runner", "Runner", Profile(2f, 3.5f, 5f, 9f, 0f, 0.30f, 0.8f, 0f, 0f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f)),
             };
             s_profiles = new ReadOnlyCollection<(string, string, FishFightProfile)>(profiles);
 
@@ -139,14 +145,15 @@ namespace FishGame.EditorTools
             return new BaitStats { Rating = rating, StackMax = stackMax, MaxRating = maxRating, BiteSpeedMod = biteSpeedMod, JunkMult = junkMult, MaxNibbles = maxNibbles, Unlimited = unlimited };
         }
 
-        private static FishFightProfile Profile(float pull, float lateral, float run, float drain, float calmMin, float calmMax, float burstMin, float burstMax,
-            float flipRate, float dive, float burstRamp, float calmDrift, float calmDriftRamp, float flipMinGap, float lateralJitter)
+        private static FishFightProfile Profile(float calmMin, float calmMax, float burstMin, float burstMax,
+            float flipRate, float dive, float burstRamp, float calmDrift, float calmDriftRamp, float flipMinGap, float lateralJitter,
+            float strainMod, float moveMult, float reelInMult, float wavePeriod)
         {
             return new FishFightProfile
             {
-                PullStrength = pull, LateralSpeed = lateral, RunSpeed = run, StaminaDrain = drain,
                 CalmMin = calmMin, CalmMax = calmMax, BurstMin = burstMin, BurstMax = burstMax, FlipRate = flipRate, DiveChance = dive,
                 BurstRamp = burstRamp, CalmDrift = calmDrift, CalmDriftRamp = calmDriftRamp, FlipMinGap = flipMinGap, LateralJitter = lateralJitter,
+                StrainMod = strainMod, MoveMult = moveMult, ReelInMult = reelInMult, WavePeriod = wavePeriod,
             };
         }
 

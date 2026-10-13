@@ -5,8 +5,10 @@
 // PlayerCamera scales them by cameraMotion itself), rumble (scaled here by cameraMotion), captions (settings.captions).
 // cameraMotion limits camera motion only (shake, FOV kicks, bob, rumble): the snap silhouette jump, splash and ripple are world feedback seen
 // by everyone and carry the fish size, so they are never scaled or hidden by it (spec 9.11).
-// Grace (spec 9.11, tension >= 1.0): the owner's PublishView sets RodWireQuant.FlagGrace while the snap timer runs; every peer polls the flag
-// (remote Tension is smoothed and may never reach 1.0) and plays Line_Crack on its rising edge.
+// Grace (spec 9.11; R72: the strain is over the full bar, 6 of 7): the owner's PublishView sets RodWireQuant.FlagGrace while the snap timer runs;
+// every peer polls the flag (remote Tension is smoothed and may never reach 1.0) and plays Line_Crack on its rising edge.
+// The creak loop (R72) plays while hooked above 10% of the bar (Rust strainGainCurve) and fades out over 0.25 s while still hooked; it stops at once
+// when the rod leaves Hooked.
 // Sound placement: rod-side one-shots are 2D on the owner (Play2D) and positional on remotes; cues that need a pitch (ChargeStart,
 // CastRelease) use the positional overload everywhere, because Play2D has no pitch overload (ruling C-Q8) and the owner's rod tip is at the ear.
 // No coroutines: every delayed effect is a timer ticked in Update (the snap jump is posed in LateUpdate), so disabling the component cancels them all. Once OnDisable has run
@@ -76,6 +78,8 @@ namespace FishGame.Presentation
 
         private AudioBus _loopBus;
         private AudioLoop _creak, _thrum;
+        private float _creakFadeLeft;          // R72: seconds left of the creak fade-out while still hooked
+        private float _creakVol, _creakPitch;  // the last wanted creak values, scaled by the fade
         private float _reelAcc;
         private float _lastStrainCaption = float.NegativeInfinity;
         private bool _wasHooked;
@@ -330,7 +334,7 @@ namespace FishGame.Presentation
             UpdateGrace(vs, hooked, owner);
 
             RunTimers(now, vs, owner);
-            UpdateLoops(vs, hooked, owner, in cue);
+            UpdateLoops(vs, hooked, owner, in cue, dt);
             UpdateReelTicks(vs, hooked, owner, in cue, dt);
 
             if (owner)
@@ -371,9 +375,9 @@ namespace FishGame.Presentation
             if (rising) PlayRod(FeedbackServices.Get<AudioBus>(), SfxIds.LineCrack, RodPosition(), owner);
         }
 
-        private void UpdateLoops(in RodViewState vs, bool hooked, bool owner, in TensionCueState cue)
+        private void UpdateLoops(in RodViewState vs, bool hooked, bool owner, in TensionCueState cue, float dt)
         {
-            bool creak = hooked && cue.Band >= TensionBand.Creak;
+            bool creak = hooked && cue.CreakOn;
             bool thrum = hooked && (vs.Flags & RodWireQuant.FlagDive) != 0;
             if (!creak && !thrum && _creak == null && _thrum == null) return;
 
@@ -388,11 +392,24 @@ namespace FishGame.Presentation
             if (creak)
             {
                 if (_creak == null) _creak = StartLoop(bus, SfxIds.LineCreak, _rodTip, !owner);
-                if (_creak != null) bus.SetLoop(_creak, cue.CreakVolume01, cue.CreakPitch);
+                if (_creak != null)
+                {
+                    FightViewMath.CreakFadeStep(true, ref _creakFadeLeft, dt, out _);
+                    _creakVol = cue.CreakVolume01;
+                    _creakPitch = cue.CreakPitch;
+                    bus.SetLoop(_creak, _creakVol, _creakPitch);
+                }
             }
             else if (_creak != null)
             {
-                StopLoop(ref _creak);
+                if (hooked)
+                {
+                    // R72: tension fell to 10% or below while still hooked: fade out over 0.25 s, then stop.
+                    float m = FightViewMath.CreakFadeStep(false, ref _creakFadeLeft, dt, out bool stop);
+                    if (stop) StopLoop(ref _creak);
+                    else bus.SetLoop(_creak, _creakVol * m, _creakPitch);
+                }
+                else StopLoop(ref _creak);   // left Hooked: stop at once
             }
 
             if (thrum)
@@ -425,6 +442,7 @@ namespace FishGame.Presentation
         {
             StopLoop(ref _creak);
             StopLoop(ref _thrum);
+            _creakFadeLeft = 0f;
         }
 
         private void UpdateReelTicks(in RodViewState vs, bool hooked, bool owner, in TensionCueState cue, float dt)

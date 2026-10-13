@@ -20,26 +20,13 @@ MonoBehaviour:
   biteWaitMax: 18
   minBiteWait: 1
   hookBeat: 0.25
-  landDistance: 2
-  reelStrainBurst: 0.3
-  counterRelief: 0.5
-  steerStrain: 0.03
-  outOfWindowStrain: 0.2
-  spoolStrain: 0.5
+  landDistance: 1
   spoolExtra: 12
-  relaxRate: 0.45
-  relaxWhileReeling: 0.2
-  reelBurstPenalty: 1
-  diveRunMult: 1.5
-  snapGrace: 0.25
-  snapGraceAssist: 0.75
-  strainScale: 1
-  strainScaleAssist: 0.6
-  pinEscapeTime: 5
+  relaxRate: 1.5
+  strainScale: 0.75
+  strainScaleAssist: 0.45
   slackEscapeTime: 12
-  fishStaminaRegen: 0.04
-  calmCenterPull: 0.15
-  lateralMaxDeg: 75
+  lateralMaxDeg: 60
   hookedLeash: 3
   junkDragSpeed: 3
   resultTimeout: 3
@@ -55,3 +42,20 @@ MonoBehaviour:
   pityStrainMult: 0.85
   pityGraceMult: 1.5
   pityHookWindowBonus: 0.3
+  strainBarFull: 6
+  strainSnap: 7
+  strainRestInput: 0.5
+  strainReelRun: 2.2
+  strainReelBack: 2.5
+  strainCounterSteer: 0.8
+  strainOtherSteer: 0.5
+  sideMoveSpeed: 1.2
+  backMoveSpeed: 1.3
+  tireSteerRate: 0.8
+  tireCounterRate: 1.25
+  tireDecayRate: 0.1
+  tireRunFull: 20
+  tireReelFull: 5
+  tireReelMaxMult: 3
+  backPullMargin: 2
+  fightTimeout: 120

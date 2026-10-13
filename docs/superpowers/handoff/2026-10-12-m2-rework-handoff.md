@@ -1,5 +1,7 @@
 # FishGame - Handoff: M2 rework after the user's first manual checks (2026-10-12)
 
+> **Superseded (2026-10-13) by `2026-10-13-m2-rework-done-handoff.md`.** Everything below is history: decisions 2.1-2.3 were answered (water C smooth = R73; Rust server downloaded and decompiled, research section 8; Settings focus stays on UI scale), the ladders (3.2, R70) and the fight (3.1, R72) are built, and the water (3.3 / section 7) was redone smooth.
+
 ## Paste this to start the next conversation
 
 > Read `docs/superpowers/handoff/2026-10-12-m2-rework-handoff.md` and `CLAUDE.md`, then continue the M2 rework on branch `m2-fishing-core`. Start with the open decisions in section 2, then plan and run the work in section 3 with the agent roles in section 6.
@@ -20,6 +22,8 @@
 ## 3. The work (all M2, before the user reruns acceptance)
 
 ### 3.1 Fight rework - Rust-faithful first, then tune friendlier (user decision)
+
+**STATUS (2026-10-12): BUILT (R72, plan `2026-10-12-m2-rework-fight.md` F0-F8), awaiting the user's play.** Spec 9.5-9.13 rewritten (amendment R72); `FightSim` runs Rust's server maths with the five fight styles kept as data quirks; the bots (Greedy, Reckless, Pump, Rhythm) meet every baseline target with no retuning; creak from 10% with a 0.25 s fade, bobber tilt, and a HUD gauge that runs to the snap point are in; the 13 retired tuning fields, 4 profile fields and 7 constants are removed. Commits: F0 `a5714ee`, F1 `c1fdc6a`, F2 `8dbef65`, F3 `a0ea43c`, review tests `c737fd9`, F4 `0678baf`, F5 `4ad64f8`, F6 `105a525`, F7 `2eaf1e5`. Bot numbers: acceptance doc K.1. **Next: the user plays acceptance steps M1-M9 (acceptance doc K.2) and answers Q2, Q5, Q6, Q7 (K.3); then the friendlier tuning pass.** Left open on purpose: tightening the host Landed floor with the tire ramp (the floor assumes a fully tired fish from the first tick; a sound tightening needs the tire ramp and the latency slack together, so it waits for M5 anti-cheat). The text below is the pre-build diagnosis and proposal, kept as history.
 
 Diagnosis (fight felt "super easy, zero resistance, gauge never reaches 80%; catfish impossible"): NOT a bug. Live game == spec 9.5 model == bot data. Causes: strain only builds during bursts and in proportion to pull (spec 9.5 even says "bluegill effectively can't snap"); calm reeling relaxes tension; assist (x0.6) was on in 5 of 9 logged fights; the T15 bots test unrepresentative cells (start line = castMaxDist 18 m, weightT 0.5/0.9 while real weights skew to ~0.22, a Greedy bot that never steers); catfish: reel floor 0.13 m/s vs runner run 0.81 m/s and stamina regen in calm > drain, so a ~35 s stall.
 

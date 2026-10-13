@@ -83,7 +83,7 @@ namespace FishGame.Tests.PlayMode
                 // (b) the bite caption (owner, settings.captions).
                 Assert.That(captions, Does.Contain("cap.bite"), "CaptionRequested(cap.bite) at the bite");
 
-                yield return FishingPlayModeDriver.FightRhythm(rig, 60f);
+                yield return FishingPlayModeDriver.FightRhythm(rig, 100f);
                 Assert.That(rig.Machine.State, Is.EqualTo(RodState.Landed), "the scripted fight must land the fish");
 
                 // (c) the reveal: active within 0.5 s of the announcement, with a mesh and one material per submesh, hidden again within 2.5 s.
@@ -241,6 +241,51 @@ namespace FishGame.Tests.PlayMode
             }
 
             rig.Log.AssertEmpty("feedback loops");
+        }
+
+        // Catches (R72): the creak gated at the old 0.6 band instead of Rust's 10%, an instant stop when the tension falls (it fades over 0.25 s while
+        // still hooked), a fade that never ends, or a creak that survives leaving Hooked. Deterministic: the controller is disabled and the test drives the view.
+        [UnityTest]
+        public IEnumerator FeedbackSolo_Creak_StartsAboveTenPercentAndFadesOut()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig, teleport: false);
+            FishingRig rig = _rig;
+
+            Assert.That(ServiceRoots.App.TryGet(out AudioBus audio), Is.True, "AudioBus");
+            Transform tip = rig.Player.transform.Find(PlayerRigPaths.RodTipAnchor);
+            Assert.That(tip, Is.Not.Null, "RodTipAnchor");
+
+            try
+            {
+                rig.Controller.enabled = false;
+                yield return PlayModeHarness.WaitFrames(2, 0.05f);
+                Vector3 bobber = tip.position + new Vector3(0f, -1f, 5f);
+
+                SetView(rig, RodState.Hooked, 0, 0.05f, bobber);
+                yield return PlayModeHarness.WaitFrames(3, 0.3f);
+                Assert.That(FindLoop(audio, "Loop_Line_Creak"), Is.Null, "tension 0.05 is below the 10% start");
+
+                SetView(rig, RodState.Hooked, 0, 0.2f, bobber);
+                yield return PlayModeHarness.WaitUntil(() => FindLoop(audio, "Loop_Line_Creak") != null, 2f, "tension 0.2 must start the creak (Rust: from 0.10)");
+
+                SetView(rig, RodState.Hooked, 0, 0.05f, bobber);   // still Hooked: fades instead of stopping dead
+                yield return null;
+                Assert.That(FindLoop(audio, "Loop_Line_Creak"), Is.Not.Null, "the creak is still there on the next frame (0.25 s fade)");
+                yield return PlayModeHarness.WaitUntil(() => FindLoop(audio, "Loop_Line_Creak") == null, 0.6f, "the creak must be gone after the fade");
+
+                SetView(rig, RodState.Hooked, 0, 0.2f, bobber);
+                yield return PlayModeHarness.WaitUntil(() => FindLoop(audio, "Loop_Line_Creak") != null, 2f, "the creak restarts");
+                SetView(rig, RodState.Escaped, 0, 0.2f, bobber);
+                yield return PlayModeHarness.WaitFrames(2, 0f);
+                Assert.That(HasLoop(audio), Is.False, "leaving Hooked stops the creak within 2 frames");
+            }
+            finally
+            {
+                if (rig.Controller != null) rig.Controller.enabled = true;
+            }
+
+            rig.Log.AssertEmpty("creak fade");
         }
 
         // Catches (final review I-1): solo pause mid-fight leaving the rumble, the Line_Creak / Dive_Thrum loops, the reel clicks and the

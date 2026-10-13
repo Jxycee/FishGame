@@ -16,10 +16,10 @@ MonoBehaviour:
   displayName: Carbon Rod
   tier: 2
   castMaxDist: 24
-  reelSpeed: 1.2
+  reelSpeed: 0.72
   lineStrength: 1.3
   angleWindow: 0.7
-  steerRate: 0.7
+  steerRate: 0.93
   relaxMult: 1.1
   shopCost: 300
   firstCamp: 2

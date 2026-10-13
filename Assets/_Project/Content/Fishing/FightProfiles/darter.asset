@@ -14,18 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FightProfileDef
   id: darter
   displayName: Darter
-  pullStrength: 0.45
-  lateralSpeed: 0.7
-  runSpeed: 0.4
-  staminaDrain: 0.07
-  calmMin: 0.3
-  calmMax: 0.8
-  burstMin: 0.4
-  burstMax: 0.9
+  calmMin: 1
+  calmMax: 2
+  burstMin: 2
+  burstMax: 3.5
   flipRate: 1
-  diveChance: 0
+  diveChance: 0.15
   burstRamp: 0
   calmDrift: 0
   calmDriftRamp: 0
   flipMinGap: 0.3
   lateralJitter: 0
+  strainMod: 1
+  moveMult: 1
+  reelInMult: 1
+  wavePeriod: 4
