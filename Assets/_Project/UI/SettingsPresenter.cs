@@ -15,7 +15,18 @@ namespace FishGame.UI
         private readonly List<Action> _refreshers = new List<Action>();
         private readonly ScrollView _scroll;
         private readonly TextField _name;
+        private readonly List<Action> _graphicsRefreshers = new List<Action>();
+        private List<(int Width, int Height)> _resolutions = new List<(int Width, int Height)> { (0, 0) };
+        private ScrollView _graphicsScroll;
+        private Button _tabGeneral, _tabGraphics;
+        private SliderInt _frameCap, _resolution, _qualityPreset;
+        private bool _graphicsShown;
         private VisualElement _firstControl;
+
+        private static readonly string[] WindowKeys = { "settings.win_fullscreen", "settings.win_borderless", "settings.win_windowed" };
+        private static readonly string[] PresetKeys = { "settings.preset_low", "settings.preset_medium", "settings.preset_high", "settings.preset_custom" };
+        private static readonly string[] ShadowKeys = { "settings.shadow_off", "settings.shadow_low", "settings.shadow_high" };
+        private static readonly string[] AaKeys = { "settings.aa_off", "settings.aa_fxaa", "settings.aa_msaa2", "settings.aa_msaa4" };
 
         public event Action BackRequested;
 
@@ -64,6 +75,8 @@ namespace FishGame.UI
             BindBool(root, "AimToggle", "settings.aim_toggle", d => d.aimToggle, (d, v) => d.aimToggle = v);
             BindBool(root, "StreamerMode", "settings.streamer", d => d.streamerMode, (d, v) => d.streamerMode = v);
 
+            BindGraphicsTab(root);
+
             var back = UiQuery.Req<Button>(root, "SettingsBack");
             back.text = UiStrings.Get("settings.back");
             back.clicked += () => BackRequested?.Invoke();
@@ -72,9 +85,153 @@ namespace FishGame.UI
         public void Load()
         {
             foreach (var refresh in _refreshers) refresh();
+            RebuildResolutions();
+            RefreshGraphics();
+            ShowTab(false);
         }
 
-        public void FocusDefault() => _firstControl?.Focus();
+        // Graphics tab (playtest S6/S3). Two tab buttons switch between the General page (the original scroll list) and the Graphics page.
+        // Everything is a SliderInt choice or a Toggle, like the existing rows, so keyboard and gamepad navigation need nothing special: a hidden
+        // page is display:none and takes no focus. Rows write ISettings.Current + NotifyChanged (values apply live through GraphicsApplier);
+        // SettingsData.Clamp turns a preset into Custom when a row stops matching it. Refreshing after a change uses SetValueWithoutNotify only,
+        // so a preset change never re-enters the row callbacks.
+        private void BindGraphicsTab(VisualElement root)
+        {
+            _tabGeneral = UiQuery.Req<Button>(root, "TabGeneral");
+            _tabGraphics = UiQuery.Req<Button>(root, "TabGraphics");
+            _tabGeneral.text = UiStrings.Get("settings.tab_general");
+            _tabGraphics.text = UiStrings.Get("settings.tab_graphics");
+            _tabGeneral.clicked += () => ShowTab(false);
+            _tabGraphics.clicked += () => ShowTab(true);
+
+            UiQuery.Req<Label>(root, "SectionScreen").text = UiStrings.Get("settings.section_screen");
+            UiQuery.Req<Label>(root, "SectionQuality").text = UiStrings.Get("settings.section_quality");
+            UiQuery.Req<Label>(root, "GraphicsHint").text = UiStrings.Get("settings.gfx_hint");
+
+            _graphicsScroll = UiQuery.Req<ScrollView>(root, "GraphicsScroll");
+            _graphicsScroll.RegisterCallback<FocusInEvent>(OnGraphicsFocusIn, TrickleDown.TrickleDown);
+            _graphicsScroll.verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible;
+
+            BindGfxChoice(root, "WindowMode", "settings.gfx_window", 3, i => UiStrings.Get(WindowKeys[i]),
+                d => d.windowMode, (d, v) => d.windowMode = v);
+
+            _resolution = BindGfxChoice(root, "Resolution", "settings.gfx_res", 1, ResolutionText,
+                d => GraphicsPresets.ResolutionIndex(_resolutions, d.resolutionWidth, d.resolutionHeight),
+                (d, v) =>
+                {
+                    var r = _resolutions[Math.Max(0, Math.Min(_resolutions.Count - 1, v))];
+                    d.resolutionWidth = r.Width;
+                    d.resolutionHeight = r.Height;
+                });
+
+            var vsync = UiQuery.Req<Toggle>(root, "VSync");
+            vsync.label = UiStrings.Get("settings.gfx_vsync");
+            vsync.RegisterValueChangedCallback(e =>
+            {
+                _settings.Current.vsync = e.newValue;
+                _settings.NotifyChanged();
+                RefreshGraphics();
+            });
+            _graphicsRefreshers.Add(() => vsync.SetValueWithoutNotify(_settings.Current.vsync));
+
+            _frameCap = BindGfxChoice(root, "FrameCap", "settings.gfx_fps", GraphicsPresets.FrameCaps.Length,
+                i => GraphicsPresets.FrameCaps[i] == 0
+                    ? UiStrings.Get("settings.fps_unlimited")
+                    : UiStrings.Format("settings.fps_value", GraphicsPresets.FrameCaps[i].ToString(CultureInfo.InvariantCulture)),
+                d => d.frameRateCap, (d, v) => d.frameRateCap = v);
+            _graphicsRefreshers.Add(() => _frameCap.SetEnabled(!_settings.Current.vsync));   // the cap only applies with VSync off
+
+            // The preset: picking Low / Medium / High writes its three rows; Custom changes no row.
+            _qualityPreset = BindGfxChoice(root, "QualityPreset", "settings.gfx_preset", PresetKeys.Length, i => UiStrings.Get(PresetKeys[i]),
+                d => d.graphicsPreset,
+                (d, v) =>
+                {
+                    d.graphicsPreset = v;
+                    if (GraphicsPresets.TryGet(v, out GraphicsPresetValues preset))
+                    {
+                        d.renderScalePercent = preset.RenderScalePercent;
+                        d.shadowQuality = preset.Shadows;
+                        d.antiAliasing = preset.Aa;
+                    }
+                });
+
+            BindGfxChoice(root, "RenderScale", "settings.gfx_scale", GraphicsPresets.RenderScaleCount,
+                i => UiStrings.Format("settings.scale_value", GraphicsPresets.RenderScaleFromIndex(i).ToString(CultureInfo.InvariantCulture)),
+                d => GraphicsPresets.RenderScaleToIndex(d.renderScalePercent),
+                (d, v) => d.renderScalePercent = GraphicsPresets.RenderScaleFromIndex(v));
+            BindGfxChoice(root, "ShadowQuality", "settings.gfx_shadows", ShadowKeys.Length, i => UiStrings.Get(ShadowKeys[i]),
+                d => d.shadowQuality, (d, v) => d.shadowQuality = v);
+            BindGfxChoice(root, "AntiAliasing", "settings.gfx_aa", AaKeys.Length, i => UiStrings.Get(AaKeys[i]),
+                d => d.antiAliasing, (d, v) => d.antiAliasing = v);
+        }
+
+        private void ShowTab(bool graphics)
+        {
+            _graphicsShown = graphics;
+            UiQuery.Show(_scroll, !graphics);
+            UiQuery.Show(_graphicsScroll, graphics);
+            _tabGeneral.EnableInClassList("active", !graphics);
+            _tabGraphics.EnableInClassList("active", graphics);
+        }
+
+        private void RefreshGraphics()
+        {
+            foreach (var refresh in _graphicsRefreshers) refresh();
+        }
+
+        // The monitor's distinct modes plus the saved one; index 0 is native.
+        private void RebuildResolutions()
+        {
+            var modes = new List<(int Width, int Height)>();
+            foreach (var r in UnityEngine.Screen.resolutions) modes.Add((r.width, r.height));
+            var data = _settings.Current;
+            _resolutions = GraphicsPresets.BuildResolutionList(modes, data.resolutionWidth, data.resolutionHeight);
+            _resolution.highValue = _resolutions.Count - 1;
+        }
+
+        private string ResolutionText(int index)
+        {
+            if (index <= 0 || index >= _resolutions.Count) return UiStrings.Get("settings.res_native");
+            var r = _resolutions[index];
+            return UiStrings.Format("settings.res_value", r.Width.ToString(CultureInfo.InvariantCulture), r.Height.ToString(CultureInfo.InvariantCulture));
+        }
+
+        // A SliderInt over `count` named values (index 0..count-1), for the Graphics rows. Returns the slider.
+        private SliderInt BindGfxChoice(VisualElement root, string name, string labelKey, int count, Func<int, string> format,
+            Func<SettingsData, int> getIndex, Action<SettingsData, int> setIndex)
+        {
+            var slider = UiQuery.Req<SliderInt>(root, name);
+            var label = UiStrings.Get(labelKey);
+            slider.lowValue = 0;
+            slider.highValue = Math.Max(0, count - 1);
+            slider.RegisterValueChangedCallback(e =>
+            {
+                setIndex(_settings.Current, e.newValue);
+                _settings.NotifyChanged();
+                RefreshGraphics();
+            });
+            _graphicsRefreshers.Add(() =>
+            {
+                var value = Math.Max(0, Math.Min(slider.highValue, getIndex(_settings.Current)));
+                slider.SetValueWithoutNotify(value);
+                slider.label = label + "  " + format(value);
+            });
+            return slider;
+        }
+
+        private void OnGraphicsFocusIn(FocusInEvent evt)
+        {
+            if (evt.target is VisualElement element && element != _graphicsScroll && _graphicsScroll.contentContainer.Contains(element))
+                _graphicsScroll.ScrollTo(element);
+        }
+
+        // Focus the first row of the page that is showing (a lost gamepad focus lands here via UiFocusRouter.RefocusIfLost; the General page's
+        // first row is hidden while the Graphics page shows, and a hidden control takes no focus).
+        public void FocusDefault()
+        {
+            if (_graphicsShown && _qualityPreset != null) _qualityPreset.Focus();
+            else _firstControl?.Focus();
+        }
 
         // Commits a typed but not yet committed display name into Current (no save; the caller saves).
         public void Commit()

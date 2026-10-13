@@ -22,7 +22,9 @@
 .setting .unity-base-field__label { min-width: 220px; font-size: 16px; color: rgb(220, 226, 232); }
 .code-field .unity-base-text-field__input, .setting .unity-base-text-field__input { font-size: 18px; min-height: 30px; }
 .code-text { font-size: 26px; -unity-font-style: bold; -unity-text-align: middle-center; margin: 4px 0; color: rgb(255, 255, 255); }
-.menu-button:focus, .rebind-button:focus, .setting:focus { border-width: 2px; border-color: rgb(255, 210, 90); }
+.tab-button { flex-grow: 1; flex-basis: 0; height: 36px; margin: 2px 4px 6px 4px; font-size: 18px; background-color: rgba(40, 56, 76, 0.9); color: rgb(190, 200, 212); }
+.tab-button.active { background-color: rgb(52, 112, 170); color: rgb(255, 255, 255); -unity-font-style: bold; }
+.menu-button:focus, .rebind-button:focus, .setting:focus, .tab-button:focus { border-width: 2px; border-color: rgb(255, 210, 90); }
 .dim { opacity: 0.5; }
 .crosshair { position: absolute; left: 50%; top: 50%; translate: -50% -50%; font-size: 22px; color: rgb(255, 255, 255); }
 .hud-prompt { position: absolute; left: 50%; top: 56%; translate: -50% 0; font-size: 18px; color: rgb(255, 255, 255); -unity-text-outline-width: 1px; -unity-text-outline-color: rgb(0, 0, 0); }

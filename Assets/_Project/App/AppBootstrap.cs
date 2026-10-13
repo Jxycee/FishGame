@@ -6,6 +6,7 @@ using System.Collections;
 using FishGame.Core;
 using FishGame.Data;
 using FishGame.Networking;
+using FishGame.Presentation;
 using FishGame.Runtime;
 using FishGame.UI;
 using Unity.Netcode;
@@ -124,6 +125,10 @@ namespace FishGame.App
             var settings = SettingsStore.CreateForThisInstance();
             settings.EnsureLocalPlayerId();
             services.Register<ISettings>(settings);
+
+            // Graphics tab (playtest S6/S3): applies the saved quality settings now and live on every change. Registered so the registry disposes
+            // it with the app, which puts the project's URP asset and QualitySettings back (the applier works on a runtime copy).
+            services.Register(new GraphicsApplier(settings));
 
             var meta = SaveService.CreateForThisInstance(); // meta{profile suffix}.json: the journal (spec 12.10)
             meta.Load();
