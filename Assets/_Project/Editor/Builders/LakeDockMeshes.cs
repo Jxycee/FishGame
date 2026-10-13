@@ -33,8 +33,12 @@ namespace FishGame.EditorTools
             Save(LakeDockLayout.DockMeshPath, BuildDock());
             Save(LakeDockLayout.RockMeshPath, BuildRock());
             Save(LakeDockLayout.TrunkMeshPath, BuildTrunk());
-            Save(LakeDockLayout.CanopyRoundMeshPath, BuildCanopyRound());
-            Save(LakeDockLayout.CanopyPineMeshPath, BuildCanopyPine());
+            for (int v = 0; v < LakeDockLayout.RoundFoliageSlots.Length; v++)
+                Save(LakeDockLayout.RoundCanopyMeshPaths[v], BuildCanopyRound(LakeDockLayout.RoundFoliageSlots[v], LakeDockLayout.RoundCanopyMeshPaths[v]));
+            Save(LakeDockLayout.BlossomsMeshPath, BuildBlossoms());
+            Save(LakeDockLayout.CanopyPineMeshPath, BuildCanopyPine(false));
+            Save(LakeDockLayout.CanopyPineSnowMeshPath, BuildCanopyPine(true));
+            Save(LakeDockLayout.BranchesMeshPath, BuildBranches());
             Save(LakeDockLayout.ReedsMeshPath, BuildReeds());
             AssetDatabase.SaveAssets();   // meshes are on disk before the scene references them
         }
@@ -233,30 +237,130 @@ namespace FishGame.EditorTools
             return b.ToMesh("LakeDock_Trunk");
         }
 
+        // The round canopy's surface radius along unit direction d (lumpy, never above 0.5: the canopy collider sphere). Shared by the canopy
+        // variants and the blossom specks that sit on it.
+        static float CanopyRoundRadius(Vector3 d) =>
+            Mathf.Min(0.5f, 0.43f + 0.06f * SmoothMeshBuilder.Noise3(d * 2.2f + Vector3.one * 3f, LakeDockLayout.CanopyRoundMeshSeed));
+
         // A lumpy foliage ball inside the unit sphere (radius <= 0.5), darker underneath (ao), foliage clumps triplanar in world space.
-        static Mesh BuildCanopyRound()
+        // Seasonal trees (2026-10-13): built once per foliage variant, the same shape on slot Foliage (the original LakeDock_CanopyRound, bytes
+        // unchanged), FoliageDark or FoliageAlt (autumn orange / red / yellow).
+        static Mesh BuildCanopyRound(byte slot, string assetPath)
         {
             var b = new SmoothMeshBuilder();
-            uint seed = LakeDockLayout.CanopyRoundMeshSeed;
-            b.Radial(Vector3.zero, d => Mathf.Min(0.5f, 0.43f + 0.06f * SmoothMeshBuilder.Noise3(d * 2.2f + Vector3.one * 3f, seed)),
-                8, Quaternion.identity, Vector3.one, LakeDockLayout.SlotFoliage, EnvTextureLayers.Foliage, SmoothMeshBuilder.MappingTriplanar,
+            b.Radial(Vector3.zero, CanopyRoundRadius,
+                8, Quaternion.identity, Vector3.one, slot, EnvTextureLayers.Foliage, SmoothMeshBuilder.MappingTriplanar,
                 d => 0.55f + 0.45f * Mathf.SmoothStep(0f, 1f, d.y * 0.5f + 0.5f), 0.5f);
-            return b.ToMesh("LakeDock_CanopyRound");
+            return b.ToMesh(Path.GetFileNameWithoutExtension(assetPath));
+        }
+
+        // Spring blossom specks in canopy space (the round canopy's unit sphere): BlossomCount small flattened blobs on the canopy surface over its
+        // upper three quarters (a golden-angle spiral, jittered by a fixed seed), each flattened along the surface normal and half sunk into the
+        // foliage, all inside the collider sphere (radius 0.5). Untextured (layer 0) on slot Blossom; shown in spring only (SeasonalVisibility).
+        static Mesh BuildBlossoms()
+        {
+            var b = new SmoothMeshBuilder();
+            var rng = new Pcg32(LakeDockLayout.BlossomMeshSeed);
+            int count = LakeDockLayout.BlossomCount;
+            for (int i = 0; i < count; i++)
+            {
+                float y = Mathf.Lerp(0.95f, -0.45f, (i + 0.5f) / count);
+                float ring = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
+                float phi = i * 2.3999632f + rng.Range(-0.35f, 0.35f);
+                Vector3 d = new Vector3(Mathf.Cos(phi) * ring, y, Mathf.Sin(phi) * ring).normalized;
+                float size = rng.Range(0.026f, 0.036f);
+                const float flat = 0.6f;
+                float r = Mathf.Min(CanopyRoundRadius(d) + 0.2f * size, 0.5f - flat * size);
+                b.Radial(d * r, _ => size, 1, Quaternion.FromToRotation(Vector3.up, d), new Vector3(1f, flat, 1f), LakeDockLayout.SlotBlossom,
+                    EnvTextureLayers.None, SmoothMeshBuilder.MappingTriplanar, _ => 0.95f, 0.5f);
+            }
+            return b.ToMesh("LakeDock_Blossoms");
         }
 
         // Two stacked cones inside the unit sphere (radius 0.5, the canopy collider): the lower dark, the upper light. The lower rim (r 0.3 at y -0.4)
         // keeps r^2 + y^2 <= 0.25, so the visual never overhangs the collider.
         // R74: the same two tiers as smooth lathes with a rounded, closed lower lip (radius 0 at t = 0) and a soft tip.
-        static Mesh BuildCanopyPine()
+        // Seasonal trees (2026-10-13): evergreen on PineDark (lower) and PineLight (upper), slots that never change with the season. The snowy
+        // variant (`snow`, the winter pine) is the same mesh with every ring at t >= PineSnowFromT re-slotted to SlotPineSnow (the ground's
+        // snow), so each tier keeps a green fringe under a white cap; the slot blends across one ring.
+        static Mesh BuildCanopyPine(bool snow)
         {
             var b = new SmoothMeshBuilder();
+            const int sides = 16, rings = 10;
             System.Func<float, float> tier = t => 0.3f * Mathf.Pow(1f - t, 1.15f) * Mathf.Sqrt(Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.12f)));
-            b.Lathe(new Vector3(0f, -0.15f, 0f), tier, 0.5f, 16, 10, Quaternion.identity, LakeDockLayout.SlotFoliageDark, EnvTextureLayers.Foliage,
+            int lowerStart = b.VertexCount;
+            b.Lathe(new Vector3(0f, -0.15f, 0f), tier, 0.5f, sides, rings, Quaternion.identity, LakeDockLayout.SlotPineDark, EnvTextureLayers.Foliage,
                 SmoothMeshBuilder.MappingTriplanar, t => 0.55f + 0.45f * t, 0.3f);
-            b.Lathe(new Vector3(0f, 0.225f, 0f), tier, 0.55f, 16, 10, Quaternion.identity, LakeDockLayout.SlotFoliage, EnvTextureLayers.Foliage,
+            int upperStart = b.VertexCount;
+            b.Lathe(new Vector3(0f, 0.225f, 0f), tier, 0.55f, sides, rings, Quaternion.identity, LakeDockLayout.SlotPineLight, EnvTextureLayers.Foliage,
                 SmoothMeshBuilder.MappingTriplanar, t => 0.6f + 0.4f * t, 0.3f);
-            return b.ToMesh("LakeDock_CanopyPine");
+            Mesh mesh = b.ToMesh(snow ? "LakeDock_CanopyPineSnow" : "LakeDock_CanopyPine");
+            if (!snow) return mesh;
+
+            var uv1 = new List<Vector4>();
+            mesh.GetUVs(1, uv1);
+            foreach (int start in new[] { lowerStart, upperStart })
+                for (int ring = 0; ring <= rings; ring++)
+                {
+                    if (ring / (float)rings < LakeDockLayout.PineSnowFromT) continue;
+                    for (int k = 0; k <= sides; k++)
+                    {
+                        int i = start + ring * (sides + 1) + k;
+                        Vector4 v = uv1[i];
+                        uv1[i] = new Vector4(LakeDockLayout.SlotPineSnow, v.y, v.z, v.w);
+                    }
+                }
+            mesh.SetUVs(1, uv1);
+            return mesh;
         }
+
+        // Bare winter branches in TREE space (the tree root: the trunk primitive spans y 0..2 with xz scale 0.4; the canopy collider sphere is
+        // centred at y 2.6 with radius 1.2). An upper trunk carries on from inside the trunk top to a closed tip; five main branches leave it at
+        // 2.0-2.55 m, each in two tapering segments (the outer one bending up) with two twigs. Bark layer along v (uv0), WoodDark like the trunk,
+        // lighter toward the tips. Everything stays inside the canopy collider sphere. Shown in winter only (SeasonalVisibility).
+        static Mesh BuildBranches()
+        {
+            var b = new SmoothMeshBuilder();
+            const float trunkTop = LakeDockLayout.TrunkRadiusTop * 0.86f * 0.4f;   // the trunk lathe's top radius in tree space (xz scale 0.4)
+            b.Lathe(new Vector3(0f, 2.45f, 0f), t => Mathf.Lerp(trunkTop * 0.97f, 0.03f, t) * TipClose(t), 1.3f, 12, 6, Quaternion.identity,
+                LakeDockLayout.SlotWoodDark, EnvTextureLayers.Bark, SmoothMeshBuilder.MappingUv, t => 0.7f + 0.3f * t, trunkTop);
+
+            // (base height, azimuth deg, elevation deg, length) per main branch: fixed, so the mesh is deterministic and hand-tuned.
+            float[,] main =
+            {
+                { 2.00f, 10f, 38f, 0.95f }, { 2.35f, 85f, 50f, 0.85f }, { 2.15f, 158f, 34f, 1.00f }, { 2.55f, 230f, 55f, 0.70f }, { 2.25f, 300f, 44f, 0.90f },
+            };
+            for (int i = 0; i < main.GetLength(0); i++)
+            {
+                float az = main[i, 1], el = main[i, 2], length = main[i, 3];
+                Vector3 root = new Vector3(0f, main[i, 0], 0f);
+                Vector3 dir1 = BranchDir(az, el), dir2 = BranchDir(az + 8f, el + 15f);
+                float len1 = length * 0.6f, len2 = length * 0.45f;
+                Vector3 joint = root + dir1 * len1;
+                Branch(b, root - dir1 * 0.05f, dir1, len1 + 0.05f, 0.06f, 0.042f, 6, 3, false, t => 0.72f + 0.12f * t);
+                Branch(b, joint - dir2 * 0.02f, dir2, len2 + 0.02f, 0.042f, 0.014f, 6, 3, true, t => 0.84f + 0.16f * t);
+                Branch(b, joint, BranchDir(az + 35f, el + 10f), 0.38f, 0.026f, 0.009f, 5, 3, true, t => 0.86f + 0.14f * t);
+                Branch(b, joint + dir2 * (len2 * 0.5f), BranchDir(az - 30f, el + 20f), 0.30f, 0.02f, 0.007f, 5, 3, true, t => 0.9f + 0.1f * t);
+            }
+            return b.ToMesh("LakeDock_Branches");
+        }
+
+        static Vector3 BranchDir(float azimuthDeg, float elevationDeg)
+        {
+            float az = azimuthDeg * Mathf.Deg2Rad, el = elevationDeg * Mathf.Deg2Rad;
+            return new Vector3(Mathf.Cos(el) * Mathf.Cos(az), Mathf.Sin(el), Mathf.Cos(el) * Mathf.Sin(az));
+        }
+
+        // A tapering lathe from `from` along `dir` (radius r0 at the base, r1 at the end, a closed rounded tip when closeTip).
+        static void Branch(SmoothMeshBuilder b, Vector3 from, Vector3 dir, float length, float r0, float r1, int sides, int rings, bool closeTip,
+            System.Func<float, float> ao)
+        {
+            b.Lathe(from + dir * (length * 0.5f), t => Mathf.Lerp(r0, r1, t) * (closeTip ? TipClose(t) : 1f), length, sides, rings,
+                Quaternion.FromToRotation(Vector3.up, dir), LakeDockLayout.SlotWoodDark, EnvTextureLayers.Bark, SmoothMeshBuilder.MappingUv, ao, r0);
+        }
+
+        // 1 along the branch, rounding to 0 over the last 20% (a closed, soft tip).
+        static float TipClose(float t) => Mathf.Sqrt(1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.8f, 1f, t)));
 
         // ---- dock visual ----
 

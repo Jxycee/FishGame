@@ -566,34 +566,38 @@ namespace FishGame.Tests.EditMode
         }
 
         // Catches: a transcription error in the art, water or cue seeds (the validators only check ranges), a season that does not copy
-        // Summer outside slots 0, 1, 2, 7, cue rows that drift from SfxRecipes.All (order, category, mixing values).
+        // Summer outside slots 0, 1, 2, 7, 14, 15, cue rows that drift from SfxRecipes.All (order, category, mixing values).
+        // Seasonal trees (2026-10-13): slots 12-15 are PineLight, PineDark, Blossom, FoliageAlt; FoliageDark is the second round-tree variant.
         [Test]
         public void FishingData_ArtWaterAndCueSeeds_MatchPlanTables()
         {
             string[] names = { "Grass", "Foliage", "FoliageDark", "Wood", "WoodDark", "Sand", "Rock", "Reed", "Dock", "Roof", "Accent", "Snow",
-                               "Reserved12", "Reserved13", "Reserved14", "Reserved15" };
+                               "PineLight", "PineDark", "Blossom", "FoliageAlt" };
             CollectionAssert.AreEqual(names, FishingSeedData.PaletteSlotNames);
 
             Color[] summer =
             {
-                new Color(0.42f, 0.66f, 0.30f, 1f), new Color(0.30f, 0.52f, 0.24f, 1f), new Color(0.17f, 0.34f, 0.17f, 1f),
+                new Color(0.42f, 0.66f, 0.30f, 1f), new Color(0.30f, 0.52f, 0.24f, 1f), new Color(0.22f, 0.42f, 0.19f, 1f),
                 new Color(0.66f, 0.48f, 0.30f, 1f), new Color(0.40f, 0.27f, 0.17f, 1f), new Color(0.88f, 0.80f, 0.58f, 1f),
                 new Color(0.55f, 0.55f, 0.53f, 1f), new Color(0.62f, 0.68f, 0.36f, 1f), new Color(0.58f, 0.44f, 0.30f, 1f),
                 new Color(0.70f, 0.30f, 0.24f, 1f), new Color(0.95f, 0.45f, 0.15f, 1f), new Color(0.95f, 0.96f, 0.98f, 1f),
-                new Color(0.5f, 0.5f, 0.5f, 1f), new Color(0.5f, 0.5f, 0.5f, 1f), new Color(0.5f, 0.5f, 0.5f, 1f), new Color(0.5f, 0.5f, 0.5f, 1f),
+                new Color(0.24f, 0.46f, 0.28f, 1f), new Color(0.13f, 0.30f, 0.20f, 1f), new Color(0.30f, 0.52f, 0.24f, 1f), new Color(0.36f, 0.56f, 0.22f, 1f),
             };
-            // Spring, Summer, Autumn, Winter: slots 0, 1, 2, 7 differ; every other slot copies Summer.
+            // Spring, Summer, Autumn, Winter: slots 0, 1, 2, 7, 14, 15 differ; every other slot copies Summer.
             Color[][] overrides =
             {
-                new[] { new Color(0.50f, 0.74f, 0.34f, 1f), new Color(0.40f, 0.62f, 0.30f, 1f), new Color(0.22f, 0.42f, 0.20f, 1f), new Color(0.56f, 0.70f, 0.34f, 1f) },
-                new[] { summer[0], summer[1], summer[2], summer[7] },
-                new[] { new Color(0.62f, 0.60f, 0.30f, 1f), new Color(0.85f, 0.50f, 0.18f, 1f), new Color(0.55f, 0.26f, 0.12f, 1f), new Color(0.72f, 0.62f, 0.32f, 1f) },
-                new[] { new Color(0.80f, 0.84f, 0.86f, 1f), new Color(0.32f, 0.44f, 0.36f, 1f), new Color(0.18f, 0.28f, 0.24f, 1f), new Color(0.66f, 0.62f, 0.48f, 1f) },
+                new[] { new Color(0.50f, 0.74f, 0.34f, 1f), new Color(0.48f, 0.74f, 0.32f, 1f), new Color(0.38f, 0.62f, 0.26f, 1f), new Color(0.56f, 0.70f, 0.34f, 1f),
+                        new Color(0.92f, 0.62f, 0.74f, 1f), new Color(0.56f, 0.76f, 0.30f, 1f) },
+                new[] { summer[0], summer[1], summer[2], summer[7], summer[14], summer[15] },
+                new[] { new Color(0.62f, 0.60f, 0.30f, 1f), new Color(0.88f, 0.50f, 0.16f, 1f), new Color(0.76f, 0.24f, 0.15f, 1f), new Color(0.72f, 0.62f, 0.32f, 1f),
+                        new Color(0.88f, 0.50f, 0.16f, 1f), new Color(0.92f, 0.74f, 0.20f, 1f) },
+                new[] { new Color(0.80f, 0.84f, 0.86f, 1f), new Color(0.32f, 0.44f, 0.36f, 1f), new Color(0.18f, 0.28f, 0.24f, 1f), new Color(0.66f, 0.62f, 0.48f, 1f),
+                        new Color(0.32f, 0.44f, 0.36f, 1f), new Color(0.32f, 0.44f, 0.36f, 1f) },
             };
             string[] seasonNames = { "Spring", "Summer", "Autumn", "Winter" };
             PaletteSeason[] seasons = FishingSeedData.PaletteSeasons();
             Assert.AreEqual(4, seasons.Length);
-            int[] varying = { 0, 1, 2, 7 };
+            int[] varying = { 0, 1, 2, 7, 14, 15 };
             for (int s = 0; s < 4; s++)
             {
                 Assert.AreEqual(seasonNames[s], seasons[s].name);
