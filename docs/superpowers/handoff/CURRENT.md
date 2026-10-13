@@ -4,7 +4,7 @@
 
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
-_Last updated: 2026-10-14. M3 at 5a5906f: T15, T17, T20, T21 (journal; icons baked from the real fish models), T24 and fix batches A/B/C merged; check PASS (EditMode 1378 incl. 1 skip, PlayMode 129). In flight: T22 dev panel + HUD clock (worktree -t20, m3-t22). Then T25 + the Opus xhigh branch review. Board re-checks: RL1, RS1, RF1, RL2, RG1, H1, J1._
+_Last updated: 2026-10-14. M3 at eaab0aa: every task T1-T24 merged (T22 dev panel + clock just landed; PlayMode 137, EditMode 1378 incl. 1 skip). In flight: T25 acceptance doc + README + final check (worktree -t20, m3-t25). Then the Opus xhigh branch review, then merge M3 into main. Board re-checks: RL1, RS1, RF1, RL2, RG1, H1, J1, DP1._
 
 ## 1. Read these next (in order)
 1. `C:\Dev\FishGame-m3\CLAUDE.md`: project rules (Git: no PRs; merge yourself when reviewed and green; PlayMode guard).
@@ -18,7 +18,8 @@ _Last updated: 2026-10-14. M3 at 5a5906f: T15, T17, T20, T21 (journal; icons bak
   - Done and reviewed: T0-T16, T18-T20, T23 (all 25 fish in game), plus the follow-ups. Tests green at 79b8f30: EditMode 1280 + 1 skip, PlayMode 103.
   - Also done: T17 (harbour; Blender art + code builder), fix batches A/B/C from the board.
   - Also done: T21 (journal UI + FishIconBaker atlas, M3-D96), T24 (EcologySoloTests).
-  - Remaining: T22 (dev panel + HUD clock, in flight), T25, then an Opus xhigh branch review, then merge into main.
+  - Also done: T22 (dev panel + HUD clock).
+  - Remaining: T25 (in flight), then an Opus xhigh branch review, then merge into main.
 - **Idle worktree** `C:\Dev\FishGame-lookdev` (merged): delete only with the user's OK.
 
 ## 3. Next action
