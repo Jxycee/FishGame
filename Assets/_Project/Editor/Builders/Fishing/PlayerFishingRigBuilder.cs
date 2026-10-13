@@ -179,18 +179,24 @@ namespace FishGame.EditorTools
         }
 
         // Cylinder along local +Z from z 0 to 0.3, tapering from the base radius to the tip radius over the six segments.
-        // R74 adoption: smooth (SmoothMeshBuilder lathe, 12 sides) with wood grain running along the rod; the last segment ends in a rounded tip.
+        // R74 adoption: smooth (SmoothMeshBuilder lathe, 12 sides) with wood grain running along the rod. Both open ends of the rod are closed with a
+        // rounded cap (a radius of 0 at the very end, a quarter ellipse over the end sixth): the butt of segment 0 and the tip of the last segment.
+        // The end segments use 12 rings so the cap has real ring samples (0, half and full radius); middle segments stay at 2.
         static Mesh BuildSegment(int index)
         {
             float rBottom = Mathf.Lerp(RodRadiusBase, RodRadiusTip, index / 6f);
             float rTop = Mathf.Lerp(RodRadiusBase, RodRadiusTip, (index + 1) / 6f);
+            bool butt = index == 0;
             bool tip = index == PlayerRigPaths.RodSegmentCount - 1;
+            const float cap = 2f / 12f;
             var builder = new SmoothMeshBuilder();
             builder.Lathe(new Vector3(0f, 0f, SegmentLength * 0.5f), t =>
             {
                 float r = Mathf.Lerp(rBottom, rTop, t);
-                return tip && t > 0.94f ? r * Mathf.Sqrt(Mathf.Max(0f, 1f - (t - 0.94f) / 0.06f)) : r;
-            }, SegmentLength, 12, 2, Quaternion.Euler(90f, 0f, 0f), SlotWoodDark, EnvTextureLayers.Wood, SmoothMeshBuilder.MappingUv,
+                if (butt && t < cap) { float u = (cap - t) / cap; return r * Mathf.Sqrt(Mathf.Max(0f, 1f - u * u)); }
+                if (tip && t > 1f - cap) { float u = (t - (1f - cap)) / cap; return r * Mathf.Sqrt(Mathf.Max(0f, 1f - u * u)); }
+                return r;
+            }, SegmentLength, 12, butt || tip ? 12 : 2, Quaternion.Euler(90f, 0f, 0f), SlotWoodDark, EnvTextureLayers.Wood, SmoothMeshBuilder.MappingUv,
                 t => 0.92f + 0.08f * t, rBottom, true);
             return builder.ToMesh("Rod_Seg" + index);
         }
@@ -205,7 +211,8 @@ namespace FishGame.EditorTools
                 SmoothMeshBuilder.MappingUv, t => 1f, r);
             builder.Lathe(new Vector3(0f, -r * 0.5f, 0f), t => half(1f - t), r, 16, 6, Quaternion.identity, SlotSnow, EnvTextureLayers.None,
                 SmoothMeshBuilder.MappingUv, t => 0.82f + 0.18f * t, r);
-            builder.Lathe(new Vector3(0f, 0.07f, 0f), t => 0.004f, 0.04f, 8, 1, Quaternion.identity, SlotAccent, EnvTextureLayers.None,
+            // The float's top is y = r (0.035); the stem runs y 0.03..0.09 so it overlaps the float by 5 mm and ends inside the ball (centre 0.092).
+            builder.Lathe(new Vector3(0f, 0.06f, 0f), t => 0.004f, 0.06f, 8, 1, Quaternion.identity, SlotAccent, EnvTextureLayers.None,
                 SmoothMeshBuilder.MappingUv, t => 1f, 0.004f);
             builder.Radial(new Vector3(0f, 0.092f, 0f), d => 0.008f, 3, Quaternion.identity, Vector3.one, SlotAccent, EnvTextureLayers.None,
                 SmoothMeshBuilder.MappingUv, d => 1f, 0.01f);
