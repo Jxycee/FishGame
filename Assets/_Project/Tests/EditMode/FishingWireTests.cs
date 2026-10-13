@@ -236,6 +236,24 @@ namespace FishGame.Tests.EditMode
             Assert.That(FishingRodNetwork.StateCue(RodState.Landed, RodState.Idle, 0), Is.EqualTo(RodCue.None), "no cue returning to Idle after a beat");
         }
 
+        // Catches (review finding 11): a remote that misses a mid-run side flip (FlagBurst stays set, FlagRight changes) while the owner raises
+        // SideRun for it; a Dive run mapped to SideRun; a flip of the back flag alone raising a cue; a Calm lost at the end of a run.
+        [Test]
+        public void FishingRodNetwork_RunCue_MapsRunStartEndAndMidRunFlip()
+        {
+            const byte B = RodWireQuant.FlagBurst, R = RodWireQuant.FlagRight, D = RodWireQuant.FlagDive;
+            Assert.That(FishingRodNetwork.RunCue(0, B), Is.EqualTo(RodCue.SideRun), "left run starts");
+            Assert.That(FishingRodNetwork.RunCue(0, (byte)(B | R)), Is.EqualTo(RodCue.SideRun), "right run starts");
+            Assert.That(FishingRodNetwork.RunCue(0, (byte)(B | D)), Is.EqualTo(RodCue.Dive), "a back pull starts");
+            Assert.That(FishingRodNetwork.RunCue(B, 0), Is.EqualTo(RodCue.Calm), "run ends");
+            Assert.That(FishingRodNetwork.RunCue(B, (byte)(B | R)), Is.EqualTo(RodCue.SideRun), "mid-run flip left to right");
+            Assert.That(FishingRodNetwork.RunCue((byte)(B | R), B), Is.EqualTo(RodCue.SideRun), "mid-run flip right to left");
+            Assert.That(FishingRodNetwork.RunCue((byte)(B | R | D), (byte)(B | D)), Is.EqualTo(RodCue.SideRun), "a flip during a back pull");
+            Assert.That(FishingRodNetwork.RunCue(B, (byte)(B | D)), Is.EqualTo(RodCue.None), "the back flag alone raises no cue");
+            Assert.That(FishingRodNetwork.RunCue((byte)(B | R), (byte)(B | R | RodWireQuant.FlagReel)), Is.EqualTo(RodCue.None), "reel changes raise no run cue");
+            Assert.That(FishingRodNetwork.RunCue(R, 0), Is.EqualTo(RodCue.None), "FlagRight without FlagBurst is not a run");
+        }
+
         [SetUp]
         public void ResetDebugSettings()
         {

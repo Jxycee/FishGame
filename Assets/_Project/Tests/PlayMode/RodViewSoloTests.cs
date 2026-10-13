@@ -580,8 +580,8 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("bobber states");
         }
 
-        // Catches: no splash for a cue; the side-run column emitted from a cue instead of polling, or also during a dive (spec 9.11: a dive has no
-        // sideways splash), or not emitted at all; no slow bubbles for an exhausted fish; bubbles on a recall-escape; a missing particle material.
+        // Catches: no splash for a cue; the side-run column emitted from a cue instead of polling, or dropped during a back pull (R72: a back pull
+        // also pulls to a side, so the column stays), or not emitted at all; no slow bubbles for an exhausted fish; bubbles on a recall-escape; a missing particle material.
         [UnityTest]
         public IEnumerator RodViewSolo_Splash_CuesAndPolledSideRun()
         {
@@ -638,7 +638,7 @@ namespace FishGame.Tests.PlayMode
                 }
                 Assert.That(maxSide, Is.GreaterThanOrEqualTo(5), "the side-run column is emitted by polling");
 
-                // Dive: Burst + Dive, no sideways splash.
+                // Back pull (R72): Burst + Dive keeps the side column (the dive's own plunge is the bobber dip, the thrum and the Dive cue).
                 SetView(rig, RodState.Hooked, 0, 0.5f, spot, 13);
                 yield return PlayModeHarness.WaitFrames(3, 0.1f);
                 ps.Clear();
@@ -652,7 +652,7 @@ namespace FishGame.Tests.PlayMode
                     yield return null;
                     maxDive = Mathf.Max(maxDive, ps.particleCount);
                 }
-                Assert.That(maxDive, Is.EqualTo(0), "a dive has no sideways splash");
+                Assert.That(maxDive, Is.GreaterThanOrEqualTo(5), "R72: a back pull also pulls to a side, so the side column stays during a dive");
 
                 // Exhausted: 3 particles every 0.6 s.
                 SetView(rig, RodState.Hooked, 0, 0.2f, spot, 13);

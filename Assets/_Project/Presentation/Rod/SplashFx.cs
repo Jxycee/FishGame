@@ -3,7 +3,8 @@
 //  - One-shot bursts come only from Cue, at the bobber's x/z on the water: Landing 12, Nibble 4 small, Bite 30 + 10 droplets, HookSet 10 droplets,
 //    Snapped 25, LineLanded 15, Escaped (not the recall's own) 10 slow rising bubbles.
 //  - State-driven effects are POLLED, so a late joiner sees them without a replay (F6): the side-run column (20/s at the fish point, up 2.5 m/s plus
-//    1.5 m/s sideways, signed by the change of ViewState.Lateral) while Hooked and FlagBurst WITHOUT FlagDive (a dive has no sideways splash); and
+//    1.5 m/s sideways, signed by the change of ViewState.Lateral) while Hooked and FlagBurst, whether or not FlagDive is set (R72: a back pull also
+//    pulls to a side, so the column stays; the dive keeps its own plunge: bobber dip, thrum and the Dive cue); and
 //    3 particles every 0.6 s while FlagExhausted.
 //  - Two runtime ParticleSystems with M_Particle: "SplashFx" (gravity 1, droplets) and its child "Bubbles" (gravity -0.2; one system cannot hold
 //    both gravities). A null particleMaterial means no particles (silent).
@@ -139,7 +140,6 @@ namespace FishGame.Presentation
             float dt = Time.deltaTime;
             bool hooked = vs.State == RodState.Hooked;
             bool burst = hooked && (vs.Flags & RodWireQuant.FlagBurst) != 0;
-            bool dive = (vs.Flags & RodWireQuant.FlagDive) != 0;
 
             // The sideways direction follows the frame-to-frame change of Lateral (positive lateral = right of the cast line, FishPointMath).
             if (hooked)
@@ -157,7 +157,7 @@ namespace FishGame.Presentation
                 _haveLateral = false;
             }
 
-            if (burst && !dive && IsFinite(vs.BobberPos))
+            if (burst && IsFinite(vs.BobberPos))
             {
                 _sideAcc += SideRunPerSecond * dt;
                 Vector3 at = WaterPoint(vs.BobberPos);

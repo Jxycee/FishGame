@@ -447,6 +447,7 @@ namespace FishGame.Tests.EditMode
                 {
                     PrintBots(d, profile, rod, BotKind.Pump);
                     BatchStats s = Batch(d, BotKind.Pump, profile, rod);
+                    // Structural cap, not a band: the pump lets go at 0.85, below the full bar (1.0) and the snap (7/6), so it can only snap if the rules break.
                     t.Add(s.SnapPct <= 5.0, "Pump " + profile + " " + rod + " snap=" + P(s.SnapPct), "snap <= 5%");
                 }
             t.Add(Batch(d, BotKind.Pump, "steady", "rod_handmade").LandPct >= 85.0,
@@ -481,6 +482,7 @@ namespace FishGame.Tests.EditMode
                     BatchStats s = Batch(d, BotKind.Rhythm, profile, rod);
                     string cell = "Rhythm " + profile + " " + rod;
                     t.Add(s.LandPct >= 95.0, cell + " land=" + P(s.LandPct), "land >= 95%");
+                    // Structural cap, not a band: Rhythm lets go at 0.85, below the full bar, so it can only snap if the rules break.
                     t.Add(s.SnapPct <= 2.0, cell + " snap=" + P(s.SnapPct), "snap <= 2%");
                     t.Add(s.TimeoutPct <= 2.0, cell + " timeout=" + P(s.TimeoutPct), "timeout <= 2%");
                     double[] band = RhythmBands[profile + "|" + rod];
@@ -521,6 +523,10 @@ namespace FishGame.Tests.EditMode
                 "runner " + F2(runner.MeanRun) + " steady " + F2(steady.MeanRun) + " thrasher " + F2(thrasher.MeanRun) + " darter " + F2(darter.MeanRun),
                 "runner > steady > thrasher > darter");
 
+            // Ordering margins (review finding 10): the pairs that are close in the table must stay apart by a visible amount, not just by a band edge.
+            t.Add(darter.SwitchRate - thrasher.SwitchRate >= 0.2, "darter - thrasher switches/run-s=" + F2(darter.SwitchRate - thrasher.SwitchRate), ">= 0.2");
+            t.Add(thrasher.MeanRun - darter.MeanRun >= 0.5, "thrasher - darter mean run=" + F2(thrasher.MeanRun - darter.MeanRun), ">= 0.5 s");
+            t.Add(runner.MeanRun - steady.MeanRun >= 0.4, "runner - steady mean run=" + F2(runner.MeanRun - steady.MeanRun), ">= 0.4 s");
             t.Add(darter.SwitchRate >= 0.5, "darter switches/run-s=" + F2(darter.SwitchRate), ">= 0.5");
             t.Add(In(thrasher.SwitchRate, 0.15, 0.55), "thrasher switches/run-s=" + F2(thrasher.SwitchRate), "in [0.15, 0.55]");
             t.Add(steady.SwitchRate <= 0.05, "steady switches/run-s=" + F2(steady.SwitchRate), "<= 0.05");
