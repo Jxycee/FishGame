@@ -43,8 +43,8 @@ One shader for everything opaque. Every new property defaults to off, so older m
 - **Toon highlight:** smoothstepped Blinn-Phong on the lit side only. It is off for the environment, 0.10 for skin, and 0.30 at power 180 for fish (the wet look).
 - **Ambient occlusion:** baked per vertex by the builders, and by the Blender AO bake for fish. SSAO is not used: in this pipeline it forces a DepthNormals prepass, which changes where the R73 water gets its depth texture (CopyDepth). The test `RenderingSetup_NoSsao_ToonHasNoOcclusionKeyword` keeps it out.
 - **Outlines:** none. Both references go without them, and the rim plus value contrast already separates forms.
-- **Normal maps:** optional, behind `_NORMALMAP` (`shader_feature_local_fragment`, `_FGNormalArray` at the same uv/layer, uv0 mapping only, needs tangents). No material uses it yet. The painted albedo carries the detail.
-- **SRP Batcher:** one `UnityPerMaterial` CBUFFER holds every property, and the textures sit outside it. The shader validator compiles the `_NORMALMAP` variant (keyword set 1).
+- **Normal maps:** none. An optional `_NORMALMAP` path was built for the look-dev and removed in the review fixes (no material used it, and it cost a tangent interpolator). The analytic smooth normals and the painted albedo carry the detail.
+- **SRP Batcher:** one `UnityPerMaterial` CBUFFER holds every property, and the textures sit outside it. The shader validator compiles the `_FG_TRIPLANAR` variant (its fourth keyword set).
 
 ### 2.2 Textures: what, how big, where
 - **Two Texture2DArrays.** Each is imported from one flipbook PNG of 512 x 512 tiles by `TextureArrayPostprocessor`: Repeat, Trilinear, aniso 4, CompressedHQ (BC7 on PC), mipmaps, max size 2048.
