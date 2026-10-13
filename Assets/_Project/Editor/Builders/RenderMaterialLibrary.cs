@@ -58,11 +58,12 @@ namespace FishGame.EditorTools
         {
             public readonly float RampMid, RampSoft, RimPow, RimStrength, SkyFill, SpecStrength, SpecPower, Gain, Tiling, Macro;
             public readonly Texture2DArray Array;
+            public readonly bool Triplanar;   // _FG_TRIPLANAR (world triplanar mapping); otherwise uv0
             public ToonLook(float rampMid, float rampSoft, float rimPow, float rimStrength, float skyFill, float specStrength, float specPower,
-                Texture2DArray array, float gain, float tiling, float macro = 0f)
+                Texture2DArray array, float gain, float tiling, float macro = 0f, bool triplanar = false)
             {
                 RampMid = rampMid; RampSoft = rampSoft; RimPow = rimPow; RimStrength = rimStrength; SkyFill = skyFill;
-                SpecStrength = specStrength; SpecPower = specPower; Array = array; Gain = gain; Tiling = tiling; Macro = macro;
+                SpecStrength = specStrength; SpecPower = specPower; Array = array; Gain = gain; Tiling = tiling; Macro = macro; Triplanar = triplanar;
             }
         }
 
@@ -87,8 +88,14 @@ namespace FishGame.EditorTools
             var fallbackLook = new ToonLook(0.30f, 0.28f, 3f, 0.25f, 0.20f, 0.2f, 48f, null, 1f, 1f);
 
             EnsureToon(toon, "M_Toon_Base", true, true, Color.white, envLook);
+            // R74 adoption (shader split): the same environment look with world triplanar mapping, for meshes built with uv1.z = 1 (rocks, canopies).
+            var envTriLook = new ToonLook(0.30f, 0.28f, 3.5f, 0.18f, 0.22f, 0f, 48f, env, 2f, EnvTiling, 0.7f, true);
+            EnsureToon(toon, "M_Toon_Tri", true, true, Color.white, envTriLook);
             EnsureToon(toon, "M_Toon_Fish", false, false, Color.white, fishLook);
             EnsureToon(toon, "M_Toon_FishFallback", false, true, Color.white, fallbackLook);
+            // R74 adoption: the dock bell's brass (smooth mesh, vertex colour ao), a strong toon highlight instead of the Lit M_Brass.
+            var brassLook = new ToonLook(0.30f, 0.28f, 3f, 0.30f, 0.20f, 0.45f, 40f, null, 1f, 1f);
+            EnsureToon(toon, "M_Toon_Brass", false, true, new Color(0.82f, 0.62f, 0.22f), brassLook);
             for (int i = 0; i < SlotPalette.Count; i++)
             {
                 SlotPalette.GetRgb(i, out float r, out float g, out float b);
@@ -274,6 +281,8 @@ namespace FishGame.EditorTools
             changed |= SetFloat(material, ArrayGainId, look.Gain);
             changed |= SetFloat(material, TilingId, look.Tiling);
             changed |= SetFloat(material, MacroId, look.Macro);
+            changed |= SetFloat(material, Shader.PropertyToID("_UseTriplanar"), look.Triplanar ? 1f : 0f);
+            changed |= SetKeyword(material, "_FG_TRIPLANAR", look.Triplanar);
             if (material.GetTexture(AlbedoArrayId) != look.Array) { material.SetTexture(AlbedoArrayId, look.Array); changed = true; }
             if (changed) EditorUtility.SetDirty(material);
         }

@@ -9,8 +9,9 @@
 // Vertex colour is linear (F3): never converted here.
 //
 // R74 realistic-toon extension (look-dev 2026-10-12). Every new property defaults to "off", so a material that does not set them renders as before.
-//  - Texture array: albedo *= lerp(1, sample(_FGAlbedoArray, uv, layer) * _FGArrayGain, _FGTexWeight). The layer is round(uv1.y); uv1.z picks the
-//    mapping: 0 = uv0 (metres from the mesh builder, or the fish UV tile) and 1 = world triplanar (positionWS, blend by |n|^4). Both are scaled by
+//  - Texture array: albedo *= lerp(1, sample(_FGAlbedoArray, uv, layer) * _FGArrayGain, _FGTexWeight). The layer is round(uv1.y). The mapping is
+//    per material (R74 adoption): uv0 by default (metres from the mesh builder, or the fish UV tile), world triplanar (positionWS, blend by |n|^4)
+//    with the _FG_TRIPLANAR keyword (toggle _UseTriplanar; M_Toon_Tri). uv1.z records which mapping a mesh was built for. Both are scaled by
 //    _FGTiling (repeats per metre); _FGMacro multiplies in the same layer at 1/11 scale in world xz (tile-repeat breakup). Layer 0 is neutral in every array, so a mesh without uv1.y (MeshBuilder props, the rod) is untouched. The env
 //    array is linear detail centred on 0.5 (gain 2, hue from the palette); the fish array is sRGB albedo (gain 1, layer 0 white).
 //  - Light: the existing band (mid/soft; the realistic-toon materials use a wide soft ramp) plus a sky fill lerp(_SkyGround, _SkyTop, n.y) *
@@ -38,6 +39,7 @@ Shader "FishGame/Toon"
         _SkyFill("Sky Fill", Range(0, 1)) = 0
         _SpecStrength("Toon Highlight Strength", Range(0, 1)) = 0
         _SpecPower("Toon Highlight Power", Range(4, 256)) = 48
+        [Toggle(_FG_TRIPLANAR)] _UseTriplanar("World Triplanar Mapping", Float) = 0
         [Toggle(_NORMALMAP)] _UseNormalMap("Normal Map", Float) = 0
         [NoScaleOffset] _FGNormalArray("Normal Array (same layer)", 2DArray) = "" {}
         _FGNormalStrength("Normal Strength", Range(0, 2)) = 1
@@ -65,6 +67,7 @@ Shader "FishGame/Toon"
             half _SpecStrength;
             half _SpecPower;
             half _UseNormalMap;
+            half _UseTriplanar;
             half _FGNormalStrength;
             half _FGMacro;
         CBUFFER_END
@@ -100,6 +103,7 @@ Shader "FishGame/Toon"
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RenderingLayers.hlsl"
             #pragma multi_compile_instancing
             #pragma shader_feature_local_fragment _NORMALMAP
+            #pragma shader_feature_local_fragment _FG_TRIPLANAR
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Assets/_Project/Shaders/FishGameCommon.hlsl"
@@ -137,21 +141,25 @@ Shader "FishGame/Toon"
                 return SAMPLE_TEXTURE2D_ARRAY(_FGAlbedoArray, sampler_FGAlbedoArray, uvl.xy, uvl.z).rgb;
             }
 
-            // Texture factor (1 = untouched). Both mappings are evaluated and blended by the per-vertex mapping flag, so there is no
-            // divergent branch around the gradient samples; the uniform _FGTexWeight branch skips all four samples on untextured materials.
+            // Texture factor (1 = untouched). The mapping is chosen per MATERIAL by the _FG_TRIPLANAR keyword (R74 adoption: M_Toon_Tri for rocks and
+            // canopies; every other textured material is uv0-mapped and pays one sample plus the macro sample). The mesh's uv1.z states which
+            // mapping it was built for; the builders put those meshes on the matching material. The uniform _FGTexWeight branch skips every sample
+            // on untextured materials.
             half3 FG_TextureFactor(float4 uvLayer, float3 positionWS, half3 geomNormal)
             {
                 half3 factor = half3(1.0h, 1.0h, 1.0h);
                 [branch] if (_FGTexWeight > 0.001h)
                 {
-                    half3 uvSample = FG_SampleArray(float3(uvLayer.xy, uvLayer.z));
+                #if defined(_FG_TRIPLANAR)
                     float3 p = positionWS * _FGTiling;
                     half3 w = pow(abs(geomNormal), 4.0h);
                     w /= max(w.x + w.y + w.z, 1e-4h);
-                    half3 tri = FG_SampleArray(float3(p.zy, uvLayer.z)) * w.x
-                              + FG_SampleArray(float3(p.xz, uvLayer.z)) * w.y
-                              + FG_SampleArray(float3(p.xy, uvLayer.z)) * w.z;
-                    half3 s = lerp(uvSample, tri, saturate((half)uvLayer.w)) * _FGArrayGain;
+                    half3 s = (FG_SampleArray(float3(p.zy, uvLayer.z)) * w.x
+                             + FG_SampleArray(float3(p.xz, uvLayer.z)) * w.y
+                             + FG_SampleArray(float3(p.xy, uvLayer.z)) * w.z) * _FGArrayGain;
+                #else
+                    half3 s = FG_SampleArray(float3(uvLayer.xy, uvLayer.z)) * _FGArrayGain;
+                #endif
                     // Macro breakup: the same layer at 1/11 scale in world xz, so large surfaces (shore, lakebed) never show the tile repeat.
                     half3 macro = FG_SampleArray(float3(positionWS.xz * (_FGTiling * 0.09), uvLayer.z)) * _FGArrayGain;
                     s *= lerp(half3(1.0h, 1.0h, 1.0h), macro, _FGMacro);

@@ -24,7 +24,7 @@ namespace FishGame.EditorTools
         // Everything the scene needs from disk, loaded once after NewScene (C 2.8 #14).
         sealed class ArtAssets
         {
-            public Material Toon, Water;
+            public Material Toon, ToonTri, Water;   // ToonTri: R74 world-triplanar variant for the rocks and canopies
             public Mesh WaterMesh, Lakebed, Shore, LakebedVisual, ShoreVisual, Rock, Trunk, CanopyRound, CanopyPine, Dock, Reeds;
             public VolumeProfile WarmProfile, CoolProfile;
             public ArtPaletteDef Palette;
@@ -42,6 +42,7 @@ namespace FishGame.EditorTools
             var art = new ArtAssets
             {
                 Toon = RenderMaterialLibrary.Get("M_Toon_Base"),
+                ToonTri = RenderMaterialLibrary.Get("M_Toon_Tri"),
                 Water = RenderMaterialLibrary.Get("M_Water_Surface"),
                 WaterMesh = LoadMesh(LakeDockLayout.WaterMeshPath),
                 Lakebed = LoadMesh(AssetPaths.LakebedMesh),
@@ -195,7 +196,7 @@ namespace FishGame.EditorTools
                 if (LakeDockLayout.Blocked(x, z, LakeDockLayout.RockClearance)) continue;
                 GameObject rock = BuilderUtil.EnsurePrimitive(parent, "Rock_" + placed.ToString("00"), PrimitiveType.Sphere,
                     new Vector3(x, LakeDockLayout.ShoreY(r) + size * 0.25f, z), Quaternion.Euler(0f, angle * Mathf.Rad2Deg, 0f),
-                    new Vector3(size, size * 0.7f, size), art.Toon, true);
+                    new Vector3(size, size * 0.7f, size), art.ToonTri, true);
                 rock.GetComponent<MeshFilter>().sharedMesh = art.Rock;
                 BuilderUtil.SetLayerRecursive(rock, Layers.Shore);
                 placed++;
@@ -224,7 +225,7 @@ namespace FishGame.EditorTools
                 GameObject trunk = BuilderUtil.EnsurePrimitive(tree.transform, "Trunk", PrimitiveType.Cylinder, new Vector3(0f, 1f, 0f),
                     Quaternion.identity, new Vector3(0.4f, 1f, 0.4f), art.Toon, true);
                 GameObject canopy = BuilderUtil.EnsurePrimitive(tree.transform, "Canopy", PrimitiveType.Sphere, new Vector3(0f, 2.6f, 0f),
-                    Quaternion.identity, new Vector3(2.4f, 2.4f, 2.4f), art.Toon, true);
+                    Quaternion.identity, new Vector3(2.4f, 2.4f, 2.4f), art.ToonTri, true);
                 trunk.GetComponent<MeshFilter>().sharedMesh = art.Trunk;
                 canopy.GetComponent<MeshFilter>().sharedMesh = canopyRng.NextFloat() < LakeDockLayout.PineChance ? art.CanopyPine : art.CanopyRound;
                 BuilderUtil.SetLayerRecursive(tree, Layers.Shore);

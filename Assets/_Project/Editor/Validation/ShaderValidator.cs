@@ -62,7 +62,8 @@ namespace FishGame.EditorTools
                 "_NORMALMAP"   // R74: FishGame/Toon's optional normal-map variant (shader_feature_local_fragment)
             },
             new[] { "_MAIN_LIGHT_SHADOWS_SCREEN", "_ADDITIONAL_LIGHTS_VERTEX", "FOG_LINEAR" },
-            new[] { "_MAIN_LIGHT_SHADOWS", "_ADDITIONAL_LIGHTS", "_LIGHT_LAYERS", "FOG_EXP" },
+            new[] { "_MAIN_LIGHT_SHADOWS", "_ADDITIONAL_LIGHTS", "_LIGHT_LAYERS", "FOG_EXP",
+                    "_FG_TRIPLANAR" },   // R74 adoption: FishGame/Toon's world-triplanar mapping variant (M_Toon_Tri)
             new[] { "_GBUFFER_NORMALS_OCT", "_WRITE_RENDERING_LAYERS" },
         };
 
