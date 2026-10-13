@@ -111,11 +111,16 @@ namespace FishGame.EditorTools
             return mesh;
         }
 
-        // R74 visual twin of FillRadial: the SAME ring positions, but each band (ring pair) shares its vertices across sectors, so normals are smooth.
-        // Normal from the radial slope (central difference of heightAtRadius over +-1 m, which also softens the ring creases). A band takes one palette
-        // slot (from its mid height; the sand/grass edge runs along a ring) and the matching texture layer; neighbouring bands duplicate the ring.
-        // UV0 = world xz (metres). Vertex colour 0.5 (no ao; BF-7 half scale).
-        static Mesh FillRadialSmooth(float[] radii, System.Func<float, float> heightAtRadius, System.Func<float, byte> slotAtCentreY)
+        // R74 visual twin of FillRadial. The adoption sweep (2026-10-13) found the 48-sector rim reading as straight segments (shoreline, foam,
+        // sand/grass edge), so the twin is finer than the collider: VisualSectors around (4x) and each collider band split into RingSubdivisions
+        // with heights LINEARLY interpolated between the collider rings (so it lies on the collider surface radially; on the arc between collider
+        // sectors it sits at most ~3 cm off on the steepest shore slope). Each band shares its vertices across sectors; normals come from the
+        // radial slope (central difference of heightAtRadius over +-1 m). The palette slot is PER VERTEX (sand below ShoreSandMaxY, grass above),
+        // and FishGame/Toon resolves the palette colour per vertex, so the band that crosses the edge blends sand into grass; the texture layer is per
+        // band (its mid height) and neighbouring bands duplicate the ring. UV0 = world xz (metres). Vertex colour 0.5 (no ao; BF-7 half scale).
+        const int VisualSectors = Sectors * 4, RingSubdivisions = 2;
+
+        static Mesh FillRadialSmooth(float[] radii, System.Func<float, float> heightAtRadius, System.Func<float, byte> slotAtY)
         {
             var b = new List<Vector3>();
             var normals = new List<Vector3>();
@@ -125,32 +130,43 @@ namespace FishGame.EditorTools
             var triangles = new List<int>();
             for (int ring = 0; ring + 1 < radii.Length; ring++)
             {
-                float r0 = radii[ring], r1 = radii[ring + 1];
-                byte slot = slotAtCentreY((heightAtRadius(r0) + heightAtRadius(r1)) * 0.5f);
-                byte layer = slot == LakeDockLayout.SlotGrass ? EnvTextureLayers.Grass : EnvTextureLayers.Sand;
-                int start = b.Count;
-                foreach (float r in new[] { r0, r1 })
+                float ra = radii[ring], rb = radii[ring + 1];
+                float ya = heightAtRadius(ra), yb = heightAtRadius(rb);
+                for (int sub = 0; sub < RingSubdivisions; sub++)
                 {
-                    float slope = (heightAtRadius(r + 1f) - heightAtRadius(Mathf.Max(0f, r - 1f))) / (r + 1f - Mathf.Max(0f, r - 1f));
-                    for (int s = 0; s < Sectors; s++)
+                    float t0 = sub / (float)RingSubdivisions, t1 = (sub + 1) / (float)RingSubdivisions;
+                    float r0 = Mathf.Lerp(ra, rb, t0), r1 = Mathf.Lerp(ra, rb, t1);
+                    float y0 = Mathf.Lerp(ya, yb, t0), y1 = Mathf.Lerp(ya, yb, t1);
+                    byte bandSlot = slotAtY((y0 + y1) * 0.5f);
+                    byte layer = bandSlot == LakeDockLayout.SlotGrass ? EnvTextureLayers.Grass : EnvTextureLayers.Sand;
+                    int start = b.Count;
+                    for (int k = 0; k < 2; k++)
                     {
-                        Vector3 p = Point(r, heightAtRadius(r), s);
-                        Vector3 radial = r > 1e-4f ? new Vector3(p.x, 0f, p.z) / r : Vector3.zero;
-                        b.Add(p);
-                        normals.Add((Vector3.up - radial * slope).normalized);
-                        uv0.Add(new Vector2(p.x, p.z));
-                        uv1.Add(new Vector4(slot, layer, SmoothMeshBuilder.MappingUv, 0f));
-                        colors.Add(new Color(0.5f, 0.5f, 0.5f, 1f));
+                        float r = k == 0 ? r0 : r1, y = k == 0 ? y0 : y1;
+                        float slope = (heightAtRadius(r + 1f) - heightAtRadius(Mathf.Max(0f, r - 1f))) / (r + 1f - Mathf.Max(0f, r - 1f));
+                        byte slot = slotAtY(y);
+                        for (int s = 0; s < VisualSectors; s++)
+                        {
+                            float angle = s * (Mathf.PI * 2f / VisualSectors);
+                            Vector3 p = new Vector3(Mathf.Cos(angle) * r, y, Mathf.Sin(angle) * r);
+                            Vector3 radial = r > 1e-4f ? new Vector3(p.x, 0f, p.z) / r : Vector3.zero;
+                            b.Add(p);
+                            normals.Add((Vector3.up - radial * slope).normalized);
+                            uv0.Add(new Vector2(p.x, p.z));
+                            uv1.Add(new Vector4(slot, layer, SmoothMeshBuilder.MappingUv, 0f));
+                            colors.Add(new Color(0.5f, 0.5f, 0.5f, 1f));
+                        }
                     }
-                }
-                for (int s = 0; s < Sectors; s++)
-                {
-                    int a0 = start + s, b0 = start + (s + 1) % Sectors, a1 = start + Sectors + s, b1 = start + Sectors + (s + 1) % Sectors;
-                    AddIndexedUp(b, triangles, a0, a1, b1);
-                    if (r0 > 0f) AddIndexedUp(b, triangles, a0, b1, b0);
+                    for (int s = 0; s < VisualSectors; s++)
+                    {
+                        int a0 = start + s, b0 = start + (s + 1) % VisualSectors, a1 = start + VisualSectors + s, b1 = start + VisualSectors + (s + 1) % VisualSectors;
+                        AddIndexedUp(b, triangles, a0, a1, b1);
+                        if (r0 > 0f) AddIndexedUp(b, triangles, a0, b1, b0);
+                    }
                 }
             }
             var mesh = new Mesh();
+            mesh.indexFormat = b.Count <= 65535 ? UnityEngine.Rendering.IndexFormat.UInt16 : UnityEngine.Rendering.IndexFormat.UInt32;
             mesh.SetVertices(b);
             mesh.SetNormals(normals);
             mesh.SetUVs(0, uv0);
@@ -343,7 +359,9 @@ namespace FishGame.EditorTools
         // the blade count, then per blade offset x, offset z, height, lean x, lean z.
         static Mesh BuildReeds()
         {
-            var b = new MeshBuilder(LakeDockLayout.ReedsMeshSeed);
+            // R74 adoption: smooth tapered blades (lathe, grass strokes running up, darker at the foot) and a cattail head on every third blade.
+            // Same draws, same positions, heights and leans as the flat version; the cattails use no draws.
+            var b = new SmoothMeshBuilder();
             Pcg32 rng = Rng.Stream(LakeDockLayout.Seed, LakeDockLayout.ReedStream, 0UL);
             int placed = 0;
             for (int attempt = 0; attempt < LakeDockLayout.MaxAttempts && placed < LakeDockLayout.ReedClusterCount; attempt++)
@@ -365,7 +383,17 @@ namespace FishGame.EditorTools
                     float length = height + sink;
                     Vector3 baseWorld = new Vector3(bx, LakeDockLayout.BedYAt(bx, bz) - sink, bz);
                     Quaternion lean = Quaternion.Euler(leanX, 0f, leanZ);
-                    b.Prism(baseWorld + lean * new Vector3(0f, length * 0.5f, 0f), LakeDockLayout.ReedBladeRadius, length, 3, lean, LakeDockLayout.SlotReed);
+                    float blade = LakeDockLayout.ReedBladeRadius;
+                    b.Lathe(baseWorld + lean * new Vector3(0f, length * 0.5f, 0f), t => blade * (1.35f - 1.25f * t * t), length, 6, 4, lean,
+                        LakeDockLayout.SlotReed, EnvTextureLayers.Grass, SmoothMeshBuilder.MappingUv, t => 0.62f + 0.38f * Mathf.Sqrt(t), blade);
+                    if (k % 3 == 0)
+                    {
+                        // Cattail: a soft brown sausage just below the tip.
+                        float headLength = 0.16f, headRadius = blade * 2.4f;
+                        Vector3 head = baseWorld + lean * new Vector3(0f, length - 0.1f - headLength * 0.5f, 0f);
+                        b.Lathe(head, t => headRadius * Mathf.Sqrt(Mathf.Max(0f, Mathf.Sin(Mathf.PI * t))), headLength, 8, 6, lean,
+                            LakeDockLayout.SlotWoodDark, EnvTextureLayers.None, SmoothMeshBuilder.MappingUv, t => 0.8f + 0.2f * t, headRadius);
+                    }
                 }
                 placed++;
             }

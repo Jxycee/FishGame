@@ -179,22 +179,36 @@ namespace FishGame.EditorTools
         }
 
         // Cylinder along local +Z from z 0 to 0.3, tapering from the base radius to the tip radius over the six segments.
+        // R74 adoption: smooth (SmoothMeshBuilder lathe, 12 sides) with wood grain running along the rod; the last segment ends in a rounded tip.
         static Mesh BuildSegment(int index)
         {
             float rBottom = Mathf.Lerp(RodRadiusBase, RodRadiusTip, index / 6f);
             float rTop = Mathf.Lerp(RodRadiusBase, RodRadiusTip, (index + 1) / 6f);
-            var builder = new MeshBuilder(unchecked((uint)(0x524F4400u + index)));
-            builder.Cylinder(new Vector3(0f, 0f, SegmentLength * 0.5f), rBottom, rTop, SegmentLength, 6, Quaternion.Euler(90f, 0f, 0f), SlotWoodDark);
+            bool tip = index == PlayerRigPaths.RodSegmentCount - 1;
+            var builder = new SmoothMeshBuilder();
+            builder.Lathe(new Vector3(0f, 0f, SegmentLength * 0.5f), t =>
+            {
+                float r = Mathf.Lerp(rBottom, rTop, t);
+                return tip && t > 0.94f ? r * Mathf.Sqrt(Mathf.Max(0f, 1f - (t - 0.94f) / 0.06f)) : r;
+            }, SegmentLength, 12, 2, Quaternion.Euler(90f, 0f, 0f), SlotWoodDark, EnvTextureLayers.Wood, SmoothMeshBuilder.MappingUv,
+                t => 0.92f + 0.08f * t, rBottom, true);
             return builder.ToMesh("Rod_Seg" + index);
         }
 
-        // Float: red top, white bottom, a thin red stem.
+        // R74 adoption: a round float, red top and white bottom (two smooth hemispheres, so the colour edge stays crisp), a thin red stem with a ball.
         static Mesh BuildBobber()
         {
-            var builder = new MeshBuilder(0x424F4242u);
-            builder.Cylinder(new Vector3(0f, 0.025f, 0f), 0.035f, 0.035f, 0.05f, 8, Quaternion.identity, SlotAccent);
-            builder.Cylinder(new Vector3(0f, -0.025f, 0f), 0.035f, 0.035f, 0.05f, 8, Quaternion.identity, SlotSnow);
-            builder.Cylinder(new Vector3(0f, 0.07f, 0f), 0.004f, 0.004f, 0.04f, 4, Quaternion.identity, SlotAccent);
+            const float r = 0.035f;
+            var builder = new SmoothMeshBuilder();
+            System.Func<float, float> half = t => r * Mathf.Sqrt(Mathf.Max(0f, 1f - t * t));
+            builder.Lathe(new Vector3(0f, r * 0.5f, 0f), t => half(t), r, 16, 6, Quaternion.identity, SlotAccent, EnvTextureLayers.None,
+                SmoothMeshBuilder.MappingUv, t => 1f, r);
+            builder.Lathe(new Vector3(0f, -r * 0.5f, 0f), t => half(1f - t), r, 16, 6, Quaternion.identity, SlotSnow, EnvTextureLayers.None,
+                SmoothMeshBuilder.MappingUv, t => 0.82f + 0.18f * t, r);
+            builder.Lathe(new Vector3(0f, 0.07f, 0f), t => 0.004f, 0.04f, 8, 1, Quaternion.identity, SlotAccent, EnvTextureLayers.None,
+                SmoothMeshBuilder.MappingUv, t => 1f, 0.004f);
+            builder.Radial(new Vector3(0f, 0.092f, 0f), d => 0.008f, 3, Quaternion.identity, Vector3.one, SlotAccent, EnvTextureLayers.None,
+                SmoothMeshBuilder.MappingUv, d => 1f, 0.01f);
             return builder.ToMesh("Bobber");
         }
 

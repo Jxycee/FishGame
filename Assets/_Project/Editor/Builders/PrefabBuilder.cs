@@ -142,10 +142,14 @@ namespace FishGame.EditorTools
             box.size = new Vector3(0.6f, 1.6f, 0.6f);
             box.center = new Vector3(0f, 0.8f, 0f);
 
-            BuilderUtil.EnsurePrimitive(root.transform, "Post", PrimitiveType.Cylinder, new Vector3(0f, 0.8f, 0f),
-                Quaternion.identity, new Vector3(0.12f, 0.8f, 0.12f), MaterialLibrary.Get("M_Wood"), false);
-            BuilderUtil.EnsurePrimitive(root.transform, "Bell", PrimitiveType.Sphere, new Vector3(0f, 1.45f, 0f),
-                Quaternion.identity, new Vector3(0.35f, 0.4f, 0.35f), MaterialLibrary.Get("M_Brass"), false);
+            // R74 adoption: same transforms, smooth meshes on the Toon materials (post: wood lathe on M_Toon_Base; bell: a flared bell with a crown
+            // knob on M_Toon_Brass).
+            GameObject post = BuilderUtil.EnsurePrimitive(root.transform, "Post", PrimitiveType.Cylinder, new Vector3(0f, 0.8f, 0f),
+                Quaternion.identity, new Vector3(0.12f, 0.8f, 0.12f), RenderMaterialLibrary.Get("M_Toon_Base"), false);
+            GameObject bell = BuilderUtil.EnsurePrimitive(root.transform, "Bell", PrimitiveType.Sphere, new Vector3(0f, 1.45f, 0f),
+                Quaternion.identity, new Vector3(0.35f, 0.4f, 0.35f), RenderMaterialLibrary.Get("M_Toon_Brass"), false);
+            UseMesh(post, SaveMesh(BellPostMesh, BuildBellPost()));
+            UseMesh(bell, SaveMesh(BellMesh, BuildBell()));
             BuilderUtil.SetLayerRecursive(root, Layers.Interactable);
         }
 
@@ -187,6 +191,34 @@ namespace FishGame.EditorTools
                 return y <= 0.5f ? 0.5f : Mathf.Sqrt(Mathf.Max(0f, 0.25f - (y - 0.5f) * (y - 0.5f)));
             }, 2f, 16, 24, Quaternion.identity, 0, EnvTextureLayers.Cloth, SmoothMeshBuilder.MappingUv, t => 0.8f + 0.2f * t, 0.5f);
             return builder.ToMesh("Body_UnitCapsule");
+        }
+
+        const string BellPostMesh = AssetPaths.MeshesFolder + "/Bell_Post.asset";
+        const string BellMesh = AssetPaths.MeshesFolder + "/Bell_Bell.asset";
+
+        // Unity cylinder volume (radius 0.5, height 2): a wooden post with a rounded top, grain up, darker at the foot. Palette slot Wood (3).
+        static Mesh BuildBellPost()
+        {
+            var builder = new SmoothMeshBuilder();
+            builder.Lathe(Vector3.zero, t => t > 0.97f ? 0.42f * Mathf.Sqrt(Mathf.Max(0f, 1f - (t - 0.97f) / 0.03f)) : 0.42f, 2f, 14, 6, Quaternion.identity,
+                3, EnvTextureLayers.Wood, SmoothMeshBuilder.MappingUv, t => 0.65f + 0.35f * Mathf.Sqrt(t), 0.42f, true);
+            return builder.ToMesh("Bell_Post");
+        }
+
+        // Unit sphere volume: a bell flaring to the mouth at the bottom, a domed crown and a knob; darker toward the lip (ao).
+        static Mesh BuildBell()
+        {
+            var builder = new SmoothMeshBuilder();
+            builder.Lathe(new Vector3(0f, -0.05f, 0f), t =>
+            {
+                float crown = Mathf.Sqrt(Mathf.Max(0f, 1f - Mathf.Pow(Mathf.Clamp01((t - 0.72f) / 0.28f), 2f)));
+                float body = Mathf.Lerp(0.48f, 0.30f, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.72f)));
+                float lip = t < 0.08f ? Mathf.Lerp(0.40f, 0.48f, t / 0.08f) : body;
+                return t < 0.72f ? lip : 0.30f * crown;
+            }, 0.9f, 20, 14, Quaternion.identity, 0, EnvTextureLayers.None, SmoothMeshBuilder.MappingUv, t => 0.7f + 0.3f * Mathf.Clamp01(t * 3f), 0.4f);
+            builder.Radial(new Vector3(0f, 0.45f, 0f), d => 0.07f, 3, Quaternion.identity, Vector3.one, 0, EnvTextureLayers.None, SmoothMeshBuilder.MappingUv,
+                d => 0.9f, 0.1f);
+            return builder.ToMesh("Bell_Bell");
         }
 
         static void UseMesh(GameObject part, Mesh mesh)
