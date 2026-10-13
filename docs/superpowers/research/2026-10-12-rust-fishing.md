@@ -332,3 +332,107 @@ Must wait for the server DLL:
 Rules that stay FishGame's:
 - Authority stays owner-simulated per spec 9.9. Do not copy Rust's server authority.
 - If switching moves to Rust-style random intervals, map each interval to a `Uniform` draw. Note that this changes the T7 draw-order table.
+
+## 8. Exact server maths (pass 3, 2026-10-12: Rust Dedicated Server decompiled)
+
+### 8.1 Method
+
+- The user approved the download. SteamCMD (Valve-signed) installed Steam app 258550 with an anonymous login: 5.7 GB, into the session scratchpad.
+- Windows Defender found no threats in `RustDedicated_Data/Managed`.
+- `Assembly-CSharp.dll`: 10,508,112 bytes, SHA-256 `13687C7D90785D1DE7C01258432D62068B6FF048D22F2F7AD3804C7AF8709F8F`. It is managed (Mono) and not obfuscated.
+- A copy was decompiled with ilspycmd 11.1.0.9782: `BaseFishingRod`, `FishingBobber`, `ItemModFishable` and `ConVar.Fishing`. `RustDedicated.exe` was never run.
+- Only the mechanics and numbers are recorded here. No Rust code is in the repo.
+- Everything in this section is [recovered] unless tagged otherwise. It supersedes the SERVER-ONLY rows in 7.4 and the [inferred] formulas in sections 6 and 7.6.
+- Prefab values override the code defaults:
+  - FishCatchDistance: code 0.5, prefab 1.0.
+  - GlobalStrainSpeedMultiplier: code 1, prefab 0.75.
+  - Bobber speeds: code 1, prefab per section 3.
+
+### 8.2 Tick (server, every frame while Catching)
+
+Inputs come from the server's input state:
+- `reel` = Backward (S) or Fire (LMB) held.
+- `steerL` = Left held, `steerR` = Right held. Holding both cancels both.
+- A steer input is dropped unless it pulls the line away from the bobber side (dot test on the rod-to-bobber direction).
+
+Strain rate `k`, before any multipliers:
+
+| Situation | k |
+|---|---|
+| No input at all | none: strain drains instead (below) |
+| Any input while the fish is resting (state 0) | 0.5 |
+| Reeling while the fish pulls back (with or without a side pull) | 1.5 + 1 = **2.5** |
+| Reeling while the fish pulls sideways | 1.2 + 1 = **2.2** |
+| Counter-steering only (Right vs a Left pull, or Left vs a Right pull) | **0.8** |
+| Steering the same way as the fish, or steering during a back-only pull | 0.5 |
+
+- Reeling takes precedence: reel + counter-steer during a run is still 2.2 (or 2.5 on a back-pull).
+- Then `k *= StrainModifier(fish) * GlobalStrainSpeedMultiplier(0.75)`, and `k -= (FishingBoost - 1)` (a tea buff).
+- With any input, `strain += dt * k`. With no input, `strain = MoveTowards(strain, 0, 1.5 * dt)`, a flat drain of **1.5 per second**.
+- **Snap**: `strain > 7` -> TensionBreak.
+- **Display**: the bar is `strain / 6`, so the bar is full at 6 and the line snaps at 7 (bar 1.17). The "straining" flag (for audio and anims) is set when there is input and the display value is above 0.25.
+- So **the fish never builds strain on its own.** Only player input loads the line, and fully letting go always drains it. This is the Rust "pump".
+
+### 8.3 Fish state machine
+
+- The state is a flag set {PullingLeft 1, PullingRight 2, PullingBack 4}. 0 = resting.
+- When the timer `nextFishStateChange` expires (it starts at 0, so the first run starts at once):
+  - `tire01 = clamp01(TireAmount / 20)`.
+  - **Run -> rest**: the state becomes 0 for `Uniform(2, 4) * (1 + tire01)` s. Rests get up to twice as long as the fish tires.
+  - **Rest -> run**: the run lasts `Uniform(3, 7) * (1 - tire01)` s. Runs shrink to nothing when the fish is fully tired.
+    - Left or Right, 50/50 (`Range(0,100) < 50`).
+    - Plus PullingBack when `Range(0,100) > 60` (39%) and the bobber is closer than `MaxCastDistance - 2` (8 m).
+- If the next bobber position is invalid, the side flags flip (Left <-> Right). Invalid means more than 60 deg off the initial cast direction (horizontal, from the player), or blocked by geometry.
+- **TimeOut**: fight time (since the hook) > **120 s** -> TimeOut. The bobber entity also self-destructs 150 s after the cast.
+
+### 8.4 Tire (FishingBobber.TireAmount)
+
+- Any steer input: `+0.8/s`. A counter-steer against an exactly single-direction side pull (no back flag): `+1.25/s`.
+- No steer input: `-0.1/s`. There is no explicit floor in code [recovered]; it can go negative, which lengthens runs slightly.
+- **Reeling does not tire the fish.** Only steering does.
+- Effects: it scales run/rest durations (above, saturating at 20) and multiplies reel speed by `remap(TireAmount, 0..5 -> 1..3)` (clamped). So after about 5 s of steering, reeling is 3x faster.
+
+### 8.5 Bobber movement (per tick, metres)
+
+- `p = clamp(PingPong(time, 2), 0.2, 2)`. This is a global 4 s triangle wave, so fish pull strength surges and fades.
+- Side pull: `HorizontalMoveSpeed(1.2) * p * MoveMultiplier`, halved while the player counter-steers.
+  - The code assigns Left and then Right, so if both flags were set, Right wins. They never are.
+- Back pull: `PullAwayMoveSpeed(1.3) * p * MoveMultiplier` away from the player, halved while reeling.
+- Player steer: when the fish is not pulling in that same direction, add `SidewaysInputForce(0.8) * FishingBoost` sideways.
+  - A counter-steer therefore both halves the fish's side speed AND pushes the bobber back at 0.8 m/s.
+- Reel: `ReelInMoveSpeed(0.6) * ReelInSpeedMultiplier * tireRemap(1..3) * FishingBoost` toward the player.
+- Units are metres per second applied to the transform. They are not forces; the rigidbody is only for visuals.
+
+### 8.6 Other server rules
+
+- **Catch**: horizontal player-to-bobber distance <= FishCatchDistance (1.0 m) -> Caught.
+- **BadAngle**: the bobber is more than 60 deg off the head-forward direction (horizontal) while more than 1.2 m away.
+- **Obstructed**: line-of-sight checks every 0.4 s.
+- **TooFarAway**: distance > 2 x MaxCastDistance (20 m).
+- **PlayerMoved**: the player is more than 1 m from where they cast.
+- **Cast validation**: TooClose under 5 m; TooShallow if the depth is under 0.3 m at the bobber or under 0.1 m at 95% of the way back.
+- **Bite wait**: `Uniform(10, 20) * CatchWaitTimeMultiplier - remap(baitValue 0..20 -> 1..10)`, clamped to 3..20 s. The bite auto-hooks.
+- **Rod condition loss**: 2% on success, 4% on failure (the code values; the prefab values in section 3 are 1 and 2).
+
+### 8.7 Worked numbers (prefab values, strain from 0)
+
+The effective multiplier is `StrainModifier x 0.75`: small 0.6, medium 0.75, large 0.9375.
+
+| Action | small | medium | large |
+|---|---|---|---|
+| Reel into a side run, seconds to snap (7 / rate) | 7 / 1.32 = **5.3 s** | 4.2 s | 3.4 s |
+| Reel into a back-pull | 4.7 s | 3.7 s | 3.0 s |
+| Reel while the fish rests | 23 s | 18.7 s | 14.9 s |
+| Counter-steer only | 14.6 s | 11.7 s | 9.3 s |
+
+- Release drain: a full bar (6) to 0 takes 4.0 s. 90% -> 30% of the bar (5.4 -> 1.8) takes 2.4 s.
+- Runs last 3-7 s, so reckless reeling into one run snaps a small fish only if the run lasts more than 5.3 s and nothing was drained before. With carry-over strain from earlier pumps, it is sooner.
+- [inferred] The user-confirmed target of "about 7 s of careless reeling snaps a small fish" sits close to Rust's 5.3 s. FishGame can hit 7 s with the small-fish StrainModifier at about 0.6 (vs Rust's 0.8), or keep Rust's 5.3 s for the baseline.
+
+### 8.8 What this changes vs the section 6 proposal
+
+- There is no "reel strain base x weight" term. Strain depends on input type, fish state and the per-fish StrainModifier only. Weight does not enter Rust's maths at all.
+- Calm reeling still costs strain (0.5 x mods), and only a full release drains. This confirms section 6's `RelaxWhileReeling` 0.
+- There is no CounterRelief term. Countering helps because counter-steer alone (0.8) is cheaper than reeling into a run (2.2), it halves the run, it pushes the bobber back, and it tires the fish (+1.25/s), which shortens runs and triples reel speed.
+- A dive (PullingBack) combines with a side pull and only happens inside 8 m. It is the most expensive thing to reel into (2.5).
+- TimeOut is 120 s. There is no near-snap grace: the snap is instant at strain > 7, but the bar shows full from 6, a ~1/6 headroom band.
