@@ -15,9 +15,9 @@ namespace FishGame.Fishing
     {
         private const float ToastSeconds = 4f;
 
-        public const string ToastNewKey = "toast.journal_new";
-        public const string ToastBestKey = "toast.journal_best";
-        public const string ToastUnlockKey = "toast.journal_unlock";
+        private const string ToastNewKey = "toast.journal_new";
+        private const string ToastBestKey = "toast.journal_best";
+        private const string ToastUnlockKey = "toast.journal_unlock";
 
         private readonly LogOnce _log = new LogOnce();
         private IDisposable _subscription;

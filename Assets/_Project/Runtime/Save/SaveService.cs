@@ -15,7 +15,7 @@ namespace FishGame.Runtime
     public sealed class SaveService
     {
         public const string MetaBaseName = "meta";
-        public const string CorruptSuffix = ".corrupt";
+        private const string CorruptSuffix = ".corrupt";
 
         private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
