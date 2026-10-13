@@ -65,5 +65,33 @@ namespace FishGame.Tests.EditMode
                 Assert.That(triangles, Is.GreaterThan(0), seed.Id + ": triangle count");
             }
         }
+
+        // Catches: the model importer regenerating or swapping UV channels (FishModelPostprocessor pins generateSecondaryUV / swapUVChannels off), which would
+        // replace the authored uv1 = (slot, layer, mapping, 0) and make FishGame/Toon read the wrong T_FishSkinArray layer (the fish would be skinned as another
+        // species, or white). Each species model must carry uv1, and uv1.y is its skin layer on every vertex.
+        [Test]
+        public void SeedSpecies_Models_CarryUv1_WithTheirSkinArrayLayer()
+        {
+            var expectedLayer = new Dictionary<string, float>(StringComparer.Ordinal)
+            {
+                { "bluegill", 1f }, { "perch", 2f }, { "carp", 3f }, { "trout", 4f }, { "catfish", 5f },
+            };
+            Assert.That(FishingSeedData.Species.Count, Is.EqualTo(expectedLayer.Count), "every seed species needs an expected skin layer here");
+            foreach (SpeciesSeed seed in FishingSeedData.Species)
+            {
+                Assert.That(expectedLayer.TryGetValue(seed.Id, out float layer), Is.True, seed.Id + ": no expected skin layer in this test");
+                var def = AssetDatabase.LoadAssetAtPath<FishSpeciesDef>(AssetPaths.SpeciesFolder + "/" + seed.Id + ".asset");
+                Assert.IsNotNull(def, seed.Id + ": missing species asset");
+                Mesh mesh = def.Model;
+                Assert.IsNotNull(mesh, seed.Id + ": Model is null");
+                Assert.That(mesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.TexCoord1), Is.True, seed.Id + ": the model has no uv1 (TexCoord1)");
+
+                var uv1 = new List<Vector4>();
+                mesh.GetUVs(1, uv1);
+                Assert.That(uv1.Count, Is.EqualTo(mesh.vertexCount), seed.Id + ": uv1 count vs vertex count");
+                for (int i = 0; i < uv1.Count; i++)
+                    Assert.That(uv1[i].y, Is.EqualTo(layer), seed.Id + ": uv1.y (skin layer) at vertex " + i);
+            }
+        }
     }
 }

@@ -1,7 +1,8 @@
 // Import settings for the fish models under Content/Models (C 7.20, plan T20.7). Owned by T20. Authority: none (editor).
 // Materials are never imported or assigned (the reveal renderer uses M_Toon_Fish). Bump GetVersion when Apply changes, so models reimport.
-// Note for T23/T29: the spike Fish_Perch.fbx keeps its 5 submeshes (one per Blender material) and has no vertex colours until T29 replaces it
-// with the staged single-submesh Art/Export model; EnsureImportSettings logs tris, submeshes and colours per model for that check.
+// The R74 fish models carry uv1 = (slot, species layer, mapping, 0) authored in Blender; the importer must never regenerate or swap UV channels
+// (generateSecondaryUV / swapUVChannels pinned off), or FishGame/Toon would read a wrong texture-array layer. ContentAssetParityTests checks it.
+// EnsureImportSettings logs tris, submeshes and colours per model.
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -10,7 +11,7 @@ namespace FishGame.EditorTools
 {
     public sealed class FishModelPostprocessor : AssetPostprocessor
     {
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         void OnPreprocessModel()
         {
@@ -38,6 +39,8 @@ namespace FishGame.EditorTools
             if (importer.isReadable) { importer.isReadable = false; changed = true; }
             if (importer.meshCompression != ModelImporterMeshCompression.Off) { importer.meshCompression = ModelImporterMeshCompression.Off; changed = true; }
             if (importer.animationType != ModelImporterAnimationType.None) { importer.animationType = ModelImporterAnimationType.None; changed = true; }
+            if (importer.generateSecondaryUV) { importer.generateSecondaryUV = false; changed = true; }   // would overwrite the authored uv1 (the texture layer)
+            if (importer.swapUVChannels) { importer.swapUVChannels = false; changed = true; }
             return changed;
         }
 

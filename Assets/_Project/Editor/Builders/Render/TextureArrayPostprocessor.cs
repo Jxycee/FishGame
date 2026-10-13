@@ -5,7 +5,7 @@
 //   T_EnvDetailArray.png  4 x 4, linear (detail centred on 0.5; the material gain is 2). Layers: 0 neutral, 1 grass, 2 foliage, 3 wood (grain
 //                         along u), 4 bark (ridges along v), 5 sand, 6 rock, 7 cloth, 8..15 neutral (reserved). Generator: Art/Blender/
 //                         fishgame_lookdev.blend, text block fg_textures.py.
-//   T_FishSkinArray.png   4 x 2, sRGB albedo. Layers: 0 white, 1 bluegill, 2..7 white (one tile per species skin; M3 grows the sheet).
+//   T_FishSkinArray.png   4 x 2, sRGB albedo. Layers: 0 white, 1 bluegill, 2 perch, 3 carp, 4 trout, 5 catfish, 6..7 white (one tile per species skin; M3 grows the sheet).
 // Bump GetVersion when Apply changes, so the textures reimport.
 using UnityEditor;
 using UnityEngine;
