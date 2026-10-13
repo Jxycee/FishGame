@@ -4,7 +4,7 @@
 
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
-_Last updated: 2026-10-14 (user asleep; asked to fix what the checks found, then stop when waiting on more checks). W1 PASSED. T15, T20 and fix batch B run in parallel worktrees._
+_Last updated: 2026-10-14. T15 and T20 MERGED into m3-fish-ecology (79b8f30; full check PASS: EditMode 1280 + 1 skip, PlayMode 103). Fix batches A (fight) and B (look) in flight; Blender harbour art finished, T17 phase 2 next._
 
 ## 1. Read these next (in order)
 1. `C:\Dev\FishGame-m3\CLAUDE.md`: project rules (Git: no PRs; merge yourself when reviewed and green; PlayMode guard).
@@ -15,8 +15,8 @@ _Last updated: 2026-10-14 (user asleep; asked to fix what the checks found, then
 ## 2. Where things are
 - **main:** M2 complete (merged 235d460). That covers the fishing core, the Rust-faithful fight (R72), RV ladders (R70), smooth water (R73), the realistic-toon look (R74), seasonal trees, and the story R76 (mafia chase downriver, starfish god, 7 days = 7 river maps; planned for M4).
 - **M3 (fish ecology):** worktree `C:\Dev\FishGame-m3`, branch `m3-fish-ecology` (pushed).
-  - Done and reviewed: T0-T14, T16, T18, T19, T23 (all 25 fish in game), plus the follow-ups. Tests green: EditMode 1261 + 1 skip, PlayMode 97.
-  - Remaining: T15, T17 (Harbour Pier), T20-T22 (journal, UI, dev panel), T24, T25, then an Opus xhigh branch review, then merge into main.
+  - Done and reviewed: T0-T16, T18-T20, T23 (all 25 fish in game), plus the follow-ups. Tests green at 79b8f30: EditMode 1280 + 1 skip, PlayMode 103.
+  - Remaining: T17 (Harbour Pier, Blender art + Unity builder), T21, T22 (journal UI, dev panel), T24, T25, then an Opus xhigh branch review, then merge into main.
 - **Idle worktree** `C:\Dev\FishGame-lookdev` (merged): delete only with the user's OK.
 
 ## 3. Next action
@@ -73,3 +73,6 @@ Also on the board:
 - the default test-session look;
 - winter tree colliders;
 - the online-cancel message.
+
+## 9. Live pages this round
+- Harbour build log (screenshots as the map is built): https://claude.ai/artifact/TmqCpXrHJBXRZBhZMKkMhW (db `shots`, `meta/status`; images uploaded as assets).
