@@ -154,6 +154,20 @@ Only one implementer runs at a time (the Unity lock). Reviewers are read-only an
 | F Presentation | `docs/superpowers/plans/2026-10-13-m3-plan-presentation.md` | T18, T19 | The tint goes on textured albedo (C M3-D23; check the T4 shader hook first). No per-frame allocation. Fog density stays readable (`DayNightMath.IsReadable`). Every loop passes `follow` and stops in `OnDisable` (C2 16.2). |
 | G Journal, UI, art and acceptance | `docs/superpowers/plans/2026-10-13-m3-plan-journal-ui.md` | T20, T21, T22, T23, T24, T25 | T23 is a controller checklist (Blender MCP steps per the R74 guide, batches, LFS size report, user look check), not a subagent brief. T21/T22 are manual-check UI tasks, built on Core helpers that have tests. T25 holds the acceptance doc and the branch-review hand-off. |
 
+**Section status (2026-10-12):**
+
+| Section | Status |
+|---|---|
+| A Carry and migration | **Written** (`2026-10-13-m3-plan-carry-migration.md`); contract change requests accepted and applied |
+| B Core ecology | **Written** (`2026-10-13-m3-plan-core.md`); contract change requests accepted and applied |
+| C Data, content and coverage | **Written** (`2026-10-13-m3-plan-data-coverage.md`); contract change requests accepted and applied |
+| D Host, world and network | **Written** (`2026-10-13-m3-plan-host-world.md`); contract change requests accepted and applied |
+| E Maps | Not written: waiting for the R74 look-dev approval (authoring waits so that T17 can follow the style guide; T16 itself is not look-dev-gated in the contract, 3 and section 1) |
+| F Presentation | Not written: waiting for the R74 look-dev approval |
+| G Journal, UI, art and acceptance | Not written: waiting for the R74 look-dev approval |
+
+The contract change requests of A-D were collected and ruled on 2026-10-12 (all accepted as proposed): see the "Section-author CCR resolution (2026-10-12)" note and M3-D55..D77 in the contract section 13. Authors of E-G read the amended contract (in particular M3-D56..D59 for `WorldState`/`DevWorldDriver`/`EcologySession` and M3-D76 for the serializable helper field names).
+
 Authors may run in parallel (each writes only its own plan file). Cross-section questions go to the controller, who answers against the contract.
 
 ## 7. Per-task acceptance highlights (for authors to expand)
