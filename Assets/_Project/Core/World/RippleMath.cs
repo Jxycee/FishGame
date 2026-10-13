@@ -9,6 +9,7 @@ namespace FishGame.Core
         public const int Slots = 8;
         public const float RingSpeed = 2.2f, RingWidth = 0.25f, Lifetime = 2.5f;
         public const float CastLanding = 0.6f, Nibble = 0.2f, Bite = 1.0f, BiteFollow = 0.3f, Snap = 0.8f, Landed = 0.7f, Shove = 1.0f;
+        public const float Dive = 1.0f, DiveFollow = 0.5f;   // F9: the bobber's plunge on a back pull, and its two follow-up rings
 
         // (1 - sat(|dist - age*RingSpeed| / RingWidth)) * sat(1 - age/Lifetime) * strength.
         // age < 0 -> 0 (a ripple stamped ahead of the water clock is invisible; ruling C-Q5). NaN -> 0.

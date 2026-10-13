@@ -6,7 +6,9 @@
 //    A repeated or resent Casting value never restarts it; nothing else starts one. The arc runs to completion if the state moves on, unless
 //    the cast ends (Landed or Snapped hide the bobber at once; a recall replaces the arc).
 //  - Steady spot: water height from WaterSurface.HeightAt (bobber bob), by state: Waiting +0.02, Bite -0.25, Hooked fish point -0.1,
-//    dive -0.35, exhausted +0.03 with a slow roll; the Nibble cue adds a 0.25 s dip. Easing at 1 - exp(-20 dt).
+//    dive -FightViewMath.DiveDepth (0.75, F9: fully under, out of sight; was 0.35), exhausted +0.03 with a slow roll; the Nibble cue adds a
+//    0.25 s dip. Easing at 1 - exp(-20 dt); a dive's downward move eases at FightViewMath.PlungeEaseRate (50), a yank (the splash crown, ring
+//    and bubble trail of the Dive cue are SplashFx's). The bobber grows with its distance from the rod tip (FightViewMath.DistanceScale, F6).
 //  - Hooked: rolls +-30 deg toward the pull side (FlagRight), halved on a back pull (FlagDive), eased at clamp01(dt) (Rust, R72); a spent fish rolls slowly.
 //  - Recall: a 0.4 s arc back to the bent tip on Cue Recall, on Escaped with FlagRecall, or on a line-out -> Idle transition; then hide.
 using FishGame.Core;
@@ -21,7 +23,7 @@ namespace FishGame.Presentation
     [DefaultExecutionOrder(240)]
     public sealed class BobberView : MonoBehaviour
     {
-        private const float EaseRate = 20f;
+        private const float EaseRate = FightViewMath.EaseRate;
         private const float RecallSeconds = 0.4f, RecallApex = 0.5f;
         private const float NibbleSeconds = 0.25f, NibbleDip = 0.04f;
         private const float ExhaustedRollDeg = 30f, RollRadPerSecond = 1.5f;
@@ -181,14 +183,17 @@ namespace FishGame.Presentation
 
                 case Phase.Steady:
                 {
+                    bool hooked = vs.State == RodState.Hooked;
+                    bool exhausted = hooked && (vs.Flags & RodWireQuant.FlagExhausted) != 0;
                     if (IsFinite(vs.BobberPos))
                     {
                         Vector3 target = SteadyTarget(vs, now);
-                        Position = Vector3.Lerp(Position, target, 1f - Mathf.Exp(-EaseRate * dt));
+                        float k = 1f - Mathf.Exp(-EaseRate * dt);
+                        bool diving = hooked && !exhausted && (vs.Flags & RodWireQuant.FlagDive) != 0;
+                        float ky = 1f - Mathf.Exp(-FightViewMath.YEaseRate(diving, Position.y, target.y) * dt);
+                        Position = new Vector3(Mathf.Lerp(Position.x, target.x, k), Mathf.Lerp(Position.y, target.y, ky), Mathf.Lerp(Position.z, target.z, k));
                     }
 
-                    bool hooked = vs.State == RodState.Hooked;
-                    bool exhausted = hooked && (vs.Flags & RodWireQuant.FlagExhausted) != 0;
                     if (hooked && !exhausted)
                     {
                         // R72 (Rust): lean toward the pull side, halved on a back pull, eased at clamp01(dt).
@@ -282,9 +287,7 @@ namespace FishGame.Presentation
                     y = h - 0.25f;
                     break;
                 case RodState.Hooked:
-                    if ((vs.Flags & RodWireQuant.FlagDive) != 0) y = h - 0.35f;
-                    else if ((vs.Flags & RodWireQuant.FlagExhausted) != 0) y = h + 0.03f;
-                    else y = h - 0.1f;
+                    y = h + FightViewMath.HookedDepthOffset((vs.Flags & RodWireQuant.FlagDive) != 0, (vs.Flags & RodWireQuant.FlagExhausted) != 0);
                     break;
                 default:
                     y = h + 0.02f;
@@ -304,6 +307,8 @@ namespace FishGame.Presentation
             d.y = 0f;
             Quaternion basis = d.sqrMagnitude > 1e-4f ? Quaternion.LookRotation(d.normalized, Vector3.up) : Quaternion.identity;
             _bobber.SetPositionAndRotation(Position, basis * Quaternion.Euler(0f, 0f, rollDeg));
+            // F6: the float grows with its distance from the rod tip, so it stays readable at cast distance (continuous from 1 at the tip).
+            _bobber.localScale = Vector3.one * FightViewMath.DistanceScale(Vector3.Distance(Position, TipPosition()));
         }
 
         private void SetShown(bool shown)
