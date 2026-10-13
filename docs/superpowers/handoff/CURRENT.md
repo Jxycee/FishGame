@@ -4,7 +4,7 @@
 
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
-_Last updated: 2026-10-14. T15 and T20 MERGED into m3-fish-ecology (79b8f30; full check PASS: EditMode 1280 + 1 skip, PlayMode 103). Fix batches A (fight) and B (look) in flight; Blender harbour art finished, T17 phase 2 next._
+_Last updated: 2026-10-14. M3 at ec40781 (T15, T20, look fixes merged; check PASS: EditMode 1289 + 1 skip, PlayMode 105). In flight: batch A fight fixes (worktree -t15, m3-fix-fight), T17 harbour Unity scene (worktree -t20, m3-t17, Blender art merged in), batch C ladders + graphics tab (worktree -fixb, m3-fix-ui). Board re-checks RL1, RS1 added._
 
 ## 1. Read these next (in order)
 1. `C:\Dev\FishGame-m3\CLAUDE.md`: project rules (Git: no PRs; merge yourself when reviewed and green; PlayMode guard).
