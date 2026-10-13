@@ -5,7 +5,7 @@ Branch `m2-lookdev`. The before/after sheet is `docs/superpowers/handoff/img/202
 ## 1. Reference study (short)
 
 ### RV There Yet? (Nuggets Entertainment, UE5)
-Knowledge and store and press imagery only. The pak files were not read.
+From general knowledge only. Not checked against screenshots in this pass (one web search gave no visual description), and the pak files were not read.
 
 - **Shading:** physically based lighting pushed toward stylised. It has broad soft light-to-shadow transitions, warm sun, cool sky-filled shadows, and strong ambient occlusion in creases (Lumen-style GI). There is no hard cel band.
 - **Outlines:** none.
