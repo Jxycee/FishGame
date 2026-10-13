@@ -1,0 +1,2472 @@
+{
+ "generator": "Art/Blender/fg_harbour.py (text block in Art/Blender/fishgame_harbour.blend)",
+ "layout": "mirrors HarbourPierLayout / plan T17.2 (2026-10-13-m3-plan-maps.md)",
+ "axes": "Unity metres. Authored in Unity axes; Blender = (-x, -z, y); FBX export -Z forward, Y up, bake_space_transform (the fish settings). Each FBX object is at the origin with an identity transform: place each at the Unity origin.",
+ "encoding": {
+  "uv0": "UVMap: wood in metres, grain along u (long axis; posts and lathes grain up); _Tri objects: world xz",
+  "uv1": "Layer: (palette slot, texture layer) on every corner; no uv1.z in the FBX (the mapping comes from the material: _Tri -> M_Toon_Tri, else M_Toon_Base)",
+  "colour": "Col: 0.5 x ao (half-scale grey, _JitterEncoded 1); ao = per-vertex BVH ray-cast bake in Blender (40 rays, 1 m, terrain occluder, back faces ignored) above a per-part floor (wood 0.45, rock 0.62)",
+  "normals": "smooth / analytic rounded-box custom normals",
+  "materials": "none exported"
+ },
+ "slots": {
+  "Grass": 0,
+  "Foliage": 1,
+  "FoliageDark": 2,
+  "Wood": 3,
+  "WoodDark": 4,
+  "Sand": 5,
+  "Rock": 6,
+  "Reed": 7,
+  "Dock": 8,
+  "Roof": 9,
+  "Accent": 10
+ },
+ "layers": {
+  "none": 0,
+  "Grass": 1,
+  "Foliage": 2,
+  "Wood": 3,
+  "Bark": 4,
+  "Sand": 5,
+  "Rock": 6,
+  "Cloth": 7
+ },
+ "assets_used": [],
+ "fbx": [
+  {
+   "name": "Harbour_PierDeck",
+   "file": "Art/Export/Harbour/Harbour_PierDeck.fbx",
+   "triangles": 18036,
+   "vertices": 9352,
+   "bounds_min": [
+    -1.5014,
+    1.25,
+    -56.9976
+   ],
+   "bounds_max": [
+    1.58,
+    1.5,
+    -8.01
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    8
+   ],
+   "layers": [
+    3
+   ],
+   "items": []
+  },
+  {
+   "name": "Harbour_PierHead",
+   "file": "Art/Export/Harbour/Harbour_PierHead.fbx",
+   "triangles": 5400,
+   "vertices": 2800,
+   "bounds_min": [
+    -4.9886,
+    1.0261,
+    -60.4868
+   ],
+   "bounds_max": [
+    4.9906,
+    1.5,
+    -4.89
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    8
+   ],
+   "layers": [
+    3
+   ],
+   "items": []
+  },
+  {
+   "name": "Harbour_PierPosts",
+   "file": "Art/Export/Harbour/Harbour_PierPosts.fbx",
+   "triangles": 3912,
+   "vertices": 2860,
+   "bounds_min": [
+    -4.7062,
+    -9.02,
+    -56.099
+   ],
+   "bounds_max": [
+    4.7062,
+    1.38,
+    -5.2938
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    4
+   ],
+   "layers": [
+    3
+   ],
+   "items": [
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      1.29,
+      -56.0
+     ],
+     "footprint": [
+      0.18,
+      0.18,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      1.29,
+      -56.0
+     ],
+     "footprint": [
+      0.18,
+      0.18,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      1.17,
+      -53.0
+     ],
+     "footprint": [
+      0.18,
+      0.42,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      1.17,
+      -53.0
+     ],
+     "footprint": [
+      0.18,
+      0.42,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      0.99,
+      -50.0
+     ],
+     "footprint": [
+      0.18,
+      0.78,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      0.99,
+      -50.0
+     ],
+     "footprint": [
+      0.18,
+      0.78,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      0.81,
+      -47.0
+     ],
+     "footprint": [
+      0.18,
+      1.14,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      0.81,
+      -47.0
+     ],
+     "footprint": [
+      0.18,
+      1.14,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      0.565,
+      -44.0
+     ],
+     "footprint": [
+      0.18,
+      1.63,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      0.565,
+      -44.0
+     ],
+     "footprint": [
+      0.18,
+      1.63,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      0.19,
+      -41.0
+     ],
+     "footprint": [
+      0.18,
+      2.38,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      0.19,
+      -41.0
+     ],
+     "footprint": [
+      0.18,
+      2.38,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      -0.185,
+      -38.0
+     ],
+     "footprint": [
+      0.18,
+      3.13,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      -0.185,
+      -38.0
+     ],
+     "footprint": [
+      0.18,
+      3.13,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      -0.56,
+      -35.0
+     ],
+     "footprint": [
+      0.18,
+      3.88,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      -0.56,
+      -35.0
+     ],
+     "footprint": [
+      0.18,
+      3.88,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      -0.935,
+      -32.0
+     ],
+     "footprint": [
+      0.18,
+      4.63,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      -0.935,
+      -32.0
+     ],
+     "footprint": [
+      0.18,
+      4.63,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      -1.31,
+      -29.0
+     ],
+     "footprint": [
+      0.18,
+      5.38,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      -1.31,
+      -29.0
+     ],
+     "footprint": [
+      0.18,
+      5.38,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      -1.685,
+      -26.0
+     ],
+     "footprint": [
+      0.18,
+      6.13,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      -1.685,
+      -26.0
+     ],
+     "footprint": [
+      0.18,
+      6.13,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      -2.06,
+      -23.0
+     ],
+     "footprint": [
+      0.18,
+      6.88,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      -2.06,
+      -23.0
+     ],
+     "footprint": [
+      0.18,
+      6.88,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      -2.435,
+      -20.0
+     ],
+     "footprint": [
+      0.18,
+      7.63,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      -2.435,
+      -20.0
+     ],
+     "footprint": [
+      0.18,
+      7.63,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      -2.81,
+      -17.0
+     ],
+     "footprint": [
+      0.18,
+      8.38,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      -2.81,
+      -17.0
+     ],
+     "footprint": [
+      0.18,
+      8.38,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      -3.185,
+      -14.0
+     ],
+     "footprint": [
+      0.18,
+      9.13,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      -3.185,
+      -14.0
+     ],
+     "footprint": [
+      0.18,
+      9.13,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      -3.56,
+      -11.0
+     ],
+     "footprint": [
+      0.18,
+      9.88,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      -3.56,
+      -11.0
+     ],
+     "footprint": [
+      0.18,
+      9.88,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -1.4,
+      -3.81,
+      -8.0
+     ],
+     "footprint": [
+      0.18,
+      10.38,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      1.4,
+      -3.81,
+      -8.0
+     ],
+     "footprint": [
+      0.18,
+      10.38,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      4.6,
+      -3.81,
+      -7.6
+     ],
+     "footprint": [
+      0.18,
+      10.38,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -4.6,
+      -3.81,
+      -7.6
+     ],
+     "footprint": [
+      0.18,
+      10.38,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      4.6,
+      -3.81,
+      -5.4
+     ],
+     "footprint": [
+      0.18,
+      10.38,
+      0.18
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Post",
+     "position": [
+      -4.6,
+      -3.81,
+      -5.4
+     ],
+     "footprint": [
+      0.18,
+      10.38,
+      0.18
+     ],
+     "collider": "box"
+    }
+   ]
+  },
+  {
+   "name": "Harbour_Ladders",
+   "file": "Art/Export/Harbour/Harbour_Ladders.fbx",
+   "triangles": 2376,
+   "vertices": 1232,
+   "bounds_min": [
+    1.555,
+    -1.4,
+    -25.225
+   ],
+   "bounds_max": [
+    2.225,
+    2.35,
+    -4.895
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    4
+   ],
+   "layers": [
+    3
+   ],
+   "items": [
+    {
+     "name": "LadderMid",
+     "position": [
+      2.05,
+      0.55,
+      -25.0
+     ],
+     "footprint": [
+      1.0,
+      3.9,
+      1.0
+     ],
+     "collider": "LadderVolume (layout)",
+     "rail_top": 2.35
+    },
+    {
+     "name": "LadderHead",
+     "position": [
+      2.0,
+      0.55,
+      -4.45
+     ],
+     "footprint": [
+      1.0,
+      3.9,
+      1.0
+     ],
+     "collider": "LadderVolume (layout)",
+     "rail_top": 2.35
+    }
+   ]
+  },
+  {
+   "name": "Harbour_Breakwater_Tri",
+   "file": "Art/Export/Harbour/Harbour_Breakwater_Tri.fbx",
+   "triangles": 18564,
+   "vertices": 9466,
+   "bounds_min": [
+    26.0209,
+    -0.174,
+    -56.3807
+   ],
+   "bounds_max": [
+    33.7813,
+    1.5379,
+    -23.3294
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    6
+   ],
+   "layers": [
+    5,
+    6
+   ],
+   "items": [
+    {
+     "name": "Boulder",
+     "position": [
+      27.228,
+      0.937,
+      -55.178
+     ],
+     "footprint": [
+      1.694,
+      1.355,
+      1.694
+     ],
+     "collider": "sphere",
+     "radius": 0.847
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.385,
+      0.635,
+      -53.56
+     ],
+     "footprint": [
+      2.451,
+      1.961,
+      2.451
+     ],
+     "collider": "sphere",
+     "radius": 1.225
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.568,
+      0.773,
+      -51.805
+     ],
+     "footprint": [
+      1.92,
+      1.536,
+      1.92
+     ],
+     "collider": "sphere",
+     "radius": 0.96
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.204,
+      0.901,
+      -50.487
+     ],
+     "footprint": [
+      1.651,
+      1.321,
+      1.651
+     ],
+     "collider": "sphere",
+     "radius": 0.825
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.457,
+      0.453,
+      -48.645
+     ],
+     "footprint": [
+      2.519,
+      2.015,
+      2.519
+     ],
+     "collider": "sphere",
+     "radius": 1.26
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.23,
+      0.913,
+      -47.346
+     ],
+     "footprint": [
+      1.717,
+      1.373,
+      1.717
+     ],
+     "collider": "sphere",
+     "radius": 0.858
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.409,
+      0.749,
+      -45.782
+     ],
+     "footprint": [
+      2.036,
+      1.629,
+      2.036
+     ],
+     "collider": "sphere",
+     "radius": 1.018
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.217,
+      0.63,
+      -43.809
+     ],
+     "footprint": [
+      2.192,
+      1.754,
+      2.192
+     ],
+     "collider": "sphere",
+     "radius": 1.096
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.374,
+      0.864,
+      -42.294
+     ],
+     "footprint": [
+      1.717,
+      1.374,
+      1.717
+     ],
+     "collider": "sphere",
+     "radius": 0.859
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.341,
+      0.641,
+      -40.639
+     ],
+     "footprint": [
+      2.522,
+      2.018,
+      2.522
+     ],
+     "collider": "sphere",
+     "radius": 1.261
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.406,
+      0.767,
+      -39.067
+     ],
+     "footprint": [
+      1.896,
+      1.517,
+      1.896
+     ],
+     "collider": "sphere",
+     "radius": 0.948
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.232,
+      0.954,
+      -37.479
+     ],
+     "footprint": [
+      1.664,
+      1.331,
+      1.664
+     ],
+     "collider": "sphere",
+     "radius": 0.832
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.425,
+      0.886,
+      -35.854
+     ],
+     "footprint": [
+      1.607,
+      1.286,
+      1.607
+     ],
+     "collider": "sphere",
+     "radius": 0.804
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.278,
+      0.473,
+      -34.323
+     ],
+     "footprint": [
+      2.592,
+      2.074,
+      2.592
+     ],
+     "collider": "sphere",
+     "radius": 1.296
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.315,
+      0.721,
+      -32.852
+     ],
+     "footprint": [
+      2.189,
+      1.751,
+      2.189
+     ],
+     "collider": "sphere",
+     "radius": 1.095
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.565,
+      0.877,
+      -31.121
+     ],
+     "footprint": [
+      1.781,
+      1.425,
+      1.781
+     ],
+     "collider": "sphere",
+     "radius": 0.891
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.591,
+      0.643,
+      -29.486
+     ],
+     "footprint": [
+      2.026,
+      1.621,
+      2.026
+     ],
+     "collider": "sphere",
+     "radius": 1.013
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.245,
+      0.85,
+      -27.942
+     ],
+     "footprint": [
+      1.97,
+      1.576,
+      1.97
+     ],
+     "collider": "sphere",
+     "radius": 0.985
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      27.444,
+      0.902,
+      -26.205
+     ],
+     "footprint": [
+      1.744,
+      1.395,
+      1.744
+     ],
+     "collider": "sphere",
+     "radius": 0.872
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.417,
+      0.496,
+      -55.275
+     ],
+     "footprint": [
+      2.536,
+      2.029,
+      2.536
+     ],
+     "collider": "sphere",
+     "radius": 1.268
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.686,
+      0.472,
+      -53.696
+     ],
+     "footprint": [
+      2.524,
+      2.019,
+      2.524
+     ],
+     "collider": "sphere",
+     "radius": 1.262
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.466,
+      0.515,
+      -52.103
+     ],
+     "footprint": [
+      2.499,
+      1.999,
+      2.499
+     ],
+     "collider": "sphere",
+     "radius": 1.249
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.637,
+      0.554,
+      -50.435
+     ],
+     "footprint": [
+      2.388,
+      1.91,
+      2.388
+     ],
+     "collider": "sphere",
+     "radius": 1.194
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.433,
+      0.654,
+      -48.969
+     ],
+     "footprint": [
+      2.414,
+      1.931,
+      2.414
+     ],
+     "collider": "sphere",
+     "radius": 1.207
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.784,
+      0.899,
+      -47.28
+     ],
+     "footprint": [
+      1.796,
+      1.437,
+      1.796
+     ],
+     "collider": "sphere",
+     "radius": 0.898
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.64,
+      0.575,
+      -45.596
+     ],
+     "footprint": [
+      2.401,
+      1.921,
+      2.401
+     ],
+     "collider": "sphere",
+     "radius": 1.201
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.663,
+      0.578,
+      -43.865
+     ],
+     "footprint": [
+      2.284,
+      1.827,
+      2.284
+     ],
+     "collider": "sphere",
+     "radius": 1.142
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.627,
+      0.535,
+      -42.292
+     ],
+     "footprint": [
+      2.447,
+      1.958,
+      2.447
+     ],
+     "collider": "sphere",
+     "radius": 1.224
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.711,
+      0.51,
+      -40.643
+     ],
+     "footprint": [
+      2.363,
+      1.89,
+      2.363
+     ],
+     "collider": "sphere",
+     "radius": 1.181
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.519,
+      0.827,
+      -39.288
+     ],
+     "footprint": [
+      1.762,
+      1.41,
+      1.762
+     ],
+     "collider": "sphere",
+     "radius": 0.881
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.658,
+      0.86,
+      -37.414
+     ],
+     "footprint": [
+      1.933,
+      1.546,
+      1.933
+     ],
+     "collider": "sphere",
+     "radius": 0.966
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.599,
+      0.822,
+      -35.922
+     ],
+     "footprint": [
+      1.778,
+      1.423,
+      1.778
+     ],
+     "collider": "sphere",
+     "radius": 0.889
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.526,
+      0.942,
+      -34.254
+     ],
+     "footprint": [
+      1.745,
+      1.396,
+      1.745
+     ],
+     "collider": "sphere",
+     "radius": 0.873
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.496,
+      0.543,
+      -32.859
+     ],
+     "footprint": [
+      2.577,
+      2.062,
+      2.577
+     ],
+     "collider": "sphere",
+     "radius": 1.289
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.423,
+      0.551,
+      -31.101
+     ],
+     "footprint": [
+      2.322,
+      1.858,
+      2.322
+     ],
+     "collider": "sphere",
+     "radius": 1.161
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.682,
+      0.578,
+      -29.724
+     ],
+     "footprint": [
+      2.353,
+      1.882,
+      2.353
+     ],
+     "collider": "sphere",
+     "radius": 1.176
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.452,
+      0.779,
+      -27.904
+     ],
+     "footprint": [
+      1.891,
+      1.513,
+      1.891
+     ],
+     "collider": "sphere",
+     "radius": 0.946
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      32.701,
+      0.548,
+      -26.262
+     ],
+     "footprint": [
+      2.389,
+      1.911,
+      2.389
+     ],
+     "collider": "sphere",
+     "radius": 1.194
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      28.708,
+      0.706,
+      -24.25
+     ],
+     "footprint": [
+      1.86,
+      1.488,
+      1.86
+     ],
+     "collider": "sphere",
+     "radius": 0.93
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      30.039,
+      0.767,
+      -24.25
+     ],
+     "footprint": [
+      1.708,
+      1.366,
+      1.708
+     ],
+     "collider": "sphere",
+     "radius": 0.854
+    },
+    {
+     "name": "Boulder",
+     "position": [
+      31.344,
+      0.667,
+      -24.25
+     ],
+     "footprint": [
+      1.958,
+      1.566,
+      1.958
+     ],
+     "collider": "sphere",
+     "radius": 0.979
+    }
+   ]
+  },
+  {
+   "name": "Harbour_BreakwaterBase_Tri",
+   "file": "Art/Export/Harbour/Harbour_BreakwaterBase_Tri.fbx",
+   "triangles": 8640,
+   "vertices": 4374,
+   "bounds_min": [
+    25.0304,
+    -4.3198,
+    -39.1959
+   ],
+   "bounds_max": [
+    34.7721,
+    -0.4758,
+    -22.6614
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    6
+   ],
+   "layers": [
+    6
+   ],
+   "items": [
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      27.017,
+      -1.496,
+      -36.592
+     ],
+     "footprint": [
+      2.167,
+      1.842,
+      2.167
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.084
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      26.91,
+      -1.694,
+      -34.775
+     ],
+     "footprint": [
+      2.448,
+      2.081,
+      2.448
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.224
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      26.716,
+      -1.783,
+      -33.117
+     ],
+     "footprint": [
+      2.497,
+      2.122,
+      2.497
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.248
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      26.694,
+      -1.774,
+      -31.484
+     ],
+     "footprint": [
+      2.799,
+      2.379,
+      2.799
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.399
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      26.808,
+      -1.772,
+      -29.869
+     ],
+     "footprint": [
+      2.715,
+      2.308,
+      2.715
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.358
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      26.698,
+      -1.785,
+      -27.857
+     ],
+     "footprint": [
+      2.469,
+      2.098,
+      2.469
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.234
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      27.075,
+      -1.484,
+      -26.326
+     ],
+     "footprint": [
+      2.778,
+      2.361,
+      2.778
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.389
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      32.857,
+      -1.481,
+      -38.24
+     ],
+     "footprint": [
+      2.167,
+      1.842,
+      2.167
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.084
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      32.9,
+      -1.63,
+      -36.467
+     ],
+     "footprint": [
+      2.448,
+      2.08,
+      2.448
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.224
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      33.0,
+      -1.595,
+      -34.841
+     ],
+     "footprint": [
+      2.063,
+      1.753,
+      2.063
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.031
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      33.214,
+      -1.642,
+      -33.208
+     ],
+     "footprint": [
+      2.077,
+      1.766,
+      2.077
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.039
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      33.29,
+      -1.403,
+      -31.208
+     ],
+     "footprint": [
+      2.064,
+      1.755,
+      2.064
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.032
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      33.186,
+      -1.643,
+      -29.825
+     ],
+     "footprint": [
+      2.792,
+      2.373,
+      2.792
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.396
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      33.289,
+      -1.688,
+      -28.043
+     ],
+     "footprint": [
+      2.421,
+      2.058,
+      2.421
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.21
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      33.174,
+      -1.47,
+      -26.225
+     ],
+     "footprint": [
+      2.493,
+      2.119,
+      2.493
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.246
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      28.6,
+      -1.6,
+      -23.7
+     ],
+     "footprint": [
+      2.274,
+      1.933,
+      2.274
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.137
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      30.0,
+      -1.6,
+      -23.7
+     ],
+     "footprint": [
+      2.441,
+      2.075,
+      2.441
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.22
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      31.4,
+      -1.6,
+      -23.7
+     ],
+     "footprint": [
+      2.547,
+      2.165,
+      2.547
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.273
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      26.307,
+      -3.51,
+      -29.767
+     ],
+     "footprint": [
+      2.282,
+      1.94,
+      2.282
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.141
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      26.293,
+      -3.56,
+      -28.167
+     ],
+     "footprint": [
+      2.265,
+      1.925,
+      2.265
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.132
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      26.198,
+      -3.475,
+      -26.457
+     ],
+     "footprint": [
+      2.75,
+      2.338,
+      2.75
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.375
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      33.552,
+      -3.618,
+      -29.734
+     ],
+     "footprint": [
+      2.448,
+      2.081,
+      2.448
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.224
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      33.443,
+      -3.545,
+      -28.012
+     ],
+     "footprint": [
+      2.109,
+      1.793,
+      2.109
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.055
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      33.51,
+      -3.618,
+      -26.181
+     ],
+     "footprint": [
+      2.798,
+      2.378,
+      2.798
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.399
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      28.6,
+      -3.6,
+      -23.7
+     ],
+     "footprint": [
+      2.381,
+      2.024,
+      2.381
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.191
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      30.0,
+      -3.6,
+      -23.7
+     ],
+     "footprint": [
+      2.46,
+      2.091,
+      2.46
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.23
+    },
+    {
+     "name": "RubbleBoulder",
+     "position": [
+      31.4,
+      -3.6,
+      -23.7
+     ],
+     "footprint": [
+      2.065,
+      1.755,
+      2.065
+     ],
+     "collider": "none (underwater; optional sphere)",
+     "radius": 1.032
+    }
+   ]
+  },
+  {
+   "name": "Harbour_Rocks_Tri",
+   "file": "Art/Export/Harbour/Harbour_Rocks_Tri.fbx",
+   "triangles": 3840,
+   "vertices": 1944,
+   "bounds_min": [
+    -56.2591,
+    0.2481,
+    -54.2844
+   ],
+   "bounds_max": [
+    57.0206,
+    1.7135,
+    -47.0532
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    6
+   ],
+   "layers": [
+    6
+   ],
+   "items": [
+    {
+     "name": "Rock_00",
+     "position": [
+      -24.275,
+      1.081,
+      -51.925
+     ],
+     "footprint": [
+      1.315,
+      1.026,
+      1.315
+     ],
+     "collider": "sphere",
+     "radius": 0.657
+    },
+    {
+     "name": "Rock_01",
+     "position": [
+      -55.688,
+      0.743,
+      -49.11
+     ],
+     "footprint": [
+      1.314,
+      1.025,
+      1.314
+     ],
+     "collider": "sphere",
+     "radius": 0.657
+    },
+    {
+     "name": "Rock_02",
+     "position": [
+      -34.294,
+      1.235,
+      -53.902
+     ],
+     "footprint": [
+      0.878,
+      0.685,
+      0.878
+     ],
+     "collider": "sphere",
+     "radius": 0.439
+    },
+    {
+     "name": "Rock_03",
+     "position": [
+      49.836,
+      0.848,
+      -50.716
+     ],
+     "footprint": [
+      0.851,
+      0.664,
+      0.851
+     ],
+     "collider": "sphere",
+     "radius": 0.426
+    },
+    {
+     "name": "Rock_04",
+     "position": [
+      14.537,
+      0.716,
+      -49.961
+     ],
+     "footprint": [
+      0.637,
+      0.497,
+      0.637
+     ],
+     "collider": "sphere",
+     "radius": 0.318
+    },
+    {
+     "name": "Rock_05",
+     "position": [
+      -31.849,
+      1.232,
+      -52.952
+     ],
+     "footprint": [
+      1.462,
+      1.14,
+      1.462
+     ],
+     "collider": "sphere",
+     "radius": 0.731
+    },
+    {
+     "name": "Rock_06",
+     "position": [
+      -25.087,
+      1.257,
+      -53.275
+     ],
+     "footprint": [
+      1.388,
+      1.083,
+      1.388
+     ],
+     "collider": "sphere",
+     "radius": 0.694
+    },
+    {
+     "name": "Rock_07",
+     "position": [
+      -46.307,
+      1.076,
+      -52.653
+     ],
+     "footprint": [
+      0.828,
+      0.645,
+      0.828
+     ],
+     "collider": "sphere",
+     "radius": 0.414
+    },
+    {
+     "name": "Rock_08",
+     "position": [
+      15.215,
+      1.138,
+      -52.084
+     ],
+     "footprint": [
+      1.518,
+      1.184,
+      1.518
+     ],
+     "collider": "sphere",
+     "radius": 0.759
+    },
+    {
+     "name": "Rock_09",
+     "position": [
+      56.451,
+      0.633,
+      -48.047
+     ],
+     "footprint": [
+      1.406,
+      1.096,
+      1.406
+     ],
+     "collider": "sphere",
+     "radius": 0.703
+    },
+    {
+     "name": "Rock_10",
+     "position": [
+      34.112,
+      0.411,
+      -47.353
+     ],
+     "footprint": [
+      0.675,
+      0.526,
+      0.675
+     ],
+     "collider": "sphere",
+     "radius": 0.337
+    },
+    {
+     "name": "Rock_11",
+     "position": [
+      39.153,
+      1.05,
+      -52.067
+     ],
+     "footprint": [
+      1.064,
+      0.83,
+      1.064
+     ],
+     "collider": "sphere",
+     "radius": 0.532
+    }
+   ]
+  },
+  {
+   "name": "Harbour_Props",
+   "file": "Art/Export/Harbour/Harbour_Props.fbx",
+   "triangles": 7572,
+   "vertices": 4322,
+   "bounds_min": [
+    -11.2,
+    1.2,
+    -64.7322
+   ],
+   "bounds_max": [
+    4.765,
+    4.53,
+    -5.13
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    6,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3
+   ],
+   "items": [
+    {
+     "name": "Hut",
+     "position": [
+      -9.0,
+      2.7,
+      -63.0
+     ],
+     "footprint": [
+      4.0,
+      3.0,
+      3.0
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Bollard_0",
+     "position": [
+      4.6,
+      1.725,
+      -7.6
+     ],
+     "footprint": [
+      0.34,
+      0.45,
+      0.34
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Bollard_1",
+     "position": [
+      -4.6,
+      1.725,
+      -7.6
+     ],
+     "footprint": [
+      0.34,
+      0.45,
+      0.34
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Bollard_2",
+     "position": [
+      4.6,
+      1.725,
+      -5.4
+     ],
+     "footprint": [
+      0.34,
+      0.45,
+      0.34
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Bollard_3",
+     "position": [
+      -3.9,
+      1.725,
+      -5.4
+     ],
+     "footprint": [
+      0.34,
+      0.45,
+      0.34
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Crate_0",
+     "position": [
+      -1.05,
+      1.775,
+      -49.75
+     ],
+     "footprint": [
+      0.55,
+      0.55,
+      0.55
+     ],
+     "collider": "box",
+     "yaw": 4.0
+    },
+    {
+     "name": "Crate_1",
+     "position": [
+      -1.1,
+      1.75,
+      -49.15
+     ],
+     "footprint": [
+      0.5,
+      0.5,
+      0.5
+     ],
+     "collider": "box",
+     "yaw": -7.0
+    },
+    {
+     "name": "Crate_2",
+     "position": [
+      -1.05,
+      2.26,
+      -49.73
+     ],
+     "footprint": [
+      0.42,
+      0.42,
+      0.42
+     ],
+     "collider": "box",
+     "yaw": 17.0
+    },
+    {
+     "name": "Barrel_0",
+     "position": [
+      -1.02,
+      1.89,
+      -48.55
+     ],
+     "footprint": [
+      0.55,
+      0.78,
+      0.55
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Barrel_1",
+     "position": [
+      -1.12,
+      1.89,
+      -48.0
+     ],
+     "footprint": [
+      0.55,
+      0.78,
+      0.55
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Lamp_0",
+     "position": [
+      -1.35,
+      3.0,
+      -46.0
+     ],
+     "footprint": [
+      0.24,
+      3.03,
+      0.24
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "Lamp_1",
+     "position": [
+      -4.8,
+      3.0,
+      -5.3
+     ],
+     "footprint": [
+      0.24,
+      3.03,
+      0.24
+     ],
+     "collider": "box"
+    }
+   ]
+  },
+  {
+   "name": "Harbour_Boats",
+   "file": "Art/Export/Harbour/Harbour_Boats.fbx",
+   "triangles": 5720,
+   "vertices": 2966,
+   "bounds_min": [
+    -3.9572,
+    -0.5497,
+    -40.9844
+   ],
+   "bounds_max": [
+    26.1631,
+    0.8235,
+    -12.6999
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3
+   ],
+   "items": [
+    {
+     "name": "Rowboat_West",
+     "position": [
+      -3.35,
+      0.3,
+      -36.2
+     ],
+     "footprint": [
+      1.25,
+      0.7,
+      3.1
+     ],
+     "collider": "box (optional)",
+     "heading_deg": 2.0
+    },
+    {
+     "name": "Rowboat_East",
+     "position": [
+      3.45,
+      0.3,
+      -14.3
+     ],
+     "footprint": [
+      1.25,
+      0.7,
+      3.1
+     ],
+     "collider": "box (optional)",
+     "heading_deg": -3.0
+    },
+    {
+     "name": "Skiff_Breakwater",
+     "position": [
+      25.4,
+      0.4,
+      -38.5
+     ],
+     "footprint": [
+      1.6,
+      0.9,
+      4.7
+     ],
+     "collider": "box (optional)",
+     "heading_deg": 4.0
+    }
+   ]
+  },
+  {
+   "name": "Harbour_Dressing",
+   "file": "Art/Export/Harbour/Harbour_Dressing.fbx",
+   "triangles": 9184,
+   "vertices": 9030,
+   "bounds_min": [
+    -22.31,
+    -0.35,
+    -64.6
+   ],
+   "bounds_max": [
+    27.3556,
+    3.15,
+    -7.3108
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "items": [
+    {
+     "name": "MooringBuoy_A",
+     "position": [
+      -7.0,
+      0.0,
+      -16.0
+     ],
+     "footprint": [
+      0.6,
+      0.6,
+      0.6
+     ],
+     "collider": "none (floating)"
+    },
+    {
+     "name": "MooringBuoy_B",
+     "position": [
+      8.0,
+      0.0,
+      -17.0
+     ],
+     "footprint": [
+      0.6,
+      0.6,
+      0.6
+     ],
+     "collider": "none (floating)"
+    },
+    {
+     "name": "MarkerBuoy_A",
+     "position": [
+      21.0,
+      0.0,
+      -14.0
+     ],
+     "footprint": [
+      0.62,
+      1.4,
+      0.62
+     ],
+     "collider": "none (floating)"
+    },
+    {
+     "name": "MarkerBuoy_B",
+     "position": [
+      -22.0,
+      0.0,
+      -20.0
+     ],
+     "footprint": [
+      0.62,
+      1.4,
+      0.62
+     ],
+     "collider": "none (floating)"
+    },
+    {
+     "name": "LobsterPot_A",
+     "position": [
+      -6.3,
+      1.35,
+      -62.6
+     ],
+     "footprint": [
+      0.5,
+      0.3,
+      0.74
+     ],
+     "collider": "box",
+     "yaw": 8.0
+    },
+    {
+     "name": "LobsterPot_B",
+     "position": [
+      -6.32,
+      1.71,
+      -62.58
+     ],
+     "footprint": [
+      0.5,
+      0.3,
+      0.74
+     ],
+     "collider": "box",
+     "yaw": -11.0
+    },
+    {
+     "name": "LobsterPot_C",
+     "position": [
+      2.85,
+      1.35,
+      -59.6
+     ],
+     "footprint": [
+      0.5,
+      0.3,
+      0.74
+     ],
+     "collider": "box",
+     "yaw": 24.0
+    },
+    {
+     "name": "RopeCoil_East",
+     "position": [
+      3.85,
+      1.55,
+      -7.55
+     ],
+     "footprint": [
+      0.6,
+      0.1,
+      0.6
+     ],
+     "collider": "none (low, walkable)"
+    },
+    {
+     "name": "RopeCoil_West",
+     "position": [
+      -3.85,
+      1.55,
+      -7.55
+     ],
+     "footprint": [
+      0.6,
+      0.1,
+      0.6
+     ],
+     "collider": "none (low, walkable)"
+    },
+    {
+     "name": "HutNet",
+     "position": [
+      -6.92,
+      2.5,
+      -63.85
+     ],
+     "footprint": [
+      0.2,
+      1.3,
+      1.6
+     ],
+     "collider": "none (on the hut wall)"
+    },
+    {
+     "name": "PierSign",
+     "position": [
+      -2.9,
+      2.2,
+      -58.8
+     ],
+     "footprint": [
+      2.2,
+      2.0,
+      0.15
+     ],
+     "collider": "box"
+    },
+    {
+     "name": "LifeRing",
+     "position": [
+      -10.55,
+      2.65,
+      -61.48
+     ],
+     "footprint": [
+      0.6,
+      0.6,
+      0.12
+     ],
+     "collider": "none (on the hut wall)"
+    }
+   ]
+  }
+ ],
+ "total_triangles": 83244
+}
