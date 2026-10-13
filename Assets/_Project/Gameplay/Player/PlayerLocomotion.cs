@@ -179,7 +179,7 @@ namespace FishGame.Gameplay
             float surfaceY = WaterSurface.HeightAt(pos.x, pos.z);
             bool inVolume = WaterVolume.FindContaining(pos) != null;
             bool inWater = inVolume && MovementMath.IsInWater(pos.y, surfaceY);
-            bool swimming = inVolume && MovementMath.IsSwimmingDepth(pos.y, surfaceY);
+            bool swimming = SwimmingAt(pos);
 
             if (inWater && !locked && TryBeginClimb(pos, intent))
             {
@@ -359,6 +359,24 @@ namespace FishGame.Gameplay
             _jump = JumpAssist.Create();
             IsGrounded = false;
             _climbGate.OnExit(throughTop);
+
+            // A swimmer who leaves the volume at swim depth is swimming again on this very frame. Without this IsSwimming stays false for one
+            // frame, so FishingRodController sees "not away" and equips the rod, then stows it again on the next frame (NetTool churn).
+            if (SwimmingAt(transform.position))
+            {
+                IsSwimming = true;
+                if (_net != null)
+                {
+                    _net.OwnerSetSwimming(true);
+                }
+            }
+        }
+
+        // In a WaterVolume with the root deeper than SwimEnterDepth below the (swelling) surface. Shared by Update and EndLadderClimb.
+        private static bool SwimmingAt(Vector3 pos)
+        {
+            return WaterVolume.FindContaining(pos) != null
+                   && MovementMath.IsSwimmingDepth(pos.y, WaterSurface.HeightAt(pos.x, pos.z));
         }
 
         private Vector3 CapsuleCenter()
