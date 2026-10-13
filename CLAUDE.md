@@ -2,6 +2,9 @@
 
 Co-op (1–4) friend-slop rogue-lite fishing game. Unity 6000.6.5f1 (URP), Netcode for GameObjects, Unity Multiplayer Services (Relay + Lobby join codes). Design spec: `docs/superpowers/specs/2026-10-09-fishgame-design.md` — source of truth for decisions; don't re-litigate agreed items there.
 
+## Running handoff
+`docs/superpowers/handoff/CURRENT.md` (on `main` only) is the live state of the project. Read it first in every new conversation. The controller rewrites it after every meaningful step (a task landed, a review, a user decision, a merge), then commits and pushes it to `main`. Feature branches never edit it.
+
 ## Unity CLI
 - Editor: `C:\Program Files\Unity\Hub\Editor\6000.6.5f1\Editor\Unity.exe`
 - Project root = repo root `C:\Dev\FishGame`.
