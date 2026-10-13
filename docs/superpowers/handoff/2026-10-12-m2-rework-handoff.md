@@ -1,5 +1,7 @@
 # FishGame - Handoff: M2 rework after the user's first manual checks (2026-10-12)
 
+> **Superseded (2026-10-13) by `2026-10-13-m2-rework-done-handoff.md`.** Everything below is history: decisions 2.1-2.3 were answered (water C smooth = R73; Rust server downloaded and decompiled, research section 8; Settings focus stays on UI scale), the ladders (3.2, R70) and the fight (3.1, R72) are built, and the water (3.3 / section 7) was redone smooth.
+
 ## Paste this to start the next conversation
 
 > Read `docs/superpowers/handoff/2026-10-12-m2-rework-handoff.md` and `CLAUDE.md`, then continue the M2 rework on branch `m2-fishing-core`. Start with the open decisions in section 2, then plan and run the work in section 3 with the agent roles in section 6.
