@@ -40,3 +40,7 @@ Collected before the M4 design session. These are the user's decisions; the desi
   7. Harbour / open sea finale (Harbour Pier)
   The scenery itself must also be crazy and escalate stage by stage, not only the events and fish.
 - **Day-time mafia counter-play:** the user asked for research first: how other friend-slop games (REPO, PEAK, Lethal Company, Content Warning, Gamble With Your Friends, RV There Yet and similar) let players deal with threats. Research note: `docs/superpowers/research/2026-10-14-friendslop-threat-counterplay.md` (in progress).
+
+## Decision (user, 2026-10-14): day-time mafia pressure deferred
+- Not in M4. The user could not see a version that doesn't feel cheesy, scripted or clunky. The mafia in M4 = atmosphere (posters, horizon boats, escalation) + live night-camp events + the finale cutscene.
+- Revisit after M4 playtests. Options and research: `docs/superpowers/research/2026-10-14-friendslop-threat-counterplay.md` (the "hook the goon" idea is the best fit if it comes back).
