@@ -273,7 +273,7 @@ public static class FishingConstants
 | `ContentRegistry` `dataVersion` | stays `1` (new categories already change `ContentHash`) | T13 |
 | Fight log file | `Application.persistentDataPath/fight-log{InstanceProfile.Current.Suffix}.csv` | T27 |
 | `FightLogCsv.Header` | `profile,species,weightG,castDist,castToBite,fightSec,outcome,reason,nearSnapRecoveries,maxTension,rod,assist,clean,pity` (`pity` added by R65 / M2-D23) | T27 |
-| Dev keys | F3 overlay, F4 next rod, F5 next bait, F6 forced bite (host), F7 twitchy hook (host), F9 ripple at crosshair | T10 (`DevKey`), T26 (behaviour) |
+| Dev keys | F3 overlay, F4 next rod, F5 next bait, F6 forced bite (host), F7 twitchy hook (host), F9 ripple at crosshair, F10 cycle the forced species (host; final review I3, `DevKey.CycleForcedSpecies = 7`) | T10 (`DevKey`), T26 (behaviour) |
 | `SfxIds` M2 ids | section 7.11 | T11 |
 | Default M2 loadout | rod `rod_handmade`, bait `bait_worm`, 20 of each bait, bare hook unlimited | T9 (ledger), T14 (ids) |
 | Shader names | `FishGame/Toon`, `FishGame/Water`, `FishGame/Line`, `FishGame/GradientSky` | T20, T21 |
@@ -558,7 +558,7 @@ public static class FishPointMath
 public static class RodWireQuant
 {
     public const byte FlagBurst = 1, FlagReel = 2, FlagDive = 4, FlagExhausted = 8, FlagRecall = 16;
-    public const byte FlagGrace = 32;                     // owner sets while Hooked && FightSim SnapTimer > 0 (tension 1.0 last tick); presentation only, host ignores (T23-fix d4483c3)
+    public const byte FlagGrace = 32;                     // owner sets while Hooked && FightSim SnapTimer > 0 (over the full bar, strain > 6); presentation only, host ignores (T23-fix d4483c3)
     public const byte AnnounceFlagClean = 1;              // CatchAnnouncedRpc flags
     public static sbyte QuantizeLateral(float lateral);    // round(clamp(-1,1) * 127), AwayFromZero
     public static float DequantizeLateral(sbyte q);
@@ -924,7 +924,7 @@ Runtime:
 ```csharp
 // Runtime/Input/DevKey.cs
 public enum DevKey : byte { ToggleOverlay = 0, NextRod = 1, NextBait = 2, ToggleForcedBite = 3, ToggleTwitchy = 4, RippleAtCrosshair = 5 }
-// Runtime/Input/IDevInput.cs - implemented by PlayerInputAdapter (reads Keyboard.current F3,F4,F5,F6,F7,F9) and FakeInputService.
+// Runtime/Input/IDevInput.cs - implemented by PlayerInputAdapter (reads Keyboard.current F3,F4,F5,F6,F7,F9,F10) and FakeInputService.
 // Always false unless Debug.isDebugBuild, the window has focus and the context is not Menu.
 public interface IDevInput { bool WasPressed(DevKey key); }
 ```

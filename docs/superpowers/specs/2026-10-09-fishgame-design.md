@@ -1141,7 +1141,7 @@ lengthMm = round(400 * cbrt(weightG / 1000.0) * fish.lengthShapeK)
 | `SelectRodRpc` | `SendTo.Server`, Owner | rodIndex | M2 debug rod selector only (refused while a cast is active). From M4 the host sets the rod itself: `rod_twig` at run start, then the rod a player buys at a Night Camp shop (14.7). The rod changes only during Night Camp and is restored from the snapshot on resume |
 | `NetRodIndex` | server write | ushort | The equipped rod. The host uses it for cast validity (`castMaxDist`) and the Landed floor; the owner builds `RodStats` for `FightSim` from it, and remotes use it for rod visuals |
 
-- `RodStateData` (Fishing, ~21 bytes, unmanaged, `INetworkSerializeByMemcpy` + `IEquatable` so it sends only on change [verify change detection uses IEquatable or memcmp; implement both]): `byte state`, `byte flags` (bit 0 Burst, 1 Reel, 2 Dive, 3 Exhausted), `sbyte lateralQ` (×127), `byte tensionQ` (×255), `Vector3 bobberPos` (landing target while Casting, then bobber/fish position), `uint castId`.
+- `RodStateData` (Fishing, ~21 bytes, unmanaged, `INetworkSerializeByMemcpy` + `IEquatable` so it sends only on change [verify change detection uses IEquatable or memcmp; implement both]): `byte state`, `byte flags` (bit 0 Burst, 1 Reel, 2 Dive, 3 Exhausted, 4 Recall, 5 Grace, 6 Right; Exhausted is the owner's latched spent state, set at tire 20 and cleared below 18; Recall marks a recall's Escaped, Grace is "over the full bar, strain > 6", Right is a right-pulling run, read with Burst), `sbyte lateralQ` (×127), `byte tensionQ` (×255), `Vector3 bobberPos` (landing target while Casting, then bobber/fish position), `uint castId`.
 - `CatchResultNet`/`FishingRollNet` (Fishing): unmanaged copies with `From`/`ToCore`. Core structs can't implement NGO interfaces. Clients sanity-check received values (index in range, weight in species range, quality 0..2) and drop bad messages with a log.
 - **Only the owner gets the roll.** Everyone else gets a "what is it?!" moment until `CatchAnnouncedRpc`. A hooked fish that is lost after the hook (Snapped or Escaped Pinned/ThrewHook/Dropped) is announced as Lost with its species revealed ("Snapped! It was a Lake Pike"). Cancels and misses are not announced.
 
@@ -1182,7 +1182,7 @@ Tension below is the display value, strain / 6 (1.0 = full bar; the line snaps a
 | 0.8–1.0 | Rod shake, rumble ramp, line in warn colour **plus** a moving dash pattern and width pulse, trauma +0.1/s |
 | > 1.0 (over the full bar, strain > 6) | Crack SFX on entry, line shimmer, gauge blinks red; the line snaps above 7/6 (7.5/6 on a Pity cast) |
 
-**Phase cues** (players must tell a side run from a dive): side run = splash column moving sideways and line swinging; back pull (dive) = bobber plunges, line points down, deep thrum, no sideways splash; rest = ripples only; spent (tire >= 20) = the fish rolls on the surface. The bobber rolls +-30 deg toward the pull side (halved on a back pull), eased at clamp01(dt) per frame (Rust).
+**Phase cues** (players must tell a side run from a dive): a side run = the side splash column (moving sideways) and the line swinging, with no plunge; a back pull (dive) = the same side column **plus** the bobber plunge (the bobber sits 0.35 m below the water height), the line pointing down and the deep thrum (a back pull also pulls to a side in R72, so the column stays and the plunge, the line and the thrum are what set it apart); rest = ripples only; spent (tire >= 20) = the fish rolls on the surface (a presentation latch: set at tire 20, cleared only below 18, so the roll, the cue and the flag do not flicker; the fight maths read the raw tire and are unchanged, and a latched fish raises no run cues). The bobber rolls +-30 deg toward the pull side (halved on a back pull), eased at clamp01(dt) per frame (Rust).
 
 | Event | Audio | VFX | Camera (owner) | Haptics |
 |---|---|---|---|---|
@@ -1196,7 +1196,7 @@ Tension below is the display value, strain / 6 (1.0 = full bar; the line snaps a
 | Bite | loud splash (spatial + owner 2D) | big splash, bobber under | trauma 0.15 | strong pulse |
 | Hook set | reel-click burst | droplets | trauma 0.1 | medium |
 | Side run | reel scream | sideways splash column | — | low rumble |
-| Dive | deep thrum | plunge, line down | — | slow heavy rumble |
+| Dive | deep thrum | side column plus the bobber plunge, line down | — | slow heavy rumble |
 | Snap | snap + plink | line whip; **the fish jumps once, scaled by `sizeClass`, seen by everyone** | trauma 0.5 | strong |
 | Escape | line goes slack | bubbles | — | short |
 | Catch (everyone) | pop + cheer | fish held up 1.5 s (procedural mesh scaled by weight, species colours); toast "Name caught 3.2 kg Carp ($16)"; bigger burst for trophies | −3° FOV punch-in | double pulse |

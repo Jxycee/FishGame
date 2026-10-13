@@ -199,7 +199,7 @@ private static void OnSessionEnded(EndReason reason)
 - `FishingDebugSettings.cs` gains `using FishGame.Runtime;` (for `INetworkSession`; `EndReason` is in Core).
 - `FishingHost.OnEnable`, after `s_current = this;`, adds: `ServiceRegistry app = ServiceRoots.App; if (app != null && app.TryGet(out INetworkSession session)) FishingDebugSettings.ClearOnSessionEnd(session);`.
 - `FishingHost.OnDisable`: delete the two reset lines and their M-5 comment, and replace them with `// F6/F7 clear on INetworkSession.Ended (FishingDebugSettings.ClearOnSessionEnd), not here: a Spot load must keep them (M3 map switch).`
-- Update the file header of `FishingDebugSettings`: "F6/F7 reset when the session ends and on SubsystemRegistration; ForcedSpeciesId and ForceJunk only on SubsystemRegistration (test fixture values)". `ForcedSpeciesId` and `ForceJunk` keep their M2 behaviour.
+- Update the file header of `FishingDebugSettings`: "F6/F7 reset when the session ends and on SubsystemRegistration; ForcedSpeciesId (cycled by F10 since the M2 final review) and ForceJunk only on SubsystemRegistration". `ForcedSpeciesId` and `ForceJunk` keep their M2 behaviour.
 - Fix the comment of `SoloHost_LeavingTheSession_ClearsF6AndF7`: "`INetworkSession.Ended` (the session ending) clears both". The test body is unchanged and still passes, because `TearDownApp` leaves first.
 
 ### T1.5 Small fixes

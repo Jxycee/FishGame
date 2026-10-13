@@ -297,7 +297,7 @@ public static class EcologyStreams
 | `SceneNames.SpotHarbourPier` | `"Spot_HarbourPier"`; `BuildOrder = { Bootstrap, Menu, Spot_LakeDock, Spot_HarbourPier }` | T17 |
 | Meta save file | `Application.persistentDataPath/meta{InstanceProfile.Current.Suffix}.json` (+ `.tmp`, `.bak`) | T20 `SaveService` |
 | `MetaSave.SchemaVersion` | `1` | T8 |
-| Dev keys | F3 cycles overlay -> panel -> off (T22); F8 held = host dev clock x60 (`DevKey.ScrubClock = 6`, T22). F4-F7, F9 unchanged | T22 |
+| Dev keys | F3 cycles overlay -> panel -> off (T22); F8 held = host dev clock x60 (`DevKey.ScrubClock = 6`, T22). F4-F7, F9 unchanged; F10 (`DevKey.CycleForcedSpecies = 7`, M2 final review I3) cycles `FishingDebugSettings.ForcedSpeciesId` and is unchanged too (value 6 stays free for `ScrubClock`) | T22 |
 | `ShaderGlobals.SeasonTint` | `"_FGSeasonTint"` (Vector4[16], always full length) and `ShaderGlobals.DayFraction` `"_FGDayFraction"` (float) | T18 |
 | `SfxIds.RainPatter` | `"Rain_Patter"` (filtered noise loop, M3) | T19 |
 | UiStrings keys | `busy.cancelling` (T2); `journal.*`, `toast.journal_new`, `toast.journal_best`, `toast.journal_unlock`, `menu.journal`, `menu.meta_journal` (T21); `hud.clock`, `dev.*` (T22) - texts in the owning plan, ASCII only | T2, T21, T22 |

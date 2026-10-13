@@ -16,14 +16,14 @@
 - [ ] The MPPM scenario `Direct 4P` exists (README, "Set up a scenario"), and the `NetSim_150ms_2pct` preset exists (README, "Latency with the Network Simulator").
 - [ ] A gamepad is connected for criterion 1, criterion 5 (rumble) and criterion 10 (skeleton risk 8).
 - [ ] The M1 checklist's multiplayer criteria (3-9, 12 in `docs/superpowers/plans/2026-10-09-m1-acceptance.md`) are run or scheduled: they were still open on 2026-10-11 (handoff). M2 co-op rests on them.
-- [ ] You have read section F.1 (the cast-distance decision). It blocks the fun gate (section D).
+- [x] Section F.1 (the cast-distance decision) is decided: option A, R67 (cast from the rod tip). Nothing blocks the fun gate (section D) on it.
 
 ## A. Criteria 1-11 (spec 17.2)
 
 | # | Criterion (17.2) | Owner | How to check (short) | Status 2026-10-12 |
 |---|---|---|---|---|
 | 1 | Solo: Idle to a landed fish, no errors, only the 8.3 bindings, keyboard/mouse **and** gamepad | User | Solo run on both devices, Console cleared | Open (user) |
-| 2 | Every 9.2 transition has a passing EditMode test | Claude | `test-edit -Filter RodStateMachine` | PASS: 62 NUnit results, 62 passed |
+| 2 | Every 9.2 transition has a passing EditMode test | Claude | `test-edit -Filter RodStateMachine` | PASS: 70 NUnit results, 70 passed |
 | 3 | Co-op: cues on both peers; reveal for everyone after the host commits | User | MPPM items MP1 and MP4 (section B) | Open (user) |
 | 4 | Tension and phase readable with no HUD and with sound off | User | Three fights with gauge Off, captions off, volume 0 | Open (user) |
 | 5 | Rod back to Idle within 3 s in every 9.13 case; no stuck states; no rumble left | User + Claude | Section C walk, gamepad connected | Open (user); automated rows pass |
@@ -44,8 +44,8 @@
 
 ### Criterion 2: Every 9.2 transition has a passing EditMode test
 - [x] **Owner:** Claude (T30). **How to check:** `Tools\unity.ps1 test-edit -Filter RodStateMachine`.
-- **Recount from the file (2026-10-12):** `RodStateMachineTests.cs` has 52 test methods. `RodStateMachine_IllegalEvents_IgnoredInEveryState` is a `TestCaseSource` over 11 states, so NUnit reports **62 results** (51 + 11), all passing. The contract's earlier figures (45 methods, 55 results, BF-8) were written before the T8 review added tests; contract section 16.1 says T30 recounts, so 62 is the figure.
-- **Count line:** `FG RESULT test-edit PASS total=62 passed=62 failed=0 skipped=0`
+- **Recount (2026-10-12, after the final review fixes):** `RodStateMachineTests.cs` has 60 test methods. `RodStateMachine_IllegalEvents_IgnoredInEveryState` is a `TestCaseSource` over 11 states, so NUnit reports **70 results** (59 + 11), all passing. The figures before it (62 at T30; 67 at the final branch review, after the R72 cue tests) were earlier counts; the final review's spent-fish latch added 3 tests (M1). The contract's earlier figures (45 methods, 55 results, BF-8) predate the T8 review; contract section 16.1 says T30 recounts, so 70 is the figure.
+- **Count line:** `FG RESULT test-edit PASS total=70 passed=70 failed=0 skipped=0`
 - **Result:** PASS 2026-10-12.
 
 ### Criterion 3: Co-op cues and reveal
@@ -55,11 +55,11 @@
 ### Criterion 4: Readable with no HUD and with sound off
 - [ ] **Owner:** User (with a second person watching).
 - **Steps:** set the line gauge to Off, captions off, master volume 0. Fight 3 fish (one Bulldog; bait and rod via the dev keys F4/F5 are fine here). Name aloud:
-  - side run versus dive (a splash column moving sideways and the line swinging, versus the bobber plunging with the line pointing down);
+  - side run versus back pull (dive): a side run is the side splash column and the line swinging, with no plunge; a back pull is the same side column plus the bobber plunge (it sits 0.35 m under the water height), the line pointing down and the deep thrum;
   - the creak band (the rod bends and the line warms in colour);
   - the warn band (the rod shakes, and the line shows the dash and the width pulse).
   A second person watches your screen and confirms each call. Then repeat with sound on and your eyes on the rod only.
-- **Expected:** you and the watcher agree on side run / dive and on creak / warn in all 3 fights, silent and with sound.
+- **Expected:** you and the watcher agree on side run / back pull (dive) and on creak / warn in all 3 fights, silent and with sound. The tell between the two is the plunge (bobber under, line down), because both show the side column.
 - **Record:** fights: ______. Misreads: ______.
 - **Result:** ______
 
@@ -146,7 +146,7 @@ For every row: **Steps**, **Expected** (always "the rod is Idle within 3 s, no s
   - Result: ______
 - [ ] **Fish takes all the line**
   - Steps: Twig rod (F4), raw meat (F5), cast long, hook a big fish and never reel.
-  - Expected: spooled: the line clamps and the tension rises (`spoolStrain`); tiring the fish first recovers it.
+  - Expected (spec 9.13 "Line all out", R72): the strain is input-only, so with no input the tension drains to 0 (1.5/s) and nothing spools. The line rarely or never reaches the `maxLineOut` clamp: back pulls stop inside `castMaxDist - 2 m`. The fish is not pinned and does not break the line; it escapes (Timeout) at 120 s. Rod back to Idle within 3 s after that.
   - Result: ______
 - [ ] **Alt-tab mid-fight**
   - Steps: alt-tab away for 5 s while Hooked, with a gamepad rumbling.
@@ -178,7 +178,7 @@ For every row: **Steps**, **Expected** (always "the rod is Idle within 3 s, no s
 
 ## D. Fun gate (you plus at least one friend, at least 30 logged fights)
 
-**Do not start this before the cast-distance decision in F.1 is made.** Short casts land instantly as clean catches and would pollute every median below.
+**The cast-distance decision in F.1 is made (option A, R67: the cast is measured from the rod tip), so this can start.** The few very short casts left (minimum charge) are accepted as they are; testers should still cast at least half charge, or they pollute the medians below.
 
 ### Setup
 - Telemetry runs only when `Debug.isDebugBuild`. The friend plays a **development build** (`File > Build Profiles`, Development Build) over a join code, or dev-direct on a LAN.
@@ -351,7 +351,7 @@ Fill this after the stats script runs. A failed target is **tuning data, not new
 | Info: clean-catch rate (R64) / instant landings / assist rows / pity rows | ______ | n/a |
 
 - **Near-snap recovery of at least 40% is a HUMAN fun-gate metric (2026-10-12, contract 16.2).** The T15 bots only print it (the Rhythm bot at `5a652bd`: bulldog 3%, thrasher 6%, runner 57.5%; bots do not model a human reacting to the warn cue). Read this row from the playtest CSVs, never from `FishingBots`. If the Bulldog or Thrasher share is low (R72: `relaxWhileReeling` and `pullStrength` no longer exist; a recovery now means the bar went over full and came back under half): the friendlier tuning pass can shorten a profile's rests, raise its `strainMod`, or lower the release drain `relaxRate`. Record the per-profile shares and the chosen change: ______
-- **Duration notes for the playtest:** the Twig-rod Thrasher trophy (weightT 0.9) has a bot median of about 93 s, and the Bulldog Rhythm median is 37.4 s against the 35 s floor. Watch both in real fights. If testers find the 93 s fight tedious, retune in data (assets plus seeds plus `TunedDeviations`; `thrasher.staminaDrain` is 0.035 after T15) and let the controller pick the lever. Notes: ______
+- **Duration notes for the playtest (PRE-R72 numbers, kept as history; the R72 medians are in section K.1 and weight no longer enters the fight):** the Twig-rod Thrasher trophy (weightT 0.9) had a pre-R72 bot median of about 93 s, and the pre-R72 Bulldog Rhythm median was 37.4 s against the 35 s floor. `thrasher.staminaDrain` (0.035 after T15) was retired by R72 (fish stamina is gone). Under R72 watch the Bulldog (about 31 s) and Runner (about 26 s) medians in real fights, and retune in data (profile tiers and quirks) in the friendlier pass. Notes: ______
 
 ### Blind tell-apart sheet
 Before each reveal or loss toast, the tester writes a guess: Steady, Darter, Bulldog, Thrasher or Runner. The actual profile comes from the CSV `profile` column, matched by order among that tester's hooked rows.
@@ -388,13 +388,15 @@ Add rows as needed. **Proposed bar (you confirm it):** 70% or more correct overa
 - **Baseline:** there is no recorded M1 baseline (the M1 perf step was never filled in). Write "No M1 baseline; these are the first numbers" here if so (ruling G-Q8): ______. A regression above 10% against a recorded baseline needs a note in the milestone summary.
 - **V13 items to verify in the development build:**
   - [ ] fog variants survive in a player build (fog is visible in the dev build). Result: ______
-  - [ ] the water facet lighting sign (the lit side of each facet faces the sun). Result: ______
+  - [x] the water facet lighting sign: MOOT (R73 smooth water replaced the faceted water, so there are no facets to check). Result: N/A
   - [ ] C# / HLSL wave parity: the bobber sits on the visible wave. Result: ______
 - **Result:** ______
 
 ## F. Open decisions, bot report and tuning items
 
-### F.1 OPEN USER DECISION (blocks the fun gate): where is the cast distance measured from?
+### F.1 DECIDED (option A, R67, 2026-10-12): where is the cast distance measured from?
+**Decided: option A. The cast is measured from the rod tip (R67). Nothing is open here and nothing blocks the fun gate.** The problem statement and the options below are kept as the record of the decision.
+
 - **Problem:** casts shorter than about 4.4 m (the bottom ~12% of the Handmade rod charge, from `(4.4 - 2.5) / (18 - 2.5)`) start with a line length at or below `landDistance` (2.0 m; the host's line start is `max(landDistance, hostDistance - HookedLineSlack 3.1 m)`), so they land instantly as clean catches. `FightSim` has no lead-in gate on landing (`CalmLeadInSeconds` 0.8 s only sets the first calm phase), and the host's landed-too-fast floor is 0 when the line start equals `landDistance`, so the host accepts the instant landing as honest. This is a design gap, not a criterion 7 hole. Seen in the real fight log: a 4.8 m cast reached Landed after 0.46 s at zero tension, `clean` = 1.
 - **Options (the user decides):**
   - **A (recommended):** measure the cast distance from the rod tip, not from the player origin, so a minimum-charge cast is a real cast.
@@ -518,7 +520,7 @@ No asserted bot target failed. These are the marginal or informational numbers t
 | 1 | Perch FBX (single submesh, vertex colours) | Closed: T29 imported all five models (`FG MODELS`: bluegill 222, carp 238, catfish 262, perch 242, trout 230 triangles; one submesh each; linear vertex colours). **User look check pending** (section I). |
 | 2 | V11 `DeferLocal` on a host-owned object | Source-confirmed; the runtime check is PlayMode `SoloHost_CastResult_ArrivesAfterCastRequestReturns` (in `check`). A failure needs a manual one-frame deferral in `FishingRodNetwork` (contract change). |
 | 3 | Clean-claim 2.0 s slack at 150 ms RTT | Open: MPPM item MP11. |
-| 4 | Motion seeds are first guesses | Decided by T15 data (retuned 2026-10-12, section F.2); the human gate confirms. |
+| 4 | Motion seeds are first guesses (PRE-R72: the motion seeds and `TunedDeviations` were replaced by Rust's maths and the five quirks) | Pre-R72: decided by T15 data (retuned 2026-10-12, section F.2). Now: the R72 baseline is Rust's own values (section K.1); the human gate and the friendlier pass confirm. |
 | 5 | `RodStateData` change detection | Closed (NGO uses `Equals`). |
 | 6 | NetworkBehaviour indices on the player prefab | Only T19 adds NetworkBehaviours; the branch review confirms the order. |
 | 7 | `-nographics` shader validation | Closed (T20, `54e40c0`): the validator runs under `-nographics` and the canary proves it detects errors. `build.log` prints `FG SHADERS checked=4 passes=13`. |
@@ -533,15 +535,15 @@ No asserted bot target failed. These are the marginal or informational numbers t
 
 ## H. Bad-luck nudge (R65 / M2-D23) - USER
 
-- **Steps:** in the Inspector set `Content/Fishing/FishingTuning.asset` `pityAfterFailures` to 3 (the seed). Fail three casts in a row (miss with F7 twitchy and no click, or let a fish snap the line). The next cast shows "<name> has a lucky line!" on every peer; that fight has a longer snap grace and lower strain; the fight log row has `pity` 1. A Landed catch or a cancel never shows the toast.
+- **Steps:** in the Inspector set `Content/Fishing/FishingTuning.asset` `pityAfterFailures` to 3 (the seed). Fail three casts in a row (miss with F7 twitchy and no click, or let a fish snap the line). The next cast shows "<name> has a lucky line!" on every peer; that fight has a snap headroom x1.5 (it snaps at strain 7.5) and lower strain gains (x0.85); the fight log row has `pity` 1. A Landed catch or a cancel never shows the toast.
 - **Expected:** the nudge is noticeable but not a free win (the same species, weight and quality odds).
-- **USER playtest line (2026-10-12):** after at least 10 nudged casts, write down whether the longer snap grace and the lucky-line toast are noticed, whether failures now feel less punishing, and whether anyone feels the game is helping too much: ______
+- **USER playtest line (2026-10-12):** after at least 10 nudged casts, write down whether the snap headroom x1.5 (snaps at strain 7.5) and the lucky-line toast are noticed, whether failures now feel less punishing, and whether anyone feels the game is helping too much: ______
 - **Record:** **USER playtests the bad-luck nudge and decides keep / tune / remove.** Decision: ______
 - **Result:** ______
 
 ## I. User actions due
 
-- [ ] **Decide the cast-distance origin (F.1): A, B or C.** This blocks the fun gate.
+- [x] Cast-distance origin (F.1): decided, option A (R67, cast from the rod tip). Nothing to do.
 - [ ] Play the R72 fight baseline and answer its open questions (section K: steps M1-M9, then K.3).
 - [ ] Run this checklist (sections A-E, H) and record the results.
 - [ ] Run the M1 multiplayer criteria (3-9, 12) that are still open.
@@ -553,7 +555,7 @@ No asserted bot target failed. These are the marginal or informational numbers t
   - [ ] Menu / UI split smoke steps (T2): the menu and settings still work after the UI split.
   - [ ] HUD check (T25): charge ring, prompts, captions, gauge, creel count, toasts.
   - [ ] Dev overlay check (T26): F3 updates through a cast, a bite and a fight.
-  - [ ] Dock look check, frame-time baseline and V13 facet lighting (T28).
+  - [ ] Dock look check and frame-time baseline (T28). (The V13 facet-lighting check is moot since R73 smooth water.)
   - [ ] Five-fish look check and the catch reveal per species (T29).
   - [ ] Ladders (R70): swim to `LadderR`, look up at the deck and hold W: you climb out onto the deck with no button, in about 1.25 s (the headless PlayMode measurement at 45 deg; allow up to 2 s); E never rings the bell from the water or a ladder.
   - [ ] Two-player fishing check (T23/T24): remote rod angle, the arc plays once, the marker is owner-only.
@@ -585,17 +587,19 @@ Result: 8 of 8 passed, no `TuningItems` entry, no value retuned from Rust. Matri
 - Fun-gate proxies (informational): Rhythm clean catches (Handmade) Steady 100%, Darter 56.5%, Thrasher 51%, Bulldog 0%, Runner 0%. Near-snap recovery (the bar went over full, then under half): 0% for the Rhythm bot in every cell, because it lets go at 0.85. The fun-gate line "at least 40% of Bulldog/Thrasher/Runner fights include a near-snap recovery" is a human metric: read it from the playtest log. Overall snap rate over the five profiles, Handmade: Greedy 100%, Reckless 93.6%, Pump 0%, Rhythm 0%.
 
 ### K.2 Your play steps (the baseline is playable; F7 and F8 are done)
-Start a solo run, equip the Handmade rod, and use the dev keys (README, "Fishing dev keys") to force a species when a step names one. Turn the line gauge on (Arc or Bar) for M1-M3.
+Start a solo run, equip the Handmade rod, and use the dev keys (README, "Fishing dev keys"). **F10 (host only; solo counts) cycles the forced species: None, then each species in database order (bluegill, perch, carp, trout, catfish), then None again; the F3 overlay's HOST line shows `species=`.** Press F10 until the overlay shows the species a step names, then cast. Turn the line gauge on (Arc or Bar) for M1-M3.
 
 - [ ] **M1 (gauge).** The bar fills while you reel and drains only when you let go of everything. It shows a full mark, a red zone past the full mark up to the snap point, and blinks red once the strain is past the full mark. A clean-catch tick sits below the full mark. Result: ______
-- [ ] **M2 (greed on a bluegill).** Reel non-stop into a bluegill's runs without steering: it should snap in about 5-8 s (decision 3, open question Q2). Result: ______
-- [ ] **M3 (counter a catfish).** Counter-steer a run without reeling. The fish visibly comes back toward the cast line, its runs get shorter, and the reel gets faster once it is tired. Watch for jitter near the centre line (a steer that carries the fish across the line is dropped on the next tick). Result: ______
-- [ ] **M4 (greed on a catfish).** Reel into a catfish run: it snaps in about 3.4 s. Result: ______
+- [ ] **M2 (greed on a bluegill; F10 = bluegill).** Reel non-stop into a bluegill's runs without steering: it should snap in about 5-8 s (decision 3, open question Q2). Result: ______
+- [ ] **M3 (counter a catfish; F10 = catfish).** Counter-steer a run without reeling. The fish visibly comes back toward the cast line, its runs get shorter, and the reel gets faster once it is tired. Watch for jitter near the centre line (a steer that carries the fish across the line is dropped on the next tick). Result: ______
+- [ ] **M4 (greed on a catfish; F10 = catfish).** Reel into a catfish run: it snaps in about 3.4 s. Result: ______
 - [ ] **M5 (creak).** Silent at low tension (below 10% of the bar), rising steeply near the top. When you let go, the strain drains at 1.5 per second, so the creak follows it down for about 3.4 s from a full bar; the 0.25 s fade-out is only the tail once the bar falls to 10%. Result: ______
 - [ ] **M6 (bobber).** The bobber leans toward the pull side, less on a back pull; another peer sees the same lean. Result: ______
 - [ ] **M7 (unattended).** An unattended fish escapes at 2 minutes (a fish; junk still clears at 12 s). Result: ______
 - [ ] **M8 (assist).** Assist on: the same greedy reel snaps later (strain gains x0.6). Result: ______
-- [ ] **M9 (five styles, blind).** Force each species in turn without looking at the reveal. Steady gives short plain runs that ease in. Darter darts and switches sides mid-run. Thrasher surges jerkily at varying speeds. Bulldog keeps diving and creeps line out at rest. Runner makes long sideways runs that build up. Name each one. Result: ______
+- [ ] **M9 (five styles, blind).** This is a blind guess, so do NOT use F10 yourself (the F3 overlay and a forced species would give the answer away); leave F10 on None and keep the F3 overlay off (its ROLL and `species=` lines name the fish). Fish with the bait and depth recipes below and name the style **before** the catch reveal. Steady gives short plain runs that ease in. Darter darts and switches sides mid-run. Thrasher surges jerkily at varying speeds. Bulldog keeps diving and creeps line out at rest. Runner makes long sideways runs that build up. Name each one. Result: ______
+  - Recipes (species to style: bluegill Steady, perch Darter, carp Bulldog, trout Thrasher, catfish Runner): **bluegill** = worm bait, shallow water; **catfish** = raw meat bait, landing at least 2.5 m deep. The other three follow the same bait-rating and depth rules (worm and grub reach only bluegill, perch and carp; trout needs shrimp or raw meat), so a mixed bite is normal. Note each guess and the reveal.
+  - **Best version:** a friend presses F10 to force a species, without telling you which (on the host's machine if you are a client, or at your own keyboard while you look away in solo). You name the style, then the friend says whether you were right. Repeat so every species gets forced at least once.
 
 ### K.3 Open questions for you (plan defaults are built)
 - **Q2 careless small fish:** default is Rust's Steady strainMod 0.8 (one unbroken reckless run snaps at 5.3 s; in play a bluegill snaps at about 7.4 s median). Steady strainMod 0.6 would give 7.07 s for a single run.
@@ -607,9 +611,9 @@ Start a solo run, equip the Handmade rod, and use the dev keys (README, "Fishing
 ## J. Carried manual checks and later-milestone hand-offs (2026-10-12, contract 16.2)
 
 ### Manual checks carried from reviews
-- [ ] **F3 overlay in the editor and in a NON-development player build:** in the editor, F3 toggles the overlay and it updates through a cast, a bite and a fight. In a build made WITHOUT "Development Build", F3 and F4-F9 do nothing at all (T8-fix/T10 review). Result: ______
+- [ ] **F3 overlay in the editor and in a NON-development player build:** in the editor, F3 toggles the overlay and it updates through a cast, a bite and a fight. In a build made WITHOUT "Development Build", F3 and F4-F10 do nothing at all (T8-fix/T10 review). Result: ______
 - [ ] **Swimming interact gate:** swim to the ladder and to the bell, with the rod out and stowed. Expected: **E** does nothing in the water or on a ladder (no bell, no creel sale); walking or swimming into a ladder volume starts the climb with no press (R70, ladders plan L5; T16 note, swim-gate fix `a0eb655`/`8320ad5`; recorded by the T28 look check). Result: ______
-- [ ] **Ladder and ramp feel (R70, ladders plan):** (a) climb out of the water at a shallow (30 deg) and a steep (60 deg) look-up; (b) top out looking almost straight up and note the bob (the rod must not flicker in and out); (c) walk to the deck edge in front of a ladder: does it grab you too early? (open question Q7, knob `LadderVolumeInnerX`); (d) descend from the deck looking down, let go mid-ladder (you hang), leave sideways into the water; (e) swim to the ramp and walk out: the small kick at the foot; walk back down: no push; (f) the rod stow / unstow animation on 1, in water and on a ladder, rod out and line out; (g) MPPM: a second window sees a climber move smoothly. Result: ______
+- [ ] **Ladder and ramp feel (R70, ladders plan):** (a) climb out of the water at a shallow (30 deg) and a steep (60 deg) look-up; (b) top out looking almost straight up and note the bob (the rod must not flicker in and out); (c) walk to the deck edge in front of a ladder: does it grab you too early? (open question ladders plan Q7, knob `LadderVolumeInnerX`); (d) descend from the deck looking down, let go mid-ladder (you hang), leave sideways into the water; (e) swim to the ramp and walk out: the small kick at the foot; walk back down: no push; (f) the rod stow / unstow animation on 1, in water and on a ladder, rod out and line out; (g) MPPM: a second window sees a climber move smoothly. Result: ______
 - [ ] **150 ms RTT clean-claim slack:** the 2.0 s `CleanClaimClockSlackSeconds` is a guess (skeleton risk 3); note the MPPM result (MP11). Result: ______
 - [ ] **Gamepad:** criterion 1 and rumble 0 on every terminal state need a controller. Result: ______
 - [ ] **Rod geometry (ruling T19-R1):** cast from the deck end at minimum and maximum charge, at camera pitch -60, 0 and +60. The rod tip stays in front of the camera, and the line never starts shorter than the host expects (no `Invalid` escapes from the early-hook or landed-floor checks on honest casts). Result: ______
