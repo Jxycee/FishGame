@@ -240,7 +240,8 @@ namespace FishGame.Tests.PlayMode
                 // Stowed: the segments follow NetTool.
                 rig.Player.OwnerSetTool(ToolKind.None);
                 yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.None, 2f, "the tool never changed");
-                yield return PlayModeHarness.WaitFrames(2, 0.05f);
+                yield return PlayModeHarness.WaitUntil(() => !Renderer(player, PlayerRigPaths.RodSegmentPrefix + "0").enabled, 1f,
+                    "the rod never hid after the stow animation");
                 for (int i = 0; i < PlayerRigPaths.RodSegmentCount; i++)
                     Assert.That(Renderer(player, PlayerRigPaths.RodSegmentPrefix + i).enabled, Is.False, "Seg" + i + " hidden when stowed");
                 Assert.That(anchor.parent, Is.SameAs(parent), "TipAnchor stays valid while the rod is stowed (never SetActive)");
@@ -675,6 +676,64 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("marker flash");
         }
 
+        // Catches (R70 stow animation): the rod hiding at once on a stow or appearing straight at its rest pose on an equip (no animation),
+        // the animation moving TipAnchor (BF-3: the gameplay tip, reach tests and host slack read it), and the rod not settling back exactly.
+        [UnityTest]
+        public IEnumerator RodViewSolo_StowAndEquip_AnimateThenSettle()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            Transform player = rig.Player.transform;
+            try
+            {
+                yield return DriveView(rig);   // rod out, settled at rest
+                Transform anchor = player.Find(PlayerRigPaths.RodTipAnchor);
+                Transform visual = player.Find(PlayerRigPaths.RodTipVisual);
+                MeshRenderer seg0 = Renderer(player, PlayerRigPaths.RodSegmentPrefix + "0");
+                Vector3 restLocal = visual.localPosition;
+                Vector3 anchorLocal = anchor.localPosition;
+                Quaternion anchorRot = anchor.localRotation;
+
+                rig.Player.OwnerSetTool(ToolKind.None);
+                float t0 = Time.time, maxMove = 0f;
+                bool visibleWhileMoving = false;
+                while (Time.time - t0 < ToolStowAnim.Seconds * 0.9f)
+                {
+                    yield return null;
+                    float move = Vector3.Distance(visual.localPosition, restLocal);
+                    if (seg0.enabled && move > 0.01f) visibleWhileMoving = true;
+                    maxMove = Mathf.Max(maxMove, move);
+                }
+
+                Assert.That(visibleWhileMoving, Is.True, "the rod is still visible while it swings away (max move " + maxMove + ")");
+                yield return PlayModeHarness.WaitUntil(() => !seg0.enabled, 1f, "the rod never hid after the stow animation");
+                Assert.That(Vector3.Distance(anchor.localPosition, anchorLocal), Is.LessThan(1e-6f), "TipAnchor never moves (BF-3)");
+                Assert.That(Quaternion.Angle(anchor.localRotation, anchorRot), Is.LessThan(1e-4f), "TipAnchor never rotates (BF-3)");
+
+                rig.Player.OwnerSetTool(ToolKind.Rod);
+                t0 = Time.time;
+                bool sawRising = false;
+                while (Time.time - t0 < ToolStowAnim.Seconds * 0.9f)
+                {
+                    yield return null;
+                    if (seg0.enabled && Vector3.Distance(visual.localPosition, restLocal) > 0.01f) sawRising = true;
+                }
+
+                Assert.That(sawRising, Is.True, "the equip shows the rod at once and swings it up into place");
+                yield return PlayModeHarness.WaitFrames(3, ToolStowAnim.Seconds + 0.1f);
+                Assert.That(seg0.enabled, Is.True);
+                Assert.That(Vector3.Distance(visual.localPosition, restLocal), Is.LessThan(1e-3f), "settled exactly at the rest pose");
+                Assert.That(Vector3.Distance(anchor.localPosition, anchorLocal), Is.LessThan(1e-6f), "TipAnchor never moves (BF-3)");
+            }
+            finally
+            {
+                if (rig.Controller != null) rig.Controller.enabled = true;
+            }
+
+            rig.Log.AssertEmpty("rod stow animation");
+        }
+
         // ------------------------------------------------------------------ helpers
 
         // Disables the rod controller (so nothing overwrites the pushed view), equips the rod through NetTool and waits for the pose.
@@ -686,7 +745,7 @@ namespace FishGame.Tests.PlayMode
             rig.Player.OwnerSetTool(ToolKind.Rod);
             yield return PlayModeHarness.WaitUntil(() => rig.Player.Tool == ToolKind.Rod, 2f, "the Rod tool never applied");
             SetView(rig, RodState.Idle, 0, 0f, Bobber(0f, -36f), 0);
-            yield return PlayModeHarness.WaitFrames(3, 0.1f);
+            yield return PlayModeHarness.WaitFrames(3, ToolStowAnim.Seconds + 0.1f);   // the equip animation has settled
         }
 
         private static void SetView(FishingRig rig, RodState state, byte flags, float tension, Vector3 bobber, uint castId)
