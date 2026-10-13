@@ -395,6 +395,51 @@ namespace FishGame.EditorTools
             return new Vector3(at.x + 0.28f, at.y - yOffset + 0.2f, at.z - 0.36f);
         }
 
+        // M3 T17 (2026-10-14): fixed views of Spot_HarbourPier as the real scene draws them (toon shader, palette and wave globals pushed like the runtime
+        // does): overview from above the hut, deck level looking out, the T-head looking back, the breakwater, the beach, and a dusk view. 1280 x 720
+        // PNGs named harbour_<shot>.png in -fgLookOut. Opens the scene and never saves it. Needs a graphics device (no -nographics).
+        public static readonly string[] HarbourShots = { "overview", "deck", "thead", "breakwater", "beach", "ladder", "coast", "dusk" };
+        const int HarbourWidth = 1280, HarbourHeight = 720;
+
+        public static void CaptureHarbour()
+        {
+            string outDir = Arg("-fgLookOut");
+            if (string.IsNullOrEmpty(outDir)) throw new System.ArgumentException("-fgLookOut <dir> is required");
+            Directory.CreateDirectory(outDir);
+
+            EditorSceneManager.OpenScene(AssetPaths.HarbourPierScene, OpenSceneMode.Single);
+            var palette = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
+            var water = AssetDatabase.LoadAssetAtPath<WaterSettingsDef>(AssetPaths.WaterSettingsAsset);
+            if (palette == null || water == null) throw new System.InvalidOperationException("palette or water settings missing");
+            PushPalette(palette);
+            PushWaves(water);
+            Light sun = FindSun();
+            Quaternion daySun = sun.transform.rotation;
+            ApplyPhase(palette, DayPhase, sun, daySun);
+
+            var cameraGo = new GameObject("LookDevCamera");
+            Camera camera = cameraGo.AddComponent<Camera>();
+            camera.nearClipPlane = MovementMath.NearClip;
+            camera.farClipPlane = MovementMath.FarClip;
+            cameraGo.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = true;
+            Camera sceneCamera = GameObject.Find("SceneCamera")?.GetComponent<Camera>();
+            if (sceneCamera != null) sceneCamera.enabled = false;
+
+            Shoot(camera, new Vector3(-16f, 14f, -80f), new Vector3(4f, 0.5f, -32f), 52f, outDir, "harbour_overview", 1024, 576);   // the wave-heavy sea makes this one the biggest PNG, so it is rendered smaller
+            Shoot(camera, new Vector3(0f, 3.2f, -54f), new Vector3(0f, 1.2f, -6f), 62f, outDir, "harbour_deck", HarbourWidth, HarbourHeight);
+            Shoot(camera, new Vector3(0.5f, 3.2f, -5.6f), new Vector3(0f, 1.6f, -52f), 62f, outDir, "harbour_thead", HarbourWidth, HarbourHeight);
+            Shoot(camera, new Vector3(13f, 4.5f, -18f), new Vector3(30f, 0.6f, -40f), 55f, outDir, "harbour_breakwater", HarbourWidth, HarbourHeight);
+            Shoot(camera, new Vector3(-12f, 2.6f, -30f), new Vector3(-30f, 0.8f, -52f), 62f, outDir, "harbour_beach", HarbourWidth, HarbourHeight);
+            // After the T17 review: the mid ladder seen from the water, and the coast seen past the old x +-120 edge of the land and the sea.
+            Shoot(camera, new Vector3(6f, 0.9f, -21.5f), new Vector3(1.9f, 0.7f, -25f), 55f, outDir, "harbour_ladder", HarbourWidth, HarbourHeight);
+            Shoot(camera, new Vector3(55f, 5f, -38f), new Vector3(-120f, 0f, -52f), 60f, outDir, "harbour_coast", HarbourWidth, HarbourHeight);
+            ApplyPhase(palette, DuskPhase, sun, daySun);
+            Shoot(camera, new Vector3(4.5f, 3.2f, -40f), new Vector3(-1f, 1.4f, -8f), 62f, outDir, "harbour_dusk", HarbourWidth, HarbourHeight);
+
+            Object.DestroyImmediate(cameraGo);
+            Debug.Log("FG LOOKDEV harbour captured " + HarbourShots.Length + " shots");
+        }
+
         static string Arg(string name)
         {
             string[] args = System.Environment.GetCommandLineArgs();
@@ -633,20 +678,20 @@ namespace FishGame.EditorTools
             Debug.Log("FG LOOKDEV STATS " + name + " visibleRenderers=" + renderers + " visibleTris=" + triangles + " materials=" + materials.Count);
         }
 
-        static void Shoot(Camera camera, Vector3 eye, Vector3 target, float verticalFov, string outDir, string name)
+        static void Shoot(Camera camera, Vector3 eye, Vector3 target, float verticalFov, string outDir, string name, int width = Width, int height = Height)
         {
             camera.transform.position = eye;
             camera.transform.rotation = Quaternion.LookRotation(target - eye, Vector3.up);
             camera.fieldOfView = verticalFov;
-            var rt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 };
+            var rt = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 };
             camera.targetTexture = rt;
             camera.Render();
             camera.Render();   // second frame: shadow and depth history settled
             LogStats(camera, name);
             RenderTexture previous = RenderTexture.active;
             RenderTexture.active = rt;
-            var tex = new Texture2D(Width, Height, TextureFormat.RGB24, false);
-            tex.ReadPixels(new Rect(0, 0, Width, Height), 0, 0);
+            var tex = new Texture2D(width, height, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
             tex.Apply();
             RenderTexture.active = previous;
             camera.targetTexture = null;

@@ -18,7 +18,7 @@ namespace FishGame.EditorTools
     public static class EcologyContentBuilder
     {
         private const string RealContentRoot = "Assets/_Project/Content";
-        private const string HarbourScene = SceneNames.SpotHarbourPier;   // not in SceneNames.BuildOrder until T17 (CR-4)
+        private const string HarbourScene = SceneNames.SpotHarbourPier;   // in SceneNames.BuildOrder since T17 (CR-4: the spot is registered only once its scene is listed)
 
         public static void Build()
         {

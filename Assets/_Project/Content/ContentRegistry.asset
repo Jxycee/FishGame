@@ -19,6 +19,7 @@ MonoBehaviour:
   dataVersion: 2
   spots:
   - {fileID: 11400000, guid: aee9431bc88ba5644bd17cfbd0798afb, type: 2}
+  - {fileID: 11400000, guid: 6ba9a321ab9e07442b307d3d575f35af, type: 2}
   rods:
   - {fileID: 11400000, guid: da0a6054a661f104c9b641070b065335, type: 2}
   - {fileID: 11400000, guid: c0cb6abbd95a810498ac23c3d02de77f, type: 2}

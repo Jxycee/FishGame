@@ -84,5 +84,9 @@ namespace FishGame.EditorTools
 
         // T16 additions (M3 lake grid; C 6.2). ShoreGridsFolder is T10's; do not redeclare it.
         public const string LakeDockGridAsset = ShoreGridsFolder + "/lake_dock_grid.asset";
+
+        // T17 additions (M3 harbour map; C 6.2). ShoreGridsFolder and HarbourPierSpotAsset are T10's; do not redeclare them.
+        public const string HarbourPierScene = "Assets/_Project/Scenes/Spot_HarbourPier.unity";
+        public const string HarbourPierGridAsset = ShoreGridsFolder + "/harbour_pier_grid.asset";
     }
 }

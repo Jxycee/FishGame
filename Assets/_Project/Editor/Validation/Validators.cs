@@ -61,7 +61,7 @@ namespace FishGame.EditorTools
             foreach (EditorBuildSettingsScene scene in EditorBuildSettings.scenes)
                 buildSceneNames.Add(Path.GetFileNameWithoutExtension(scene.path));
 
-            bool lakeDockListed = false;
+            bool lakeDockListed = false, harbourListed = false;
             foreach (SpotDef spot in registry.Spots)
             {
                 if (spot == null) continue; // reported by Validate()
@@ -71,10 +71,18 @@ namespace FishGame.EditorTools
                     if (spot.SceneName != SceneNames.SpotLakeDock)
                         errors.Add("lake_dock sceneName is '" + spot.SceneName + "', expected " + SceneNames.SpotLakeDock);
                 }
+                if (spot.Id == global::FishGame.Core.ContentIds.HarbourPier)   // T17 (M3)
+                {
+                    harbourListed = true;
+                    if (spot.SceneName != SceneNames.SpotHarbourPier)
+                        errors.Add("harbour_pier sceneName is '" + spot.SceneName + "', expected " + SceneNames.SpotHarbourPier);
+                }
                 if (!buildSceneNames.Contains(spot.SceneName))
                     errors.Add("spot " + spot.Id + " references scene '" + spot.SceneName + "', which is not in the build list");
             }
             if (!lakeDockListed) errors.Add("lake_dock is not listed in ContentRegistry");
+            if (System.Array.IndexOf(SceneNames.BuildOrder, SceneNames.SpotHarbourPier) >= 0 && !harbourListed)
+                errors.Add("harbour_pier is not listed in ContentRegistry");
             return errors;
         }
 
@@ -118,6 +126,8 @@ namespace FishGame.EditorTools
             RequireReference(AssetPaths.BootstrapScene, AssetPaths.AppRootUxml, "Bootstrap UIDocument does not reference AppRoot.uxml", errors);
             RequireReference(AssetPaths.LakeDockScene, AssetPaths.PlayerPrefab, "Spot_LakeDock PlayerSpawner does not reference PlayerFP.prefab", errors);
             RequireReference(AssetPaths.LakeDockScene, AssetPaths.DockBellPrefab, "Spot_LakeDock has no NetSpawnAnchor referencing DockBell.prefab", errors);
+            RequireReference(AssetPaths.HarbourPierScene, AssetPaths.PlayerPrefab, "Spot_HarbourPier PlayerSpawner does not reference PlayerFP.prefab", errors);   // T17
+            RequireReference(AssetPaths.HarbourPierScene, AssetPaths.DockBellPrefab, "Spot_HarbourPier has no NetSpawnAnchor referencing DockBell.prefab", errors);
             return errors;
         }
 

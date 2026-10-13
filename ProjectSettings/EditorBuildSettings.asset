@@ -14,4 +14,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Project/Scenes/Spot_LakeDock.unity
     guid: 53bf5c86e6ae68b4892711fdd15bfc96
+  - enabled: 1
+    path: Assets/_Project/Scenes/Spot_HarbourPier.unity
+    guid: 861c4b29384d6984297c619fc027d118
   m_configObjects: {}
