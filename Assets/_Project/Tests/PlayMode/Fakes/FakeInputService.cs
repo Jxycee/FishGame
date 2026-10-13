@@ -46,6 +46,7 @@ namespace FishGame.Tests.PlayMode
 
         public PlayerIntent Intent => InputContextRouter.Route(Context, in Frame);
         public FightInput Fight => InputContextRouter.RouteFight(Context, in Frame);
+        public bool JournalPressedAnyContext { get; set; }   // tests set it for the frames they want, and clear it themselves
         public bool HasFocus => true;
         public InputDeviceKind LastDevice => InputDeviceKind.KeyboardMouse;
 

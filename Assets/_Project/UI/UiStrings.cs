@@ -97,7 +97,7 @@ namespace FishGame.UI
             ["journal.weight_range"] = "Weight: {0}-{1} kg",
             ["journal.best"] = "Best: {0} kg, {1} mm, {2}",
             ["journal.caught"] = "Caught: {0}",
-            ["journal.empty"] = "Nothing is biting right now.",
+            ["journal.empty"] = "No fish match these filters.",
             ["journal.bites_when"] = "Bites in",
             ["journal.season_spring"] = "Spring",
             ["journal.season_summer"] = "Summer",

@@ -73,6 +73,7 @@
 .journal-card.level-0 .journal-line { color: rgb(140, 152, 166); }
 .journal-glyphs { margin-top: 10px; padding-top: 10px; border-top-width: 1px; border-top-color: rgba(255, 255, 255, 0.16); }
 .journal-caption { font-size: 14px; margin: 0 0 6px 0; color: rgb(160, 174, 190); }
+.journal-legend { font-size: 12px; margin: 0 0 6px 0; color: rgb(150, 164, 180); white-space: normal; }
 .journal-glyph-row { flex-direction: row; align-items: center; }
 .journal-glyph { width: 32px; height: 32px; margin: 0 2px; }
 .journal-glyph-gap { width: 16px; }

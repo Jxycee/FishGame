@@ -7,7 +7,6 @@ using FishGame.Data;
 using FishGame.Fishing;
 using FishGame.Runtime;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 namespace FishGame.UI
@@ -64,6 +63,7 @@ namespace FishGame.UI
         private readonly ScrollView _scroll;
         private readonly Label _empty;
         private readonly ServiceRegistry _app;
+        private readonly IInputService _input;
         private readonly Action _requestClose;
 
         private readonly List<SpeciesCard> _cards = new List<SpeciesCard>();
@@ -93,10 +93,11 @@ namespace FishGame.UI
         private FishingRodController _rodCached;           // the local rod's network component, re-read when the controller changes
         private FishingRodNetwork _netCached;
 
-        public JournalPresenter(VisualElement root, ServiceRegistry app, Action requestClose)
+        public JournalPresenter(VisualElement root, ServiceRegistry app, IInputService input, Action requestClose)
         {
             if (root == null) throw new ArgumentNullException(nameof(root));
             _app = app;
+            _input = input ?? throw new ArgumentNullException(nameof(input));
             _requestClose = requestClose ?? throw new ArgumentNullException(nameof(requestClose));
 
             _modal = UiQuery.Req<VisualElement>(root, "JournalModal");
@@ -171,15 +172,17 @@ namespace FishGame.UI
         public void Tick(float dt)
         {
             if (!_open || _disposed) return;
-            if (_inGame && LocalBiteOrHooked())
+            if (_inGame && (LocalBiteOrHooked() || !ContextAllowsJournal(_input.GameplayContext)))
             {
-                _requestClose();                            // the bite cue closes it; the owner is never left fighting behind a modal
+                // The bite cue closes it (the owner is never left fighting behind a modal), and so does any context the journal may not open
+                // in (swimming, climbing, a fight): spec 12.10 / M3-D27.
+                _requestClose();
                 return;
             }
-            // J closes it too. Polled here (not a KeyDownEvent) so the press that opened it, which can reach the panel later in the same
-            // frame, never closes it again: the open frame is skipped, and OS key repeat does not set wasPressedThisFrame.
-            Keyboard kb = Keyboard.current;
-            if (kb != null && Time.frameCount != _openedFrame && kb.jKey.wasPressedThisFrame)
+            // The Journal key (J, Select, or whatever it is rebound to) closes it too. The input service reports the press in every context
+            // (the Player map is off while a modal is open); the open frame is skipped so the press that opened it never closes it again,
+            // and a held key does not repeat (wasPressedThisFrame).
+            if (_input.JournalPressedAnyContext && Time.frameCount != _openedFrame)
             {
                 _requestClose();
                 return;
@@ -206,12 +209,16 @@ namespace FishGame.UI
             _open = false;
         }
 
-        // A gamepad user whose focus fell off every control (a card hidden by a filter) lands on Close again.
-        internal void RecoverFocus(bool gamepad)
+        // Focus that fell off every control (a card hidden by a filter, a click on the backdrop) lands on the first visible card, else the
+        // biting toggle, else Close. Any device: keyboard arrows and a gamepad both need a focus stop to navigate from.
+        internal void RecoverFocus()
         {
-            if (!_open || !gamepad) return;
-            if (_modal.panel?.focusController?.focusedElement == null) FocusDefault();
+            if (!_open) return;
+            if (_modal.panel?.focusController?.focusedElement == null) FocusRecovered();
         }
+
+        private static bool ContextAllowsJournal(InputContext context) =>
+            context == InputContext.Free || context == InputContext.RodReady || context == InputContext.RodWaiting;
 
         // "Journal n/25" for the main menu; empty without a registry or save.
         internal static string SummaryText(ServiceRegistry app)
@@ -360,6 +367,15 @@ namespace FishGame.UI
             var caption = new Label(UiStrings.Get("journal.bites_when")) { pickingMode = PickingMode.Ignore };
             caption.AddToClassList("journal-caption");
             block.Add(caption);
+
+            // Legend in icon order, so the glyph names are readable without a tooltip (keyboard and gamepad have no hover).
+            _sb.Clear();
+            for (int i = 0; i < SeasonKeys.Length; i++) _sb.Append(i > 0 ? ", " : string.Empty).Append(UiStrings.Get(SeasonKeys[i]));
+            _sb.Append("  /  ");
+            for (int i = 0; i < WeatherKeys.Length; i++) _sb.Append(i > 0 ? ", " : string.Empty).Append(UiStrings.Get(WeatherKeys[i]));
+            var legend = new Label(_sb.ToString()) { pickingMode = PickingMode.Ignore };
+            legend.AddToClassList("journal-legend");
+            block.Add(legend);
 
             var row = new VisualElement { pickingMode = PickingMode.Ignore };
             row.AddToClassList("journal-glyph-row");
@@ -756,6 +772,23 @@ namespace FishGame.UI
         private void FocusDefault()
         {
             if (_open) _close.Focus();
+        }
+
+        // Recovery lands on the first visible card (so the arrow keys and the stick restart inside the grid), else the biting toggle,
+        // else Close.
+        private void FocusRecovered()
+        {
+            if (!_open) return;
+            for (int i = 0; i < _cards.Count; i++)
+            {
+                if (_cards[i].Shown)
+                {
+                    _cards[i].Root.Focus();
+                    return;
+                }
+            }
+            if (_filterBiting.enabledSelf) _filterBiting.Focus();
+            else _close.Focus();
         }
 
         // ---- species list ----------------------------------------------------------------------------------------------------------

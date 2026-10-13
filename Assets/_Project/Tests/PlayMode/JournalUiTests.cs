@@ -1,12 +1,13 @@
 // Authority: test-only (client-side UI; no networked state). Drives the real journal (T21) through UiFlowController: the main-menu button,
-// the hint levels from the local save, the in-game open (J path, called through the private OpenJournal / HandleBack the input routes to) and
-// the modal seam (MenuOpen, Show and Back close it, the solo game is never paused). The input adapter owns the keyboard, so the J press
-// itself is covered by the EditMode router test; here the UI end of that path is called directly.
+// the hint levels from the local save, the in-game open (the UI end of the J path: OpenJournal and HandleBack, internal to FishGame.UI and
+// visible to this assembly), the modal seam (MenuOpen, Show and Back close it, the solo game is never paused), the Journal key closing it
+// (a fake input service reports the press) and the bite closing it. The input adapter owns the keyboard, so the real key press is a manual
+// check; the router rule is covered by the EditMode router test.
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using FishGame.App;
 using FishGame.Core;
+using FishGame.Fishing;
 using FishGame.Runtime;
 using FishGame.UI;
 using NUnit.Framework;
@@ -25,6 +26,8 @@ namespace FishGame.Tests.PlayMode
         private SaveService _save;
         private IInputService _input;
 
+        private FishingRig _rig;
+
         [UnityTearDown]
         public IEnumerator TearDown()
         {
@@ -32,7 +35,10 @@ namespace FishGame.Tests.PlayMode
             _root = null;
             _save = null;
             _input = null;
-            yield return PlayModeHarness.TearDownApp();
+            FishingRig rig = _rig;
+            _rig = null;
+            if (rig != null) yield return FishingPlayModeDriver.TearDown(rig);
+            else yield return PlayModeHarness.TearDownApp();
         }
 
         private IEnumerator BootMenu()
@@ -62,13 +68,6 @@ namespace FishGame.Tests.PlayMode
                 e.target = element;
                 element.SendEvent(e);
             }
-        }
-
-        private static void Call(object target, string method)
-        {
-            MethodInfo m = typeof(UiFlowController).GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(m, Is.Not.Null, "UiFlowController." + method);
-            m.Invoke(target, null);
         }
 
         private VisualElement Modal => _root.Q<VisualElement>("JournalModal");
@@ -216,7 +215,7 @@ namespace FishGame.Tests.PlayMode
                 Assert.That(_ui.CurrentScreen, Is.EqualTo(UiScreen.Hud), "in game");
                 Assert.That(_input.MenuOpen, Is.False, "gameplay context before the journal");
 
-                Call(_ui, "OpenJournal");
+                _ui.OpenJournal();
                 yield return PlayModeHarness.WaitFrames(3, 0.2f);
 
                 Assert.That(ModalShown, Is.True, "the journal opened over the HUD");
@@ -249,8 +248,10 @@ namespace FishGame.Tests.PlayMode
                 }
                 Assert.That(shownAll, Is.EqualTo(JournalSpecies), "All spots shows every card");
 
-                Call(_ui, "HandleBack");
+                Assert.That(_ui.ModalOpen, Is.True, "the modal seam is held");
+                _ui.HandleBack();
                 yield return PlayModeHarness.WaitFrames(3, 0.2f);
+                Assert.That(_ui.ModalOpen, Is.False);
                 Assert.That(ModalShown, Is.False, "Back closes the journal");
                 Assert.That(_ui.CurrentScreen, Is.EqualTo(UiScreen.Hud), "Back closed the modal, it did not open Pause");
                 Assert.That(_input.MenuOpen, Is.False, "gameplay context restored");
@@ -258,6 +259,101 @@ namespace FishGame.Tests.PlayMode
                 log.AssertNoWarnings("journal in game");
             }
             yield return PlayModeHarness.LeaveAndWaitForMenu();
+        }
+
+        // Catches: the journal key (J, Select or a rebind) not closing the journal (the input service reports it in every context), the
+        // press that opened it closing it again the same frame, and a stale flag closing it every frame. Also the gameplay context: a context
+        // the journal may not open in (swimming, climbing, a fight) closes it. A fake input service stands in for the keyboard.
+        [UnityTest]
+        public IEnumerator Journal_JournalKey_AndForeignContext_CloseIt()
+        {
+            yield return BootMenu();
+            var fake = new FakeInputService();
+            int closes = 0;
+            var presenter = new JournalPresenter(_root, AppBootstrap.Current.Services, fake, () => closes++);
+            try
+            {
+                presenter.Open(false);
+                fake.JournalPressedAnyContext = true;
+                presenter.Tick(0.016f);
+                Assert.That(closes, Is.EqualTo(0), "the press of the opening frame is ignored");
+
+                yield return null;
+                fake.JournalPressedAnyContext = false;
+                presenter.Tick(0.016f);
+                Assert.That(closes, Is.EqualTo(0), "no press, no close");
+
+                fake.JournalPressedAnyContext = true;
+                presenter.Tick(0.016f);
+                Assert.That(closes, Is.EqualTo(1), "the journal key closes it");
+                fake.JournalPressedAnyContext = false;
+                presenter.Hide();
+
+                // In game: swimming closes it, the contexts the journal opens in do not.
+                presenter.Open(true);
+                yield return null;
+                foreach (InputContext ok in new[] { InputContext.Free, InputContext.RodReady, InputContext.RodWaiting })
+                {
+                    fake.GameplayContext = ok;
+                    presenter.Tick(0.016f);
+                    Assert.That(closes, Is.EqualTo(1), ok + " keeps it open");
+                }
+                fake.GameplayContext = InputContext.Swimming;
+                presenter.Tick(0.016f);
+                Assert.That(closes, Is.EqualTo(2), "swimming closes it");
+                presenter.Hide();
+            }
+            finally
+            {
+                presenter.Dispose();
+                HideModalElement();
+            }
+        }
+
+        private void HideModalElement() => Modal.style.display = DisplayStyle.None;
+
+        // Catches: the journal staying open (and the owner stuck behind a modal) when the local bite lands, a journal that opens during the
+        // bite or the fight, and MenuOpen left true afterwards. A long forced bite wait lets the journal open over a waiting bobber first.
+        [UnityTest]
+        public IEnumerator Journal_BiteClosesIt_AndItRefusesToOpenDuringTheFight()
+        {
+            FishingDebugSettings.ForcedBiteWait = 2.5f;
+            FishingDebugSettings.ForcedSpeciesId = "bluegill";
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            var app = AppBootstrap.Current;
+            _ui = app.GetComponentInChildren<UiFlowController>(true);
+            _root = _ui.GetComponent<UIDocument>().rootVisualElement;
+            IInputService adapter = app.GetComponentInChildren<PlayerInputAdapter>(true);   // the UI's own input (the rod uses the fake)
+
+            yield return FishingPlayModeDriver.EquipAndReady(rig);
+            yield return FishingPlayModeDriver.ChargeAndRelease(rig);
+            yield return FishingPlayModeDriver.WaitForState(rig, RodState.Waiting, 5f);
+
+            _ui.OpenJournal();
+            yield return PlayModeHarness.WaitFrames(3, 0.1f);
+            Assert.That(ModalShown, Is.True, "the journal opens over a waiting bobber");
+            Assert.That(adapter.MenuOpen, Is.True);
+            Assert.That(rig.Machine.State, Is.EqualTo(RodState.Waiting), "the bobber stays out");
+
+            yield return PlayModeHarness.WaitUntil(
+                () => rig.Machine.State == RodState.Bite || rig.Machine.State == RodState.Hooked, 8f, "the forced bite never came");
+            yield return PlayModeHarness.WaitFrames(3, 0f);
+            Assert.That(ModalShown, Is.False, "the bite closes the journal");
+            Assert.That(_ui.ModalOpen, Is.False);
+            Assert.That(adapter.MenuOpen, Is.False, "gameplay input is back for the fight");
+
+            if (rig.Machine.State == RodState.Bite || rig.Machine.State == RodState.Hooked)
+            {
+                _ui.OpenJournal();
+                yield return PlayModeHarness.WaitFrames(2, 0f);
+                if (rig.Machine.State == RodState.Bite || rig.Machine.State == RodState.Hooked)
+                {
+                    Assert.That(ModalShown, Is.False, "it refuses to open while the local rod bites or fights");
+                    Assert.That(adapter.MenuOpen, Is.False);
+                }
+            }
         }
     }
 }

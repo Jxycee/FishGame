@@ -83,13 +83,14 @@ namespace FishGame.UI
             return true;
         }
 
-        internal void CloseModal(object owner)
+        // restoreInput false: the caller (Show) sets MenuOpen for the new screen itself, so the cursor and the Player map do not flip twice.
+        internal void CloseModal(object owner, bool restoreInput = true)
         {
             if (_modalOwner == null || !ReferenceEquals(_modalOwner, owner)) return;
             Action closed = _modalClosed;
             _modalOwner = null;
             _modalClosed = null;
-            _input.MenuOpen = UiFocusRouter.IsMenuScreen(_screen);
+            if (restoreInput) _input.MenuOpen = UiFocusRouter.IsMenuScreen(_screen);
             closed?.Invoke();
         }
 
@@ -122,7 +123,7 @@ namespace FishGame.UI
                 return;
             }
 
-            if (_modalOwner != null) CloseModal(_modalOwner);
+            if (_modalOwner != null) CloseModal(_modalOwner, false);
             var previous = _screen;
             _focus.ClearPending();
             if (previous == UiScreen.Settings && screen != UiScreen.Settings) CloseSettings();
@@ -232,7 +233,7 @@ namespace FishGame.UI
             _menu.SettingsRequested += () => OpenSettings(UiScreen.MainMenu);
             _menu.QuitRequested += QuitApplication;
             _menu.JournalRequested += OpenJournal;
-            _journal = new JournalPresenter(_root, _app, () => CloseModal(_journal));
+            _journal = new JournalPresenter(_root, _app, _input, () => CloseModal(_journal));
 
             _busyPresenter = new BusyPresenter(_busy);
 
@@ -278,12 +279,12 @@ namespace FishGame.UI
                 _nameplates.Tick(Camera.main);
                 for (int i = 0; i < _hudExtensions.Count; i++) _hudExtensions[i].Tick(Time.unscaledDeltaTime);
             }
-            if (_modalOwner != null) _journal.RecoverFocus(_input.LastDevice == InputDeviceKind.Gamepad);   // the menu behind a modal is hidden
+            if (_modalOwner != null) _journal.RecoverFocus();   // the menu behind a modal is hidden, so the router's recovery would miss it
             else _focus.RefocusIfLost(_screen, _input.LastDevice);
         }
 
         // T21.2: the journal over the HUD (J) or over the main menu (the Journal button). Refused during the local bite or fight.
-        private void OpenJournal()
+        internal void OpenJournal()
         {
             var inGame = _screen == UiScreen.Hud;
             if (!_journal.CanOpen(inGame)) return;
@@ -305,7 +306,7 @@ namespace FishGame.UI
         }
 
         // Single handler for Escape / Start / UI Cancel (D27): no NavigationCancelEvent handlers exist.
-        private void HandleBack()
+        internal void HandleBack()
         {
             if (_modalOwner != null)
             {

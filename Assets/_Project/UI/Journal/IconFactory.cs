@@ -53,8 +53,7 @@ namespace FishGame.UI
             {
                 Texture2D tex = pair.Value;
                 if (tex == null) continue;
-                if (Application.isPlaying) Object.Destroy(tex);
-                else Object.DestroyImmediate(tex);
+                Object.DestroyImmediate(tex);       // immediate: a deferred Destroy never runs once the app is quitting
             }
             Cache.Clear();
         }

@@ -7,6 +7,7 @@ using System;
 using FishGame.Core;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace FishGame.Runtime
 {
@@ -28,6 +29,7 @@ namespace FishGame.Runtime
         private PlayerInputFrame _frame;
         private PlayerIntent _intent;
         private FightInput _fight;
+        private bool _journalAnyContext;
 
         private bool _hasFocus = true;
         private InputDeviceKind _lastDevice = InputDeviceKind.KeyboardMouse;
@@ -60,6 +62,7 @@ namespace FishGame.Runtime
         }
 
         public PlayerIntent Intent => _intent;
+        public bool JournalPressedAnyContext => _journalAnyContext;
         public FightInput Fight => _fight;
         public bool HasFocus => _hasFocus;
         public InputDeviceKind LastDevice => _lastDevice;
@@ -141,6 +144,7 @@ namespace FishGame.Runtime
 
             UpdateLastDevice();
             _frame = ReadFrame();
+            _journalAnyContext = JournalControlPressedThisFrame();
             InputContext ctx = Context;
             _intent = InputContextRouter.Route(ctx, in _frame);
             _fight = InputContextRouter.RouteFight(ctx, in _frame);
@@ -193,10 +197,22 @@ namespace FishGame.Runtime
             f.DropPressed = _drop.WasPressedThisFrame();
             f.EquipPressed = _equip.WasPressedThisFrame();
             f.JournalPressed = _journal.WasPressedThisFrame();   // the Player map is disabled in the Menu context, so this reads false there
-            f.PausePressed = Context ==InputContext.Menu ? _uiCancel.WasPressedThisFrame() : _pause.WasPressedThisFrame();
+            f.PausePressed = Context == InputContext.Menu ?_uiCancel.WasPressedThisFrame() : _pause.WasPressedThisFrame();
             f.Steer = _steer.ReadValue<float>();
             f.Reel = _reel.IsPressed();
             return f;
+        }
+
+        // True the frame any control bound to Player/Journal (J, gamepad Select, or a rebind) went down. Reads the action's resolved controls
+        // directly, so it honours binding overrides and still works while the Player map is disabled (a modal is open). Allocation-free.
+        private bool JournalControlPressedThisFrame()
+        {
+            var controls = _journal.controls;
+            for (int i = 0; i < controls.Count; i++)
+            {
+                if (controls[i] is ButtonControl button && button.wasPressedThisFrame) return true;
+            }
+            return false;
         }
 
         // Hold, or a latched toggle when the setting is on (sprint toggle, aim toggle).
@@ -240,6 +256,7 @@ namespace FishGame.Runtime
             _frame = default;
             _intent = PlayerIntent.None;
             _fight = default;
+            _journalAnyContext = false;
         }
 
         private void OnApplicationFocus(bool hasFocus)
