@@ -19,7 +19,6 @@ namespace FishGame.UI
     internal sealed class FishingHudPresenter : IHudExtension
     {
         private const float RepaintEpsilon = 0.002f;
-        private const float WarnTension = 0.8f;
         private const float DefaultCaptionSeconds = 2f;
         private const float ToastSeconds = 4f;
         private const float BlinkHz = 6f;
@@ -58,7 +57,10 @@ namespace FishGame.UI
         private bool _ringShown, _gaugeShown, _hookShown, _captionShown, _creelShown;
         private float _ringValue;
         private LineGaugeMode _gaugeMode;
-        private float _gaugeValue;
+        private float _gaugeValue;                  // the painted (smoothed) display tension
+        private float _gaugeSmooth;                 // R72: tension smoothed at clamp01(dt x 10) per frame, never clamped before the headroom
+        private float _snapTension = 7f / 6f;       // the gauge track ends here (fight.SnapTension: 7/6, 1.25 on a Pity cast)
+        private float _cleanTension = 0.8f;         // the clean-catch tick (tuning cleanCatchMaxTension)
         private bool _gaugeWarn, _gaugeGrace, _gaugeBlinkOn;
         private float _captionTimer;
         private string _creelClass = string.Empty;
@@ -121,7 +123,7 @@ namespace FishGame.UI
             TickRing();
             TickHook();
             TickCaption(dt);
-            TickGauge();
+            TickGauge(dt);
             TickCreel();
         }
 
@@ -162,6 +164,7 @@ namespace FishGame.UI
                 _maxEntries = tuning.CreelMaxEntries;
                 _maxWeightG = tuning.CreelMaxWeightG;
                 _tuningKnown = _maxEntries > 0 && _maxWeightG > 0;
+                _cleanTension = tuning.CleanCatchMaxTension > 0f ? tuning.CleanCatchMaxTension : 0.8f;
             }
 
             var palette = _registry.ArtPalette;
@@ -273,7 +276,7 @@ namespace FishGame.UI
             if (_captionTimer <= 0f) SetShown(_caption, ref _captionShown, false);
         }
 
-        private void TickGauge()
+        private void TickGauge(float dt)
         {
             var machine = _controller != null ? _controller.Machine : null;
             LineGaugeMode mode = _settings != null ? ModeOf(_settings.Current.lineGauge) : LineGaugeMode.Off;
@@ -284,12 +287,17 @@ namespace FishGame.UI
             if (!on)
             {
                 SetShown(_gauge, ref _gaugeShown, false);
+                _gaugeSmooth = 0f;
                 return;
             }
 
-            float tension = Mathf.Clamp01(fight.State.Tension);
+            // R72: the bar shows strain / 6 smoothed like Rust's UI (clamp01(dt x 10) per frame) and is not clamped, so it can run past the
+            // full mark into the headroom zone up to the snap point.
+            _gaugeSmooth = FightViewMath.SmoothBar(_gaugeSmooth, fight.State.Tension, dt);
+            float tension = _gaugeSmooth;
+            _snapTension = fight.SnapTension;
             bool grace = fight.State.SnapTimer > 0f;
-            bool warn = tension >= WarnTension;
+            bool warn = tension >= _cleanTension;
             bool blinkOn = grace && ((int)(Time.unscaledTime * BlinkHz * 2f) & 1) == 0;   // 6 Hz on/off
 
             bool becameVisible = !_gaugeShown;
@@ -485,10 +493,15 @@ namespace FishGame.UI
             if (_gaugeGrace)
             {
                 fill = _bad;
-                drawFill = _gaugeBlinkOn;      // the blink (and the 0.8 tick) carry the meaning without hue
+                drawFill = _gaugeBlinkOn;      // the blink (and the ticks) carry the meaning without hue
             }
-            float value = Mathf.Clamp01(_gaugeValue);
+            // R72: the track spans 0..snap point (7/6 of the bar; 1.25 on a Pity cast). The full mark sits at tension 1.0, the clean tick at the
+            // tuning value, and the headroom zone (full mark to the end) is drawn in the bad colour under the fill.
+            float value = FightViewMath.GaugeFraction(_gaugeValue, _snapTension);
+            float fullFrac = FightViewMath.GaugeFraction(1f, _snapTension);
+            float cleanFrac = FightViewMath.GaugeFraction(_cleanTension, _snapTension);
             Color dim = new Color(_panel.r, _panel.g, _panel.b, 0.7f);
+            Color zone = new Color(_bad.r, _bad.g, _bad.b, 0.35f);
             bool thick = _gaugeWarn || _gaugeGrace;
 
             if (_gaugeMode == LineGaugeMode.Bar)
@@ -496,13 +509,14 @@ namespace FishGame.UI
                 float w = rect.width, h = rect.height;
                 float trackTop = (h - BarTrackHeight) * 0.5f;
                 FillRect(painter, 0f, trackTop, w, BarTrackHeight, dim);
+                FillRect(painter, w * fullFrac, trackTop, w * (1f - fullFrac), BarTrackHeight, zone);
                 if (drawFill && value > 0.002f)
                 {
                     float height = thick ? BarWarnHeight : BarTrackHeight;
                     FillRect(painter, 0f, (h - height) * 0.5f, w * value, height, fill);
                 }
-                float tickX = w * WarnTension;
-                FillRect(painter, tickX - 1f, 0f, 2f, h, _text);
+                FillRect(painter, w * cleanFrac - 1f, h * 0.15f, 2f, h * 0.7f, _text);   // clean-catch tick
+                FillRect(painter, w * fullFrac - 1f, 0f, 2f, h, _text);                  // full mark
                 return;
             }
 
@@ -516,6 +530,15 @@ namespace FishGame.UI
             painter.Arc(centre, ArcRadius, Angle.Degrees(ArcStartDeg), Angle.Degrees(ArcStartDeg - ArcSpanDeg), ArcDirection.CounterClockwise);
             painter.Stroke();
 
+            if (fullFrac < 0.999f)
+            {
+                painter.lineWidth = 3f;
+                painter.strokeColor = zone;
+                painter.BeginPath();
+                painter.Arc(centre, ArcRadius, Angle.Degrees(ArcStartDeg - ArcSpanDeg * fullFrac), Angle.Degrees(ArcStartDeg - ArcSpanDeg), ArcDirection.CounterClockwise);
+                painter.Stroke();
+            }
+
             if (drawFill && value > 0.004f)
             {
                 painter.lineWidth = thick ? 5f : 3f;
@@ -525,13 +548,19 @@ namespace FishGame.UI
                 painter.Stroke();
             }
 
-            float tickRad = (ArcStartDeg - ArcSpanDeg * WarnTension) * Mathf.Deg2Rad;
+            ArcTick(painter, centre, cleanFrac, 5f);   // clean-catch tick
+            ArcTick(painter, centre, fullFrac, 8f);    // full mark
+        }
+
+        private void ArcTick(Painter2D painter, Vector2 centre, float fraction, float half)
+        {
+            float tickRad = (ArcStartDeg - ArcSpanDeg * fraction) * Mathf.Deg2Rad;
             var dir = new Vector2(Mathf.Cos(tickRad), Mathf.Sin(tickRad));
             painter.lineWidth = 2f;
             painter.strokeColor = _text;
             painter.BeginPath();
-            painter.MoveTo(centre + dir * (ArcRadius - 8f));
-            painter.LineTo(centre + dir * (ArcRadius + 8f));
+            painter.MoveTo(centre + dir * (ArcRadius - half));
+            painter.LineTo(centre + dir * (ArcRadius + half));
             painter.Stroke();
         }
 

@@ -7,6 +7,7 @@
 //    the cast ends (Landed or Snapped hide the bobber at once; a recall replaces the arc).
 //  - Steady spot: water height from WaterSurface.HeightAt (bobber bob), by state: Waiting +0.02, Bite -0.25, Hooked fish point -0.1,
 //    dive -0.35, exhausted +0.03 with a slow roll; the Nibble cue adds a 0.25 s dip. Easing at 1 - exp(-20 dt).
+//  - Hooked: rolls +-30 deg toward the pull side (FlagRight), halved on a back pull (FlagDive), eased at clamp01(dt) (Rust, R72); a spent fish rolls slowly.
 //  - Recall: a 0.4 s arc back to the bent tip on Cue Recall, on Escaped with FlagRecall, or on a line-out -> Idle transition; then hide.
 using FishGame.Core;
 using FishGame.Fishing;
@@ -23,7 +24,7 @@ namespace FishGame.Presentation
         private const float EaseRate = 20f;
         private const float RecallSeconds = 0.4f, RecallApex = 0.5f;
         private const float NibbleSeconds = 0.25f, NibbleDip = 0.04f;
-        private const float RollDeg = 30f, RollRadPerSecond = 1.5f;
+        private const float ExhaustedRollDeg = 30f, RollRadPerSecond = 1.5f;
 
         private enum Phase : byte { Hidden, Steady, Arc, Recall }
 
@@ -39,6 +40,7 @@ namespace FishGame.Presentation
         private uint _arcCastId;
         private float _nibbleAt = -10f;
         private float _roll;
+        private float _tilt01 = 0.5f;   // R72: 0 = pulling left, 1 = pulling right, 0.5 = at rest
 
         private Vector3 _arcStart, _arcEnd;
         private float _arcStartTime, _arcFlight, _arcApex;
@@ -71,6 +73,7 @@ namespace FishGame.Presentation
             _rod.Cue += HandleCue;
             _live = true;
             _baselined = false;   // a re-enable is a fresh observation: snap, never replay
+            _tilt01 = 0.5f;
         }
 
         private void OnDisable()
@@ -184,9 +187,23 @@ namespace FishGame.Presentation
                         Position = Vector3.Lerp(Position, target, 1f - Mathf.Exp(-EaseRate * dt));
                     }
 
-                    bool exhausted = vs.State == RodState.Hooked && (vs.Flags & RodWireQuant.FlagExhausted) != 0;
-                    float rollTarget = exhausted ? RollDeg * Mathf.Sin(RollRadPerSecond * now) : 0f;
-                    _roll = Mathf.Lerp(_roll, rollTarget, 1f - Mathf.Exp(-10f * dt));
+                    bool hooked = vs.State == RodState.Hooked;
+                    bool exhausted = hooked && (vs.Flags & RodWireQuant.FlagExhausted) != 0;
+                    if (hooked && !exhausted)
+                    {
+                        // R72 (Rust): lean toward the pull side, halved on a back pull, eased at clamp01(dt).
+                        bool run = (vs.Flags & RodWireQuant.FlagBurst) != 0;
+                        bool right = (vs.Flags & RodWireQuant.FlagRight) != 0;
+                        bool back = (vs.Flags & RodWireQuant.FlagDive) != 0;
+                        _tilt01 = FightViewMath.TiltStep(_tilt01, FightViewMath.TiltTarget(run, right, back), dt);
+                        _roll = FightViewMath.RollDeg(_tilt01);
+                    }
+                    else
+                    {
+                        _tilt01 = 0.5f;
+                        float rollTarget = exhausted ? ExhaustedRollDeg * Mathf.Sin(RollRadPerSecond * now) : 0f;
+                        _roll = Mathf.Lerp(_roll, rollTarget, 1f - Mathf.Exp(-10f * dt));
+                    }
                     Place(_roll);
                     return;
                 }
@@ -279,10 +296,14 @@ namespace FishGame.Presentation
             return new Vector3(x, y, z);
         }
 
+        // Rolls about the horizontal tip-to-bobber direction. A positive roll leans the top to the player's left, so a left pull gives +30.
         private void Place(float rollDeg)
         {
             SetShown(true);
-            _bobber.SetPositionAndRotation(Position, Quaternion.Euler(0f, 0f, rollDeg));
+            Vector3 d = Position - TipPosition();
+            d.y = 0f;
+            Quaternion basis = d.sqrMagnitude > 1e-4f ? Quaternion.LookRotation(d.normalized, Vector3.up) : Quaternion.identity;
+            _bobber.SetPositionAndRotation(Position, basis * Quaternion.Euler(0f, 0f, rollDeg));
         }
 
         private void SetShown(bool shown)

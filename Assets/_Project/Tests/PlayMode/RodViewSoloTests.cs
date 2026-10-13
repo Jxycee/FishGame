@@ -433,6 +433,46 @@ namespace FishGame.Tests.PlayMode
             rig.Log.AssertEmpty("bobber snap and arc");
         }
 
+        // Catches: the R72 bobber lean pointing the wrong way, not following the wire flags alone (a remote has nothing else), a back pull that is not
+        // halved, or a rest that does not level. The roll is measured about the bobber's own flat tip-to-bobber axis (its forward).
+        [UnityTest]
+        public IEnumerator RodViewSolo_Bobber_TiltsTowardThePullHalvedOnBackPull()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+
+            try
+            {
+                yield return DriveView(rig);
+                Transform bobber = rig.Player.transform.Find(PlayerRigPaths.Bobber);
+                Vector3 spot = Bobber(0f, -36f);
+                Func<float> roll = () => Vector3.SignedAngle(Vector3.up, bobber.up, bobber.forward);
+
+                SetView(rig, RodState.Hooked, RodWireQuant.FlagBurst | RodWireQuant.FlagRight, 0.5f, spot, 21);
+                yield return PlayModeHarness.WaitFrames(3, 4f);
+                Assert.That(roll(), Is.EqualTo(-30f).Within(2f), "right pull: leans right (-30)");
+
+                SetView(rig, RodState.Hooked, RodWireQuant.FlagBurst | RodWireQuant.FlagRight | RodWireQuant.FlagDive, 0.5f, spot, 21);
+                yield return PlayModeHarness.WaitFrames(3, 4f);
+                Assert.That(roll(), Is.EqualTo(-15f).Within(2f), "right back pull: halved");
+
+                SetView(rig, RodState.Hooked, RodWireQuant.FlagBurst, 0.5f, spot, 21);
+                yield return PlayModeHarness.WaitFrames(3, 4f);
+                Assert.That(roll(), Is.EqualTo(30f).Within(2f), "left pull: leans left (+30)");
+
+                SetView(rig, RodState.Hooked, 0, 0.5f, spot, 21);
+                yield return PlayModeHarness.WaitFrames(3, 4f);
+                Assert.That(roll(), Is.EqualTo(0f).Within(2f), "rest: level");
+            }
+            finally
+            {
+                if (rig.Controller != null) rig.Controller.enabled = true;
+            }
+
+            rig.Log.AssertEmpty("bobber tilt");
+        }
+
         // Catches: the bobber steady positions (Bite plunge, Hooked fish point, dive depth, exhausted float), the nibble dip, and the hide rules:
         // Snapped hides the bobber at once and whips the line for 0.2 s, a recall flies the bobber back instead of hiding it.
         [UnityTest]
