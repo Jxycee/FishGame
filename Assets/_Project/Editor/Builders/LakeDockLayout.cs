@@ -28,9 +28,10 @@ namespace FishGame.EditorTools
         public const string LakebedVisualMeshPath = AssetPaths.MeshesFolder + "/LakeDock_LakebedVisual.asset";
         public const string ShoreVisualMeshPath = AssetPaths.MeshesFolder + "/LakeDock_ShoreVisual.asset";
 
-        // FaceJitter mesh seeds, one per mesh (fixed: an Inspector edit must never change a generated mesh).
-        public const uint LakebedMeshSeed = 0x1A4E0B01u, ShoreMeshSeed = 0x1A4E0B02u, DockMeshSeed = 0x1A4E0B03u, RockMeshSeed = 0x1A4E0B04u;
-        public const uint TrunkMeshSeed = 0x1A4E0B05u, CanopyRoundMeshSeed = 0x1A4E0B06u, CanopyPineMeshSeed = 0x1A4E0B07u, ReedsMeshSeed = 0x1A4E0B08u;
+        // Mesh seeds, only for the meshes that use one (fixed: an Inspector edit must never change a generated mesh). The lakebed and shore COLLIDER meshes
+        // (MeshBuilder FaceJitter) take theirs; the rock and the round canopy use theirs for the SmoothMeshBuilder.Noise3 lumps. The other props are
+        // seedless (lathes and rounded boxes), so their seeds were removed with the R74 adoption. The numbering is kept so the values never change.
+        public const uint LakebedMeshSeed = 0x1A4E0B01u, ShoreMeshSeed = 0x1A4E0B02u, RockMeshSeed = 0x1A4E0B04u, CanopyRoundMeshSeed = 0x1A4E0B06u;
 
         // Water grid: 96 cells x 1.25 m = 120 m (the M1 visual plane). Spec 10.4 wants wavelengths >= 4 cells; T14 seeds at least 6 m.
         public const int WaterGridCells = 96;
@@ -48,12 +49,10 @@ namespace FishGame.EditorTools
         public const float PlankLength = 3f, PlankWidth = 0.26f, PlankGap = 0.04f, PlankYawDegrees = 0.8f;
         public const float StringerX = 1.2f, StringerSize = 0.12f;
         public const float PostRadius = 0.08f;
-        public const int PostSides = 6;
         public const float RailSize = 0.05f, RungSpacing = 0.3f, RungThickness = 0.03f, RungDepth = 0.04f, RailInset = 0.2f;
 
         // Prop mesh shape (unit sizes match the Unity primitives the M1 transforms were authored for).
         public const float TrunkRadiusBottom = 0.5f, TrunkRadiusTop = 0.42f, TrunkHeight = 2f;
-        public const int TrunkSides = 7;
         public const float PineChance = 0.6f;
 
         // Reeds: 24 clusters of 4-6 blades in the shallows (bed about -0.5 to -0.08 m).

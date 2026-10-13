@@ -71,7 +71,7 @@ namespace FishGame.EditorTools
 
             // 3 player close-up: three-quarter front, on the dock.
             player.SetActive(true);
-            Vector3 playerEye = new Vector3(-1.5f, 2.05f, -50.2f), playerAt = new Vector3(0f, LakeDockLayoutDeckTop, -47f);
+            Vector3 playerEye = new Vector3(-1.5f, 2.05f, -50.2f), playerAt = new Vector3(0f, LakeDockLayout.DeckTopY, -47f);
             Vector3 toCamera = new Vector3(playerEye.x - playerAt.x, 0f, playerEye.z - playerAt.z);
             player.transform.SetPositionAndRotation(playerAt, Quaternion.LookRotation(toCamera, Vector3.up) * Quaternion.Euler(0f, -20f, 0f));
             Shoot(camera, playerEye, new Vector3(0f, 1.55f, -47f), 40f, outDir, "player");
@@ -99,8 +99,6 @@ namespace FishGame.EditorTools
             string before = Arg("-fgLookBefore");
             if (!string.IsNullOrEmpty(sheet) && !string.IsNullOrEmpty(before)) ComposeSheet(before, outDir, sheet);
         }
-
-        const float LakeDockLayoutDeckTop = 0.6f;
 
         // R74 adoption shots (2026-10-13): the five fish side by side, the sweep viewpoints and the props. Same batch arguments as Capture
         // (-fgLookOut, -fgLookTag, -fgLookSheet + -fgLookBefore). Logs per-shot render stats (FG LOOKDEV STATS) for the spec 10.7 record.

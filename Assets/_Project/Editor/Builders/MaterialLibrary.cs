@@ -17,6 +17,9 @@ namespace FishGame.EditorTools
             if (lit == null) throw new System.InvalidOperationException("Shader not found: " + LitShaderName);
 
             Ensure(lit, "M_Water", new Color(0.12f, 0.36f, 0.62f));
+            // M_Wood and M_Brass: since the R74 adoption no scene or prefab uses them (the props are M_Toon_Base / M_Toon_Brass), but they stay. This builder
+            // recreates every entry here on each build, so deleting only the assets would leave them reappearing; and PlayerFishingRigBuilder falls back
+            // to M_WoodDark and M_Brass for the rod and bobber when M_Toon_Base is missing (a rig built before the Toon materials exist).
             Ensure(lit, "M_Wood", new Color(0.55f, 0.38f, 0.22f));
             Ensure(lit, "M_WoodDark", new Color(0.36f, 0.24f, 0.14f));
             Ensure(lit, "M_Rock", new Color(0.46f, 0.46f, 0.48f));
