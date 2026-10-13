@@ -145,8 +145,9 @@ namespace FishGame.Tests.EditMode
             Assert.That(env.width, Is.EqualTo(512));
             var skin = AssetDatabase.LoadAssetAtPath<Texture2DArray>(AssetPaths.FishSkinArray);
             Assert.That(skin, Is.Not.Null, AssetPaths.FishSkinArray);
-            Assert.That(skin.depth, Is.EqualTo(8));
-            Assert.That(skin.width, Is.EqualTo(512));
+            Assert.That(skin.depth, Is.EqualTo(32), "4 x 8 sheet: 26 used layers (0-25) plus 6 white spares (M3-D91)");
+            Assert.That(skin.width, Is.EqualTo(512), "the 4096 max size keeps the 512 x 512 tiles");
+            Assert.That(skin.height, Is.EqualTo(512));
             var envImporter = (TextureImporter)AssetImporter.GetAtPath(AssetPaths.EnvDetailArray);
             var skinImporter = (TextureImporter)AssetImporter.GetAtPath(AssetPaths.FishSkinArray);
             Assert.That(envImporter.sRGBTexture, Is.False, "the env detail array is linear");

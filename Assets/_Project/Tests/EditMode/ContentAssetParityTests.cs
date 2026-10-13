@@ -86,6 +86,14 @@ namespace FishGame.Tests.EditMode
             var expectedLayer = new Dictionary<string, float>(StringComparer.Ordinal)
             {
                 { "Fish_Bluegill.fbx", 1f }, { "Fish_Perch.fbx", 2f }, { "Fish_Carp.fbx", 3f }, { "Fish_Trout.fbx", 4f }, { "Fish_Catfish.fbx", 5f },
+                // M3 T23 batch 1 (layers 6-10), batch 2 (11-14), batch 3 (15-20), batch 4 (21-25).
+                { "Fish_MirrorMinnow.fbx", 6f }, { "Fish_BucketmouthBass.fbx", 7f }, { "Fish_SilverMullet.fbx", 8f }, { "Fish_LakePike.fbx", 9f },
+                { "Fish_FrostChar.fbx", 10f },
+                { "Fish_GlimmerEel.fbx", 11f }, { "Fish_SleepySturgeon.fbx", 12f }, { "Fish_GildedCarp.fbx", 13f }, { "Fish_OldBarnacle.fbx", 14f },
+                { "Fish_PierSardine.fbx", 15f }, { "Fish_IceHerring.fbx", 16f }, { "Fish_GrumbleMackerel.fbx", 17f }, { "Fish_GawpingGurnard.fbx", 18f },
+                { "Fish_RedSnapper.fbx", 19f }, { "Fish_GrumpyPuffer.fbx", 20f },
+                { "Fish_MoonSquid.fbx", 21f }, { "Fish_SneakyFlounder.fbx", 22f }, { "Fish_BruiserTuna.fbx", 23f }, { "Fish_StormRay.fbx", 24f },
+                { "Fish_Lanternfish.fbx", 25f },
             };
             foreach (KeyValuePair<string, float> expected in expectedLayer)
             {
