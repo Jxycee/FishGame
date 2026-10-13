@@ -147,6 +147,10 @@ namespace FishGame.Tests.PlayMode
 
             try
             {
+                // F6 (2026-10-13): the rod now has idle life (breath, lag, a slight sag with the line out). Camera motion 0 removes the motion (the
+                // sag is a pose and stays), so this test's exact-pose checks run at motion 0; RodViewSolo_RodIdleLife_* covers the idle life itself.
+                settings.Current.cameraMotion = 0f;
+                settings.NotifyChanged();
                 yield return DriveView(rig);
                 Transform anchor = player.Find(PlayerRigPaths.RodTipAnchor);
                 Transform visual = player.Find(PlayerRigPaths.RodTipVisual);
@@ -160,10 +164,15 @@ namespace FishGame.Tests.PlayMode
                 for (int i = 0; i < PlayerRigPaths.RodSegmentCount; i++)
                     Assert.That(Renderer(player, PlayerRigPaths.RodSegmentPrefix + i).enabled, Is.True, "Seg" + i + " shown with the rod out");
 
+                // Tension 0.1 is below the bend (RodBend01 is 0 under 0.3): the only pose change is the slight sag of a line that is out. It eases in
+                // (1 - exp(-4 dt)), so it is given 1.6 s to settle; slackLocal is the line-out pose the relaxed-rod checks below compare against.
                 SetView(rig, RodState.Hooked, 0, 0.1f, bobber, 3);
-                yield return PlayModeHarness.WaitFrames(3, 0.05f);
-                Assert.That(Vector3.Distance(visual.localPosition, restLocal), Is.LessThan(1e-3f), "tension 0.1: no bend, TipVisual at its rest pose");
-                Assert.That(Quaternion.Angle(seg5.localRotation, Quaternion.identity), Is.LessThan(0.5f), "tension 0.1: Seg5 at rest");
+                yield return PlayModeHarness.WaitFrames(3, 1.6f);
+                Vector3 slackLocal = visual.localPosition;
+                float sagMove = Vector3.Distance(slackLocal, restLocal);
+                Assert.That(sagMove, Is.GreaterThan(0.01f), "tension 0.1: the line is out, so the rod sags a little (" + sagMove + " m)");
+                Assert.That(sagMove, Is.LessThan(0.15f), "tension 0.1: the sag is slight, not a bend (" + sagMove + " m)");
+                Assert.That(Quaternion.Angle(seg5.localRotation, Quaternion.identity), Is.InRange(1.5f, RodIdleMath.SagDeg + 1.5f), "tension 0.1: Seg5 carries the sag only");
 
                 SetView(rig, RodState.Hooked, 0, 0.5f, bobber, 3);
                 yield return PlayModeHarness.WaitFrames(3, 0.05f);
@@ -205,10 +214,10 @@ namespace FishGame.Tests.PlayMode
                 Assert.That(maxMove, Is.LessThan(1e-4f), "camera motion 0: no shake, TipVisual holds its pose");
                 Assert.That(maxTurn, Is.LessThan(0.01f), "camera motion 0: no shake, Seg5 holds its pose");
 
-                // Not hooked any more: the rod relaxes to its rest pose.
+                // Not hooked any more (the line is still out): the strain bend is gone and the rod relaxes to its slack, slightly sagging pose.
                 SetView(rig, RodState.Waiting, 0, 0.9f, bobber, 3);
                 yield return PlayModeHarness.WaitFrames(3, 0.05f);
-                Assert.That(Vector3.Distance(visual.localPosition, restLocal), Is.LessThan(1e-3f), "back to rest outside Hooked");
+                Assert.That(Vector3.Distance(visual.localPosition, slackLocal), Is.LessThan(1e-3f), "back to the slack pose outside Hooked");
                 Assert.That(Vector3.Distance(anchor.localPosition, anchorLocal), Is.LessThan(1e-6f), "TipAnchor still untouched");
 
                 // HookSet: a 15 degree upward jerk easing back over 0.25 s.
@@ -216,11 +225,11 @@ namespace FishGame.Tests.PlayMode
                 yield return PlayModeHarness.WaitFrames(2, 0.05f);
                 rig.Net.RaiseLocalCue(RodCue.HookSet, 0);
                 yield return null;
-                float jerk = Vector3.Distance(visual.localPosition, restLocal);
+                float jerk = Vector3.Distance(visual.localPosition, slackLocal);
                 Assert.That(jerk, Is.GreaterThan(0.08f), "the HookSet jerk displaces the tip");
-                Assert.That(visual.localPosition.y, Is.GreaterThan(restLocal.y), "the jerk is upward");
+                Assert.That(visual.localPosition.y, Is.GreaterThan(slackLocal.y), "the jerk is upward");
                 yield return PlayModeHarness.WaitFrames(3, 0.5f);
-                Assert.That(Vector3.Distance(visual.localPosition, restLocal), Is.LessThan(1e-3f), "the jerk has eased back");
+                Assert.That(Vector3.Distance(visual.localPosition, slackLocal), Is.LessThan(1e-3f), "the jerk has eased back");
 
                 // Nibble: a short 4 degree wobble.
                 SetView(rig, RodState.Waiting, 0, 0f, bobber, 3);
@@ -231,11 +240,11 @@ namespace FishGame.Tests.PlayMode
                 while (Time.realtimeSinceStartupAsDouble < until)
                 {
                     yield return null;
-                    wobble = Mathf.Max(wobble, Vector3.Distance(visual.localPosition, restLocal));
+                    wobble = Mathf.Max(wobble, Vector3.Distance(visual.localPosition, slackLocal));
                 }
                 Assert.That(wobble, Is.GreaterThan(0.01f), "the Nibble cue wobbles the rod tip");
                 yield return PlayModeHarness.WaitFrames(3, 0.4f);
-                Assert.That(Vector3.Distance(visual.localPosition, restLocal), Is.LessThan(1e-3f), "the wobble has ended");
+                Assert.That(Vector3.Distance(visual.localPosition, slackLocal), Is.LessThan(1e-3f), "the wobble has ended");
 
                 // Stowed: the segments follow NetTool.
                 rig.Player.OwnerSetTool(ToolKind.None);
@@ -496,6 +505,17 @@ namespace FishGame.Tests.PlayMode
                 yield return PlayModeHarness.WaitFrames(3, 0.4f);
                 float h = WaterSurface.HeightAt(spot.x, spot.z);
                 Assert.That(bobber.position.y, Is.EqualTo(h + 0.02f).Within(0.04f), "Waiting: float at the surface");
+                Assert.That(bobber.localScale.x, Is.EqualTo(FightViewMath.DistanceScale(Vector3.Distance(bobber.position, tipVisual.position))).Within(0.01f),
+                    "F6: the bobber's scale follows its distance from the rod tip");
+
+                // A far cast: the float has grown to the cap (readable at distance); back at the near spot it is life size again.
+                Vector3 farSpot = Bobber(0f, -10f);
+                SetView(rig, RodState.Waiting, 0, 0f, farSpot, 11);
+                yield return PlayModeHarness.WaitFrames(3, 0.5f);
+                Assert.That(bobber.localScale.x, Is.EqualTo(FightViewMath.MaxDistanceScale).Within(0.02f), "a bobber 30 m out is drawn at the maximum scale");
+                SetView(rig, RodState.Waiting, 0, 0f, spot, 11);
+                yield return PlayModeHarness.WaitFrames(3, 0.5f);
+                Assert.That(bobber.localScale.x, Is.EqualTo(1f).Within(0.01f), "and 1 near the tip");
 
                 SetView(rig, RodState.Bite, 0, 0f, spot, 11);
                 yield return PlayModeHarness.WaitFrames(3, 0.4f);
@@ -507,7 +527,8 @@ namespace FishGame.Tests.PlayMode
 
                 SetView(rig, RodState.Hooked, RodWireQuant.FlagDive, 0.5f, spot, 11);
                 yield return PlayModeHarness.WaitFrames(3, 0.4f);
-                Assert.That(bobber.position.y, Is.EqualTo(h - 0.35f).Within(0.05f), "Hooked + dive: h - 0.35");
+                Assert.That(bobber.position.y, Is.EqualTo(h - FightViewMath.DiveDepth).Within(0.05f), "Hooked + dive: h - 0.75 (F9: fully under, was 0.35)");
+                Assert.That(bobber.position.y + FightViewMath.StemTipHeight * bobber.localScale.y, Is.LessThan(h - 0.3f), "the whole float, stem ball included, is well under the surface");
 
                 SetView(rig, RodState.Hooked, RodWireQuant.FlagExhausted, 0.2f, spot, 11);
                 yield return PlayModeHarness.WaitFrames(3, 0.4f);
@@ -617,6 +638,16 @@ namespace FishGame.Tests.PlayMode
                 yield return null;
                 Assert.That(ps.particleCount, Is.InRange(3, 8), "Nibble: 4 small droplets");
 
+                // F9 (2026-10-13): the dive's plunge is a tall crown of big droplets plus bubbles; a side run's cue adds nothing (S12: side splash only).
+                ClearAll(splash);
+                rig.Net.RaiseLocalCue(RodCue.SideRun, 0);
+                yield return null;
+                Assert.That(TotalParticles(splash), Is.EqualTo(0), "SideRun: no plunge splash of its own (the polled side column is separate)");
+                rig.Net.RaiseLocalCue(RodCue.Dive, 0);
+                yield return null;
+                Assert.That(ps.particleCount, Is.GreaterThanOrEqualTo(30), "Dive: a tall crown of about 34 droplets");
+                Assert.That(TotalParticles(splash) - ps.particleCount, Is.GreaterThanOrEqualTo(10), "Dive: and about 16 bubbles from under the surface");
+
                 // A plain Hooked state emits nothing by polling.
                 SetView(rig, RodState.Hooked, 0, 0.5f, spot, 13);
                 yield return PlayModeHarness.WaitFrames(2, 0.1f);
@@ -654,6 +685,15 @@ namespace FishGame.Tests.PlayMode
                     maxDive = Mathf.Max(maxDive, ps.particleCount);
                 }
                 Assert.That(maxDive, Is.GreaterThanOrEqualTo(5), "R72: a back pull also pulls to a side, so the side column stays during a dive");
+
+                // F9: while the fish pulls back (FlagDive, no side run) a bubble trail rises from under the bobber, polled; a plain pull has none.
+                SetView(rig, RodState.Hooked, 0, 0.5f, spot, 13);
+                yield return PlayModeHarness.WaitFrames(3, 1.2f);
+                ClearAll(splash);
+                SetView(rig, RodState.Hooked, RodWireQuant.FlagDive, 0.5f, spot, 13);
+                int maxTrail = 0;
+                yield return Sample(() => TotalParticles(splash), 0.6, (v) => maxTrail = Mathf.Max(maxTrail, (int)v));
+                Assert.That(maxTrail, Is.GreaterThanOrEqualTo(4), "a diving fish leaves a bubble trail by polling");
 
                 // Exhausted: 3 particles every 0.6 s.
                 SetView(rig, RodState.Hooked, 0, 0.2f, spot, 13);
@@ -726,8 +766,12 @@ namespace FishGame.Tests.PlayMode
             yield return FishingPlayModeDriver.Arrange(_rig);
             FishingRig rig = _rig;
             Transform player = rig.Player.transform;
+            Assert.That(ServiceRoots.App.TryGet(out ISettings settings), Is.True, "ISettings");
+            float originalMotion = settings.Current.cameraMotion;
             try
             {
+                settings.Current.cameraMotion = 0f;   // F6: the idle breath would move the "exact rest pose" (RodViewSolo_RodIdleLife_* covers it)
+                settings.NotifyChanged();
                 yield return DriveView(rig);   // rod out, settled at rest
                 Transform anchor = player.Find(PlayerRigPaths.RodTipAnchor);
                 Transform visual = player.Find(PlayerRigPaths.RodTipVisual);
@@ -769,13 +813,181 @@ namespace FishGame.Tests.PlayMode
             }
             finally
             {
+                settings.Current.cameraMotion = originalMotion;
+                settings.NotifyChanged();
                 if (rig.Controller != null) rig.Controller.enabled = true;
             }
 
             rig.Log.AssertEmpty("rod stow animation");
         }
 
+        // Catches (F6, 2026-10-13: "the rod seems a bit static"): a rod that holds one pose forever when idle; idle motion that survives camera motion 0
+        // (spec 9.11 removes bob); idle motion large enough to read as strain; no sag with the line out; idle motion that fights the strain bend (S12:
+        // a near-snap must read from the rod alone), so at a clear bend the pose must be steady.
+        [UnityTest]
+        public IEnumerator RodViewSolo_RodIdleLife_BreathesSagsAndYieldsToStrain()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            Assert.That(ServiceRoots.App.TryGet(out ISettings settings), Is.True, "ISettings");
+            float originalMotion = settings.Current.cameraMotion;
+            Transform player = rig.Player.transform;
+
+            try
+            {
+                settings.Current.cameraMotion = 1f;
+                settings.NotifyChanged();
+                yield return DriveView(rig);
+                Transform visual = player.Find(PlayerRigPaths.RodTipVisual);
+                Vector3 bobber = Bobber(0f, -36f);
+
+                // Idle at motion 1: the tip breathes (a few cm at most), it is not frozen.
+                float min = float.MaxValue, max = float.MinValue;
+                Vector3 first = visual.localPosition;
+                float travel = 0f;
+                yield return Sample(() => 0f, 0.1, _ => { });   // let the lag springs and the first frame settle
+                yield return SampleVector(() => visual.localPosition, 3.0, (p) =>
+                {
+                    float d = Vector3.Distance(p, first);
+                    min = Mathf.Min(min, d);
+                    max = Mathf.Max(max, d);
+                });
+                travel = max - min;
+                Assert.That(travel, Is.GreaterThan(0.004f), "idle at motion 1: the rod breathes (moved " + travel + " m over 3 s)");
+                Assert.That(max, Is.LessThan(0.12f), "idle life is subtle (max " + max + " m)");
+
+                // Camera motion 0: exactly still.
+                settings.Current.cameraMotion = 0f;
+                settings.NotifyChanged();
+                yield return PlayModeHarness.WaitFrames(3, 0.2f);
+                Vector3 restLocal = visual.localPosition;
+                float maxMove = 0f;
+                yield return SampleVector(() => visual.localPosition, 1.5, (p) => maxMove = Mathf.Max(maxMove, Vector3.Distance(p, restLocal)));
+                Assert.That(maxMove, Is.LessThan(1e-4f), "camera motion 0: no idle motion");
+
+                // Line out, no tension: the slight sag lowers the tip (a pose, so it stays at motion 0).
+                float restY = visual.position.y;
+                bobber = Bobber(8f, -38f);   // well off to the side, so the sag axis differs from the direction to the world origin (the recall below)
+                SetView(rig, RodState.Waiting, 0, 0f, bobber, 5);
+                yield return PlayModeHarness.WaitFrames(3, 1.6f);
+                float sagDrop = restY - visual.position.y;
+                Assert.That(sagDrop, Is.GreaterThan(0.01f), "line out: the tip sags (dropped " + sagDrop + " m)");
+                Assert.That(sagDrop, Is.LessThan(0.15f), "the sag is slight");
+
+                // A recall: the controller sets BobberPos to Vector3.zero in Idle (and the network view snaps to it) while the sag is still easing
+                // out. The sag must keep its last line-out axis, never swing toward the world origin: the tip eases back along the straight path
+                // from the sag pose to the rest pose (the bobber is off to the side, so that path is not the pitch plane), never off it by more than
+                // a few mm, and its distance to the rest pose never grows.
+                Vector3 sagPose = visual.localPosition;
+                Vector3 path = restLocal - sagPose;
+                float maxOff = 0f, maxGrowth = 0f;
+                float lastDist = path.magnitude;
+                SetView(rig, RodState.Idle, 0, 0f, Vector3.zero, 5);
+                yield return SampleVector(() => visual.localPosition, 0.6, (p) =>
+                {
+                    Vector3 off = Vector3.Cross(p - sagPose, path.normalized);
+                    maxOff = Mathf.Max(maxOff, off.magnitude);
+                    float dist = Vector3.Distance(p, restLocal);
+                    maxGrowth = Mathf.Max(maxGrowth, dist - lastDist);
+                    lastDist = dist;
+                });
+                Assert.That(path.magnitude, Is.GreaterThan(0.01f), "the sag pose differs from the rest pose");
+                Assert.That(maxOff, Is.LessThan(0.004f), "recall: the sag eases out along its own path, no sideways kick (max " + maxOff + " m off it)");
+                Assert.That(maxGrowth, Is.LessThan(0.001f), "recall: the tip only ever moves toward the rest pose (grew by " + maxGrowth + " m)");
+                SetView(rig, RodState.Waiting, 0, 0f, bobber, 5);   // line out again, the sag back to full before the strain check
+                yield return PlayModeHarness.WaitFrames(3, 1.6f);
+
+                // A clear strain bend: idle motion has faded out completely, even at motion 1, so the pose is steady (tension 0.65 is in the Creak
+                // band: bend 0.5, no shake yet).
+                settings.Current.cameraMotion = 1f;
+                settings.NotifyChanged();
+                SetView(rig, RodState.Hooked, 0, 0.65f, bobber, 5);
+                yield return PlayModeHarness.WaitFrames(3, 0.6f);
+                Vector3 bent = visual.localPosition;
+                float strainMove = 0f;
+                yield return SampleVector(() => visual.localPosition, 1.5, (p) => strainMove = Mathf.Max(strainMove, Vector3.Distance(p, bent)));
+                Assert.That(strainMove, Is.LessThan(5e-4f), "under strain the rod holds its bend: no idle motion on top (S12)");
+                Assert.That(Vector3.Distance(bent, restLocal), Is.GreaterThan(0.15f), "and the bend itself is large");
+            }
+            finally
+            {
+                settings.Current.cameraMotion = originalMotion;
+                settings.NotifyChanged();
+                if (rig.Controller != null) rig.Controller.enabled = true;
+            }
+
+            rig.Log.AssertEmpty("rod idle life");
+        }
+
+        // Catches: a sign error in RodPresenter.TrackLag. The hand is moved up and to the player's right at about 12 m/s (a world-space step per
+        // frame; PlayerBody poses the arm, not the Hand), and the tip must TRAIL: down (rod-local Y falls) and left (rod-local X falls) against
+        // a stationary baseline. Rod-local, so the player's own motion and the arm pose cancel out.
+        [UnityTest]
+        public IEnumerator RodViewSolo_RodIdleLife_TipLagsDownAndLeftWhenMovingUpAndRight()
+        {
+            _rig = new FishingRig();
+            yield return FishingPlayModeDriver.Arrange(_rig);
+            FishingRig rig = _rig;
+            Assert.That(ServiceRoots.App.TryGet(out ISettings settings), Is.True, "ISettings");
+            float originalMotion = settings.Current.cameraMotion;
+            Transform player = rig.Player.transform;
+            Transform hand = player.Find(PlayerRigPaths.Hand);
+            Vector3 handRest = hand.localPosition;
+
+            try
+            {
+                settings.Current.cameraMotion = 1f;
+                settings.NotifyChanged();
+                yield return DriveView(rig);
+                Transform visual = player.Find(PlayerRigPaths.RodTipVisual);
+
+                // Baseline: stationary, averaged over 1.5 s (a whole number of nothing in particular: the breath is +-0.02 m, the lag is larger).
+                Vector3 sum = Vector3.zero;
+                int n = 0;
+                yield return SampleVector(() => visual.localPosition, 1.5, (p) => { sum += p; n++; });
+                Vector3 baseline = sum / Mathf.Max(1, n);
+
+                // Moving: 5 m/s up and right; average the second half of 0.8 s, when the springs have caught up.
+                const float speed = 12f;
+                Vector3 worldStep = (player.right + Vector3.up).normalized * speed;
+                sum = Vector3.zero;
+                n = 0;
+                float t0 = Time.time;
+                while (Time.time - t0 < 0.8f)
+                {
+                    yield return null;
+                    hand.localPosition += hand.parent.InverseTransformVector(worldStep * Time.deltaTime);
+                    if (Time.time - t0 > 0.4f) { sum += visual.localPosition; n++; }
+                }
+
+                Vector3 moving = sum / Mathf.Max(1, n);
+                Assert.That(moving.x - baseline.x, Is.LessThan(-0.02f), "moving right: the tip trails LEFT (rod-local X fell by " + (baseline.x - moving.x) + " m)");
+                Assert.That(moving.y - baseline.y, Is.LessThan(-0.015f), "moving up: the tip trails DOWN (rod-local Y fell by " + (baseline.y - moving.y) + " m)");
+            }
+            finally
+            {
+                hand.localPosition = handRest;
+                settings.Current.cameraMotion = originalMotion;
+                settings.NotifyChanged();
+                if (rig.Controller != null) rig.Controller.enabled = true;
+            }
+
+            rig.Log.AssertEmpty("rod lag");
+        }
+
         // ------------------------------------------------------------------ helpers
+
+        // Calls sink with the value once per frame for the given real-time seconds.
+        private static IEnumerator SampleVector(Func<Vector3> value, double seconds, Action<Vector3> sink)
+        {
+            double until = Time.realtimeSinceStartupAsDouble + seconds;
+            while (Time.realtimeSinceStartupAsDouble < until)
+            {
+                yield return null;
+                sink(value());
+            }
+        }
 
         // Disables the rod controller (so nothing overwrites the pushed view), equips the rod through NetTool and waits for the pose.
         private static IEnumerator DriveView(FishingRig rig)

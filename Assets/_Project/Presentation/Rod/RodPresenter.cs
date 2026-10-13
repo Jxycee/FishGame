@@ -5,6 +5,9 @@
 // rod toggles the segment renderers only. Since R70 every NetTool change animates first (ToolStowAnim, 0.2 s): the chain swings tip-down and
 // back about Seg0, then hides; equip reverses it. TipAnchor is still never touched. The rod's rest pose is the T19-fix's (PlayerFishingRigBuilder); this adds bend on top of it.
 // The Seg* transforms are siblings under Rod at 0.3 m steps, so the chain below works directly in Rod-local space.
+// Idle life (playtest F6, 2026-10-13; maths in Core RodIdleMath, all view-only): a slow breath, a spring-damped lag of the tip behind the rod's own
+// movement and the look, and a slight sag while the line is out. All of it fades out as the strain bend grows (S12: a near-snap reads from the
+// rod alone), breath and lag are zero at camera motion 0 (spec 9.11 removes bob), and the stow fades them out. The sag is a pose and stays.
 using FishGame.Core;
 using FishGame.Fishing;
 using FishGame.Gameplay;
@@ -24,6 +27,7 @@ namespace FishGame.Presentation
         private const float ShakeDeg = 1.5f, ShakeHz = 25f;
         private const float StowPitchDeg = 70f;    // [tune] the tip swings down this far when fully stowed (about the rod's local X)
         private const float StowPullBack = 0.3f;   // [tune] metres the rod slides back along its own axis (-Z) when fully stowed
+        private const float SagEaseRate = 4f;      // [tune] F6: the sag eases in and out at 1 - exp(-4 dt), about 0.7 s to settle
 
         // Most bend at the tip (sum 1).
         private static readonly float[] Weights = { 0.05f, 0.10f, 0.15f, 0.20f, 0.22f, 0.28f };
@@ -39,6 +43,13 @@ namespace FishGame.Presentation
         private ToolStowAnim _stow;
         private bool _stowStarted;
         private float _nibbleAt = -10f, _hookSetAt = -10f;
+
+        // F6 idle life: the sag blend (0 = none, 1 = line out) and the two lag springs (position deg, velocity deg/s) about the rod's local X and Y.
+        private float _sag01;
+        private Vector3 _sagAxis = Vector3.right;   // the last line-out bend axis (Rod space)
+        private float _lagX, _lagVX, _lagY, _lagVY;
+        private Vector3 _lastAnchor;
+        private bool _haveLastAnchor;
 
         // The bent visual tip (ruling BF-3): LineView and BobberView read it.
         public Transform Tip => _tip;
@@ -76,6 +87,7 @@ namespace FishGame.Presentation
             if (_rod == null) return;
             _rod.Cue += HandleCue;
             _live = true;
+            ResetIdle();
         }
 
         private void OnDisable()
@@ -85,7 +97,17 @@ namespace FishGame.Presentation
             _nibbleAt = -10f;
             _hookSetAt = -10f;
             _stowStarted = false;
+            ResetIdle();
             if (_ready) ApplyPose(0f, Vector3.right, 0f, 0f, 0f, 0f);   // leave the rest pose behind
+        }
+
+        // A fresh observation: no sag, no lag, no velocity from before (a re-enable or a teleport must not kick the springs).
+        private void ResetIdle()
+        {
+            _sag01 = 0f;
+            _sagAxis = Vector3.right;
+            _lagX = _lagVX = _lagY = _lagVY = 0f;
+            _haveLastAnchor = false;
         }
 
         // One-shots come only from Cue (F6); a cue after OnDisable is ignored.
@@ -113,22 +135,41 @@ namespace FishGame.Presentation
 
             RodViewState vs = _rod.ViewState;
             float now = Time.time;
-            float bendDeg = 0f;
+            float dt = Time.deltaTime;
+            float bend01 = 0f;
             bool shake = false;
             Vector3 axis = Vector3.right;
+            float cameraMotion = CameraMotion();
 
             if (vs.State == RodState.Hooked)
             {
                 bool grace = (vs.Flags & RodWireQuant.FlagGrace) != 0;
                 // Motion 1: the bend is the no-HUD tension readout, so camera motion 0 must not remove it (spec 9.11 removes shake, FOV kicks, bob and rumble).
                 TensionCueState cue = TensionCues.Evaluate(vs.Tension, grace, 1f, 1f);
-                bendDeg = MaxBendDeg * cue.RodBend01;
-                if (cue.Band >= TensionBand.Warn) shake = TensionCues.Evaluate(vs.Tension, grace, 1f, CameraMotion()).Shake;
-                if (bendDeg > 0f) axis = BendAxis(vs.BobberPos);
+                bend01 = cue.RodBend01;
+                if (cue.Band >= TensionBand.Warn) shake = TensionCues.Evaluate(vs.Tension, grace, 1f, cameraMotion).Shake;
             }
 
+            // F6 sag: with the line out the rod droops a little toward it, easing in and out; the strain bend takes over as the tension rises.
+            // A pose, not a motion, so camera motion 0 keeps it.
+            _sag01 = RodIdleMath.Ease(_sag01, IsLineOut(vs.State) ? 1f : 0f, SagEaseRate, dt);
+            if (_sag01 < 0.002f) _sag01 = 0f;
+            float bendDeg = RodIdleMath.TotalBendDeg(MaxBendDeg, bend01, _sag01);
+            // The bend axis follows the line while it is out and holds its last value afterwards: in Idle the controller sets BobberPos to the world
+            // origin (and the network view snaps to it), so a recall's sag easing out must not swing toward it.
+            if (IsLineOut(vs.State) && IsFinite(vs.BobberPos)) _sagAxis = BendAxis(vs.BobberPos);
+            if (bendDeg > 0f) axis = _sagAxis;
+
+            // F6 idle life: a slow breath plus a spring-damped lag of the tip behind the player's own movement and look, all faded out by the strain
+            // bend (S12: a near-snap reads from the rod alone), by camera motion 0 and by the stow.
+            float idleW = RodIdleMath.IdleWeight(bend01, cameraMotion, stow);
+            TrackLag(dt);
+            RodIdleMath.Breath(now, out float breathX, out float breathY);
+            float idleX = (breathX + _lagX) * idleW;
+            float idleY = (breathY + _lagY) * idleW;
+
             // Extra rotation about the rod's local X (negative = tip up): the Nibble wobble and the HookSet jerk.
-            float extraX = 0f;
+            float extraX = idleX;
             float u = now - _nibbleAt;
             if (u >= 0f && u < NibbleSeconds) extraX += NibbleDeg * Mathf.Sin(NibbleHz * u) * (1f - u / NibbleSeconds);
             u = now - _hookSetAt;
@@ -138,14 +179,44 @@ namespace FishGame.Presentation
                 extraX -= HookSetDeg * k * k;
             }
 
-            float shakeX = 0f, shakeY = 0f;
+            float shakeX = 0f, shakeY = idleY;
             if (shake)
             {
                 shakeX = (Mathf.PerlinNoise(now * ShakeHz, 0.31f) - 0.5f) * 2f * ShakeDeg;
-                shakeY = (Mathf.PerlinNoise(now * ShakeHz, 7.73f) - 0.5f) * 2f * ShakeDeg;
+                shakeY += (Mathf.PerlinNoise(now * ShakeHz, 7.73f) - 0.5f) * 2f * ShakeDeg;
             }
 
             ApplyPose(bendDeg, axis, extraX + shakeX, shakeY, 0f, stow);
+        }
+
+        // The rod's own velocity in Rod space (from the STATIC TipAnchor, which never moves with the pose, so there is no feedback loop; the arm
+        // follows the look, so a turn or a pitch moves it too, on every peer, with no net data) drives two damped springs: moving up trails the tip
+        // down, moving right trails it left. A teleport-sized step (respawn, ladder snap) is dropped by RodIdleMath.SanitizeSpeed.
+        private void TrackLag(float dt)
+        {
+            Vector3 p = _anchor.position;
+            float vx = 0f, vy = 0f;
+            if (_haveLastAnchor && dt > 1e-5f)
+            {
+                Vector3 local = _rodRoot.InverseTransformDirection((p - _lastAnchor) / dt);
+                vx = local.x;
+                vy = local.y;
+            }
+
+            _lastAnchor = p;
+            _haveLastAnchor = true;
+            RodIdleMath.SpringStep(ref _lagX, ref _lagVX, RodIdleMath.LagXDeg(vy), dt);
+            RodIdleMath.SpringStep(ref _lagY, ref _lagVY, RodIdleMath.LagYDeg(vx), dt);
+        }
+
+        private static bool IsFinite(Vector3 v)
+        {
+            return !(float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsNaN(v.z) || float.IsInfinity(v.x) || float.IsInfinity(v.y) || float.IsInfinity(v.z));
+        }
+
+        private static bool IsLineOut(RodState state)
+        {
+            return state == RodState.Casting || state == RodState.Waiting || state == RodState.Bite || state == RodState.Hooked || state == RodState.Escaped;
         }
 
         // cross(rodForward, toBobber) in Rod space, from the STATIC anchor (the bend never depends on its own previous result).

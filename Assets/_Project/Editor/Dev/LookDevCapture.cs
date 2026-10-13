@@ -11,6 +11,7 @@ using System.IO;
 using System.Text;
 using FishGame.Core;
 using FishGame.Data;
+using FishGame.Gameplay;
 using FishGame.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -284,6 +285,114 @@ namespace FishGame.EditorTools
             Scene scene = EditorSceneManager.OpenScene(AssetPaths.LakeDockScene, OpenSceneMode.Single);
             File.WriteAllText(Path.Combine(outDir, "colliders_" + tag + ".txt"), DumpColliders(scene));
             Debug.Log("FG LOOKDEV colliders tag=" + tag);
+        }
+
+        // Bobber and rod look check (playtest F6/F9, 2026-10-13). Same batch arguments as Capture (-fgLookOut; run WITHOUT -nographics).
+        // BobberView and RodPresenter do not run in the editor, so this places the prefab's bobber by hand: floating (the Waiting spot, h + 0.02),
+        // at the Bite plunge (h - 0.25) and at a strong dive (h - diveDepth), close (0.5 m), at hand range (4 m) and at a typical cast (14 m, the
+        // game's own field of view), plus the rod in the rest pose from a three-quarter view. -fgRigDive <metres> and -fgRigScale off
+        // override the dive depth (default FightViewMath.DiveDepth) and switch the distance scale off (the "before" run used 0.35 and off).
+        public static void CaptureRig()
+        {
+            string outDir = Arg("-fgLookOut");
+            if (string.IsNullOrEmpty(outDir)) throw new System.ArgumentException("-fgLookOut <dir> is required");
+            Directory.CreateDirectory(outDir);
+            float dive = float.Parse(Arg("-fgRigDive") ?? FightViewMath.DiveDepth.ToString(System.Globalization.CultureInfo.InvariantCulture), System.Globalization.CultureInfo.InvariantCulture);
+            bool scaleOn = Arg("-fgRigScale") != "off";
+
+            EditorSceneManager.OpenScene(AssetPaths.LakeDockScene, OpenSceneMode.Single);
+            var palette = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
+            var water = AssetDatabase.LoadAssetAtPath<WaterSettingsDef>(AssetPaths.WaterSettingsAsset);
+            PushPalette(palette);
+            PushWaves(water);
+            Light sun = FindSun();
+            ApplyPhase(palette, DayPhase, sun, sun.transform.rotation);
+
+            GameObject player = SpawnPlayer();
+            Vector3 playerAt = new Vector3(0f, LakeDockLayout.DeckTopY, -47f);
+            player.transform.SetPositionAndRotation(playerAt, Quaternion.identity);   // faces +z, down the dock toward the water
+            Transform bobber = player.transform.Find(PlayerRigPaths.Bobber);
+            bobber.GetComponent<MeshRenderer>().enabled = true;
+
+            var cameraGo = new GameObject("LookDevCamera");
+            Camera camera = cameraGo.AddComponent<Camera>();
+            camera.nearClipPlane = 0.02f;
+            camera.farClipPlane = MovementMath.FarClip;
+            cameraGo.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = true;
+            Camera sceneCamera = GameObject.Find("SceneCamera")?.GetComponent<Camera>();
+            if (sceneCamera != null) sceneCamera.enabled = false;
+            float wideFov = Camera.HorizontalToVerticalFieldOfView(MovementMath.DefaultHorizontalFov, Width / (float)Height);
+
+            // The camera is a little ahead of the player's head (the model would fill the frame), at eye height; the scale follows the distance from
+            // the rod tip about 1.5 m ahead of the player, as BobberView does it. Close shots sit 0.2 m above the water, so a plunged bobber is seen
+            // through the surface, never from under it.
+            Vector3 eyeAtPlayer = playerAt + new Vector3(0f, 1.7f, 0.6f);
+            Vector3 at;
+            at = RigBobber(bobber, 14f, 0.02f, eyeAtPlayer, scaleOn);
+            Shoot(camera, eyeAtPlayer, at, wideFov, outDir, "bobber_float_far");
+            at = RigBobber(bobber, 4f, 0.02f, eyeAtPlayer, scaleOn);
+            Shoot(camera, eyeAtPlayer, at, 30f, outDir, "bobber_float_mid");
+            Shoot(camera, CloseEye(at, 0.02f), at, 30f, outDir, "bobber_float_close");
+            at = RigBobber(bobber, 4f, -0.25f, eyeAtPlayer, false);
+            Shoot(camera, CloseEye(at, -0.25f), at, 30f, outDir, "bobber_bite_close");
+            at = RigBobber(bobber, 4f, -dive, eyeAtPlayer, false);
+            Shoot(camera, CloseEye(at, -dive), at, 30f, outDir, "bobber_dive_close");
+            at = RigBobber(bobber, 4f, -dive, eyeAtPlayer, scaleOn);
+            Shoot(camera, eyeAtPlayer, at, 30f, outDir, "bobber_dive_mid");
+            at = RigBobber(bobber, 14f, -dive, eyeAtPlayer, scaleOn);
+            Shoot(camera, eyeAtPlayer, at, wideFov, outDir, "bobber_dive_far");
+
+            bobber.GetComponent<MeshRenderer>().enabled = false;
+
+            // The rod poses, side on (the bend plane): RodPresenter.Awake and ApplyPose are driven by reflection (the component does not run in the
+            // editor), the rod is set 35 degrees up in front of the camera and the rest of the player is hidden. The four poses are the rest pose, the
+            // biggest idle pose (the sag plus the breath plus the lag at their limits, RodIdleMath.MaxIdleDeg), the bend at tension 0.5 and at 0.9:
+            // the idle pose has to stay a small fraction of a mid strain (S12).
+            foreach (MeshRenderer r in player.GetComponentsInChildren<MeshRenderer>(true)) r.enabled = false;
+            Transform rod = player.transform.Find(PlayerRigPaths.Rod);
+            rod.SetPositionAndRotation(new Vector3(-0.8f, 1.2f, -46.2f), Quaternion.Euler(-35f, 0f, 0f));
+            for (int i = 0; i < PlayerRigPaths.RodSegmentCount; i++)
+                player.transform.Find(PlayerRigPaths.RodSegmentPrefix + i).GetComponent<MeshRenderer>().enabled = true;
+            var presenter = player.GetComponent<Presentation.RodPresenter>();
+            const System.Reflection.BindingFlags nonPublic = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            typeof(Presentation.RodPresenter).GetMethod("Awake", nonPublic).Invoke(presenter, null);
+            System.Reflection.MethodInfo applyPose = typeof(Presentation.RodPresenter).GetMethod("ApplyPose", nonPublic);
+            foreach (MeshRenderer r in rod.GetComponentsInChildren<MeshRenderer>(true)) r.enabled = true;   // Awake hides them
+            Vector3 rodEye = new Vector3(1.9f, 1.75f, -45.6f), rodAt = new Vector3(-0.2f, 1.75f, -45.6f);
+            float strain05 = 50f * TensionCues.Evaluate(0.5f, false, 1f, 1f).RodBend01, strain09 = 50f * TensionCues.Evaluate(0.9f, false, 1f, 1f).RodBend01;
+            float idleBend = RodIdleMath.SagDeg, idleExtra = RodIdleMath.BreathXDeg + RodIdleMath.LagMaxDeg;
+            applyPose.Invoke(presenter, new object[] { 0f, Vector3.right, 0f, 0f, 0f, 0f });
+            Shoot(camera, rodEye, rodAt, 40f, outDir, "rod_rest");
+            applyPose.Invoke(presenter, new object[] { idleBend, Vector3.right, idleExtra, 0f, 0f, 0f });
+            Shoot(camera, rodEye, rodAt, 40f, outDir, "rod_idle_max");
+            applyPose.Invoke(presenter, new object[] { strain05, Vector3.right, 0f, 0f, 0f, 0f });
+            Shoot(camera, rodEye, rodAt, 40f, outDir, "rod_strain_t05");
+            applyPose.Invoke(presenter, new object[] { strain09, Vector3.right, 0f, 0f, 0f, 0f });
+            Shoot(camera, rodEye, rodAt, 40f, outDir, "rod_strain_t09");
+            Debug.Log("FG LOOKDEV rod poses: idle max bend " + idleBend + " + " + idleExtra + " deg, strain t0.5 " + strain05 + " deg, t0.9 " + strain09 + " deg");
+
+            Object.DestroyImmediate(cameraGo);
+            Debug.Log("FG LOOKDEV captured rig shots out=" + outDir);
+
+            string sheet = Arg("-fgLookSheet");
+            string before = Arg("-fgLookBefore");
+            if (!string.IsNullOrEmpty(sheet) && !string.IsNullOrEmpty(before))
+                ComposeSheet(before, outDir, sheet, new[] { "bobber_float_close", "bobber_float_mid", "bobber_float_far", "bobber_dive_close", "bobber_dive_mid", "bobber_dive_far" });
+        }
+
+        // Puts the bobber `ahead` metres past the dock end on the water (flat in the editor), yOffset from the surface.
+        static Vector3 RigBobber(Transform bobber, float ahead, float yOffset, Vector3 eye, bool scaleOn)
+        {
+            var at = new Vector3(0f, WaterSurface.HeightAt(0f, -41f + ahead) + yOffset, -41f + ahead);
+            bobber.SetPositionAndRotation(at, Quaternion.identity);
+            bobber.localScale = Vector3.one * (scaleOn ? FightViewMath.DistanceScale(Vector3.Distance(at, eye)) : 1f);
+            return at;
+        }
+
+        // 0.5 m from the bobber, to one side, 0.2 m above the water surface.
+        static Vector3 CloseEye(Vector3 at, float yOffset)
+        {
+            return new Vector3(at.x + 0.28f, at.y - yOffset + 0.2f, at.z - 0.36f);
         }
 
         static string Arg(string name)
