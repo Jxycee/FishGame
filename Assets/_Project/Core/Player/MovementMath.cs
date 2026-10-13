@@ -13,6 +13,7 @@ namespace FishGame.Core
         public const float SwimGravity = -4f, SwimEnterDepth = 1.2f, SwimEyeAboveSurface = 0.15f, WadeDepth = 0.3f;
         public const float SwimBuoyancyStiffness = 12f, SwimBuoyancyDamping = 5f, SwimMaxVerticalSpeed = 3f;
         public const float ClimbDuration = 0.4f, WaterTimeoutSeconds = 60f, OutOfBoundsY = -20f;
+        public const float ClimbSpeed = 2.4f, ClimbReentryGrace = 0.25f;   // R70 ladders [tune]
         public const float EyeHeight = 1.62f, CapsuleHeight = 1.8f, CapsuleRadius = 0.35f, CapsuleCenterY = 0.9f;
         public const float StepOffset = 0.35f, SlopeLimit = 45f, SkinWidth = 0.08f;
         public const float PitchLimit = 85f, NearClip = 0.05f, FarClip = 400f;
@@ -112,6 +113,36 @@ namespace FishGame.Core
         public static bool IsInWater(float rootY, float surfaceY)
         {
             return rootY < surfaceY - WadeDepth;
+        }
+
+        // R70 ladder climb: W/S along the camera look (yaw and pitch; pitch positive = look up), A/D along the flat right vector.
+        // The input length is clamped to 1 (never normalised up), times ClimbSpeed. No gravity and no acceleration ramp: zero input gives
+        // exactly zero (the climber hangs). Pitch is clamped to +-PitchLimit. Any non-finite input gives zero.
+        // forward = (sin yaw cos pitch, sin pitch, cos yaw cos pitch); right = (cos yaw, 0, -sin yaw) (Unity: +y up, yaw clockwise from +z).
+        public static void ClimbWish(float yawDeg, float pitchDeg, float moveX, float moveY, out float x, out float y, out float z)
+        {
+            x = 0f;
+            y = 0f;
+            z = 0f;
+            if (!IsFinite(yawDeg) || !IsFinite(pitchDeg) || !IsFinite(moveX) || !IsFinite(moveY)) return;
+
+            float len2 = moveX * moveX + moveY * moveY;
+            if (len2 <= 0f) return;
+
+            float scale = len2 > 1f ? ClimbSpeed / MathF.Sqrt(len2) : ClimbSpeed;
+            float pitch = MathF.Min(MathF.Max(pitchDeg, -PitchLimit), PitchLimit) * (MathF.PI / 180f);
+            float yaw = yawDeg * (MathF.PI / 180f);
+            float sinYaw = MathF.Sin(yaw), cosYaw = MathF.Cos(yaw);
+            float sinPitch = MathF.Sin(pitch), cosPitch = MathF.Cos(pitch);
+
+            x = (sinYaw * cosPitch * moveY + cosYaw * moveX) * scale;
+            y = sinPitch * moveY * scale;
+            z = (cosYaw * cosPitch * moveY - sinYaw * moveX) * scale;
+        }
+
+        private static bool IsFinite(float v)
+        {
+            return !float.IsNaN(v) && !float.IsInfinity(v);
         }
     }
 }
