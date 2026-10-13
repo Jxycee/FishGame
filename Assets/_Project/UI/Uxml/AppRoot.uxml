@@ -45,6 +45,23 @@
         <ui:VisualElement name="ScreenSettings" class="screen hidden">
             <ui:VisualElement class="panel tall">
                 <ui:Label name="SettingsTitle" class="title small" />
+                <ui:VisualElement name="SettingsTabs" class="row">
+                    <ui:Button name="TabGeneral" class="tab-button active" />
+                    <ui:Button name="TabGraphics" class="tab-button" />
+                </ui:VisualElement>
+                <ui:ScrollView name="GraphicsScroll" class="grow hidden">
+                    <ui:Label name="SectionScreen" class="section" />
+                    <ui:SliderInt name="WindowMode" class="setting" low-value="0" high-value="2" />
+                    <ui:SliderInt name="Resolution" class="setting" low-value="0" high-value="0" />
+                    <ui:Toggle name="VSync" class="setting" />
+                    <ui:SliderInt name="FrameCap" class="setting" low-value="0" high-value="4" />
+                    <ui:Label name="SectionQuality" class="section" />
+                    <ui:SliderInt name="QualityPreset" class="setting" low-value="0" high-value="3" />
+                    <ui:SliderInt name="RenderScale" class="setting" low-value="0" high-value="10" />
+                    <ui:SliderInt name="ShadowQuality" class="setting" low-value="0" high-value="2" />
+                    <ui:SliderInt name="AntiAliasing" class="setting" low-value="0" high-value="3" />
+                    <ui:Label name="GraphicsHint" class="hint" />
+                </ui:ScrollView>
                 <ui:ScrollView name="SettingsScroll" class="grow">
                     <ui:Label name="SectionDisplay" class="section" />
                     <ui:SliderInt name="UiScale" class="setting" low-value="80" high-value="150" />
