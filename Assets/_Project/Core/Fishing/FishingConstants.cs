@@ -9,15 +9,9 @@ namespace FishGame.Core
         public const float ReadyHoldSeconds = 0.25f;         // Readying -> Ready
         public const float MinChargeNorm = 0.1f;             // below: thunk
         public const float FeedbackBeatSeconds = 1.5f;       // terminal / unsolicited-commit beat
-        public const float CalmLeadInSeconds = 0.8f;         // first Calm phase
         public const float CleanClaimClockSlackSeconds = 2.0f;  // |owner fight seconds - host hooked-to-result seconds| bound (clean-catch claim)
-        public const float ExhaustedStamina = 0.05f;
-        public const float SideRunAgainstChance = 0.75f;     // P(new side run is away from the current side); else a random side, so 87.5% away overall (spec 9.5 literal, B-Q4)
-        public const float CenterDeadzone = 0.1f;            // |lateral| below: random side
-        public const float PinnedLateral = 0.95f;
+        public const float PinnedLateral = 0.95f;            // parked (R72): only the angleWindow validator rule reads it
         public const float NearSnapHigh = 1.0f, NearSnapLow = 0.5f;   // over the full bar (R72)
-        public const float WeightFactorMin = 0.85f, WeightFactorMax = 1.25f;
-        public const float ReelRateFloor = 0.1f;             // max(0.1, 1 - penalty * P)
         // R72 Rust fight baseline (spec 9.5): structural constants, not tuning.
         public const float PullWavePeak = 2f;                // p = clamp(triangle peaking at 2, floor, 2); Rust: PingPong(t, 2)
         public const float RustWavePeriod = 4f;              // Rust's wave period; used when a profile's WavePeriod is not > 0

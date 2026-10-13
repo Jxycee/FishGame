@@ -162,7 +162,7 @@ namespace FishGame.Core
                 else if (now == FightPhase.Calm && phase == FightPhase.Burst) Cue(RodCue.Calm);
                 else if (now == FightPhase.Burst && phase == FightPhase.Calm)
                     Cue(Fight.State.Back ? RodCue.Dive : RodCue.SideRun);                 // a new run: Dive when it pulls back
-                else if (now == FightPhase.Burst && Fight.State.BurstDir != dir) Cue(RodCue.SideRun);   // the side flipped at the cone edge
+                else if (now == FightPhase.Burst && Fight.State.BurstDir != dir) Cue(RodCue.SideRun);   // the side flipped (cone edge, or a quirk flip: Darter, Thrasher)
                 return;
             }
             FightReport report = ReportOf(Fight);

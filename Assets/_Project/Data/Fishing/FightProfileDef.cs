@@ -3,15 +3,11 @@ using UnityEngine;
 
 namespace FishGame.Data
 {
-    // Content data only (not networked). One fish fight profile (spec 9.6 columns plus the five motion parameters). Owned by T13.
+    // Content data only (not networked). One fish fight profile (spec 9.6: the Rust tier plus the R72 quirks). Owned by T13.
     public sealed class FightProfileDef : ScriptableObject
     {
         [SerializeField] private string id;
         [SerializeField] private string displayName;
-        [SerializeField] private float pullStrength;
-        [SerializeField] private float lateralSpeed;
-        [SerializeField] private float runSpeed;
-        [SerializeField] private float staminaDrain;
         [SerializeField] private float calmMin;
         [SerializeField] private float calmMax;
         [SerializeField] private float burstMin;
@@ -31,10 +27,6 @@ namespace FishGame.Data
 
         public string Id => id;
         public string DisplayName => displayName;
-        public float PullStrength => pullStrength;
-        public float LateralSpeed => lateralSpeed;
-        public float RunSpeed => runSpeed;
-        public float StaminaDrain => staminaDrain;
         public float CalmMin => calmMin;
         public float CalmMax => calmMax;
         public float BurstMin => burstMin;
@@ -52,17 +44,13 @@ namespace FishGame.Data
         public float WavePeriod => wavePeriod;
 
         // Used by the content builder and by tests.
-        public void Configure(string id, string displayName, float pullStrength, float lateralSpeed, float runSpeed, float staminaDrain,
+        public void Configure(string id, string displayName,
             float calmMin, float calmMax, float burstMin, float burstMax, float flipRate, float diveChance, float burstRamp,
             float calmDrift, float calmDriftRamp, float flipMinGap, float lateralJitter,
             float strainMod, float moveMult, float reelInMult, float wavePeriod)
         {
             this.id = id;
             this.displayName = displayName;
-            this.pullStrength = pullStrength;
-            this.lateralSpeed = lateralSpeed;
-            this.runSpeed = runSpeed;
-            this.staminaDrain = staminaDrain;
             this.calmMin = calmMin;
             this.calmMax = calmMax;
             this.burstMin = burstMin;
@@ -84,10 +72,6 @@ namespace FishGame.Data
         {
             return new FishFightProfile
             {
-                PullStrength = pullStrength,
-                LateralSpeed = lateralSpeed,
-                RunSpeed = runSpeed,
-                StaminaDrain = staminaDrain,
                 CalmMin = calmMin,
                 CalmMax = calmMax,
                 BurstMin = burstMin,

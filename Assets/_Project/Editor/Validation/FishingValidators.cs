@@ -199,26 +199,12 @@ namespace FishGame.EditorTools
             Rule(e, L, t.MinBiteWait <= t.BiteWaitMin, "minBiteWait <= biteWaitMin");
             Range(e, L, "hookBeat", t.HookBeat, 0.15f, 0.4f);
             Range(e, L, "landDistance", t.LandDistance, 0.5f, 3f);
-            Range(e, L, "reelStrainBurst", t.ReelStrainBurst, 0.2f, 0.45f);
-            Range(e, L, "counterRelief", t.CounterRelief, 0.3f, 0.7f);
-            Range(e, L, "steerStrain", t.SteerStrain, 0f, 0.08f);
-            Range(e, L, "outOfWindowStrain", t.OutOfWindowStrain, 0.1f, 0.4f);
-            Range(e, L, "spoolStrain", t.SpoolStrain, 0.3f, 0.8f);
             Range(e, L, "spoolExtra", t.SpoolExtra, 6f, 20f);
             Range(e, L, "relaxRate", t.RelaxRate, 0.5f, 3f);
-            Range(e, L, "relaxWhileReeling", t.RelaxWhileReeling, 0.05f, 0.2f);
-            Range(e, L, "reelBurstPenalty", t.ReelBurstPenalty, 0.6f, 1.2f);
-            Range(e, L, "diveRunMult", t.DiveRunMult, 1.2f, 2f);
-            Range(e, L, "snapGrace", t.SnapGrace, 0.2f, 0.75f);
-            Range(e, L, "snapGraceAssist", t.SnapGraceAssist, 0.2f, 0.75f);
-            Rule(e, L, t.SnapGraceAssist >= t.SnapGrace, "snapGraceAssist >= snapGrace");
             Range(e, L, "strainScale", t.StrainScale, 0.3f, 1.5f);
             Range(e, L, "strainScaleAssist", t.StrainScaleAssist, 0.2f, 1f);
             Rule(e, L, t.StrainScaleAssist <= t.StrainScale, "strainScaleAssist <= strainScale");
-            Range(e, L, "pinEscapeTime", t.PinEscapeTime, 4f, 10f);
             Range(e, L, "slackEscapeTime", t.SlackEscapeTime, 8f, 20f);
-            Range(e, L, "fishStaminaRegen", t.FishStaminaRegen, 0.02f, 0.08f);
-            Range(e, L, "calmCenterPull", t.CalmCenterPull, 0.05f, 0.3f);
             Range(e, L, "lateralMaxDeg", t.LateralMaxDeg, 60f, 85f);
             Range(e, L, "hookedLeash", t.HookedLeash, 2f, 5f);
             Range(e, L, "junkDragSpeed", t.JunkDragSpeed, 2f, 5f);
@@ -293,10 +279,6 @@ namespace FishGame.EditorTools
         private static void CheckProfile(List<string> e, FightProfileDef p)
         {
             string l = "profile " + p.Id;
-            Range(e, l, "pullStrength", p.PullStrength, 0.1f, 1f);
-            Range(e, l, "lateralSpeed", p.LateralSpeed, 0.2f, 1.5f);
-            Range(e, l, "runSpeed", p.RunSpeed, 0.1f, 1.5f);
-            Range(e, l, "staminaDrain", p.StaminaDrain, 0.01f, 0.2f);
             Range(e, l, "calmMin", p.CalmMin, 0.2f, 5f);
             Range(e, l, "calmMax", p.CalmMax, p.CalmMin, 6f);
             Range(e, l, "burstMin", p.BurstMin, 0.3f, 6f);

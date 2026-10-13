@@ -18,24 +18,11 @@ namespace FishGame.Data
         [SerializeField] private float minBiteWait;
         [SerializeField] private float hookBeat;
         [SerializeField] private float landDistance;
-        [SerializeField] private float reelStrainBurst;
-        [SerializeField] private float counterRelief;
-        [SerializeField] private float steerStrain;
-        [SerializeField] private float outOfWindowStrain;
-        [SerializeField] private float spoolStrain;
         [SerializeField] private float spoolExtra;
         [SerializeField] private float relaxRate;
-        [SerializeField] private float relaxWhileReeling;
-        [SerializeField] private float reelBurstPenalty;
-        [SerializeField] private float diveRunMult;
-        [SerializeField] private float snapGrace;
-        [SerializeField] private float snapGraceAssist;
         [SerializeField] private float strainScale;
         [SerializeField] private float strainScaleAssist;
-        [SerializeField] private float pinEscapeTime;
         [SerializeField] private float slackEscapeTime;
-        [SerializeField] private float fishStaminaRegen;
-        [SerializeField] private float calmCenterPull;
         [SerializeField] private float lateralMaxDeg;
         [SerializeField] private float hookedLeash;
         [SerializeField] private float junkDragSpeed;
@@ -80,24 +67,11 @@ namespace FishGame.Data
         public float MinBiteWait => minBiteWait;
         public float HookBeat => hookBeat;
         public float LandDistance => landDistance;
-        public float ReelStrainBurst => reelStrainBurst;
-        public float CounterRelief => counterRelief;
-        public float SteerStrain => steerStrain;
-        public float OutOfWindowStrain => outOfWindowStrain;
-        public float SpoolStrain => spoolStrain;
         public float SpoolExtra => spoolExtra;
         public float RelaxRate => relaxRate;
-        public float RelaxWhileReeling => relaxWhileReeling;
-        public float ReelBurstPenalty => reelBurstPenalty;
-        public float DiveRunMult => diveRunMult;
-        public float SnapGrace => snapGrace;
-        public float SnapGraceAssist => snapGraceAssist;
         public float StrainScale => strainScale;
         public float StrainScaleAssist => strainScaleAssist;
-        public float PinEscapeTime => pinEscapeTime;
         public float SlackEscapeTime => slackEscapeTime;
-        public float FishStaminaRegen => fishStaminaRegen;
-        public float CalmCenterPull => calmCenterPull;
         public float LateralMaxDeg => lateralMaxDeg;
         public float HookedLeash => hookedLeash;
         public float JunkDragSpeed => junkDragSpeed;
@@ -144,24 +118,11 @@ namespace FishGame.Data
             minBiteWait = t.MinBiteWait;
             hookBeat = t.HookBeat;
             landDistance = t.LandDistance;
-            reelStrainBurst = t.ReelStrainBurst;
-            counterRelief = t.CounterRelief;
-            steerStrain = t.SteerStrain;
-            outOfWindowStrain = t.OutOfWindowStrain;
-            spoolStrain = t.SpoolStrain;
             spoolExtra = t.SpoolExtra;
             relaxRate = t.RelaxRate;
-            relaxWhileReeling = t.RelaxWhileReeling;
-            reelBurstPenalty = t.ReelBurstPenalty;
-            diveRunMult = t.DiveRunMult;
-            snapGrace = t.SnapGrace;
-            snapGraceAssist = t.SnapGraceAssist;
             strainScale = t.StrainScale;
             strainScaleAssist = t.StrainScaleAssist;
-            pinEscapeTime = t.PinEscapeTime;
             slackEscapeTime = t.SlackEscapeTime;
-            fishStaminaRegen = t.FishStaminaRegen;
-            calmCenterPull = t.CalmCenterPull;
             lateralMaxDeg = t.LateralMaxDeg;
             hookedLeash = t.HookedLeash;
             junkDragSpeed = t.JunkDragSpeed;
@@ -211,24 +172,11 @@ namespace FishGame.Data
                 MinBiteWait = minBiteWait,
                 HookBeat = hookBeat,
                 LandDistance = landDistance,
-                ReelStrainBurst = reelStrainBurst,
-                CounterRelief = counterRelief,
-                SteerStrain = steerStrain,
-                OutOfWindowStrain = outOfWindowStrain,
-                SpoolStrain = spoolStrain,
                 SpoolExtra = spoolExtra,
                 RelaxRate = relaxRate,
-                RelaxWhileReeling = relaxWhileReeling,
-                ReelBurstPenalty = reelBurstPenalty,
-                DiveRunMult = diveRunMult,
-                SnapGrace = snapGrace,
-                SnapGraceAssist = snapGraceAssist,
                 StrainScale = strainScale,
                 StrainScaleAssist = strainScaleAssist,
-                PinEscapeTime = pinEscapeTime,
                 SlackEscapeTime = slackEscapeTime,
-                FishStaminaRegen = fishStaminaRegen,
-                CalmCenterPull = calmCenterPull,
                 LateralMaxDeg = lateralMaxDeg,
                 HookedLeash = hookedLeash,
                 JunkDragSpeed = junkDragSpeed,

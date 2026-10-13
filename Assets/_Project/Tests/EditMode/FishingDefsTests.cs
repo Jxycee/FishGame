@@ -33,7 +33,7 @@ namespace FishGame.Tests.EditMode
 
         // Catches: a ToCore or Configure that swaps two fields (every value differs), drops a field, or copies the wrong getter;
         // a species ToCore that ignores the supplied profile index or leaks presentation fields; a tuning Def that misses a
-        // FishingTuning member (reflection walks all 60) or maps the kg field wrongly.
+        // FishingTuning member (reflection walks all 47) or maps the kg field wrongly.
         [TestCase("rod")]
         [TestCase("bait")]
         [TestCase("fight_profile")]
@@ -108,14 +108,10 @@ namespace FishGame.Tests.EditMode
         private void CheckFightProfile()
         {
             FightProfileDef d = Make<FightProfileDef>();
-            d.Configure("prof_x", "Prof X", 0.11f, 0.22f, 0.33f, 0.44f, 0.55f, 0.66f, 0.77f, 0.88f, 0.99f, 0.12f, 0.23f, 0.34f, 0.45f, 0.56f, 0.67f,
+            d.Configure("prof_x", "Prof X", 0.55f, 0.66f, 0.77f, 0.88f, 0.99f, 0.12f, 0.23f, 0.34f, 0.45f, 0.56f, 0.67f,
                 0.78f, 0.89f, 0.91f, 0.13f);
             Assert.AreEqual("prof_x", d.Id);
             Assert.AreEqual("Prof X", d.DisplayName);
-            Assert.AreEqual(0.11f, d.PullStrength);
-            Assert.AreEqual(0.22f, d.LateralSpeed);
-            Assert.AreEqual(0.33f, d.RunSpeed);
-            Assert.AreEqual(0.44f, d.StaminaDrain);
             Assert.AreEqual(0.55f, d.CalmMin);
             Assert.AreEqual(0.66f, d.CalmMax);
             Assert.AreEqual(0.77f, d.BurstMin);
@@ -132,10 +128,6 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(0.91f, d.ReelInMult);
             Assert.AreEqual(0.13f, d.WavePeriod);
             FishFightProfile p = d.ToCore();
-            Assert.AreEqual(0.11f, p.PullStrength);
-            Assert.AreEqual(0.22f, p.LateralSpeed);
-            Assert.AreEqual(0.33f, p.RunSpeed);
-            Assert.AreEqual(0.44f, p.StaminaDrain);
             Assert.AreEqual(0.55f, p.CalmMin);
             Assert.AreEqual(0.66f, p.CalmMax);
             Assert.AreEqual(0.77f, p.BurstMin);
@@ -156,7 +148,7 @@ namespace FishGame.Tests.EditMode
         private void CheckSpecies()
         {
             FightProfileDef fight = Make<FightProfileDef>();
-            fight.Configure("prof_x", "Prof X", 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 4f);
+            fight.Configure("prof_x", "Prof X", 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 4f);
             var colorA = new Color(0.1f, 0.2f, 0.3f, 1f);
             var colorB = new Color(0.4f, 0.5f, 0.6f, 1f);
             var mesh = new Mesh();
@@ -241,14 +233,14 @@ namespace FishGame.Tests.EditMode
         private void CheckTuning()
         {
             FieldInfo[] coreFields = typeof(FishingTuning).GetFields(BindingFlags.Public | BindingFlags.Instance);
-            Assert.AreEqual(60, coreFields.Length, "FishingTuning has 60 members (43 + the 17 R72 fight members)");
+            Assert.AreEqual(47, coreFields.Length, "FishingTuning has 47 members (43 + the 17 R72 fight members - the 13 R72 retired ones)");
 
             int serialized = 0;
             foreach (FieldInfo f in typeof(FishingTuningDef).GetFields(BindingFlags.NonPublic | BindingFlags.Instance))
             {
                 if (f.GetCustomAttribute<SerializeField>() != null) serialized++;
             }
-            Assert.AreEqual(60, serialized, "FishingTuningDef has 60 serialized fields (creelMaxKg replaces CreelMaxWeightG)");
+            Assert.AreEqual(47, serialized, "FishingTuningDef has 47 serialized fields (creelMaxKg replaces CreelMaxWeightG)");
 
             FishingTuning t = DistinctTuning(12345);
             FishingTuningDef d = Make<FishingTuningDef>();
@@ -291,9 +283,7 @@ namespace FishGame.Tests.EditMode
         private static readonly string[] TuningNames =
         {
             "castChargeTime", "chargePingPong", "castMinDist", "minLandDepth", "biteWaitMin", "biteWaitMax", "minBiteWait", "hookBeat",
-            "landDistance", "reelStrainBurst", "counterRelief", "steerStrain", "outOfWindowStrain", "spoolStrain", "spoolExtra",
-            "relaxRate", "relaxWhileReeling", "reelBurstPenalty", "diveRunMult", "snapGrace", "snapGraceAssist", "strainScale",
-            "strainScaleAssist", "pinEscapeTime", "slackEscapeTime", "fishStaminaRegen", "calmCenterPull", "lateralMaxDeg", "hookedLeash",
+            "landDistance", "spoolExtra", "relaxRate", "strainScale", "strainScaleAssist", "slackEscapeTime", "lateralMaxDeg", "hookedLeash",
             "junkDragSpeed", "resultTimeout", "commitTimeout", "hookTolerance", "maxFightTime", "rodStateHz", "cancelRefundsBait",
             "creelMaxEntries", "creelMaxKg", "cleanCatchMaxTension", "pityAfterFailures", "pityStrainMult", "pityGraceMult",
             "pityHookWindowBonus",
@@ -307,7 +297,7 @@ namespace FishGame.Tests.EditMode
         // Catches: a renamed or removed [SerializeField] field, a stray extra serialized field, slotTints / creelMaxWeightG reappearing.
         [TestCase("RodDef", "id,displayName,tier,castMaxDist,reelSpeed,lineStrength,angleWindow,steerRate,relaxMult,shopCost,firstCamp")]
         [TestCase("BaitDef", "id,displayName,rating,stackMax,maxRating,biteSpeedMod,junkMult,maxNibbles,unlimited")]
-        [TestCase("FightProfileDef", "id,displayName,pullStrength,lateralSpeed,runSpeed,staminaDrain,calmMin,calmMax,burstMin,burstMax,flipRate,diveChance,burstRamp,calmDrift,calmDriftRamp,flipMinGap,lateralJitter,strainMod,moveMult,reelInMult,wavePeriod")]
+        [TestCase("FightProfileDef", "id,displayName,calmMin,calmMax,burstMin,burstMax,flipRate,diveChance,burstRamp,calmDrift,calmDriftRamp,flipMinGap,lateralJitter,strainMod,moveMult,reelInMult,wavePeriod")]
         [TestCase("FishSpeciesDef", "id,displayName,rarity,baseValue,weightMinG,weightMaxG,weightSkew,lengthShapeK,fight,bodyShape,colorA,colorB,biteWaitMod,hookWindow,isSpecial,minBaitRating,minDepth,model")]
         [TestCase("JunkDef", "id,displayName,valueCoins,bodyShape,color")]
         [TestCase("FishingTuningDef", "TUNING")]
@@ -333,7 +323,7 @@ namespace FishGame.Tests.EditMode
                 default: Assert.Fail("unknown Def " + typeName); return;
             }
             string[] expected = csv == "TUNING" ? TuningNames : csv.Split(',');
-            if (csv == "TUNING") Assert.AreEqual(60, expected.Length, "60 serialized members (creelMaxKg replaces CreelMaxWeightG)");
+            if (csv == "TUNING") Assert.AreEqual(47, expected.Length, "47 serialized members (creelMaxKg replaces CreelMaxWeightG)");
 
             var so = new UnityEditor.SerializedObject(o);
             foreach (string name in expected)

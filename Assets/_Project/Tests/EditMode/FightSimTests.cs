@@ -855,6 +855,33 @@ namespace FishGame.Tests.EditMode
             Assert.That(t.RunSpeedMult, Is.EqualTo(1f));
         }
 
+        // Catches (review finding 3): the quirk draws made in another order or count. A Thrasher's first tick is: wave phase (constructor), then side,
+        // back, duration, jitter multiplier, and the flip check of the first run tick. Replayed by hand against a Pcg32 over many seeds.
+        [Test]
+        public void FightSim_Quirk_ThrasherFirstTickDraws_ReplayByHand()
+        {
+            FishFightProfile f = M(FishingTestData.ProfileThrasher);
+            int flipped = 0;
+            for (uint seed = 1; seed <= 1000; seed++)
+            {
+                var r = new Pcg32(seed);
+                r.NextFloat();   // the wave phase
+                float u1 = r.NextFloat(), u2 = r.NextFloat(), u3 = r.NextFloat(), u4 = r.NextFloat(), u5 = r.NextFloat();
+                sbyte dir = u1 < 0.5f ? (sbyte)-1 : (sbyte)1;
+                bool flip = u5 < f.FlipRate * Dt;
+                if (flip) { dir = (sbyte)-dir; flipped++; }
+
+                FightSim s = Make(f, line: 10f, seed: seed);
+                s.Tick(In(0f, false));
+                Assert.That(s.DrawCount, Is.EqualTo(6), "wave phase, side, back, duration, jitter, flip check; seed " + seed);
+                Assert.That(s.State.BurstDir, Is.EqualTo(dir), "u1 is the side, u5 the flip check; seed " + seed);
+                Assert.That(s.State.Back, Is.EqualTo(u2 < f.DiveChance), "u2 is the back roll; seed " + seed);
+                Assert.That(s.State.PhaseTimer + Dt, Is.EqualTo(Pcg32.MapUnitToRange(u3, f.BurstMin, f.BurstMax)).Within(1e-5f), "u3 is the duration; seed " + seed);
+                Assert.That(s.RunSpeedMult, Is.EqualTo(Pcg32.MapUnitToRange(u4, 1f - f.LateralJitter, 1f + f.LateralJitter)).Within(1e-6f), "u4 is the jitter; seed " + seed);
+            }
+            Assert.That(flipped, Is.GreaterThan(0), "at 0.8% a flip on the first tick shows up somewhere in 1000 seeds");
+        }
+
         // Catches: a WavePeriod that is ignored (Rust 4 s used everywhere), a wave whose mean changes with the period, and a constructor that
         // draws a phase outside [0, period).
         [Test]

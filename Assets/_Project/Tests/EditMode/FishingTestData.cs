@@ -18,11 +18,8 @@ namespace FishGame.Tests.EditMode
         {
             CastChargeTime = 1f, ChargePingPong = true, CastMinDist = 2.5f, MinLandDepth = 0.8f,
             BiteWaitMin = 4f, BiteWaitMax = 18f, MinBiteWait = 1f, HookBeat = 0.25f, LandDistance = 1f,
-            ReelStrainBurst = 0.30f, CounterRelief = 0.5f, SteerStrain = 0.03f, OutOfWindowStrain = 0.20f,
-            SpoolStrain = 0.50f, SpoolExtra = 12f, RelaxRate = 1.5f, RelaxWhileReeling = 0.10f,
-            ReelBurstPenalty = 1.0f, DiveRunMult = 1.5f, SnapGrace = 0.25f, SnapGraceAssist = 0.75f,
-            StrainScale = 0.75f, StrainScaleAssist = 0.45f, PinEscapeTime = 5f, SlackEscapeTime = 12f,
-            FishStaminaRegen = 0.04f, CalmCenterPull = 0.15f, LateralMaxDeg = 60f, HookedLeash = 3f,
+            SpoolExtra = 12f, RelaxRate = 1.5f, StrainScale = 0.75f, StrainScaleAssist = 0.45f, SlackEscapeTime = 12f,
+            LateralMaxDeg = 60f, HookedLeash = 3f,
             JunkDragSpeed = 3f, ResultTimeout = 3f, CommitTimeout = 3f, HookTolerance = 0.75f,
             MaxFightTime = 240f, RodStateHz = 15, CancelRefundsBait = true,
             CreelMaxEntries = 12, CreelMaxWeightG = 15000, CleanCatchMaxTension = 0.8f,
@@ -60,24 +57,11 @@ namespace FishGame.Tests.EditMode
             Bait(3, 3, 9, 2, 0.90f, 1.0f),         // bait_worm
         };
 
-        static FishFightProfile Profile(float pull, float lat, float run, float drain, float calmMin, float calmMax,
-                                        float burstMin, float burstMax, float flip, float dive) =>
-            new FishFightProfile { PullStrength = pull, LateralSpeed = lat, RunSpeed = run, StaminaDrain = drain,
-                                   CalmMin = calmMin, CalmMax = calmMax, BurstMin = burstMin, BurstMax = burstMax,
-                                   FlipRate = flip, DiveChance = dive, FlipMinGap = 0.5f };
-
-        // Spec 9.6 columns; every motion field 0 and FlipMinGap 0.5 (the base spec 9.5 model; FightSimTests).
+        // Rust-faithful, quirk-free profiles in ordinal id order (bulldog, darter, runner, steady, thrasher); only the tier differs (FightSimTests).
         public static FishFightProfile[] BaseProfiles()
         {
-            FishFightProfile[] p =
-            {
-                Profile(0.60f, 0.60f, 0.50f, 0.06f, 1.0f, 3.0f, 2.0f, 4.0f, 0.0f, 0.35f),   // bulldog
-                Profile(0.45f, 0.70f, 0.40f, 0.07f, 1.0f, 2.5f, 1.5f, 3.0f, 0.2f, 0.00f),   // darter
-                Profile(0.85f, 0.80f, 0.80f, 0.05f, 1.0f, 2.0f, 2.5f, 4.0f, 0.1f, 0.25f),   // runner
-                Profile(0.30f, 0.60f, 0.30f, 0.08f, 1.0f, 2.5f, 1.5f, 2.5f, 0.0f, 0.00f),   // steady
-                Profile(0.70f, 1.00f, 0.60f, 0.09f, 1.0f, 2.5f, 1.5f, 3.0f, 0.5f, 0.00f),   // thrasher
-            };
-            // R72 Rust tiers (spec 9.6): small 0.8 / 0.8 / 1.2, medium 1 / 1 / 1, large 1.25 / 1.25 / 0.9. Nothing reads them before F2.
+            var p = new FishFightProfile[5];
+            // R72 Rust tiers (spec 9.6): small 0.8 / 0.8 / 1.2, medium 1 / 1 / 1, large 1.25 / 1.25 / 0.9.
             Tier(ref p[ProfileSteady], 0.8f, 0.8f, 1.2f);
             Tier(ref p[ProfileDarter], 1f, 1f, 1f);
             Tier(ref p[ProfileThrasher], 1f, 1f, 1f);

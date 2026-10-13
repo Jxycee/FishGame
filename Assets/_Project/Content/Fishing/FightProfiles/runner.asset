@@ -14,10 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FightProfileDef
   id: runner
   displayName: Runner
-  pullStrength: 0.85
-  lateralSpeed: 0.8
-  runSpeed: 0.8
-  staminaDrain: 0.035
   calmMin: 2
   calmMax: 3.5
   burstMin: 5

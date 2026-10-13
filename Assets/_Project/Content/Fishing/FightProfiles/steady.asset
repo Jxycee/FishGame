@@ -14,10 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FightProfileDef
   id: steady
   displayName: Steady
-  pullStrength: 0.3
-  lateralSpeed: 0.6
-  runSpeed: 0.3
-  staminaDrain: 0.08
   calmMin: 2
   calmMax: 4
   burstMin: 3

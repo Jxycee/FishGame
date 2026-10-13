@@ -1286,5 +1286,23 @@ namespace FishGame.Tests.EditMode
             Assert.That(CueCount(rest, RodCue.SideRun), Is.EqualTo(0));
             Assert.That(CueCount(rest, RodCue.Dive), Is.EqualTo(0));
         }
+
+        // Catches (review finding 4): the spent-fish guard in TickFight. A fish with tire 25 starts runs of zero length (the state reads Burst for one
+        // tick); without the guard each of them raises SideRun or Dive, and the rest after it raises Calm.
+        [Test]
+        public void RodStateMachine_Fight_SpentFishZeroLengthRuns_RaiseNoRunCues()
+        {
+            RodStateMachine m = New();
+            ToHooked(m);
+            var s = new FightState { LineLength = 10f, Tire = 25f, Phase = FightPhase.Calm, PhaseTimer = 0f };
+            m.Fight.ForceState(in s);
+            Assert.That(m.Fight.Exhausted, Is.True);
+            for (int i = 0; i < 6; i++) m.TickFight(In(0f, false), Fr());
+            List<RodEffect> e = Drain(m);
+            Assert.That(CueCount(e, RodCue.SideRun), Is.EqualTo(0), "no SideRun");
+            Assert.That(CueCount(e, RodCue.Dive), Is.EqualTo(0), "no Dive");
+            Assert.That(CueCount(e, RodCue.Calm), Is.EqualTo(0), "no Calm");
+            Assert.That(CueCount(e, RodCue.Exhausted), Is.EqualTo(0), "the Exhausted cue is the rising edge only; the fish was already spent");
+        }
     }
 }

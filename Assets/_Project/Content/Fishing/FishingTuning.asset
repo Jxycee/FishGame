@@ -21,24 +21,11 @@ MonoBehaviour:
   minBiteWait: 1
   hookBeat: 0.25
   landDistance: 1
-  reelStrainBurst: 0.3
-  counterRelief: 0.5
-  steerStrain: 0.03
-  outOfWindowStrain: 0.2
-  spoolStrain: 0.5
   spoolExtra: 12
   relaxRate: 1.5
-  relaxWhileReeling: 0.2
-  reelBurstPenalty: 1
-  diveRunMult: 1.5
-  snapGrace: 0.25
-  snapGraceAssist: 0.75
   strainScale: 0.75
   strainScaleAssist: 0.45
-  pinEscapeTime: 5
   slackEscapeTime: 12
-  fishStaminaRegen: 0.04
-  calmCenterPull: 0.15
   lateralMaxDeg: 60
   hookedLeash: 3
   junkDragSpeed: 3
