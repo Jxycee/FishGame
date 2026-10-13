@@ -4656,7 +4656,7 @@
    "name": "Harbour_Core_Road",
    "file": "Art/Export/Harbour/Harbour_Core_Road.fbx",
    "group": "core",
-   "triangles": 8824,
+   "triangles": 8270,
    "vertices": 6326,
    "bounds_min": [
     -170.1186,
@@ -4788,7 +4788,7 @@
    "name": "Harbour_Core_Backdrop",
    "file": "Art/Export/Harbour/Harbour_Core_Backdrop.fbx",
    "group": "core",
-   "triangles": 10002,
+   "triangles": 9559,
    "vertices": 5573,
    "bounds_min": [
     -89.45,
@@ -4864,7 +4864,7 @@
    "name": "Harbour_Core_Buildings",
    "file": "Art/Export/Harbour/Harbour_Core_Buildings.fbx",
    "group": "core",
-   "triangles": 16024,
+   "triangles": 15946,
    "vertices": 17802,
    "bounds_min": [
     -39.675,
@@ -5032,7 +5032,7 @@
    "name": "Harbour_Core_Yard_A",
    "file": "Art/Export/Harbour/Harbour_Core_Yard_A.fbx",
    "group": "core",
-   "triangles": 9636,
+   "triangles": 9526,
    "vertices": 8719,
    "bounds_min": [
     -27.65,
@@ -5629,7 +5629,7 @@
    "name": "Harbour_Core_Yard_B",
    "file": "Art/Export/Harbour/Harbour_Core_Yard_B.fbx",
    "group": "core",
-   "triangles": 12648,
+   "triangles": 12340,
    "vertices": 7269,
    "bounds_min": [
     -42.2191,
@@ -5959,7 +5959,7 @@
    "name": "Harbour_Core_CrewBoat",
    "file": "Art/Export/Harbour/Harbour_Core_CrewBoat.fbx",
    "group": "core",
-   "triangles": 18864,
+   "triangles": 18502,
    "vertices": 15190,
    "bounds_min": [
     -2.8801,
@@ -6087,7 +6087,7 @@
      "local": [
       0.0,
       1.55,
-      6.4
+      6.95
      ],
      "facing_local_deg": 0.0
     },
@@ -6668,11 +6668,11 @@
    "name": "Harbour_Detail_Lights",
    "file": "Art/Export/Harbour/Harbour_Detail_Lights.fbx",
    "group": "detail",
-   "triangles": 3288,
-   "vertices": 2380,
+   "triangles": 2784,
+   "vertices": 2240,
    "bounds_min": [
     -28.3548,
-    2.5719,
+    2.9313,
     -63.5087
    ],
    "bounds_max": [
@@ -6692,13 +6692,13 @@
    "local_space": false,
    "items": [],
    "note": "String lights: wires + bulbs in the Accent slot (make Accent glow at dusk/night in Unity, or add a few point lights at light_points).",
-   "bulbs": 56
+   "bulbs": 52
   },
   {
    "name": "Harbour_Detail_Clutter",
    "file": "Art/Export/Harbour/Harbour_Detail_Clutter.fbx",
    "group": "detail",
-   "triangles": 8624,
+   "triangles": 8146,
    "vertices": 5370,
    "bounds_min": [
     -37.8,
@@ -6708,7 +6708,7 @@
    "bounds_max": [
     36.3167,
     3.7306,
-    -16.9918
+    -16.9927
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -6749,7 +6749,7 @@
    "name": "Harbour_Detail_Plants_A",
    "file": "Art/Export/Harbour/Harbour_Detail_Plants_A.fbx",
    "group": "detail",
-   "triangles": 12026,
+   "triangles": 9452,
    "vertices": 14041,
    "bounds_min": [
     -59.5804,
@@ -6796,7 +6796,7 @@
    "name": "Harbour_Detail_Plants_B",
    "file": "Art/Export/Harbour/Harbour_Detail_Plants_B.fbx",
    "group": "detail",
-   "triangles": 11142,
+   "triangles": 8682,
    "vertices": 12531,
    "bounds_min": [
     -0.4888,
@@ -6835,7 +6835,7 @@
    "name": "Harbour_Detail_Shore",
    "file": "Art/Export/Harbour/Harbour_Detail_Shore.fbx",
    "group": "detail",
-   "triangles": 5282,
+   "triangles": 5037,
    "vertices": 3618,
    "bounds_min": [
     -56.4233,
@@ -7092,7 +7092,7 @@
    "name": "Harbour_Detail_Reeds",
    "file": "Art/Export/Harbour/Harbour_Detail_Reeds.fbx",
    "group": "detail",
-   "triangles": 3608,
+   "triangles": 2626,
    "vertices": 4740,
    "bounds_min": [
     -162.2071,
@@ -7122,7 +7122,7 @@
    "name": "Harbour_Detail_Anim_Gull",
    "file": "Art/Export/Harbour/Harbour_Detail_Anim_Gull.fbx",
    "group": "detail",
-   "triangles": 596,
+   "triangles": 578,
    "vertices": 348,
    "bounds_min": [
     -0.1535,
@@ -7253,7 +7253,7 @@
    "name": "Harbour_Detail_Anim_Buoy",
    "file": "Art/Export/Harbour/Harbour_Detail_Anim_Buoy.fbx",
    "group": "detail",
-   "triangles": 184,
+   "triangles": 155,
    "vertices": 120,
    "bounds_min": [
     -0.19,
@@ -7381,7 +7381,7 @@
    "name": "Harbour_Detail_Anim_WindSock",
    "file": "Art/Export/Harbour/Harbour_Detail_Anim_WindSock.fbx",
    "group": "detail",
-   "triangles": 384,
+   "triangles": 378,
    "vertices": 255,
    "bounds_min": [
     -0.03,
@@ -7696,7 +7696,7 @@
    "name": "Harbour_Detail_Anim_WeatherVane",
    "file": "Art/Export/Harbour/Harbour_Detail_Anim_WeatherVane.fbx",
    "group": "detail",
-   "triangles": 300,
+   "triangles": 294,
    "vertices": 171,
    "bounds_min": [
     -0.25,
@@ -7747,10 +7747,10 @@
   },
   "triangles": {
    "phase1": 82812,
-   "pass2_core": 151561,
-   "pass2_detail": 50466,
+   "pass2_core": 149706,
+   "pass2_detail": 43164,
    "pass2_col_not_drawn": 1674,
-   "pass2_extra_from_instances": 7092
+   "pass2_extra_from_instances": 6861
   },
   "notes": [
    "Placement: every pass-2 FBX object is at the origin with an identity transform. World models: place at the Unity origin. Local models (local_space true: the tug, its collision mesh, the ice chest, the Anim_* pieces): instantiate once per placement at position with yaw_deg about +y. Ice chest placements are in the CrewBoat local frame (parent them to the placed tug).",

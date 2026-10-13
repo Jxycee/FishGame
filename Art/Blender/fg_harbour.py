@@ -1495,6 +1495,21 @@ class G2(Group):
         # so every pass-2 face is front-facing in Unity whatever order the part builder emitted it in.
         V, N, F, UV = geo
         F2, UV2 = [], []
+        # drop repeated corners (a blade or lathe tip that closes to a point) and faces left with fewer than 3 distinct corners, so the
+        # FBX carries no zero-area triangles (Unity's import would drop them and the manifest count would not match)
+        Fc, UVc, kept = [], [], []
+        for fi, (f, uv) in enumerate(zip(F, UV)):
+            keep, kuv, seen = [], [], []
+            for k, t in zip(f, uv):
+                p = Vector(V[k])
+                if any((p - q).length < 1e-7 for q in seen):
+                    continue
+                seen.append(p); keep.append(k); kuv.append(t)
+            if len(keep) >= 3:
+                Fc.append(keep); UVc.append(kuv); kept.append(fi)
+        F, UV = Fc, UVc
+        if fsl:
+            fsl = [fsl[i] for i in kept]
         for f, uv in zip(F, UV):
             a, b, c = Vector(V[f[0]]), Vector(V[f[1]]), Vector(V[f[2]])
             gn = (b - a).cross(c - a)
@@ -2735,7 +2750,7 @@ TUG_WH_TOP = 5.85
 TUG_WORLD = dict(position=(36.8, 0.0, -22.0), yaw=0.0)
 TUG_GANGWAY_Z = -7.0                   # local z of the port bulwark gap (gangway from the breakwater)
 TUG_ICE_CHESTS = [(1.2, -6.3), (1.8, -5.05), (-0.95, -4.55), (0.65, -4.55)]
-TUG_FISH_SPOTS = [('Bow', (0.0, TUG_FORE, 6.4), 0.0), ('PortRail', (-1.95, TUG_DECK, 0.6), 270.0), ('StarboardRail', (1.95, TUG_DECK, 0.6), 90.0),
+TUG_FISH_SPOTS = [('Bow', (0.0, TUG_FORE, 6.95), 0.0), ('PortRail', (-1.95, TUG_DECK, 0.6), 270.0), ('StarboardRail', (1.95, TUG_DECK, 0.6), 90.0),
                   ('Stern', (0.0, TUG_DECK, -6.7), 180.0), ('UpperDeckPort', (-1.2, TUG_HOUSE_TOP, -1.6), 270.0),
                   ('UpperDeckStarboard', (1.2, TUG_HOUSE_TOP, -1.6), 90.0)]
 
@@ -3120,7 +3135,7 @@ def build_tug_deckgear(g, r):
                   sides=12, cap0=True)
     g.add(xform(tb((1.3, 0.14, 0.14), 0.04), (0, TUG_DECK + 0.5, bz)), S['WoodDark'], L['none'], 0.5)
     # coiled lines
-    for (cx, cz, k) in ((-0.9, -6.75, 0), (1.0, -2.95, 1), (0.3, 6.6, 2)):
+    for (cx, cz, k) in ((-0.9, -6.75, 0), (1.0, -2.95, 1), (-0.75, 5.9, 2)):
         y = tug_deck_y(cz)
         pts = []
         for i in range(int(2.6 * 14) + 1):
@@ -3139,11 +3154,11 @@ def build_tug_deckgear(g, r):
             fsl.append(((S['Sand'] if int(((ang + math.pi) / (math.pi / 4))) % 2 == 0 else S['Accent']), L['Cloth']))
         g.add(xform((V, N, F, UV), lc), 0, 0, 0.55, fsl)
     # foredeck: two bollards (bitts) and an anchor windlass, the anchor hanging at the bow
-    for sx in (-1.0, 1.0):
-        add_lathe(g, (sx, TUG_FORE, 5.0), [(0, 0.16), (0.3, 0.13), (0.34, 0.17), (0.4, 0.17), (0.42, 0.0)], S['WoodDark'], L['none'], 0.5, sides=12, cap0=True)
+    for sx in (-0.55, 0.55):
+        add_lathe(g, (sx, TUG_FORE, 6.45), [(0, 0.16), (0.3, 0.13), (0.34, 0.17), (0.4, 0.17), (0.42, 0.0)], S['WoodDark'], L['none'], 0.5, sides=12, cap0=True)
     geo, fs = lathe([(-0.55, 0.0), (-0.53, 0.18), (-0.35, 0.2), (0.35, 0.2), (0.53, 0.18), (0.55, 0.0)], 12)
-    g.add(xform(geo, (0, TUG_FORE + 0.32, 6.2), rz(90)), S['Rock'], L['none'], 0.5)
-    g.add(xform(tb((0.9, 0.3, 0.5), 0.06), (0, TUG_FORE + 0.15, 6.2)), S['WoodDark'], L['none'], 0.5)
+    g.add(xform(geo, (0, TUG_FORE + 0.32, 5.3), rz(90)), S['Rock'], L['none'], 0.5)
+    g.add(xform(tb((0.9, 0.3, 0.5), 0.06), (0, TUG_FORE + 0.15, 5.3)), S['WoodDark'], L['none'], 0.5)
     # the crew's gear on the aft deck (port side, out of the stern fishing spot): duffels, a cooler, jerry cans, a tarp-covered pile
     gear = [('duffel', (-1.6, -2.9, 20.0, S['Reed'])), ('duffel', (-1.45, -3.35, -12.0, S['Roof'])), ('duffel', (1.75, -2.9, 80.0, S['Dock'])),
             ('cooler', (1.6, -3.45, 5.0, S['Sand'])), ('jerry', (-2.0, -5.2, 0.0, S['Roof'])), ('jerry', (-1.95, -5.62, 4.0, S['Roof'])),
@@ -3167,7 +3182,7 @@ def build_tug_deckgear(g, r):
             # starboard walkway is kept clear: the tarp pile sits on the deckhouse roof edge? no: lashed on the foredeck, starboard
             pass
     # a tarp-covered pile lashed on the foredeck (starboard), with two ropes over it
-    tc = Vector((1.15, TUG_FORE, 4.6))
+    tc = Vector((1.1, TUG_FORE, 4.75))
     g.add(xform(blob(0.65, r, (1.0, 0.55, 1.25), subdiv=2, rough=0.18, flat=-0.2), tc + Vector((0, 0.3, 0))), S['Reed'], L['Cloth'], 0.55)
     for dz in (-0.35, 0.35):
         g.add(tube([tc + Vector((-0.6, 0.05, dz)), tc + Vector((-0.3, 0.55, dz)), tc + Vector((0.3, 0.55, dz)), tc + Vector((0.6, 0.05, dz))], 0.02, 4),
@@ -3187,10 +3202,9 @@ def build_tug_deckgear(g, r):
             g.add(xform(tb((0.01, 0.42, 0.07), 0.004), (sx * (w + 0.018), tug_sheer(z) - 0.55, z)), S['WoodDark'], L['none'], 0.6, tint=0.8)
     # the name on the bow (both sides) and across the stern
     for sx in (-1, 1):
-        z = 4.3
+        z = 2.6
         w = tug_w(z)
-        ang = math.degrees(math.atan2(tug_w(z + 0.3) - tug_w(z - 0.3), 0.6))
-        sign_text(g, 'LUCKY BREAK', 0.3, (sx * (w + 0.03), 0.62, z), ry(sx * 90.0) @ ry(-sx * ang), S['Sand'])
+        sign_text(g, 'LUCKY BREAK', 0.32, (sx * (w + 0.035), 1.2, z), ry(sx * 90.0), S['Sand'])
     sign_text(g, 'LUCKY BREAK', 0.3, (0.0, 0.95, TUG_L0 - 0.04), ry(180), S['Sand'])
 
 def build_crew_boat():
@@ -3339,10 +3353,10 @@ def build_crew_boat_col():
     # deck furniture: smokestack, H-bitt, foredeck bitts and windlass, tarp pile, gear
     cbox(g, (-0.75, TUG_HOUSE_TOP + 1.15, -1.45), (0.95, 2.3, 0.95))
     cbox(g, (0.0, TUG_DECK + 0.37, -3.7), (1.45, 0.74, 0.42))
-    for sx in (-1.0, 1.0):
-        cbox(g, (sx, TUG_FORE + 0.21, 5.0), (0.36, 0.42, 0.36))
-    cbox(g, (0.0, TUG_FORE + 0.25, 6.2), (1.1, 0.5, 0.5))
-    cbox(g, (1.15, TUG_FORE + 0.3, 4.6), (1.3, 0.6, 1.6))
+    for sx in (-0.55, 0.55):
+        cbox(g, (sx, TUG_FORE + 0.21, 6.45), (0.36, 0.42, 0.36))
+    cbox(g, (0.0, TUG_FORE + 0.25, 5.3), (1.1, 0.5, 0.5))
+    cbox(g, (1.1, TUG_FORE + 0.3, 4.75), (1.3, 0.6, 1.6))
     cbox(g, (-1.65, TUG_DECK + 0.2, -3.1), (0.75, 0.4, 0.95))
     cbox(g, (1.65, TUG_DECK + 0.25, -3.2), (0.8, 0.5, 0.95))
     cbox(g, (-1.85, TUG_DECK + 0.27, -5.4), (0.6, 0.55, 0.8))
@@ -3903,7 +3917,7 @@ def build_lights(yA):
              (lt[1] - Vector((0.32, 0, 0)), Vector((bx + bw / 2, PLATEAU_Y + 2.35, bz + bd / 2))),              # lamp 1 -> bait shop
              (Vector((bx - bw / 2, PLATEAU_Y + 2.35, bz + bd / 2)), lt[3] + Vector((0.32, 0, 0))),              # bait shop -> lamp 3
              (lt[3] - Vector((0.32, 0, 0)), Vector((nx + nw / 2 - 0.05, PLATEAU_Y + 2.9, nz + nd / 2 - 0.05))),  # lamp 3 -> net shed
-             (lt[2] - Vector((0.32, 0, 0)), Vector((1.6, DECK_TOP + 0.0 + 1.2, -59.0))),                        # lamp 2 -> pier root
+             (lt[2] - Vector((0.32, 0, 0)), Vector((NOTICE[0] + 0.8, land_y(*NOTICE) + 2.0, NOTICE[1] + 0.05))),  # lamp 2 -> noticeboard roof
              (lt[2] + Vector((0.32, 0, 0)), Vector((ox - ow / 2, PLATEAU_Y + 2.3, oz + od / 2))),               # lamp 2 -> office
              (Vector((ox + ow / 2, PLATEAU_Y + 2.3, oz + od / 2)), lt[4] - Vector((0.32, 0, 0)))]              # office -> lamp 4
     bulbs = 0
@@ -3969,7 +3983,7 @@ def build_clutter(yA, yB, r=None):
         c = Vector((nx + nw / 2 + 0.2, PLATEAU_Y + 1.1 + 0.05 * k, nz - 0.9 + 0.55 * k))
         add_lathe(g, c, [(-0.17, 0.0), (-0.15, 0.1), (0.0, 0.15), (0.15, 0.1), (0.17, 0.0)], [S['Accent'], S['Roof'], S['Sand']][k], L['none'], 0.6, sides=10)
     rope_coil(g, 'Coil_NetShed', (nx - 0.9, PLATEAU_Y, nz + 0.2)); g.items.pop()
-    rope_coil(g, 'Coil_Tug', (TUG_WORLD['position'][0] - 4.2, BREAKWATER_TOP, GANGWAY_Z + 1.6)); g.items.pop()
+    rope_coil(g, 'Coil_Tug', (TUG_WORLD['position'][0] - 4.2, BREAKWATER_TOP, GANGWAY_Z - 1.4)); g.items.pop()
     # -- bait shop: a bucket of worms on the counter, a stack of bait tubs, a fishing rod leaning, a crate of empty bottles
     bx, bz, bw, bd = BAIT_SHOP
     fz = bz + bd / 2
@@ -3999,8 +4013,9 @@ def build_clutter(yA, yB, r=None):
     g.add(xform(blob(0.3, r, (1.0, 1.2, 0.85), subdiv=2, rough=0.12, flat=-0.7), (sx_ + 1.5, PLATEAU_Y + 0.3, sz_ + sd / 2 + 0.2)), S['Sand'], L['Cloth'], 0.55)
     # -- the tug's mooring lines to the breakwater (bow line to the tip, stern line and a spring) and their rings
     tx, ty, tz = TUG_WORLD['position']
-    rings = [(BREAKWATER[1] + 0.25, BREAKWATER_TOP - 0.15, BREAKWATER[3] - 0.6), (BREAKWATER[1] + 0.25, BREAKWATER_TOP - 0.15, tz - 10.0),
-             (BREAKWATER[1] + 0.25, BREAKWATER_TOP - 0.15, tz - 5.0)]
+    # rings on the breakwater's east edge, all > 3 m from the tip stand point (30, -26)
+    rings = [(BREAKWATER[1] + 0.25, BREAKWATER_TOP - 0.15, -29.2), (BREAKWATER[1] + 0.25, BREAKWATER_TOP - 0.15, tz - 10.0),
+             (BREAKWATER[1] + 0.25, BREAKWATER_TOP - 0.15, -31.0)]
     cleats = [(tx - 1.0, TUG_FORE + 0.4, tz + 5.0), (tx - 0.5, TUG_DECK + 0.6, tz - 3.7), (tx - tug_w(-1.0) + 0.2, TUG_DECK + 0.9, tz - 1.0)]
     for a, b in zip(rings, cleats):
         g.add(tube(rope_line(a, b, 0.35, n=12), 0.022, 5), S['Sand'], L['Cloth'], 0.55)
