@@ -560,26 +560,16 @@ namespace FishGame.Tests.EditMode
             Profile("thrasher", "Thrasher", 1.5f, 3f, 3f, 5f, 0.4f, 0.20f, 0f, 0f, 0f, 0.5f, 0.3f, 1.0f, 1.0f, 1.0f, 1.5f);
             Profile("runner", "Runner", 2f, 3.5f, 5f, 9f, 0f, 0.30f, 0.8f, 0f, 0f, 0.5f, 0f, 1.25f, 1.25f, 0.9f, 4f);
 
-            // M3 T3: only bluegill is seeded here (spec 12.6 row 2 + M3-D35, gates 0/0, colours kept from M2); T10 moves the species seeds.
-            Assert.AreEqual(1, FishingSeedData.Species.Count, "species count");
-            Species("bluegill", "Bluegill", "steady", 200, 600, 8, 1.0f, 0, 0f, FishRarity.Common, BodyShape.Round,
-                new Color(0.32f, 0.50f, 0.62f, 1f), new Color(0.95f, 0.62f, 0.22f, 1f), "Fish_Bluegill.fbx");
-            Assert.AreEqual(FishTags.Schooling, SeedSpecies("bluegill").Data.Tags, "bluegill tags");
+            // M3 T10 (M3-D61): the species and junk seeds are the M3 roster; the roster values are checked by EcologyContentTests.EcologyData_SeedsMatchRoster.
+            Assert.That(FishingSeedData.Species, Is.SameAs(EcologySeedData.Species), "species seeds are the M3 roster (T10)");
 
             // The profile index in each species seed is the ordinal-sorted index of its profile id (0.2: bulldog, darter, runner, steady, thrasher).
             string[] sortedProfiles = { "bulldog", "darter", "runner", "steady", "thrasher" };
             foreach (SpeciesSeed s in FishingSeedData.Species)
                 Assert.AreEqual(sortedProfiles[s.Data.FightProfileIndex], s.ProfileId, s.Id + " FightProfileIndex");
 
-            Assert.AreEqual(2, FishingSeedData.Junk.Count, "junk count");
-            var boot = SeedJunk("old_boot");
-            Assert.AreEqual("Old Boot", boot.name);
-            F("junk.old_boot.valueCoins", E("junk.old_boot.valueCoins", 2), boot.value);
-            Assert.AreEqual(BodyShape.Long, boot.shape);
-            var can = SeedJunk("tin_can");
-            Assert.AreEqual("Tin Can", can.name);
-            F("junk.tin_can.valueCoins", E("junk.tin_can.valueCoins", 2), can.value);
-            Assert.AreEqual(BodyShape.Round, can.shape);
+            Assert.That(FishingSeedData.Junk, Is.SameAs(EcologySeedData.Junk), "junk seeds are the M3 junk (T10)");
+            // The two M2 junk colours are unchanged by the forwarding.
             C("old_boot color", new Color(0.30f, 0.22f, 0.16f, 1f), FishingSeedData.JunkColor("old_boot"));
             C("tin_can color", new Color(0.68f, 0.70f, 0.72f, 1f), FishingSeedData.JunkColor("tin_can"));
         }

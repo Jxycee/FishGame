@@ -72,5 +72,14 @@ namespace FishGame.EditorTools
         public const string TexturesFolder = "Assets/_Project/Content/Textures";
         public const string EnvDetailArray = TexturesFolder + "/T_EnvDetailArray.png";
         public const string FishSkinArray = TexturesFolder + "/T_FishSkinArray.png";
+
+        // T10 additions (M3 ecology data; C 6.2). T16/T17 reuse ShoreGridsFolder; do not redeclare it.
+        public const string HarbourPierSpotAsset = "Assets/_Project/Content/Spots/harbour_pier.asset";
+        public const string EcologyFolder = "Assets/_Project/Content/Ecology";
+        public const string ZonesFolder = EcologyFolder + "/Zones";
+        public const string WeatherFolder = EcologyFolder + "/Weather";
+        public const string WeatherTableAsset = WeatherFolder + "/weather_temperate.asset";
+        public const string ShoreGridsFolder = EcologyFolder + "/ShoreGrids";
+        public const string EcologyTuningAsset = EcologyFolder + "/EcologyTuning.asset";
     }
 }

@@ -184,7 +184,9 @@ namespace FishGame.Tests.EditMode
         [Test]
         public void EcologyMigration_RemovesM2PlaceholderSpeciesKeepsModels()
         {
-            Assert.That(registry.Species.Count, Is.EqualTo(5), "setup: bluegill plus the four placeholders");
+            // M3 T10: the temp build creates the whole roster (EcologySeedData), so the placeholders come on top of it.
+            int roster = FishingSeedData.Species.Count;
+            Assert.That(registry.Species.Count, Is.EqualTo(roster + 4), "setup: the roster plus the four placeholders");
 
             Assert.That(EcologyMigration.MigrateAt(Root, registry), Is.True);
 
@@ -198,14 +200,19 @@ namespace FishGame.Tests.EditMode
             using (var so = new SerializedObject(registry))
             {
                 SerializedProperty list = so.FindProperty("species");
-                Assert.That(list.arraySize, Is.EqualTo(1), "the serialized species list holds bluegill only");
-                var only = list.GetArrayElementAtIndex(0).objectReferenceValue as FishSpeciesDef;
-                Assert.That(only, Is.Not.Null, "no null entry is left in the list");
-                Assert.That(only, Is.SameAs(Load<FishSpeciesDef>(SpeciesPath("bluegill"))));
+                Assert.That(list.arraySize, Is.EqualTo(roster), "the serialized species list holds the roster only");
+                var listed = new List<FishSpeciesDef>();
+                for (int i = 0; i < list.arraySize; i++)
+                {
+                    var entry = list.GetArrayElementAtIndex(i).objectReferenceValue as FishSpeciesDef;
+                    Assert.That(entry, Is.Not.Null, "no null entry is left in the list (index " + i + ")");
+                    listed.Add(entry);
+                }
+                Assert.That(listed, Contains.Item(Load<FishSpeciesDef>(SpeciesPath("bluegill"))));
             }
 
             Assert.That(registry.TryGetSpecies("perch", out _), Is.False, "the index cache was cleared");
-            Assert.That(registry.Species.Count, Is.EqualTo(1));
+            Assert.That(registry.Species.Count, Is.EqualTo(roster));
 
             Assert.That(AssetDatabase.LoadAssetAtPath<Mesh>(FishingContentBuilder.ModelsFolderAt(Root) + "/TempFish.asset"), Is.Not.Null,
                 "the temp model mesh asset still exists");
@@ -326,8 +333,9 @@ namespace FishGame.Tests.EditMode
             using (var so = new SerializedObject(registry))
             {
                 SerializedProperty list = so.FindProperty("species");
-                Assert.That(list.arraySize, Is.EqualTo(1), "the dangling perch entry and the other placeholders are gone");
-                Assert.That(list.GetArrayElementAtIndex(0).objectReferenceValue, Is.Not.Null);
+                Assert.That(list.arraySize, Is.EqualTo(FishingSeedData.Species.Count), "the dangling perch entry and the other placeholders are gone");
+                for (int i = 0; i < list.arraySize; i++)
+                    Assert.That(list.GetArrayElementAtIndex(i).objectReferenceValue, Is.Not.Null, "no null entry at " + i);
             }
             foreach (string id in PlaceholderIds)
                 Assert.That(File.Exists(BuilderUtil.Abs(SpeciesPath(id))), Is.False, id + ": gone");

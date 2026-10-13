@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50730967b6f509446b48466b2931b870, type: 3}
+  m_Name: EcologyTuning
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.EcologyTuningDef
+  hotspotFirstMinMin: 60
+  hotspotFirstMinMax: 120
+  hotspotGapMin: 60
+  hotspotGapMax: 120
+  hotspotDurationMin: 45
+  hotspotDurationMax: 60
+  hotspotRadiusM: 3

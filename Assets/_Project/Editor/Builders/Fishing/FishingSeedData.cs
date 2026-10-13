@@ -1,5 +1,6 @@
 // The single seed source (contract 5.1): spec 9.6, 9.7, 9.12, 9.10 tables, contract 7.7 motion seeds, clean threshold 0.8. Used only to create missing assets and by tests. Owned by T14; T15 updates retuned values.
 // Values are written exactly as in plan data-tuning section 1. Lists keep the table order of that section (not sorted); BuildDatabase sorts by id.
+// Species and junk forward to EcologySeedData (M3 T10).
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -40,8 +41,6 @@ namespace FishGame.EditorTools
         private static readonly ReadOnlyCollection<(string id, string name, RodStats stats, int shopCost, int firstCamp)> s_rods;
         private static readonly ReadOnlyCollection<(string id, string name, BaitStats stats)> s_baits;
         private static readonly ReadOnlyCollection<(string id, string name, FishFightProfile profile)> s_profiles;
-        private static readonly ReadOnlyCollection<SpeciesSeed> s_species;
-        private static readonly ReadOnlyCollection<(string id, string name, int value, BodyShape shape)> s_junk;
         private static readonly WaveSet s_waves;
 
         static FishingSeedData()
@@ -101,24 +100,8 @@ namespace FishGame.EditorTools
             };
             s_profiles = new ReadOnlyCollection<(string, string, FishFightProfile)>(profiles);
 
-            // Spec 9.6 species. weightSkew 2.2, lengthShapeK 1.0, hookWindow 0, not special; presentation fields are plan seeds.
-            string[] sortedProfileIds = new string[profiles.Count];
-            for (int i = 0; i < profiles.Count; i++) sortedProfileIds[i] = profiles[i].id;
-            Array.Sort(sortedProfileIds, StringComparer.Ordinal);
-            // M3 T3: only bluegill remains (12.6 row 2); perch/carp/trout/catfish were deleted by EcologyMigration. T10 moves the list to EcologySeedData.
-            var species = new List<SpeciesSeed>
-            {
-                MakeSpecies("bluegill", "Bluegill", "steady", sortedProfileIds, 200, 600, 8, 1.0f, 0, 0f, FishRarity.Common, BodyShape.Round,
-                    new Color(0.32f, 0.50f, 0.62f, 1f), new Color(0.95f, 0.62f, 0.22f, 1f), "Fish_Bluegill.fbx", FishTags.Schooling),
-            };
-            s_species = new ReadOnlyCollection<SpeciesSeed>(species);
-
-            var junk = new List<(string id, string name, int value, BodyShape shape)>
-            {
-                ("old_boot", "Old Boot", 2, BodyShape.Long),
-                ("tin_can", "Tin Can", 2, BodyShape.Round),
-            };
-            s_junk = new ReadOnlyCollection<(string, string, int, BodyShape)>(junk);
+            // Species and junk are NOT built here (M3 T10, CR-2/CR-3): Species/Junk forward to EcologySeedData through the getters below, read
+            // lazily, never from this static constructor (EcologySeedData's static constructor reads Profiles).
 
             // Plan 1.8: three gentle waves, amplitude sum 0.115 m, wavelengths >= 6 m.
             WaveSet waves = default;
@@ -155,21 +138,6 @@ namespace FishGame.EditorTools
             };
         }
 
-        private static SpeciesSeed MakeSpecies(string id, string name, string profileId, string[] sortedProfileIds, int weightMinG, int weightMaxG, int baseValue,
-            float biteWaitMod, int minBaitRating, float minDepth, FishRarity rarity, BodyShape shape, Color colorA, Color colorB, string modelFile,
-            FishTags tags)
-        {
-            int index = Array.IndexOf(sortedProfileIds, profileId);
-            if (index < 0) throw new InvalidOperationException("species seed '" + id + "' names unknown profile '" + profileId + "'");
-            var data = new FishSpeciesData
-            {
-                FightProfileIndex = (ushort)index, WeightMinG = weightMinG, WeightMaxG = weightMaxG, BaseValue = baseValue, MinBaitRating = minBaitRating,
-                WeightSkew = 2.2f, LengthShapeK = 1.0f, BiteWaitMod = biteWaitMod, HookWindow = 0f, MinDepth = minDepth, IsSpecial = false, Rarity = rarity,
-                Tags = tags,
-            };
-            return new SpeciesSeed(id, name, profileId, data, shape, colorA, colorB, modelFile);
-        }
-
         public static FishingTuning Tuning { get { return s_tuning; } }
 
         public static IReadOnlyList<(string id, string name, RodStats stats, int shopCost, int firstCamp)> Rods { get { return s_rods; } }
@@ -178,9 +146,10 @@ namespace FishGame.EditorTools
 
         public static IReadOnlyList<(string id, string name, FishFightProfile profile)> Profiles { get { return s_profiles; } }
 
-        public static IReadOnlyList<SpeciesSeed> Species { get { return s_species; } }
+        // The M3 roster (25 species) and its 7 junk items, owned by EcologySeedData (M3 T10). Read lazily: never touch these from the static constructor.
+        public static IReadOnlyList<SpeciesSeed> Species { get { return EcologySeedData.Species; } }
 
-        public static IReadOnlyList<(string id, string name, int value, BodyShape shape)> Junk { get { return s_junk; } }
+        public static IReadOnlyList<(string id, string name, int value, BodyShape shape)> Junk { get { return EcologySeedData.Junk; } }
 
         public static WaveSet Waves { get { return s_waves; } }
 
@@ -206,7 +175,7 @@ namespace FishGame.EditorTools
             var profileIds = new string[profileList.Count];
             for (int i = 0; i < profiles.Length; i++) { profiles[i] = profileList[i].profile; profileIds[i] = profileList[i].id; }
 
-            var speciesList = new List<SpeciesSeed>(s_species);
+            var speciesList = new List<SpeciesSeed>(Species);
             speciesList.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
             var species = new FishSpeciesData[speciesList.Count];
             for (int i = 0; i < species.Length; i++)
@@ -216,7 +185,7 @@ namespace FishGame.EditorTools
             }
 
             var junkList = new List<(string id, int value)>();
-            foreach (var j in s_junk) junkList.Add((j.id, j.value));
+            foreach (var j in Junk) junkList.Add((j.id, j.value));
             junkList.Sort((a, b) => string.CompareOrdinal(a.id, b.id));
             var junk = new JunkData[junkList.Count];
             for (int i = 0; i < junk.Length; i++) junk[i] = new JunkData { ValueCoins = junkList[i].value };
@@ -227,15 +196,10 @@ namespace FishGame.EditorTools
 
         // ---- art, water and audio seeds (plan 1.6-1.9); internal so the single seed file holds them without new public surface ----
 
-        // Junk colour (plan 1.6); the public Junk tuple carries no colour.
+        // Junk colour (plan 1.6); the public Junk tuple carries no colour. The colours moved to EcologySeedData with the 7 junk items (M3 T10).
         internal static Color JunkColor(string id)
         {
-            switch (id)
-            {
-                case "old_boot": return new Color(0.30f, 0.22f, 0.16f, 1f);
-                case "tin_can": return new Color(0.68f, 0.70f, 0.72f, 1f);
-                default: throw new ArgumentException("no junk seed '" + id + "'", nameof(id));
-            }
+            return EcologySeedData.JunkColor(id);
         }
 
         internal static readonly string[] PaletteSlotNames =

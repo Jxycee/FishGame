@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd68fce454b2574ba54dbe488b07cd0, type: 3}
+  m_Name: sneaky_flounder
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FishSpeciesDef
+  id: sneaky_flounder
+  displayName: Sneaky Flounder
+  rarity: 0
+  baseValue: 15
+  weightMinG: 500
+  weightMaxG: 2000
+  weightSkew: 2.2
+  lengthShapeK: 1
+  fight: {fileID: 11400000, guid: 8ae05f71db6755d4bb061b9a172bc485, type: 2}
+  bodyShape: 2
+  colorA: {r: 0.62, g: 0.54, b: 0.4, a: 1}
+  colorB: {r: 0.3, g: 0.26, b: 0.2, a: 1}
+  biteWaitMod: 1
+  hookWindow: 0
+  isSpecial: 0
+  minBaitRating: 0
+  minDepth: 0
+  model: {fileID: 0}
+  tags: 4

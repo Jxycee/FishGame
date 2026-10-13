@@ -45,14 +45,22 @@ namespace FishGame.Tests.EditMode
             }
         }
 
-        // Catches: a species whose Model was never filled (the fish would render the fallback mesh), a model without vertex colours or with several
-        // submeshes (IsFishModelMesh), or a model over the triangle budget.
+        // Catches: a species whose Model was never filled although its model file exists (the fish would render the fallback mesh), a model without
+        // vertex colours or with several submeshes (IsFishModelMesh), or a model over the triangle budget.
+        // The seed species that have a model file: M3 has the five reused models (bluegill, yellow_perch, grumpy_carp, sunny_trout, mudcat) plus whatever
+        // T23 has delivered. A species without a model file is skipped on purpose (it shows the procedural fallback fish, C 2.8 #28).
         [Test]
         public void SeedSpecies_Models_AreFishModelMeshes_UnderTriangleBudget()
         {
-            Assert.That(FishingSeedData.Species.Count, Is.EqualTo(1), "after the M3 migration only bluegill is seeded here (T10 moves the roster)");
+            int withModel = 0;
             foreach (SpeciesSeed seed in FishingSeedData.Species)
             {
+                bool fileHasMesh = false;
+                foreach (UnityEngine.Object o in AssetDatabase.LoadAllAssetsAtPath(AssetPaths.ModelsFolder + "/" + seed.ModelFile))
+                    if (o is Mesh) { fileHasMesh = true; break; }
+                if (!fileHasMesh) continue;
+                withModel++;
+
                 string path = AssetPaths.SpeciesFolder + "/" + seed.Id + ".asset";
                 var def = AssetDatabase.LoadAssetAtPath<FishSpeciesDef>(path);
                 Assert.IsNotNull(def, "missing species asset " + path);
@@ -64,6 +72,7 @@ namespace FishGame.Tests.EditMode
                 Assert.That(triangles, Is.LessThan(MaxFishModelTriangles), seed.Id + ": triangle count");
                 Assert.That(triangles, Is.GreaterThan(0), seed.Id + ": triangle count");
             }
+            Assert.That(withModel, Is.GreaterThanOrEqualTo(5), "the five reused M2 models (M3-D33) must still be found");
         }
 
         // Catches: the model importer regenerating or swapping UV channels (FishModelPostprocessor pins generateSecondaryUV / swapUVChannels off), which would

@@ -1,0 +1,232 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db9febdcacf98494eb42dbb3b1218637, type: 3}
+  m_Name: harbour_pier
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FishingZoneDef
+  id: harbour_pier
+  displayName: Harbour Pier
+  subAreas:
+  - id: shallows
+    minShoreM: 0
+    maxShoreM: 5
+    junkChance: 0.2
+  - id: channel
+    minShoreM: 5
+    maxShoreM: 12
+    junkChance: 0.12
+  - id: open_sea
+    minShoreM: 12
+    maxShoreM: 0
+    junkChance: 0.1
+  rules:
+  - fish: {fileID: 11400000, guid: 6ffc3947e4d7a38448e55a4f1da0df80, type: 2}
+    subAreaIds:
+    - shallows
+    - channel
+    seasons: 15
+    weather: 31
+    bands: 49
+    weight: 9
+    minRodTier: 0
+    minBaitRating: 0
+    minDepth: 0
+    special: 0
+    specialChance: 0
+    catchLimitPerRun: -1
+    minPlayersInSession: 0
+  - fish: {fileID: 11400000, guid: 3bc6003b1145edd48aac90e1fc2d9c96, type: 2}
+    subAreaIds:
+    - shallows
+    - channel
+    seasons: 7
+    weather: 31
+    bands: 15
+    weight: 10
+    minRodTier: 0
+    minBaitRating: 0
+    minDepth: 0
+    special: 0
+    specialChance: 0
+    catchLimitPerRun: -1
+    minPlayersInSession: 0
+  - fish: {fileID: 11400000, guid: c16bd40df9c9fea40bea536adf2d856b, type: 2}
+    subAreaIds:
+    - shallows
+    - channel
+    seasons: 12
+    weather: 31
+    bands: 63
+    weight: 7
+    minRodTier: 0
+    minBaitRating: 0
+    minDepth: 0
+    special: 0
+    specialChance: 0
+    catchLimitPerRun: -1
+    minPlayersInSession: 0
+  - fish: {fileID: 11400000, guid: 0c03666f8e63e55428df9a867f3e20cb, type: 2}
+    subAreaIds:
+    - channel
+    - open_sea
+    seasons: 15
+    weather: 31
+    bands: 15
+    weight: 10
+    minRodTier: 0
+    minBaitRating: 0
+    minDepth: 0
+    special: 0
+    specialChance: 0
+    catchLimitPerRun: -1
+    minPlayersInSession: 0
+  - fish: {fileID: 11400000, guid: a02f36b3e18f66e42a624845896f3c6f, type: 2}
+    subAreaIds:
+    - open_sea
+    - channel
+    seasons: 15
+    weather: 31
+    bands: 48
+    weight: 9
+    minRodTier: 0
+    minBaitRating: 0
+    minDepth: 0
+    special: 0
+    specialChance: 0
+    catchLimitPerRun: -1
+    minPlayersInSession: 0
+  - fish: {fileID: 11400000, guid: c01a29c0d1a54374a80239cdc714df9e, type: 2}
+    subAreaIds:
+    - channel
+    - shallows
+    seasons: 3
+    weather: 31
+    bands: 62
+    weight: 8
+    minRodTier: 0
+    minBaitRating: 0
+    minDepth: 0
+    special: 0
+    specialChance: 0
+    catchLimitPerRun: -1
+    minPlayersInSession: 0
+  - fish: {fileID: 11400000, guid: c60b543b88552c74a9a6160e7a2e330e, type: 2}
+    subAreaIds:
+    - shallows
+    - channel
+    seasons: 13
+    weather: 31
+    bands: 15
+    weight: 10
+    minRodTier: 0
+    minBaitRating: 0
+    minDepth: 0
+    special: 0
+    specialChance: 0
+    catchLimitPerRun: -1
+    minPlayersInSession: 0
+  - fish: {fileID: 11400000, guid: ec4ca5a7b554b3440ac3b0867042ffa9, type: 2}
+    subAreaIds:
+    - channel
+    seasons: 6
+    weather: 6
+    bands: 56
+    weight: 12
+    minRodTier: 0
+    minBaitRating: 0
+    minDepth: 0
+    special: 0
+    specialChance: 0
+    catchLimitPerRun: -1
+    minPlayersInSession: 0
+  - fish: {fileID: 11400000, guid: 4501ff410bd67af46a4b5e4ec0f8aff1, type: 2}
+    subAreaIds:
+    - channel
+    - open_sea
+    seasons: 3
+    weather: 1
+    bands: 12
+    weight: 12
+    minRodTier: 1
+    minBaitRating: 0
+    minDepth: 0
+    special: 0
+    specialChance: 0
+    catchLimitPerRun: -1
+    minPlayersInSession: 0
+  - fish: {fileID: 11400000, guid: 266d3b0bd1543d44b95655b298545e37, type: 2}
+    subAreaIds:
+    - open_sea
+    seasons: 6
+    weather: 3
+    bands: 3
+    weight: 3
+    minRodTier: 2
+    minBaitRating: 0
+    minDepth: 0
+    special: 0
+    specialChance: 0
+    catchLimitPerRun: -1
+    minPlayersInSession: 0
+  - fish: {fileID: 11400000, guid: 9c519bf115d2a5f43a70f71ae2b307dc, type: 2}
+    subAreaIds:
+    - open_sea
+    seasons: 12
+    weather: 6
+    bands: 24
+    weight: 7
+    minRodTier: 1
+    minBaitRating: 0
+    minDepth: 0
+    special: 0
+    specialChance: 0
+    catchLimitPerRun: -1
+    minPlayersInSession: 0
+  - fish: {fileID: 11400000, guid: b0cc32b60318bde47b12cce41c3274fd, type: 2}
+    subAreaIds:
+    - open_sea
+    - channel
+    seasons: 12
+    weather: 4
+    bands: 48
+    weight: 10
+    minRodTier: 1
+    minBaitRating: 0
+    minDepth: 0
+    special: 0
+    specialChance: 0
+    catchLimitPerRun: -1
+    minPlayersInSession: 0
+  - fish: {fileID: 11400000, guid: 828a59cae8d0a334db3170f2b88877ec, type: 2}
+    subAreaIds:
+    - open_sea
+    seasons: 15
+    weather: 31
+    bands: 63
+    weight: 0
+    minRodTier: 0
+    minBaitRating: 0
+    minDepth: 0
+    special: 1
+    specialChance: 0.015
+    catchLimitPerRun: 1
+    minPlayersInSession: 0
+  junk:
+  - junk: {fileID: 11400000, guid: b16740ee59c9a7e4484d2a91b7c8f237, type: 2}
+    weight: 1
+  - junk: {fileID: 11400000, guid: e0cc0b8593a41cf49ab91175ef146597, type: 2}
+    weight: 1
+  - junk: {fileID: 11400000, guid: 99097ad25f9c76240b8d77780f99efe1, type: 2}
+    weight: 1
+  - junk: {fileID: 11400000, guid: d991236d84e03884294c592c9ae6c0f3, type: 2}
+    weight: 1
+  weather: {fileID: 11400000, guid: c663f00dfd0f48a46b0743c56956421a, type: 2}
+  shoreGrid: {fileID: 11400000, guid: 50edf87e18e003943a79a0a19b2cb8b1, type: 2}

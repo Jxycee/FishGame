@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd68fce454b2574ba54dbe488b07cd0, type: 3}
+  m_Name: red_snapper
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FishSpeciesDef
+  id: red_snapper
+  displayName: Red Snapper
+  rarity: 1
+  baseValue: 28
+  weightMinG: 1000
+  weightMaxG: 4000
+  weightSkew: 2.2
+  lengthShapeK: 1
+  fight: {fileID: 11400000, guid: de8cfc7ea13e3764b884960d6d4393ae, type: 2}
+  bodyShape: 0
+  colorA: {r: 0.86, g: 0.24, b: 0.22, a: 1}
+  colorB: {r: 0.98, g: 0.7, b: 0.66, a: 1}
+  biteWaitMod: 1
+  hookWindow: 0
+  isSpecial: 0
+  minBaitRating: 0
+  minDepth: 0
+  model: {fileID: 0}
+  tags: 2

@@ -54,9 +54,8 @@ namespace FishGame.Tests.EditMode
         [TestCase(true)]
         public void FishFallbackMesh_MissingRegistryResult_DoesNotPoisonTheCache(bool isJunk)
         {
-            // M3 T3: perch was the Long species and is deleted; bluegill is Round like the plain fish, so only the junk case (old_boot, Long) can
-            // tell the shapes apart by vertex count. Section C may bring a Long species back for the species case once the roster exists (T10).
-            ushort index = isJunk ? _real.JunkIndex("old_boot") : _real.SpeciesIndex("bluegill");
+            // A Long item on both sides (old_boot; mirror_minnow from the M3 roster, T10) so the vertex count tells the shaped mesh from the plain Round fish.
+            ushort index = isJunk ? _real.JunkIndex("old_boot") : _real.SpeciesIndex("mirror_minnow");
 
             Mesh plainNull = Get(null, isJunk, index);
             Assert.That(plainNull, Is.Not.Null, "a null registry still gives a mesh");
@@ -67,7 +66,7 @@ namespace FishGame.Tests.EditMode
             Assert.That(real, Is.Not.Null);
             Assert.That(real, Is.Not.SameAs(plainNull), "the real registry must build the real mesh, not get the plain one back");
             Assert.That(real, Is.Not.SameAs(plainEmpty));
-            if (isJunk) Assert.That(real.vertexCount, Is.Not.EqualTo(plainNull.vertexCount), "the Long shape differs from the plain Round fish / can");
+            Assert.That(real.vertexCount, Is.Not.EqualTo(plainNull.vertexCount), "the Long shape differs from the plain Round fish / can");
             Assert.That(real.colors, Is.Not.EqualTo(plainNull.colors), "the species / junk colour differs from the plain grey");
             Assert.That(Get(_real, isJunk, index), Is.SameAs(real), "a resolved item is cached");
         }

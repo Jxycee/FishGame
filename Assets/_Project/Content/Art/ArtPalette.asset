@@ -160,3 +160,28 @@ MonoBehaviour:
   uiPanel: {r: 0.08, g: 0.1, b: 0.14, a: 0.85}
   uiText: {r: 0.95, g: 0.95, b: 0.92, a: 1}
   m2Season: 1
+  sunMoon:
+    sunriseFraction: 0
+    sunsetFraction: 0.7
+    minElevationDeg: 12
+    flipWindow: 0.02
+    moonIntensity: 0.25
+    moonEulerDeg: {x: 35, y: 150, z: 0}
+    moonTint: {r: 0.62, g: 0.7, b: 0.92, a: 1}
+    blendWindow: 0.05
+  weatherLooks:
+  - fogDensityMult: 1
+    fogDensityMin: 0
+    lightMult: 1
+    desaturate: 0
+    rainAmount: 0
+  - fogDensityMult: 1.2
+    fogDensityMin: 0
+    lightMult: 0.85
+    desaturate: 0.1
+    rainAmount: 1
+  - fogDensityMult: 1
+    fogDensityMin: 0.03
+    lightMult: 0.9
+    desaturate: 0.15
+    rainAmount: 0

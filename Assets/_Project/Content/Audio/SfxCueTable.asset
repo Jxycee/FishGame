@@ -146,3 +146,20 @@ MonoBehaviour:
     maxDistance: 35
     minInterval: 0.15
     spatial: 1
+  seasonAmbience:
+  - windGain: 1.1
+    windLfoHz: 0.08
+    lapIntervalMin: 0.6
+    lapIntervalMax: 1.4
+  - windGain: 1
+    windLfoHz: 0
+    lapIntervalMin: 0.6
+    lapIntervalMax: 1.4
+  - windGain: 1.3
+    windLfoHz: 0.12
+    lapIntervalMin: 0.5
+    lapIntervalMax: 1.2
+  - windGain: 1.5
+    windLfoHz: 0.15
+    lapIntervalMin: 1
+    lapIntervalMax: 2

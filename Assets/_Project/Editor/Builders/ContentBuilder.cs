@@ -23,6 +23,7 @@ namespace FishGame.EditorTools
             var registry = AssetDatabase.LoadAssetAtPath<ContentRegistry>(AssetPaths.ContentRegistryAsset);
             EcologyMigration.MigrateIfNeeded(registry);   // M3 T3 (C 2.6): BEFORE the fishing build, so create-if-missing never sees the M2 placeholders
             FishingContentBuilder.Build();
+            EcologyContentBuilder.Build();   // M3 T10 (C 2.6): after the fishing build (it needs the species and junk assets)
             RenderingSetupBuilder.Build();   // T21 (C 2.6): world materials, volume profiles, URP shadow tuning
             AssetDatabase.SaveAssets();
         }

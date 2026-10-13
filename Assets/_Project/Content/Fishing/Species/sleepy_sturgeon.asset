@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8dd68fce454b2574ba54dbe488b07cd0, type: 3}
+  m_Name: sleepy_sturgeon
+  m_EditorClassIdentifier: FishGame.Data::FishGame.Data.FishSpeciesDef
+  id: sleepy_sturgeon
+  displayName: Sleepy Sturgeon
+  rarity: 2
+  baseValue: 75
+  weightMinG: 6000
+  weightMaxG: 25000
+  weightSkew: 2.2
+  lengthShapeK: 1
+  fight: {fileID: 11400000, guid: de8cfc7ea13e3764b884960d6d4393ae, type: 2}
+  bodyShape: 1
+  colorA: {r: 0.42, g: 0.4, b: 0.38, a: 1}
+  colorB: {r: 0.78, g: 0.72, b: 0.6, a: 1}
+  biteWaitMod: 1
+  hookWindow: 0
+  isSpecial: 0
+  minBaitRating: 0
+  minDepth: 0
+  model: {fileID: 0}
+  tags: 4
