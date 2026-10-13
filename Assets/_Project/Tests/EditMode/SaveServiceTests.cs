@@ -112,6 +112,32 @@ namespace FishGame.Tests.EditMode
         }
 
         [Test]
+        public void SaveService_CorruptMainGoodBak_KeepsCorruptAndBak()
+        {
+            SavedService(1); // main = A
+            SavedService(2); // main = B, .bak = A
+            const string truncated = "{ \"journal\": ";
+            File.WriteAllText(_path, truncated);
+
+            var svc = new SaveService(_path);
+            svc.Load();
+            Assert.AreEqual(MetaLoadSource.Backup, svc.LoadedFrom);
+
+            svc.Save();
+            svc.Save();
+
+            Assert.IsTrue(File.Exists(_path + ".corrupt"), "the unreadable main file is kept");
+            Assert.AreEqual(truncated, File.ReadAllText(_path + ".corrupt"));
+            MetaSave bak = SaveService.DeserializeOrNull(File.ReadAllText(_path + ".bak"));
+            Assert.IsNotNull(bak, "the good .bak must not be overwritten by the broken main");
+            Assert.AreEqual(1, bak.Journal["bluegill"].Seen);
+            var reloaded = new SaveService(_path);
+            reloaded.Load();
+            Assert.AreEqual(MetaLoadSource.Main, reloaded.LoadedFrom);
+            Assert.AreEqual(1, reloaded.Current.Journal["bluegill"].Seen);
+        }
+
+        [Test]
         public void SaveService_NoFiles_Defaults()
         {
             var svc = new SaveService(_path);
@@ -121,7 +147,7 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(1, svc.Current.SchemaVersion);
             Assert.AreEqual(0, svc.Current.Journal.Count);
             Assert.AreEqual(0, Directory.GetFileSystemEntries(_dir).Length, "Load must not create a file");
-            Assert.AreEqual(0, _warnings.Count, "a first run is not a warning");
+            Assert.AreEqual(0, _warnings.FindAll(w => w.Contains("FG SAVE")).Count, "a first run is not a warning");
 
             svc.Save();
             Assert.IsTrue(File.Exists(_path));

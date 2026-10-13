@@ -68,6 +68,10 @@ namespace FishGame.Runtime
             {
                 string backupText = AtomicFile.ReadAllTextOrNull(FilePath + AtomicFile.BackupSuffix);
                 loaded = DeserializeOrNull(backupText);
+                // A main file that exists but did not load (corrupt, or locked so that it read as missing) is copied to .corrupt and
+                // removed before the first Save, so it is neither rotated into .bak over a good backup nor replaced by an empty journal.
+                bool mainExists = File.Exists(FilePath);
+                _unreadableOnDisk = mainExists;
                 if (loaded != null)
                 {
                     source = MetaLoadSource.Backup;
@@ -76,9 +80,8 @@ namespace FishGame.Runtime
                 else
                 {
                     source = MetaLoadSource.Defaults;
-                    if (mainText != null || backupText != null)
+                    if (mainExists || backupText != null)
                     {
-                        _unreadableOnDisk = true;
                         Debug.LogWarning("FG SAVE meta file and .bak both unreadable; starting from defaults, the old file is kept as .corrupt on the next save (" + FilePath + ")");
                     }
                 }
@@ -105,9 +108,12 @@ namespace FishGame.Runtime
             {
                 if (_unreadableOnDisk && File.Exists(FilePath))
                 {
+                    // A failed copy or delete aborts the write; the next Save retries. With the main file gone, AtomicFile moves the
+                    // tmp file in and does not rotate the unreadable file into .bak.
                     File.Copy(FilePath, FilePath + CorruptSuffix, true);
-                    _unreadableOnDisk = false;
+                    File.Delete(FilePath);
                 }
+                _unreadableOnDisk = false;
                 AtomicFile.WriteAllText(FilePath, Serialize(_current));
             }
             catch (IOException ex)
@@ -150,9 +156,9 @@ namespace FishGame.Runtime
                 MetaSave s = JsonConvert.DeserializeObject<MetaSave>(json, JsonSettings);
                 return s != null && s.SchemaVersion >= 1 ? s : null; // "null", a non-object or schemaVersion <= 0 count as malformed
             }
-            catch (JsonException)
+            catch (Exception)
             {
-                return null;
+                return null; // Load runs inside AppBootstrap.Compose: nothing may escape and stop the app from starting
             }
         }
 

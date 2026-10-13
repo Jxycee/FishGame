@@ -200,7 +200,17 @@ namespace FishGame.App
 
         private void HandleQuitting()
         {
-            if (services != null && services.TryGet(out SaveService save)) save.Save(); // spec 12.10: save on quit
+            if (services != null && services.TryGet(out SaveService save))
+            {
+                try
+                {
+                    save.Save(); // spec 12.10: save on quit
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e); // LeaveAsync below must always run
+                }
+            }
             if (session == null) return;
             try
             {
