@@ -117,11 +117,21 @@ namespace FishGame.EditorTools
         // MeshBuilder.Grid's vertex coordinate along one axis, written the same way so the floats are identical.
         static float GridCoord(int cells, float size, int i) => -cells * size * 0.5f + i * size;
 
-        // x -400..400 (20 m columns), z -47..121 on 2 m rows: the kinks of SeabedY (z -45 and z -9) are rows, so the surface is exactly the formula.
+        // x -400..400 (20 m columns), z -47..-9 on 2 m rows, then one row at 121: the kinks of SeabedY (z -45 and z -9) are rows, so the surface is
+        // exactly the formula. Harbour round 1 (2026-10-15): past z -9 the seabed is flat at -9 m, so its 65 rows of 2 m became one 130 m band (the
+        // same plane, the same bake rays: ~5,100 fewer triangles in every sea view).
         static Mesh BuildSeabed()
         {
             int nx = Mathf.RoundToInt((HarbourPierLayout.SeabedMaxX - HarbourPierLayout.SeabedMinX) / HarbourPierLayout.SeabedStepX) + 1;
-            int nz = Mathf.RoundToInt((HarbourPierLayout.SeabedMaxZ - HarbourPierLayout.SeabedMinZ) / HarbourPierLayout.SeabedStepZ) + 1;
+            var rows = new List<float>();
+            for (int i = 0; ; i++)
+            {
+                float z = HarbourPierLayout.SeabedMinZ + i * HarbourPierLayout.SeabedStepZ;
+                if (z > HarbourPierLayout.SeabedFlatFromZ + 0.001f) break;
+                rows.Add(z);
+            }
+            rows.Add(HarbourPierLayout.SeabedMaxZ);
+            int nz = rows.Count;
             var vertices = new List<Vector3>(nx * nz);
             var normals = new List<Vector3>(nx * nz);
             var uv0 = new List<Vector2>(nx * nz);
@@ -130,7 +140,7 @@ namespace FishGame.EditorTools
             var triangles = new List<int>((nx - 1) * (nz - 1) * 6);
             for (int iz = 0; iz < nz; iz++)
             {
-                float z = HarbourPierLayout.SeabedMinZ + iz * HarbourPierLayout.SeabedStepZ;
+                float z = rows[iz];
                 float y = HarbourPierLayout.SeabedY(z);
                 float slope = (HarbourPierLayout.SeabedY(z + 1f) - HarbourPierLayout.SeabedY(z - 1f)) * 0.5f;
                 Vector3 normal = new Vector3(0f, 1f, -slope).normalized;

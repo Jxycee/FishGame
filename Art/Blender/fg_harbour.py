@@ -1415,8 +1415,19 @@ def rect_dist(px, pz, cx, cz, hx, hz):
 # (BeachY), the coast at z -45, the seabed and water, the pier/T-head/ladders/breakwater walk, the 11 stand points + 3 m, the cast lanes
 # (20 m, +-25 deg along each facing), the pier walk line x -0.6..0.6, the spawn line, the bell. Land shaping only behind z -60.
 # ---------------------------------------------------------------------------------------------------------------------------------------
-WALL_X, WALL_ZS, WALL_ZN = 60.5, -75.5, 60.5
+WALL_X, WALL_ZS, WALL_ZN = 60.5, -106.5, 60.5     # round 1 (2026-10-15): the south wall moved from -75.5 to -106.5 (two terraces)
 PLATEAU_Y = 1.2
+# ---- Round 1 (2026-10-15): the town climbs two terraces behind the harbour (map layout pass) ----
+# Level 0 = the plateau (y 1.2) and its dunes; dry-stone retaining wall 1 at z -75.6 lifts level 1 (the upper lane, the coast road, a row of
+# cottages) 2.6 m; wall 2 at z -95.0 lifts level 2 (the chapel and its bell tower, the overlook) another 3.0 m. Stone stairs cut into the
+# walls (the collider is the smooth ramp in Harbour_Dunes_Col, <= 23.2 deg; the visual steps sit on it). Behind the south wall the hills
+# rise in soft farm terraces (a patchwork of fields with hedge banks), a forest belt on the ridge, the windmill and the farm.
+T1_Z, T1_H = -75.6, 2.6
+T2_Z, T2_H = -95.0, 5.6
+RISER_HALF = 0.25
+RAMP_HW, RAMP_CHEEK = 1.5, 0.45
+RAMPS = [('A', 4.4, 1, 6.5), ('B', -47.0, 1, 6.5), ('D', 33.0, 1, 6.5), ('C', -12.0, 2, 7.0), ('E', 26.0, 2, 7.0)]   # name, x, wall, run
+HILL_STEP = 4.0
 SHAPE_Z = -60.0                      # dunes start behind this line
 # The 16 code trees (HarbourPierBuilder.PlaceTrees: Pcg32 stream harbour_pier.trees, seed 0xF15ED0C5; ported to Python once and copied here):
 # (x, z, height scale, pine). Pass-2 buildings and solid props keep >= 2.5 m from each trunk and the dunes are flattened around them.
@@ -1442,8 +1453,7 @@ PATHS = [
       (28.6, -58.6), (30.0, -56.8)], 0.95),                                                                            # east: dock office, boatyard, breakwater root
     ([(3.0, -61.0), (3.4, -64.5), (3.2, -68.0), (4.0, -71.5), (4.4, -75.5), (4.6, -80.0), (5.2, -84.0)], 0.85),      # south: through the wall gate to the coast road
 ]
-STONE_WALL_Z = -73.9                 # low dry-stone wall just inside the south wall, gate gap x 2.6..6.2
-STONE_WALL_GATE = (2.6, 6.2)
+STONE_WALL_Z = T1_Z + RISER_HALF + 0.06   # round 1: the face of retaining wall 1 (round 0's low field wall and its gate are gone)
 # The crew's getaway boat (R76): moored along the pier's EAST side near the root, bow toward the land. (The west side at z -42..-34 is taken
 # by phase-1 Rowboat_West at z -37.8..-34.6, and nearer the coast the water is too shallow for a 0.45 m draft.) Out of every cast lane.
 CREW_BOAT_POS, CREW_BOAT_YAW = (3.18, 0.0, -38.8), 180.0
@@ -1453,7 +1463,7 @@ LANE_LEN, LANE_HALF_DEG = 20.0, 25.0
 
 def lane_hit(x, z, margin=0.0):
     # True when (x, z) is inside a stand point's 3 m circle or its cast lane wedge (20 m, +-25 deg about its facing), grown by margin.
-    for sx, sy, sz, f in STAND_POINTS:
+    for sx, sy, sz, f in STAND_POINTS + STAND_POINTS_R1:
         dx, dz = x - sx, z - sz
         d = math.hypot(dx, dz)
         if d < STAND_R + margin:
@@ -1631,23 +1641,75 @@ YARDS = [(21.2, -66.0, 3.6, 2.4),      # boatyard: half-painted boat on sawhorse
          (-6.0, -69.0, 2.2, 1.6),      # upturned canoe on the dunes
          (-41.5, -63.6, 1.8, 1.8)]     # smokehouse woodpile
 
-def dune_raw(x, z):
+def dune_part(x, z):
+    # level-0 dunes (inside and just outside the walls), ending at retaining wall 1
     s = smoothstep(-60.5, -66.0, z)
     # dune ridges roughly parallel to the coast, broken up by noise
     ridge = 0.5 + 0.5 * math.sin(z * 0.42 + 2.2 * n2(x, z, 0.04, 10) + 0.8)
     d = 0.35 * ridge + 0.45 * (0.5 + 0.5 * n2(x, z, 0.06, 11)) + 0.25 * n2(x, z, 0.16, 12)
-    amp = lerp(1.0, 2.1, smoothstep(-63.0, -75.5, z))
+    amp = lerp(1.0, 2.1, smoothstep(-63.0, -70.0, z)) * (1.0 - 0.8 * smoothstep(-70.5, -74.6, z))
     h = s * amp * max(0.0, d - 0.12)
     h += s * 0.55 * smoothstep(55.0, 61.0, abs(x))
+    return h * smoothstep(T1_Z + 0.6, T1_Z + 2.0, z)
+
+def riser_s(x, z, zw, wall):
+    # 0 in front of the retaining wall at zw, 1 behind it; a near-vertical riser (outside the walls it widens into a grassy bank); the
+    # stair corridors of this wall are a straight ramp from zw + RISER_HALF down to the level behind, cut into the upper level
+    out = max(0.0, abs(x) - WALL_X)
+    hw = RISER_HALF + 0.35 * out
+    s = smoothstep(zw + hw, zw - hw, z)
+    if out <= 0.0:
+        for _, rx_, w, run in RAMPS:
+            if w != wall:
+                continue
+            dx = abs(x - rx_)
+            if dx < RAMP_HW + RAMP_CHEEK:
+                sr = clamp((zw + RISER_HALF - z) / run, 0.0, 1.0)
+                k = smoothstep(RAMP_HW + RAMP_CHEEK, RAMP_HW, dx)
+                s = lerp(s, min(s, sr), k)
+    return s
+
+def terrace_h(x, z):
+    return T1_H * riser_s(x, z, T1_Z, 1) + (T2_H - T1_H) * riser_s(x, z, T2_Z, 2)
+
+def hill_raw(x, z):
+    # the hills behind the south wall, metres above level 2 (before terracing)
+    r = max(0.0, WALL_ZS - z)
+    if r <= 0.0:
+        return 0.0
+    hills = (0.17 * r + 0.0024 * r * r) * (1.0 + 0.45 * n2(x, 0.0, 0.011, 18))
+    hills = min(hills, 34.0) + (5.0 * n2(x, z, 0.017, 13) + 2.2 * n2(x, z, 0.045, 14) + 0.9 * n2(x, z, 0.11, 19)) * smoothstep(5.0, 30.0, r)
+    return max(0.0, hills)
+
+def hill_terrace_k(x, z):
+    r = WALL_ZS - z
+    return smoothstep(1.5, 7.0, r) * (1.0 - smoothstep(58.0, 80.0, r)) * (1.0 - smoothstep(105.0, 150.0, abs(x)))
+
+def hill_quant(h, k):
+    # soft farm terraces: flat field bands every HILL_STEP m with a bank (riser) over the last 30% of each band
+    if k <= 0.0:
+        return h
+    q = h / HILL_STEP
+    f = q - math.floor(q)
+    return lerp(h, (math.floor(q) + smoothstep(0.7, 1.0, f)) * HILL_STEP, k)
+
+def dune_raw(x, z):
+    h = dune_part(x, z) + terrace_h(x, z)
     r = max(0.0, WALL_ZS - z)
     if r > 0:
-        hills = (0.17 * r + 0.0024 * r * r) * (1.0 + 0.45 * n2(x, 0.0, 0.011, 18))
-        hills = min(hills, 34.0) + (5.0 * n2(x, z, 0.017, 13) + 2.2 * n2(x, z, 0.045, 14) + 0.9 * n2(x, z, 0.11, 19)) * smoothstep(5.0, 30.0, r)
-        h += max(0.0, hills)
+        h += hill_quant(hill_raw(x, z), hill_terrace_k(x, z))
     return h
 
 def inside_walls(x, z, m=0.0):
     return -WALL_X - m <= x <= WALL_X + m and WALL_ZS - m <= z <= WALL_ZN + m
+
+def in_ramp(x, z, m=0.0):
+    # inside a stair corridor (x within the half width + m, z along its run)
+    for _, rx_, w, run in RAMPS:
+        zw = T1_Z if w == 1 else T2_Z
+        if abs(x - rx_) < RAMP_HW + m and zw - run - m <= z <= zw + RISER_HALF + m:
+            return True
+    return False
 
 def flatten_k(x, z):
     k = 1.0
@@ -1664,9 +1726,10 @@ def flatten_k(x, z):
 
 def land_h(x, z):
     # metres above the plateau (outside the walls also the headlands and the river valley); never negative
-    h = dune_raw(x, z)
     if inside_walls(x, z):
-        return h * flatten_k(x, z)
+        # level-0 dunes flattened around the village; the terraces are exact (the ramps and level tops are walkable as drawn)
+        return dune_part(x, z) * flatten_k(x, z) + terrace_h(x, z)
+    h = dune_raw(x, z)
     # outside: headlands
     for key, poly in (('W', WEST_HEAD), ('E', EAST_HEAD)):
         sd = poly_signed(x, z, poly)
@@ -1695,13 +1758,11 @@ def road_dist(x, z):
     return poly_dist(x, z, ROAD_EAST)
 
 def road_h(x):
-    # the road's height above the plateau: the noise-free hill profile under its centreline (a gentle grade)
+    # the road's height above the plateau: round 1 - the coast road IS the level-1 lane inside the walls; west of the walls it keeps the
+    # level (it crosses the river on the bridge); past the east wall it climbs gently into the hills
     if x <= ROAD_X1:
-        zz = road_z(x)
-    else:
-        zz = -92.5 - (x - 70.0) * 0.4
-    r = max(0.0, WALL_ZS - zz)
-    return 0.17 * r + 0.0024 * r * r + 0.6 * n2(x, 0.0, 0.02, 17)
+        return T1_H
+    return T1_H + (x - ROAD_X1) * 0.12
 
 def land_y(x, z):
     # ground height for placing things (Unity y): the code beach/seabed, raised by the pass-2 land where it is above it
@@ -1709,19 +1770,77 @@ def land_y(x, z):
     h = land_h(x, z)
     return max(base, DUNE_BASE + h) if (h > 0.0 or z < -55.0) else base
 
+def grid_axis(a, b, step, extra=(), bands=(), bstep=0.5):
+    # sorted unique coordinates: a..b every `step`, every `bstep` inside each (lo, hi) band, plus the exact `extra` values inside [a, b]
+    n = max(1, int(round((b - a) / step)))
+    pts = set(round(a + (b - a) * i / n, 4) for i in range(n + 1))
+    for lo, hi in bands:
+        lo, hi = max(lo, a), min(hi, b)
+        if hi - lo > 1e-6:
+            pts.update(round(v, 4) for v in frange(lo, hi, bstep))
+    pts.update(round(v, 4) for v in extra if a - 1e-6 <= v <= b + 1e-6)
+    out = []
+    for v in sorted(pts):
+        if not out or v - out[-1] > 0.02:
+            out.append(v)
+    return out
+
+def seg_axis(segments, extra=()):
+    # piecewise axis: [(a, b, step), ...] (contiguous), plus the exact extra values inside the overall range
+    pts = []
+    for a, b, step in segments:
+        n = max(1, int(round((b - a) / step)))
+        pts += [a + (b - a) * i / n for i in range(n + 1)]
+    lo, hi = segments[0][0], segments[-1][1]
+    pts += [v for v in extra if lo <= v <= hi]
+    out = []
+    for v in sorted(round(p, 4) for p in pts):
+        if not out or v - out[-1] > 0.05:
+            out.append(v)
+    return out
+
+def riser_rows():
+    return [zw + d for zw in (T1_Z, T2_Z) for d in (RISER_HALF, RISER_HALF * 0.5, 0.0, -RISER_HALF * 0.5, -RISER_HALF)]
+
+def terrace_axes(x0, x1, z0, z1, step):
+    # grid rows/columns for the terrace height field: the riser lines, the ramp ends and the ramp corridor edges are exact grid lines
+    xe, ze = [], []
+    for _, rx_, w, run in RAMPS:
+        for s_ in (-1, 1):
+            xe += [rx_ + s_ * RAMP_HW, rx_ + s_ * (RAMP_HW + RAMP_CHEEK * 0.5), rx_ + s_ * (RAMP_HW + RAMP_CHEEK)]
+        xe.append(rx_)
+        zw = T1_Z if w == 1 else T2_Z
+        ze += [zw + RISER_HALF - run, zw + RISER_HALF - run * 0.5]
+    for zw in (T1_Z, T2_Z):
+        ze += [zw + RISER_HALF, zw + RISER_HALF * 0.5, zw, zw - RISER_HALF * 0.5, zw - RISER_HALF, zw + 1.0, zw - 1.0]
+    return grid_axis(x0, x1, step, xe), grid_axis(z0, z1, step, ze)
+
 def build_dunes():
+    # Level-0 dunes (1 m grid, as round 0) and, round 1, the two terraces with their stair corridors (2 m grid with exact riser and ramp lines).
+    # The quads inside a stair corridor are left out: the stone steps cover it (Harbour_Core_Walls_Tri).
     g = G2('Harbour_Core_Dunes_Tri', 'core', tri=True, rays=16)
-    xs = frange(-WALL_X, WALL_X, 1.0)
-    zs = frange(WALL_ZS, -59.5, 1.0)
-    H = [[land_h(x, z) for x in xs] for z in zs]
-    keep = lambda i, j: max(H[j][i], H[j + 1][i], H[j][i + 1], H[j + 1][i + 1]) > 0.06
-    V, N, F, UV, _ = hf_geo(xs, zs, lambda x, z: DUNE_BASE + land_h(x, z), keep)
-    fsl = []
-    for f in F:
-        ny = sum(N[k].y for k in f) / 4
-        fsl.append((S['Grass'], L['Grass']))
-    g.add((V, N, F, UV), S['Grass'], L['Grass'], 0.72, fsl)
-    g.extra['max_slope_deg'] = max_slope(V, F)
+    slopes = []
+    for part in ('dunes', 'terraces'):
+        if part == 'dunes':
+            xs = frange(-WALL_X, WALL_X, 1.0)
+            zs = frange(T1_Z + 0.6, -59.5, 1.0)
+            keep_h = 0.06
+        else:
+            xs, zs = terrace_axes(-WALL_X, WALL_X, WALL_ZS, T1_Z + 0.6, 4.0)
+            keep_h = 0.06
+        H = [[land_h(x, z) for x in xs] for z in zs]
+        def keep(i, j, H=H, xs=xs, zs=zs, keep_h=keep_h):
+            if max(H[j][i], H[j + 1][i], H[j][i + 1], H[j + 1][i + 1]) <= keep_h:
+                return False
+            return not in_ramp((xs[i] + xs[i + 1]) / 2, (zs[j] + zs[j + 1]) / 2, -0.05)
+        V, N, F, UV, _ = hf_geo(xs, zs, lambda x, z: DUNE_BASE + land_h(x, z), keep, eps=0.1)
+        fsl = []
+        for f in F:
+            ny = sum(N[k].y for k in f) / len(f)
+            fsl.append((S['Rock'], L['Rock']) if ny < 0.5 else (S['Grass'], L['Grass']))
+        g.add((V, N, F, UV), S['Grass'], L['Grass'], 0.72, fsl)
+        slopes.append(max_slope(V, F))
+    g.extra['max_slope_deg'] = max(slopes)
     return g
 
 def max_slope(V, F):
@@ -1735,21 +1854,33 @@ def max_slope(V, F):
     return round(worst, 1)
 
 def build_dunes_col():
+    # Walkable collision: the level-0 dunes on a 2 m grid (as round 0) plus, round 1, the terraces with exact riser lines (a 79 deg face:
+    # not walkable, above StepOffset) and the stair corridors as smooth ramps (<= 23.2 deg).
     g = G2('Harbour_Dunes_Col', 'col')
-    xs = frange(-WALL_X, WALL_X, 2.0)
-    zs = frange(WALL_ZS, -59.5, 2.0)
-    H = [[land_h(x, z) for x in xs] for z in zs]
-    keep = lambda i, j: max(H[j][i], H[j + 1][i], H[j][i + 1], H[j + 1][i + 1]) > 0.04
-    V, N, F, UV, _ = hf_geo(xs, zs, lambda x, z: DUNE_BASE + land_h(x, z), keep)
-    g.add((V, N, F, UV), 0, 0, 1.0)
-    g.extra['max_slope_deg'] = max_slope(V, F)
+    slopes = []
+    for part in ('dunes', 'terraces'):
+        if part == 'dunes':
+            xs = frange(-WALL_X, WALL_X, 2.0)
+            zs = grid_axis(T1_Z + 0.6, -59.5, 2.0, [T1_Z + 0.6])
+        else:
+            xs, zs = terrace_axes(-WALL_X, WALL_X, WALL_ZS, T1_Z + 0.6, 4.0)
+        H = [[land_h(x, z) for x in xs] for z in zs]
+        keep = lambda i, j, H=H: max(H[j][i], H[j + 1][i], H[j][i + 1], H[j + 1][i + 1]) > 0.04
+        V, N, F, UV, _ = hf_geo(xs, zs, lambda x, z: DUNE_BASE + land_h(x, z), keep, eps=0.1)
+        g.add((V, N, F, UV), 0, 0, 1.0)
+        slopes.append(max_slope(V, F))
+    g.extra['max_slope_deg'] = max(slopes)
+    g.extra['ramp_slope_deg'] = [round(math.degrees(math.atan2((T1_H if w == 1 else T2_H - T1_H), run)), 1) for _, _, w, run in RAMPS]
     return g
 
 def build_hills():
     # Backdrop land outside the walls: south hills, the two headland tops, the river valley; 3 m grid. Split west / east.
+    # Round 1: a finer grid on the near hills (2.5 m; the farm terraces need it), the terrace riser rows continue outside the walls, and
+    # the faces are painted by field: each terrace band is split into fields (grass, hay, wheat stubble, a dark crop, ploughed soil) with
+    # darker hedge banks on the risers, so the hills read as farmland, not one green mound.
     out = []
-    xs = frange(-180.5, 180.5, 4.0)       # includes +-60.5 and the wall line z -75.5
-    zs = frange(-163.5, 60.5, 4.0)
+    xs = seg_axis([(-200.5, -140.5, 10.0), (-140.5, -80.5, 5.0), (-80.5, 80.5, 3.0), (80.5, 140.5, 5.0), (140.5, 200.5, 10.0)], [-WALL_X, WALL_X])
+    zs = seg_axis([(-215.5, -150.5, 5.0), (-150.5, WALL_ZS, 3.0), (WALL_ZS, 60.5, 4.0)], riser_rows() + [T1_Z + 1.0, T1_Z - 1.0, T2_Z + 1.0, T2_Z - 1.0])
     H = [[land_h(x, z) for x in xs] for z in zs]
     def keep_fn(lo_i, hi_i):
         def keep(i, j):
@@ -1763,6 +1894,8 @@ def build_hills():
             beyond_code = abs(cx) > 120.0 or cz < -100.0
             if cz > -44.0:
                 return hmax > 0.3
+            if abs(cx) > 140.0 and cz > -60.0 and hmax < 0.3:
+                return False
             return hmax > 0.06 or beyond_code
         return keep
     mid = xs.index(min(xs, key=lambda x: abs(x - 0.5)))
@@ -1772,10 +1905,29 @@ def build_hills():
         fsl = []
         for f in F:
             ny = sum(N[k].y for k in f) / len(f)
-            fsl.append((S['Rock'], L['Rock']) if ny < 0.62 else (S['Grass'], L['Grass']))
+            cx = sum(V[k].x for k in f) / len(f); cz = sum(V[k].z for k in f) / len(f)
+            fsl.append(field_slot(cx, cz, ny))
         g.add((V, N, F, UV), S['Grass'], L['Grass'], 0.75, fsl)
         out.append(g)
     return out
+
+FIELD_SLOTS = [(S['Grass'], L['Grass']), (S['Reed'], L['Grass']), (S['Grass'], L['Grass']), (S['Sand'], L['Grass']),
+               (S['Foliage'], L['Foliage']), (S['Dock'], L['Sand']), (S['Reed'], L['Grass']), (S['Grass'], L['Grass'])]
+
+def field_slot(x, z, ny):
+    # the hills' paint: rock on steep faces; on the farm terraces a field per band and ~26 m strip, hedge banks on the risers
+    if ny < 0.62:
+        return (S['Rock'], L['Rock'])
+    k = hill_terrace_k(x, z) if z < WALL_ZS else 0.0
+    if k < 0.35:
+        return (S['Grass'], L['Grass'])
+    q = hill_raw(x, z) / HILL_STEP
+    f = q - math.floor(q)
+    if 0.74 < f < 0.97:
+        return (S['Foliage'], L['Grass'])
+    band = int(math.floor(q))
+    fid = int(math.floor((x + 7.0 * n2(x, z, 0.02, 70)) / 34.0))
+    return FIELD_SLOTS[(band * 5 + fid * 3 + (band * fid) % 3) % len(FIELD_SLOTS)]
 
 def river_ribbon_y(z):
     if z >= -55.0:
@@ -1783,7 +1935,7 @@ def river_ribbon_y(z):
     return PLATEAU_Y + 0.06
 
 def build_river():
-    g = G2('Harbour_Core_River', 'core', rays=0, material='M_Water_Surface (water, not toon): the river the crew came down',
+    g = G2('Harbour_Core_River', 'core', rays=0, material='M_Water_Creek (water without the shore-foam band, not toon): the river the crew came down, the creek, the tide pools',
            note='Visual only, outside the walls. Draw it with the water material (no palette slot fits water); shadows off.')
     pts = [Vector((p[0], 0.0, p[1])) for p in RIVER]
     # resample every ~1.5 m
@@ -1816,6 +1968,7 @@ def build_river():
             F.append(q); UV.append([(V[j].x, V[j].z) for j in q])
     g.add((V, N, F, UV), S['Sand'], L['none'], 1.0)
     # still water in the tide pools by the east wall (same water material; visual only)
+    build_creek_ribbon(g)      # round 1
     for (x, z, rr) in TIDE_POOLS:
         ring = [(x + rr * math.cos(a), z + rr * 0.8 * math.sin(a)) for a in [2 * math.pi * i / 12 for i in range(12)]]
         y = terrain_y(z) + 0.035
@@ -1914,7 +2067,22 @@ def place_outside(g, geo, c, nx, nz, margin=0.6):
         if not bad:
             break
         c += Vector((nx, 0.0, nz)) * 0.5
-    g.add(xform(geo, c), S['Rock'], L['Rock'], AO_ROCK)
+    # round 1: painted strata (grey, buff and brown bands that wander with noise), a dark wet/mossy band at the waterline, grass on the flat tops
+    V2, N2, F2, UV2 = xform(geo, c)
+    fsl = []
+    for f in F2:
+        cy = sum(V2[k].y for k in f) / len(f)
+        cx_ = sum(V2[k].x for k in f) / len(f); cz_ = sum(V2[k].z for k in f) / len(f)
+        ny = sum(N2[k].y for k in f) / len(f)
+        if ny > 0.78 and cy > 2.5:
+            fsl.append((S['Grass'], L['Grass']))
+        elif cy < 0.75:
+            fsl.append((S['FoliageDark'], L['Rock']))
+        else:
+            # broad warm and cool patches (low-frequency noise), not stripes: per-face bands zigzag on the big triangles
+            w = n2(cx_, cz_ + 0.6 * cy, 0.05, 41)
+            fsl.append(((S['Dock'] if w > 0.42 else S['Rock']), L['Rock']))
+    g.add((V2, N2, F2, UV2), S['Rock'], L['Rock'], AO_ROCK, fsl)
 
 def build_cliffs():
     out = []
@@ -1926,8 +2094,7 @@ def build_cliffs():
         # Fewer, larger, smoother sculpted masses with broad planes (RV There Yet canyon walls), overlapping along the edge, plus a
         # second, smaller mass behind every other one so the skyline steps; a few foot rocks in the sea.
         for k, (x, z, nx, nz) in enumerate(edge_walk(poly, edges, 10.5)):
-            near = dist_to_walls(x, z) < 16.0 and z < -15.0
-            sub = 4 if near else 3
+            sub = 3      # round 1: subdiv 3 everywhere (the near masses were 5,120 triangles each)
             rad = r.uniform(9.0, 12.5)
             c = (x + nx * r.uniform(3.0, 5.0), top * 0.42 + r.uniform(-0.8, 0.8), z + nz * r.uniform(3.0, 5.0))
             place_outside(g, sculpt_mass(rad, r, (1.0, (top + 1.2) / rad * 0.62, r.uniform(0.7, 0.9)), sub, r.uniform(0, 360)), c, nx, nz)
@@ -2021,8 +2188,8 @@ def build_paths():
     g = G2('Harbour_Core_Paths', 'core', rays=12)
     for i, (pts, hw) in enumerate(PATHS):
         # soft edge: a wider, slightly lower worn-grass band (Reed slot, Grass layer) under the sand, so grass -> olive -> sand blends
-        ground_ribbon(g, pts, hw + 0.75, S['Reed'], L['Grass'], seed=60 + i, lift=0.028, wobble=0.25)
-        ground_ribbon(g, pts, hw, S['Sand'], L['Sand'], seed=20 + i)
+        ground_ribbon(g, pts, hw + 0.75, S['Reed'], L['Grass'], seed=60 + i, lift=0.028, wobble=0.25, step=1.0)
+        ground_ribbon(g, pts, hw, S['Sand'], L['Sand'], seed=20 + i, step=1.0)
     # sand blowouts on the dune faces (inside the walls) and a few on the hills by the road
     r = rng2('sandpatch')
     placed = 0
@@ -2036,69 +2203,131 @@ def build_paths():
         placed += 1
     return g
 
+def stone_face(g, p0, u, length, y0, y1, nrm, seed, course=0.7, slen=(1.6, 2.6), batter=0.06, moss=0.3, inset=0.0):
+    # A dry-stone face: courses of cushion stones (each a 3 x 3 vertex patch: recessed joints, a bulging centre, pillow normals). The face
+    # runs from p0 along u (horizontal unit) for `length`, from y0 to y1, facing nrm (horizontal unit), leaning back by `batter` per metre.
+    # Stone colours vary (grey, warm buff, brown, a mossy bottom course): the painted layer stays the Rock texture.
+    r = random.Random(zlib.crc32(seed.encode('utf-8')))
+    p0, u, nrm = Vector(p0), Vector(u).normalized(), Vector(nrm).normalized()
+    up = Vector((0, 1, 0))
+    nc = max(1, int(round((y1 - y0) / course)))
+    hs = [r.uniform(0.75, 1.25) for _ in range(nc)]
+    ys = [y0]
+    for hh in hs:
+        ys.append(ys[-1] + (y1 - y0) * hh / sum(hs))
+    V, N, F, UV, FS = [], [], [], [], []
+    for c in range(nc):
+        ya, yb = ys[c], ys[c + 1]
+        s = -r.uniform(0.0, slen[0]) if c % 2 else 0.0
+        while s < length:
+            sl = r.uniform(*slen)
+            sa, sb = max(0.0, s), min(length, s + sl)
+            s += sl
+            if sb - sa < 0.12:
+                continue
+            bulge = r.uniform(0.045, 0.085)
+            base = len(V)
+            for yy, ty in ((ya, -1), ((ya + yb) / 2, 0), (yb, 1)):
+                for ss, ts in ((sa, -1), ((sa + sb) / 2, 0), (sb, 1)):
+                    edge = ty != 0 or ts != 0
+                    d = (-0.05 if edge else bulge) + inset
+                    if ty != 0 and ts != 0:
+                        d -= 0.02
+                    V.append(p0 + u * ss + nrm * (d - batter * (yy - y0)) + up * yy)
+                    N.append((nrm - u * (0.55 * ts) + up * (0.55 * ty)).normalized())
+            for j in range(2):
+                for i in range(2):
+                    a = base + j * 3 + i
+                    F.append([a, a + 1, a + 4, a + 3])
+                    UV.append([(V[k].x + V[k].z, V[k].y) for k in (a, a + 1, a + 4, a + 3)])
+            k = r.random()
+            if c == 0 and r.random() < moss:
+                sl_ = (S['FoliageDark'], L['Rock'])
+            elif k < 0.8:
+                sl_ = (S['Rock'], L['Rock'])
+            else:
+                sl_ = (S['Sand'], L['Rock'])          # warm buff stones among the grey (round 1 look check: brown read as paint patches)
+            FS += [sl_] * 4
+    g.add((V, N, F, UV), S['Rock'], L['Rock'], 0.48, FS)
+
+def ramp_rows():
+    # (name, x, wall z, run, y foot (world), y top (world))
+    out = []
+    for name, rx_, w, run in RAMPS:
+        zw = T1_Z if w == 1 else T2_Z
+        lo = PLATEAU_Y if w == 1 else DUNE_BASE + T1_H
+        hi = DUNE_BASE + (T1_H if w == 1 else T2_H)
+        out.append((name, rx_, zw, run, lo, hi))
+    return out
+
+def parapet(g, ax, az, bx, bz, ytop, r, slot=S['Rock'], h=0.5, d=0.55, name='Parapet'):
+    # a run of coping stones (rounded blocks, a little irregular) from a to b on top of a wall, with one box collider per ~6 m
+    L_ = math.hypot(bx - ax, bz - az)
+    if L_ < 0.3:
+        return
+    ux, uz = (bx - ax) / L_, (bz - az) / L_
+    yaw = math.degrees(math.atan2(ux, uz))
+    n = max(1, int(round(L_ / 2.8)))
+    seg = L_ / n
+    for k in range(n):
+        cx, cz = ax + ux * seg * (k + 0.5), az + uz * seg * (k + 0.5)
+        hh = h * r.uniform(0.9, 1.08)
+        g.add(xform(rbox((d * r.uniform(0.94, 1.04), hh, seg - 0.04), 0.09, 1), (cx, ytop + hh / 2 - 0.08, cz), ry(yaw + r.uniform(-1.2, 1.2))),
+              S['Sand'] if r.random() < 0.3 else slot, L['Rock'], 0.6)
+    nb = max(1, int(round(L_ / 6.0)))
+    for k in range(nb):
+        t0, t1 = k / nb, (k + 1) / nb
+        xs_ = [ax + (bx - ax) * t0, ax + (bx - ax) * t1]
+        zs_ = [az + (bz - az) * t0, az + (bz - az) * t1]
+        lo = [min(xs_) - (d / 2 if abs(uz) > 0.5 else 0.0), ytop - 0.08, min(zs_) - (d / 2 if abs(ux) > 0.5 else 0.0)]
+        hi = [max(xs_) + (d / 2 if abs(uz) > 0.5 else 0.0), ytop + h * 1.08 - 0.08, max(zs_) + (d / 2 if abs(ux) > 0.5 else 0.0)]
+        g.items.append(dict(name=name, collider='box', position=[round((lo[i] + hi[i]) / 2, 3) for i in range(3)],
+                            footprint=[round(hi[i] - lo[i], 3) for i in range(3)], bounds_min=[round(v, 3) for v in lo],
+                            bounds_max=[round(v, 3) for v in hi]))
+
 def build_stone_wall():
-    # A low dry-stone wall just inside the south wall (it makes the boundary read as a field edge), with an open wooden gate at the south path.
-    g = G2('Harbour_Core_Walls_Tri', 'core', tri=True, rays=16)
+    # Round 1 (2026-10-15): the terrace retaining walls (they replace round 0's low field wall), the stone stairs cut into them, the coping
+    # parapets on top (a 0.5 m lip that keeps players on the terrace edge; box colliders, Shore). The walkable shape itself is
+    # Harbour_Dunes_Col (riser faces ~80 deg, stair ramps <= 23.2 deg); these stones only dress it.
+    g = G2('Harbour_Core_Walls_Tri', 'core', tri=True, rays=12, ao_dist=0.45)
     r = rng2('stonewall')
-    prof = [(-0.36, -0.25), (-0.36, 0.0), (-0.33, 0.35), (-0.27, 0.58), (-0.16, 0.72), (0.0, 0.76), (0.16, 0.72), (0.27, 0.58), (0.33, 0.35),
-            (0.36, 0.0), (0.36, -0.25)]
-    for x0, x1 in ((-58.6, STONE_WALL_GATE[0]), (STONE_WALL_GATE[1], 58.6)):
-        xs = frange(x0, x1, 0.4)
-        rows = []
-        for x in xs:
-            zc = STONE_WALL_Z + 0.35 * n2(x, 0.0, 0.05, 31)
-            base = min(land_y(x, zc - 0.3), land_y(x, zc + 0.3))
-            row = []
-            for (pz, py) in prof:
-                bump = 0.05 * n2(x * 2.2, py * 3 + pz * 2, 1.0, 32) + 0.035 * n2(x * 5.0, py * 6, 1.0, 33)
-                ry_ = py * (1.0 + 0.08 * n2(x, 0.0, 0.3, 34))
-                row.append(Vector((x, base + ry_ + (bump if py > 0 else 0.0), zc + pz * (1.0 + bump))))
-            rows.append(row)
-        V, N, F, UV = [], [], [], []
-        m = len(prof)
-        for row in rows:
-            V += row
-        for i in range(len(rows) - 1):
-            for k in range(m - 1):
-                a = i * m + k
-                F.append([a, a + m, a + m + 1, a + 1])
-        # end caps
-        for i in (0, len(rows) - 1):
-            ring = [i * m + k for k in range(m)]
-            F.append(ring if i == len(rows) - 1 else list(reversed(ring)))
-        # orient: sides must face away from the centre line
-        for k, f in enumerate(F[:-2]):
-            n = (V[f[1]] - V[f[0]]).cross(V[f[2]] - V[f[0]])
-            ctr = sum((V[j] for j in f), Vector()) / len(f)
-            zc = STONE_WALL_Z + 0.35 * n2(ctr.x, 0.0, 0.05, 31)
-            out = Vector((0.0, ctr.y - (land_y(ctr.x, zc) + 0.2), ctr.z - zc))
-            if n.dot(out) < 0:
-                F[k] = list(reversed(f))
-        # smooth normals
-        acc = [Vector() for _ in V]
-        for f in F:
-            n = (V[f[1]] - V[f[0]]).cross(V[f[2]] - V[f[0]])
-            for j in f:
-                acc[j] += n
-        N = [a.normalized() if a.length > 0 else Vector((0, 1, 0)) for a in acc]
-        UV = [[(V[j].x, V[j].z) for j in f] for f in F]
-        g.add((V, N, F, UV), S['Rock'], L['Rock'], 0.6)
-        # colliders: boxes every ~6 m (the base follows the dunes)
-        n = max(1, int((x1 - x0) / 6.0))
-        for k in range(n):
-            a, b = x0 + (x1 - x0) * k / n, x0 + (x1 - x0) * (k + 1) / n
-            vs = [v for v in V if a - 0.01 <= v.x <= b + 0.01]
-            lo = [min(v[i] for v in vs) for i in range(3)]; hi = [max(v[i] for v in vs) for i in range(3)]
-            g.items.append(dict(name='StoneWall', collider='box', position=[round((lo[i] + hi[i]) / 2, 3) for i in range(3)],
-                                footprint=[round(hi[i] - lo[i], 3) for i in range(3)], bounds_min=[round(v, 3) for v in lo],
-                                bounds_max=[round(v, 3) for v in hi]))
-    # gate pillars (rounded stone) at both sides of the gap
-    for gx in STONE_WALL_GATE:
-        g.mark()
-        y0 = land_y(gx, STONE_WALL_Z)
-        g.add(xform(blob(0.55, r, (0.75, 1.9, 0.75), subdiv=2, rough=0.12, flat=-0.9), (gx, y0 + 0.55, STONE_WALL_Z)), S['Rock'], L['Rock'], 0.6)
-        g.solid('GatePillar')
-    g._mark = len(g.V)
+    rr = ramp_rows()
+    for wall, zw, lo_y, hi_y in ((1, T1_Z, PLATEAU_Y - 0.25, DUNE_BASE + T1_H + 0.04), (2, T2_Z, DUNE_BASE + T1_H - 0.2, DUNE_BASE + T2_H + 0.04)):
+        ramps = sorted([(x, run) for name, x, z, run, lo, hi in rr if z == zw])
+        # main face in pieces between the stair openings, a little past the walls at both ends (it tucks into the outside banks)
+        xa = -WALL_X - 3.5
+        for x, run in ramps + [(None, None)]:
+            xb = (x - RAMP_HW) if x is not None else WALL_X + 3.5
+            stone_face(g, (xb, 0.0, zw + RISER_HALF + 0.06), (-1, 0, 0), xb - xa, lo_y, hi_y, (0, 0, 1), 'wall%d.%d' % (wall, int(round(xa * 10))))
+            if x is not None:
+                xa = x + RAMP_HW
+        # parapet along the top edge, open at the stairs, and along both stair cheeks
+        pa = -WALL_X
+        for x, run in ramps + [(None, None)]:
+            pb = (x - RAMP_HW - 0.3) if x is not None else WALL_X
+            parapet(g, pa, zw - 0.05, pb, zw - 0.05, hi_y - 0.04, r, name='Parapet%d' % wall)
+            if x is not None:
+                pa = x + RAMP_HW + 0.3
+                for s_ in (-1, 1):
+                    parapet(g, x + s_ * (RAMP_HW + 0.28), zw - 0.35, x + s_ * (RAMP_HW + 0.28), zw + RISER_HALF - run, hi_y - 0.04, r,
+                            name='StairParapet%d' % wall)
+        # the stairs: cheek faces and the steps
+        for x, run in ramps:
+            z0 = zw + RISER_HALF
+            for s_ in (-1, 1):
+                stone_face(g, (x + s_ * RAMP_HW, 0.0, z0 + 0.06), (0, 0, -1), run + 0.06, lo_y, hi_y, (-s_, 0, 0),
+                           'cheek%d.%d.%d' % (wall, int(x), s_), course=0.7, slen=(1.2, 1.9))
+            foot = PLATEAU_Y if wall == 1 else DUNE_BASE + T1_H
+            top = hi_y - 0.04
+            n = max(1, int(round((top - foot) / 0.2)))
+            rise, tread = (top - foot) / n, run / n
+            for k in range(n):
+                zc = z0 - tread * (k + 0.5)
+                ytop = foot + rise * (k + 1) + 0.02
+                yb = foot - 0.35
+                g.add(xform(rbox((2 * RAMP_HW - 0.04, ytop - yb, tread + 0.05), 0.045, 1), (x + r.uniform(-0.02, 0.02), (ytop + yb) / 2, zc)),
+                      S['Sand'] if k % 3 else S['Rock'], L['Rock'], 0.55)
+    g.extra['stairs'] = [dict(name=name, x=x, wall_z=z, run=run, foot_y=round(lo, 3), top_y=round(hi, 3)) for name, x, z, run, lo, hi in rr]
     return g
 
 def build_road():
@@ -2107,7 +2336,10 @@ def build_road():
     g = G2('Harbour_Core_Road', 'core', rays=8, ao_dist=1.5)
     pts = road_pts()
     over_river = lambda p: poly_dist(p.x, p.z, RIVER) < river_half_width(p.z) + 2.0
-    ground_ribbon(g, pts, 2.3, S['Sand'], L['Sand'], step=2.0, lift=0.07, seed=40, skip=over_river, wobble=0.05)
+    # round 1: inside the walls the road is the village's upper lane: a narrower grey cobbled lane; outside, the sand coast road
+    inside = lambda p: inside_walls(p.x, p.z, 0.5)
+    ground_ribbon(g, pts, 2.3, S['Sand'], L['Sand'], step=2.0, lift=0.07, seed=40, skip=lambda p: over_river(p) or inside(p), wobble=0.05)
+    ground_ribbon(g, pts, 1.9, S['Rock'], L['Rock'], step=2.0, lift=0.078, seed=41, skip=lambda p: not inside(p), wobble=0.04)
     # bridge
     best = min(pts, key=lambda p: poly_dist(p[0], p[1], RIVER))
     bx = best[0]
@@ -2137,7 +2369,7 @@ def build_road():
     x = ROAD_X0 + 6.0
     while x < ROAD_X1 - 2.0:
         z = road_z(x) - 3.8
-        if poly_dist(x, z, RIVER) > river_half_width(z) + 3.0:
+        if poly_dist(x, z, RIVER) > river_half_width(z) + 3.0 and not inside_walls(x, z, 1.0):   # round 1: none on the village lane
             poles.append((x, z))
         x += 20.0
     for (x, z) in ROAD_EAST[1:]:
@@ -2147,13 +2379,13 @@ def build_road():
         y0 = land_y(x, z)
         lean = r.uniform(-2.0, 2.0)
         rot = rz(lean)
-        add_lathe(g, (x, y0 - 0.3, z), [(0, 0.15), (0.4, 0.14), (6.6, 0.11), (6.7, 0.09), (6.72, 0.0)], S['WoodDark'], L['Wood'], 0.5, sides=8, rot=rot)
+        add_lathe(g, (x, y0 - 0.3, z), [(0, 0.15), (6.6, 0.11), (6.72, 0.0)], S['WoodDark'], L['Wood'], 0.5, sides=6, rot=rot)
         arm_c = Vector((x, y0 + 5.9, z)) + rot @ Vector((0, 0.0, 0))
         g.add(xform(rbox((1.6, 0.12, 0.12), 0.03, 1), arm_c, rot), S['WoodDark'], L['Wood'], 0.5)
         ends = []
         for s in (-0.7, 0.7):
             e = arm_c + rot @ Vector((s, 0.12, 0))
-            add_lathe(g, e - Vector((0, 0.06, 0)), [(0, 0.04), (0.12, 0.045), (0.14, 0.0)], S['Sand'], L['none'], 0.6, sides=6)
+            add_lathe(g, e - Vector((0, 0.06, 0)), [(0, 0.04), (0.12, 0.045), (0.14, 0.0)], S['Sand'], L['none'], 0.6, sides=4)
             ends.append(e + Vector((0, 0.06, 0)))
         tops.append(ends)
     for a, b in zip(tops[:-1], tops[1:]):
@@ -2161,25 +2393,8 @@ def build_road():
             pa, pb = a[k], b[k]
             if (pb - pa).length > 30:
                 continue
-            g.add(tube(rope_line(pa, pb, 0.6, n=10), 0.025, 4, caps=False), S['WoodDark'], L['none'], 0.5)
-    # farm fence along the north side of the road (posts every 3.5 m, two wires)
-    fpts = []
-    x = -150.0
-    while x < 60.0:
-        z = road_z(x) + 3.4
-        if poly_dist(x, z, RIVER) > river_half_width(z) + 4.0 and not inside_walls(x, z, 0.5):
-            fpts.append(Vector((x, land_y(x, z), z)))
-        else:
-            fpts.append(None)
-        x += 5.0
-    for p in fpts:
-        if p is not None:
-            add_lathe(g, p - Vector((0, 0.15, 0)), [(0, 0.06), (1.25, 0.055), (1.3, 0.0)], S['Wood'], L['Wood'], 0.5, sides=6)
-    for a, b in zip(fpts[:-1], fpts[1:]):
-        if a is None or b is None:
-            continue
-        for h in (0.6, 1.05):
-            g.add(tube([a + Vector((0, h, 0)), b + Vector((0, h - 0.05, 0))], 0.012, 3, caps=False), S['Rock'], L['none'], 0.5)
+            g.add(tube(rope_line(pa, pb, 0.6, n=8), 0.025, 3, caps=False), S['WoodDark'], L['none'], 0.5)
+    build_hill_track(g)      # round 1
     return g
 
 # ---------------------------------------------------------------------------------------------------------------------------------------
@@ -2245,7 +2460,7 @@ def tree_pine(g, base, h, slot, sides=7, lean=(0.0, 0.0), key=None):
         f = 0.3 + 0.62 * k / tiers
         R = h * (0.36 * (1.0 - f) + 0.1)
         c = trunk_at(f)
-        n = 3 if far else ((7 if k < 2 else 6) if near else (5 if k < 2 else (4 if k < 4 else 3)))
+        n = 3 if far else ((6 if k < 2 else 5) if near else (5 if k < 2 else (4 if k < 4 else 3)))   # round 1: one clump fewer per near tier
         a0 = r.uniform(0, 2 * math.pi)
         for i in range(n):
             a = a0 + 2 * math.pi * i / n + r.uniform(-0.35, 0.35)
@@ -2281,28 +2496,49 @@ def tree_round(g, base, h, r, slot, sub=1, trunk=True, key=None):
     g.add(xform(leaf_clump(0.27 * h, rr, (1.0, 0.75, 1.0), sub2), crown + Vector((0, 0.3 * h, 0))), slot, L['Foliage'], 0.55)
 
 def build_forest():
-    g = G2('Harbour_Core_Forest_Tri', 'core', tri=True, rays=6, ao_dist=2.0)
+    # Round 1: the forest as dense grove masses (RV There Yet tree walls) instead of scattered single trees: each grove is 8-13 big leaf
+    # clumps packed into one canopy, conifer groves taller and narrower; a belt along the ridge behind the farm terraces, groves on the
+    # flanks and in the farmland. Far groves only (>= 40 m from the play area), so the clumps stay cheap (80 triangles each).
+    g = G2('Harbour_Core_Forest_Tri', 'core', tri=True, rays=6, ao_dist=2.5)
     r = rng2('forest')
-    clumps = 0
-    for _ in range(600):
-        if clumps >= 10:
+    groves = []
+    for x in frange(-170.0, 170.0, 42.5):                          # the ridge belt
+        groves.append((x + r.uniform(-6, 6), -168.0 + r.uniform(-8, 6), r.random() < 0.6))
+    for _ in range(400):                                            # flanks and the farmland
+        if len(groves) >= 20:
             break
-        x, z = r.uniform(-165, 165), r.uniform(-170, -84)
-        if road_dist(x, z) < 7.0 or poly_dist(x, z, RIVER) < river_half_width(z) + 6.0 or inside_walls(x, z, 6.0):
+        x, z = r.uniform(-175, 175), r.uniform(-160, -40)
+        if inside_walls(x, z, 22.0) or road_dist(x, z) < 8.0 or poly_dist(x, z, RIVER) < river_half_width(z) + 7.0:
             continue
-        clumps += 1
-        far = z < -125 or abs(x) > 120
-        n = r.randint(4, 7)
+        if z > -60.0 and abs(x) < 90.0:
+            continue
+        if math.hypot(x - WINDMILL[0], z - WINDMILL[1]) < 16.0 or any(math.hypot(x - fx, z - fz) < 14.0 for fx, fz, _, _ in FARM):
+            continue
+        if poly_dist(x, z, HILL_TRACK) < 7.0 or math.hypot(x - LIGHTHOUSE[0], z - LIGHTHOUSE[1]) < 16.0:
+            continue
+        if any(math.hypot(x - gx, z - gz) < 14.0 for gx, gz, _ in groves):
+            continue
+        groves.append((x, z, r.random() < 0.5))
+    for gx, gz, conifer in groves:
+        n = r.randint(5, 8)
+        R = r.uniform(5.0, 8.0)
         for k in range(n):
-            tx, tz = x + r.uniform(-9, 9), z + r.uniform(-7, 7)
+            a = r.uniform(0, 2 * math.pi); d = R * math.sqrt(r.random())
+            tx, tz = gx + d * math.cos(a), gz + d * math.sin(a) * 0.75
             if road_dist(tx, tz) < 5.0 or poly_dist(tx, tz, RIVER) < river_half_width(tz) + 4.0:
                 continue
             y0 = land_y(tx, tz)
-            h = r.uniform(5.0, 9.0)
-            if r.random() < 0.55:
-                tree_pine(g, (tx, y0, tz), h, S['FoliageDark'] if r.random() < 0.6 else S['Foliage'], sides=6)
+            if conifer:
+                h = r.uniform(7.0, 11.0)
+                rad = r.uniform(1.9, 2.6)
+                g.add(xform(leaf_clump(rad, r, (0.85, 2.1, 0.85), 2), (tx, y0 + h * 0.45, tz)), S['FoliageDark'] if r.random() < 0.75 else S['Foliage'], L['Foliage'], 0.55)
+                if k % 3 == 0:
+                    g.add(xform(leaf_clump(rad * 0.55, r, (0.8, 1.9, 0.8), 1), (tx, y0 + h * 0.8, tz)), S['FoliageDark'], L['Foliage'], 0.55)
             else:
-                tree_round(g, (tx, y0, tz), h * 0.8, r, S['Foliage'] if r.random() < 0.6 else S['FoliageDark'], sub=1)
+                h = r.uniform(5.0, 8.0)
+                rad = r.uniform(2.6, 3.6)
+                g.add(xform(leaf_clump(rad, r, (1.0, 0.8, 1.0), 2), (tx, y0 + h * 0.55, tz)), S['Foliage'] if r.random() < 0.55 else S['FoliageDark'], L['Foliage'], 0.55)
+    g.extra['groves'] = len(groves)
     out = [g]
     # the headland tops: wind-bent pines and a few round trees (a second mesh, so each stays under the 21k limit)
     g = G2('Harbour_Core_HeadlandTrees_Tri', 'core', tri=True, rays=6, ao_dist=2.0)
@@ -2446,8 +2682,8 @@ def build_backdrop():
             add_lathe(g, tc, [(0, 0.0), (0.02, 0.42), (0.6, 0.42), (0.62, 0.0)], top, L['none'], 0.7, sides=10)
         else:
             add_lathe(g, tc, [(0, 0.0), (0.02, 0.45), (0.75, 0.0)], top, L['none'], 0.7, sides=10)
-    # a farm on the south hills: farmhouse, barn, a few hay bales, fields in the Reed slot (crops)
-    for (fx, fz, yaw, kind) in ((-36.0, -116.0, 8.0, 'house'), (-24.0, -121.0, -4.0, 'barn'), (44.0, -126.0, -12.0, 'house')):
+    # a farm on the hills (round 1: higher up, on the farm terraces): farmhouse, barn, a second house; hay bales; the windmill
+    for (fx, fz, yaw, kind) in FARM:
         fy = land_y(fx, fz) - 0.25
         rot = ry(yaw)
         if kind == 'house':
@@ -2471,14 +2707,11 @@ def build_backdrop():
             p = Vector((fx, fy, fz)) + rot @ Vector((2.0, 6.1, 0.8))
             g.extra['smoke_points'].append(dict(name='FarmChimney', position=[round(p.x, 2), round(p.y, 2), round(p.z, 2)]))
     fr = rng2('fields')
-    for (fx, fz, w, d, yaw, slot) in ((-46.0, -104.0, 16.0, 10.0, 6.0, S['Reed']), (-14.0, -106.0, 14.0, 9.0, -3.0, S['Sand']),
-                                      (30.0, -108.0, 18.0, 10.0, 10.0, S['Reed']), (56.0, -112.0, 14.0, 9.0, -8.0, S['Foliage']),
-                                      (-62.0, -126.0, 18.0, 12.0, 14.0, S['Sand'])):
-        field_patch(g, fx, fz, w, d, yaw, slot)
-        for k in range(4 if slot == S['Sand'] else 0):     # hay bales on the stubble fields
-            hx, hz = fx + fr.uniform(-w / 3, w / 3), fz + fr.uniform(-d / 3, d / 3)
-            add_lathe(g, (hx, land_y(hx, hz) + 0.15, hz), [(-0.6, 0.0), (-0.58, 0.55), (0.58, 0.55), (0.6, 0.0)], S['Sand'], L['Grass'], 0.6,
-                      sides=10, rot=ry(fr.uniform(0, 180)) @ rz(90))
+    for k in range(7):
+        hx, hz = FARM[1][0] + fr.uniform(-12, 12), FARM[1][1] + fr.uniform(4, 12)
+        add_lathe(g, (hx, land_y(hx, hz) + 0.15, hz), [(-0.6, 0.0), (-0.58, 0.55), (0.58, 0.55), (0.6, 0.0)], S['Sand'], L['Grass'], 0.6,
+                  sides=10, rot=ry(fr.uniform(0, 180)) @ rz(90))
+    windmill_body(g)
     return g
 
 def field_patch(g, cx, cz, w, d, yaw, slot, step=2.0):
@@ -3392,13 +3625,13 @@ GANGWAY_Z = TUG_WORLD['position'][2] + TUG_GANGWAY_Z
 def ground(x, z):
     return land_y(x, z)
 
-def lamp_post(g, x, z, name):
-    y = ground(x, z)
+def lamp_post(g, x, z, name, y=None):
+    y = ground(x, z) if y is None else y
     g.mark()
     add_box(g, (x, y + 0.06, z), (0.26, 0.12, 0.26), 0.03, S['WoodDark'], L['Wood'], 0.45)
-    add_lathe(g, (x, y + 0.1, z), [(0, 0.08), (0.12, 0.068), (2.6, 0.056), (2.64, 0.07), (2.68, 0.06)], S['WoodDark'], L['Wood'], 0.5, sides=10)
-    add_lathe(g, (x, y + 2.75, z), [(0, 0.05), (0.04, 0.12), (0.3, 0.135), (0.34, 0.08)], S['Accent'], L['none'], 0.6, sides=12, cap0=True)
-    add_lathe(g, (x, y + 3.06, z), [(0, 0.17), (0.05, 0.16), (0.17, 0.04), (0.2, 0.035), (0.24, 0.05), (0.27, 0.0)], S['WoodDark'], L['none'], 0.5, sides=12, cap0=True)
+    add_lathe(g, (x, y + 0.1, z), [(0, 0.08), (0.12, 0.068), (2.6, 0.056), (2.64, 0.07), (2.68, 0.06)], S['WoodDark'], L['Wood'], 0.5, sides=7)
+    add_lathe(g, (x, y + 2.75, z), [(0, 0.05), (0.04, 0.12), (0.3, 0.135), (0.34, 0.08)], S['Accent'], L['none'], 0.6, sides=8, cap0=True)
+    add_lathe(g, (x, y + 3.06, z), [(0, 0.17), (0.05, 0.16), (0.17, 0.04), (0.2, 0.035), (0.24, 0.05), (0.27, 0.0)], S['WoodDark'], L['none'], 0.5, sides=8, cap0=True)
     add_box(g, (x, y + 2.72, z), (0.16, 0.06, 0.16), 0.02, S['WoodDark'], L['none'], 0.5)
     # a hook arm for the string lights
     add_box(g, (x, y + 2.55, z), (0.7, 0.05, 0.05), 0.015, S['WoodDark'], L['none'], 0.5)
@@ -3616,20 +3849,6 @@ def picket_fence(g, pts, name):
             g.add(xform(rbox((0.05, 0.07, L_), 0.015, 1), (mx, ground(mx, mz) + hh, mz - 0.03), ry(yaw)), S['Sand'], L['Wood'], 0.5)
     g.solid(name)
 
-def field_gate(g):
-    gx = STONE_WALL_GATE[1] - 0.2
-    z = STONE_WALL_Z
-    y = ground(gx, z)
-    g.mark()
-    rot = ry(-115)   # swung open toward the dunes
-    P = lambda a, b, c: Vector((gx, y, z)) + rot @ Vector((a, b, c))
-    for hh in (0.25, 0.6, 0.95):
-        g.add(xform(rbox((0.05, 0.1, 3.2), 0.02, 1), P(0, hh, -1.6), rot), S['Wood'], L['Wood'], 0.5)
-    for zz in (-0.05, -3.15):
-        g.add(xform(rbox((0.08, 1.15, 0.1), 0.02, 1), P(0, 0.6, zz), rot), S['Wood'], L['Wood'], 0.5)
-    g.add(xform(rbox((0.05, 0.1, 3.4), 0.02, 1), P(0, 0.6, -1.6), rot @ rx(17)), S['Wood'], L['Wood'], 0.5)
-    g.solid('FieldGate')
-
 def gangway(g):
     # from the breakwater's east edge (x 32.0, top 1.5) to the tug's port bulwark gap (main deck 1.25)
     x0 = BREAKWATER[1] - 0.05
@@ -3695,7 +3914,6 @@ def build_yard():
     woodpile(gB, r)
     picket_fence(gB, [(8.2, -65.9), (12.8, -65.9), (14.6, -65.2)], 'PicketFence_Office')
     picket_fence(gB, [(-34.6, -69.6), (-38.0, -70.4), (-41.6, -69.8)], 'PicketFence_Smokehouse')
-    field_gate(gB)
     return [gA, gB]
 
 # ---------------------------------------------------------------------------------------------------------------------------------------
@@ -3858,14 +4076,14 @@ def build_weather_vane():
     g.add(xform(blob(0.09, r, (0.5, 1.2, 0.12), subdiv=1, rough=0.02, flat=-2), (0, 0.5, -0.27), ry(90)), S['Accent'], L['none'], 0.6)
     return g
 
-def build_anim_models(yard_groups, buildings):
+def build_anim_models(yard_groups, buildings, jetty=None, upper=None):
     yA = yard_groups[0]
     out = []
     gull = build_gull()
     perches = [('Gull_PierLamp', (-1.35, DECK_TOP + 3.03, -46.0), 200.0), ('Gull_HutRidge', (-9.6, PLATEAU_Y + 2.97, -63.0), 150.0),
                ('Gull_BaitShopRidge', (-17.2, PLATEAU_Y + 3.74, -63.0), 30.0), ('Gull_CleaningPost', tuple(yA.extra['gull_perch_post']), 250.0),
                ('Gull_Noticeboard', (NOTICE[0] + 0.3, land_y(*NOTICE) + 2.08, NOTICE[1] + 0.02), 120.0),
-               ('Gull_StoneWall', (-20.0, land_y(-20.0, STONE_WALL_Z) + 0.78, STONE_WALL_Z), 300.0),
+               ('Gull_StoneWall', (-20.0, DUNE_BASE + T1_H + 0.42, T1_Z - 0.05), 300.0),
                ('Gull_MooringBuoy', (8.0, 0.35, -17.0), 80.0),
                ('Gull_TugWheelhouse', (TUG_WORLD['position'][0] + 0.9, TUG_WH_TOP, TUG_WORLD['position'][2] + 2.6), 190.0),
                ('Gull_BoatOnSawhorses', (SAWHORSE_BOAT[0], land_y(SAWHORSE_BOAT[0], SAWHORSE_BOAT[1]) + 1.45, SAWHORSE_BOAT[1]), 60.0)]
@@ -3881,6 +4099,8 @@ def build_anim_models(yard_groups, buildings):
     flag.place('Flag_HarbourOffice', tuple(yA.extra['flag_office']), 70.0)
     tw = TUG_WORLD['position']
     flag.place('Flag_TugStern', (tw[0] + 0.0, TUG_DECK + 2.3, tw[2] + TUG_L0 + 0.35), 160.0, frame='world (follows the tug: local (0, 2.3, -7.15))')
+    if jetty is not None:
+        flag.place('Flag_Lookout', tuple(jetty.extra['pennant']), 60.0)
     out.append(flag)
     ws = build_windsock()
     ws.place('WindSock_Breakwater', tuple(yA.extra['windsock']), 60.0)
@@ -3899,6 +4119,8 @@ def build_anim_models(yard_groups, buildings):
     out.append(build_bunting('Bunting_C', (-7.0, PLATEAU_Y + 2.0, -61.5 + 0.05), (lt[0][0] - 0.3, lt[0][1], lt[0][2]), 0.3, 4))
     wv = build_weather_vane()
     wv.place('WeatherVane_HarbourOffice', tuple(buildings.extra['weather_vane']), 0.0)
+    if upper is not None:
+        wv.place('WeatherVane_Chapel', tuple(upper.extra['chapel_vane']), 30.0)
     out.append(wv)
     return out
 
@@ -4078,6 +4300,26 @@ def clutter_vignettes(g, r):
     for k in range(4):
         add_lathe(g, (nx_ - 0.5 + 0.35 * k, land_y(nx_, nz_) + 0.22, nz_ + 0.5 - 0.2 * k), [(-0.12, 0.0), (-0.1, 0.08), (0.1, 0.08), (0.12, 0.0)],
                   [S['Accent'], S['Roof']][k % 2], L['none'], 0.6, sides=8, rot=rx(90) @ ry(30 * k))
+    # -- round 1: the bait shop's east gable (bait_lane_player_eye) was a blank wall: a shuttered window, a lean-to over crates, a barrel and a
+    #    fish rack, floats and a lantern on the wall, a drainpipe; all collider-free detail
+    bx_, bz_, bw_, bd_ = BAIT_SHOP
+    wx = bx_ + bw_ / 2 + 0.02
+    side = ry(90)
+    PS = lambda a, b, c: Vector((wx, PLATEAU_Y, bz_)) + side @ Vector((a, b, c))
+    window(g, PS, side, 0.55, 1.65, 0.0, 0.7, 0.62, frame=S['Accent'], shutters=S['Foliage'])
+    for zz in (-0.15, -1.55):
+        add_lathe(g, (wx + 1.25, PLATEAU_Y - 0.05, bz_ + zz), [(0, 0.06), (1.95, 0.05), (1.97, 0.0)], S['WoodDark'], L['Wood'], 0.5, sides=6)
+    g.add(xform(rbox((1.5, 0.07, 1.9), 0.02, 1), (wx + 0.68, PLATEAU_Y + 2.02, bz_ - 0.85), rz(14)), S['Rock'], L['Rock'], 0.55)
+    g.add(xform(rbox((0.1, 0.1, 1.9), 0.02, 1), (wx + 1.25, PLATEAU_Y + 1.87, bz_ - 0.85)), S['WoodDark'], L['Wood'], 0.5)
+    crate_stack(g, wx + 0.45, bz_ - 1.35, r, 'BaitLeanToCrates'); g.items.pop()
+    for k in range(4):
+        g.add(xform(blob(0.1, r, (0.45, 1.9, 0.7), subdiv=2, rough=0.03), (wx + 0.95, PLATEAU_Y + 1.45, bz_ - 0.3 - 0.22 * k)), S['Dock'] if k % 2 else S['Sand'], L['none'], 0.55)
+    g.add(xform(rbox((0.04, 0.04, 1.0), 0.012, 1), (wx + 0.95, PLATEAU_Y + 1.72, bz_ - 0.62)), S['WoodDark'], L['none'], 0.5)
+    for k, (zz, yy) in enumerate(((0.95, 2.05), (1.25, 1.85), (1.55, 2.1))):
+        add_lathe(g, (wx + 0.12, PLATEAU_Y + yy, bz_ + zz), [(-0.13, 0.0), (-0.11, 0.09), (0.11, 0.09), (0.13, 0.0)], [S['Accent'], S['Roof'], S['Sand']][k], L['none'], 0.6, sides=8, rot=rx(90))
+        g.add(tube([Vector((wx + 0.04, PLATEAU_Y + yy + 0.35, bz_ + zz)), Vector((wx + 0.12, PLATEAU_Y + yy + 0.13, bz_ + zz))], 0.008, 3), S['Sand'], L['Cloth'], 0.6)
+    add_lathe(g, (wx + 0.08, PLATEAU_Y, bz_ + bd_ / 2 - 0.08), [(0, 0.05), (2.3, 0.05), (2.35, 0.08), (2.4, 0.0)], S['Rock'], L['none'], 0.55, sides=6)
+    add_lathe(g, (wx + 0.3, PLATEAU_Y + 2.15, bz_ + 0.3), [(0, 0.0), (0.02, 0.09), (0.22, 0.1), (0.3, 0.05), (0.36, 0.0)], S['Accent'], L['none'], 0.7, sides=6)
     # -- a sandcastle with a bucket and spade on the beach (well clear of the stand points)
     sx, sz = -5.6, -50.6
     sy = beach_y(sz)
@@ -4257,13 +4499,14 @@ def edge_dressing(gA, gB, obst, r):
                             p1 = Vector((x + math.cos(a) * ln / 2, land_y(x, z) + 0.025, z + math.sin(a) * ln / 2))
                             g.add(tube([p0, p0.lerp(p1, 0.5) + Vector((0, 0.01, 0)), p1], 0.018, 4), S['WoodDark'], L['Bark'], 0.55)
                             nk += 1
-    # both sides of the stone wall
-    x = -58.0
-    while x < 58.0:
-        if not (STONE_WALL_GATE[0] - 0.4 < x < STONE_WALL_GATE[1] + 0.4):
+    # round 1: the foot of both retaining walls and the lawn just behind their parapets
+    for zw in (T1_Z, T2_Z):
+      x = -58.0
+      while x < 58.0:
+        if not in_ramp(x, zw, 0.6):
             for side in (-1, 1):
                 if r.random() < 0.55:
-                    z = STONE_WALL_Z + side * r.uniform(0.45, 0.8)
+                    z = (zw + RISER_HALF + r.uniform(0.35, 0.75)) if side > 0 else (zw - r.uniform(0.55, 0.95))
                     if plant_ok(x, z, obst, 0.2):
                         tuft(gA if x < 0 else gB, x, z, r.randint(4, 7), r.uniform(0.35, 0.65), S['Reed'] if r.random() < 0.6 else S['Grass'])
                         nt += 1
@@ -4286,16 +4529,21 @@ def edge_dressing(gA, gB, obst, r):
     return dict(edge_tufts=nt, stones=ns, sticks=nk)
 
 TREES2 = [(-4.5, -72.0, 'pine'), (12.5, -71.0, 'pine'), (24.0, -72.5, 'round'), (-12.0, -73.2, 'pine'), (-35.5, -73.0, 'round'),
-          (33.0, -69.5, 'pine'), (-57.0, -72.5, 'pine'), (57.5, -60.8, 'pine'), (8.0, -68.6, 'round'), (-44.3, -70.8, 'round')]
+          (33.0, -69.5, 'pine'), (-57.0, -72.5, 'pine'), (57.5, -60.8, 'pine'), (8.0, -68.6, 'round'), (-44.3, -70.8, 'round'),
+          # round 1: shade trees on the terraces - four along the upper lane (between the lane and wall 2), two by the chapel overlook
+          (-33.0, -92.6, 'round'), (-3.0, -92.8, 'round'), (15.5, -92.5, 'round'), (40.0, -92.2, 'round'), (-7.0, -100.8, 'round'), (16.0, -101.0, 'round')]
 
 def build_trees():
     # A few more trees inside the walls (wind-bent pines and a round one), Core with a trunk box collider each.
-    g = G2('Harbour_Core_Trees_Tri', 'core', tri=True, rays=10)
+    # Round 1: the terrace shade trees (TREES2[10:]) go in their own model, Harbour_Core_TerraceTrees_Tri (each FBX stays under 21k).
+    g1 = G2('Harbour_Core_Trees_Tri', 'core', tri=True, rays=10)
+    g2 = G2('Harbour_Core_TerraceTrees_Tri', 'core', tri=True, rays=10)
     r = rng2('trees2')
     for i, (x, z, kind) in enumerate(TREES2):
         if not tree_clear(x, z, 3.0):
             raise RuntimeError('tree %d too close to a code tree' % i)
         y = land_y(x, z)
+        g = g1 if i < 10 else g2
         g.mark()
         if kind == 'pine':
             tree_pine(g, (x, y, z), r.uniform(5.0, 6.5), S['FoliageDark'], sides=10, lean=(r.uniform(-4, 4), 9.0))
@@ -4309,7 +4557,7 @@ def build_trees():
         it['position'] = [round(x, 3), round(y + 1.25, 3), round(z, 3)]
         it['footprint'] = [0.6, 2.5, 0.6]
         it['bounds_note'] = 'bounds_min/max = the trunk collider; the canopy (visual_bounds) stays walk-under'
-    return g
+    return [g1, g2]
 
 # ---------------------------------------------------------------------------------------------------------------------------------------
 # Round 0 (2026-10-14): the 16 code trees (HarbourPierBuilder.PlaceTrees) get painterly visuals. Four LOCAL models (two pines, two leafy
@@ -4459,6 +4707,646 @@ def build_reeds():
                 top = base + Vector((0, hgt * 0.92, 0))
                 add_lathe(g, top - Vector((0, 0.18, 0)), [(0, 0.0), (0.02, 0.035), (0.16, 0.035), (0.18, 0.0)], S['WoodDark'], L['none'], 0.6, sides=5)
         n += 1
+    build_creek_dressing(g, r)      # round 1
+    return g
+
+# ---------------------------------------------------------------------------------------------------------------------------------------
+# ROUND 1 (2026-10-15): map layout and player environment. Zones and levels:
+#   level 0   the harbour village (round 0) - pier, bait shop, net shed, smokehouse, harbour office;
+#   east      the inner basin: a fishing jetty off the east beach (stand point 11) with moored boats, and the lookout tower by the
+#             breakwater root (stand point 12, the highest fishing spot, 4.4 m) next to the tug's berth and its departure board;
+#   west      the creek mouth: a stream out of a culvert in retaining wall 1 runs across the plateau and the beach into the bay, with reeds;
+#   level 1   the upper lane (the coast road) with a row of cottages, gardens and lamp posts, reached by three stone stairs;
+#   level 2   the chapel and its bell tower (the town landmark) and the overlook, reached by two more stairs;
+#   beyond    farm terraces, the windmill (sails turn), the farm, a forest belt, a black sedan watching from the hill track.
+# Loop: pier -> breakwater -> lookout -> jetty -> stairs D -> upper lane -> stairs E/C -> chapel overlook -> stairs B -> creek -> beach.
+# ---------------------------------------------------------------------------------------------------------------------------------------
+LEVEL1_Y, LEVEL2_Y = DUNE_BASE + T1_H, DUNE_BASE + T2_H
+# cottages on level 1: x, z (centre), width (x), depth (z), eave, ridge, wall slot, wall layer, roof slot, trim slot, yaw
+UPPER_HOUSES = [(-40.5, -80.5, 5.4, 4.4, 2.6, 4.1, S['Sand'], L['Sand'], S['Roof'], S['Accent'], 2.0),
+                (-31.0, -80.9, 4.6, 4.2, 2.4, 3.8, S['Reed'], L['Wood'], S['Dock'], S['Sand'], -3.0),
+                (-21.5, -80.3, 5.0, 4.4, 2.5, 4.0, S['Wood'], L['Wood'], S['Roof'], S['Sand'], 4.0),
+                (-5.0, -80.7, 5.2, 4.6, 2.7, 4.3, S['Sand'], L['Sand'], S['Foliage'], S['WoodDark'], -2.0),
+                (12.5, -80.4, 4.8, 4.2, 2.5, 3.9, S['Accent'], L['Wood'], S['Rock'], S['Sand'], 3.0),
+                (21.5, -80.9, 5.0, 4.4, 2.6, 4.1, S['Sand'], L['Sand'], S['Roof'], S['Foliage'], -4.0),
+                (44.0, -80.4, 6.0, 4.6, 2.8, 4.4, S['Rock'], L['Rock'], S['Dock'], S['Sand'], 1.5)]
+CHAPEL = (4.0, -98.4)                 # bell tower centre (level 2); the nave runs back (-z) from it
+LANE_LAMPS = [-36.0, -13.0, 7.5, 28.0, 50.0]
+JETTY = (54.4, 57.0, -51.0, -34.0, 0.95)          # x0, x1, z0, z1, deck top
+LOOKOUT = (34.7, 39.5, -51.2, -47.6, 4.4)         # x0, x1, z0, z1, deck top
+LOOKOUT_STAIR = (38.3, 39.5, -56.0)               # x0, x1, foot z (plateau 1.2); it climbs north to the deck's south edge
+LOOKOUT_ROOF = 6.8
+WINDMILL = (-24.0, -138.0)
+FARM = [(-58.0, -121.0, 8.0, 'house'), (-45.0, -127.0, -4.0, 'barn'), (46.0, -128.0, -12.0, 'house')]
+HILL_TRACK = [(26.0, -106.5), (27.5, -112.0), (18.0, -118.0), (8.0, -121.5), (12.0, -126.0), (26.0, -131.0), (34.0, -137.0)]
+HILL_SEDAN = (9.5, -122.6, 150.0)
+CREEK = [(-57.5, -75.2), (-58.2, -70.0), (-57.0, -65.0), (-58.0, -60.0), (-57.0, -55.0), (-57.8, -50.0), (-57.0, -44.0)]
+CREEK_HW = 0.85
+
+PATHS += [
+    ([(-36.4, -64.8), (-38.5, -69.0), (-42.0, -72.8), (-45.5, -74.6), (-47.0, -75.3)], 0.85),              # village -> stairs B
+    ([(25.5, -61.2), (27.5, -65.0), (30.2, -70.0), (32.6, -74.4), (33.0, -75.3)], 0.85),                  # boatyard -> stairs D
+    ([(4.4, -81.9), (4.4, -84.6)], 0.85), ([(-47.0, -81.9), (-47.0, -86.3)], 0.85), ([(33.0, -81.9), (33.0, -83.4)], 0.85),
+    ([(-12.0, -88.8), (-12.0, -94.9)], 0.8), ([(26.0, -86.8), (26.0, -94.9)], 0.8),                       # lane -> stairs C / E
+    ([(-12.0, -101.6), (-9.6, -97.0), (-2.0, -96.2), (12.0, -96.3), (22.0, -96.8), (26.0, -101.6)], 0.8),  # the overlook walk on level 2
+    ([(26.0, -101.8), (26.0, -106.4)], 0.8),                                                               # -> the hill track gap
+]
+PATHS[2] = ([(0.0, -60.4), (3.0, -61.0), (3.4, -64.5), (3.2, -68.0), (4.0, -71.5), (4.4, -75.3)], 0.85)     # south path -> stairs A
+# keep-outs that flatten the dunes: the creek
+YARDS += [(-57.5, -66.0, 1.6, 9.5)]
+
+# round-1 fishing spots (HarbourPierLayout.StandPoints 11 and 12): the jetty head and the lookout deck
+# (a separate list: phase 1's rock draw reads STAND_POINTS and must not change)
+STAND_POINTS_R1 = [(55.7, JETTY[4] + 0.05, -35.0, 330), (36.4, LOOKOUT[4] + 0.05, -48.3, 30)]
+
+def pbox(g, lo, hi, slot, layer, ao=0.5, rot=None, r=0.03):
+    c = Vector(((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2))
+    g.add(xform(rbox((hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]), r, 1), c, rot), slot, layer, ao)
+
+def box_item(g, name, lo, hi, **extra):
+    d = dict(name=name, collider='box', position=[round((lo[i] + hi[i]) / 2, 3) for i in range(3)],
+             footprint=[round(hi[i] - lo[i], 3) for i in range(3)], bounds_min=[round(v, 3) for v in lo], bounds_max=[round(v, 3) for v in hi])
+    d.update(extra)
+    g.items.append(d)
+    return d
+
+# ---- cottages ----
+def window2(g, P, rot, x, y, z, w, h, frame, shutters=None):
+    # cheaper window: a frame slab, a dark glass pane, a sill; optional shutters
+    g.add(xform(rbox((w + 0.16, h + 0.16, 0.05), 0.02, 1), P(x, y, z + 0.02), rot), frame, L['Wood'], 0.5)
+    g.add(xform(rbox((w, h, 0.06), 0.015, 1), P(x, y, z + 0.035), rot), S['Rock'], L['none'], 0.5, tint=0.5)
+    g.add(xform(rbox((w + 0.28, 0.07, 0.16), 0.02, 1), P(x, y - h / 2 - 0.1, z + 0.08), rot), frame, L['Wood'], 0.5)
+    if shutters is not None:
+        for s_ in (-1, 1):
+            g.add(xform(rbox((w * 0.48, h + 0.08, 0.04), 0.015, 1), P(x + s_ * (w * 0.74 + 0.1), y, z + 0.04), rot), shutters, L['Wood'], 0.5)
+
+def cottage(g, c, W, D, eave, ridge, wall, wall_layer, roof, trim, yaw, r, name, chimney=True):
+    rot = ry(yaw)
+    cx, cy, cz = c
+    P = lambda x, y, z: Vector((cx, cy, cz)) + rot @ Vector((x, y, z))
+    g.mark()
+    g.add(xform(rbox((W + 0.24, 0.42, D + 0.24), 0.05, 1), P(0, 0.1, 0), rot), S['Rock'], L['Rock'], 0.55)          # stone plinth
+    poly = [(-D / 2, 0.0), (D / 2, 0.0), (D / 2, eave), (0.0, ridge), (-D / 2, eave)]
+    g.add(xform(prism(poly, W, 0.03, segs=1), P(0, 0.2, 0), rot), wall, wall_layer, AO_WOOD)
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            g.add(xform(rbox((0.15, eave, 0.15), 0.03, 1), P(sx * W / 2, 0.2 + eave / 2, sz * D / 2), rot), trim, L['Wood'], 0.45)
+    over = 0.35
+    run = D / 2 + over
+    ang = math.degrees(math.atan2(ridge - eave, D / 2))
+    slab = run / math.cos(math.radians(ang)) + 0.05
+    for sz in (-1, 1):
+        mid = P(0, 0.2 + ridge - (ridge - eave) * (run / 2) / (D / 2) + 0.08, sz * run / 2)
+        g.add(xform(rbox((W + 0.55, 0.13, slab), 0.05, 1), mid, rot @ rx(ang * sz)), roof, L['Wood'], 0.5)
+    g.add(xform(rbox((W + 0.6, 0.13, 0.26), 0.05, 1), P(0, 0.2 + ridge + 0.12, 0), rot), roof, L['Wood'], 0.5)
+    fz = D / 2
+    dx = -W / 2 + 1.0 if W > 4.7 else 0.0
+    g.add(xform(rbox((0.95, 1.95, 0.08), 0.03, 1), P(dx, 0.2 + 0.98, fz + 0.03), rot), S['Dock'] if wall != S['Dock'] else S['Accent'], L['Wood'], 0.5)
+    g.add(xform(rbox((1.25, 0.12, 0.2), 0.03, 1), P(dx, 0.2 + 2.02, fz + 0.08), rot), trim, L['Wood'], 0.5)
+    sh = trim if r.random() < 0.6 else None
+    for wx in ((0.6, 1.75) if W > 4.7 else (-1.4, 1.4)):
+        window2(g, P, rot, wx, 0.2 + 1.5, fz, 0.72, 0.8, trim, sh)
+    # back: a window and a back door; gable ends: a small window each
+    back = rot @ ry(180)
+    PB = lambda x, y, z: Vector((cx, cy, cz)) + back @ Vector((x, y, z))
+    window2(g, PB, back, 0.9, 0.2 + 1.5, fz, 0.7, 0.7, trim)
+    g.add(xform(rbox((0.9, 1.9, 0.08), 0.03, 1), PB(-1.0, 0.2 + 0.95, fz + 0.03), back), S['WoodDark'], L['Wood'], 0.5)
+    for s_ in (-1, 1):
+        side = rot @ ry(90 * s_)
+        PS = lambda x, y, z, side=side: Vector((cx, cy, cz)) + side @ Vector((x, y, z))
+        window2(g, PS, side, 0.0, 0.2 + eave + 0.45, W / 2, 0.5, 0.5, trim)
+    if chimney:
+        hx = W / 2 - 0.7
+        g.add(xform(rbox((0.55, 1.9, 0.55), 0.05, 1), P(hx, 0.2 + ridge - 0.1, -0.5), rot), S['Rock'], L['Rock'], 0.55)
+        g.add(xform(rbox((0.7, 0.12, 0.7), 0.04, 1), P(hx, 0.2 + ridge + 0.9, -0.5), rot), S['Rock'], L['Rock'], 0.55)
+        g.extra.setdefault('smoke_points', [])
+        p = P(hx, 0.2 + ridge + 1.05, -0.5)
+        if len(g.extra['smoke_points']) < 3:
+            g.extra['smoke_points'].append(dict(name='CottageChimney_' + name, position=[round(p.x, 2), round(p.y, 2), round(p.z, 2)]))
+    g.solid(name)
+    return P
+
+def bell_tower_and_chapel(g, r):
+    x, z = CHAPEL
+    y = LEVEL2_Y
+    tw, th = 2.9, 9.4
+    g.mark()
+    # nave behind the tower: tall plastered walls, red roof, three tall windows a side, a little apse
+    nz, nW, nD = z - 0.9 - 3.4, 5.4, 6.8
+    rot = ry(0)
+    P = lambda a, b, c: Vector((x, y, nz)) + Vector((a, b, c))
+    poly = [(-nW / 2, 0.0), (nW / 2, 0.0), (nW / 2, 3.7), (0.0, 6.1), (-nW / 2, 3.7)]
+    g.add(xform(rbox((nW + 0.3, 0.5, nD + 0.3), 0.06, 1), P(0, 0.15, 0)), S['Rock'], L['Rock'], 0.55)
+    g.add(xform(prism(poly, nD, 0.04, segs=1), P(0, 0.35, 0), ry(90)), S['Sand'], L['Sand'], 0.5)
+    run = nW / 2 + 0.4
+    ang = math.degrees(math.atan2(6.1 - 3.7, nW / 2))
+    slab = run / math.cos(math.radians(ang)) + 0.05
+    for sx in (-1, 1):
+        g.add(xform(rbox((slab, 0.15, nD + 0.5), 0.05, 1), P(sx * run / 2, 0.35 + 6.1 - 2.4 * (run / 2) / (nW / 2) + 0.08, 0), rz(-sx * ang)),
+              S['Roof'], L['Wood'], 0.5)
+    for sx in (-1, 1):
+        for k in range(3):
+            g.add(xform(rbox((0.08, 1.7, 0.6), 0.03, 1), P(sx * (nW / 2 + 0.02), 0.35 + 2.2, -2.2 + 2.2 * k)), S['Rock'], L['none'], 0.5, tint=0.5)
+            g.add(xform(rbox((0.1, 1.9, 0.78), 0.03, 1), P(sx * (nW / 2 + 0.0), 0.35 + 2.2, -2.2 + 2.2 * k)), S['WoodDark'], L['Wood'], 0.5)
+    add_lathe(g, P(0, 0.35, -nD / 2), [(0.0, 1.9), (3.0, 1.9), (3.1, 2.05), (3.2, 0.0)], S['Sand'], L['Sand'], 0.5, sides=12)
+    # the bell tower: a stone shaft, a belfry with four arches and a bronze bell, a clock face toward the sea, a slate spire, a fish weathervane mount
+    T = lambda a, b, c: Vector((x, y, z)) + Vector((a, b, c))
+    g.add(xform(rbox((tw + 0.4, 0.6, tw + 0.4), 0.08, 1), T(0, 0.2, 0)), S['Rock'], L['Rock'], 0.55)
+    g.add(xform(rbox((tw, th, tw), 0.06, 1), T(0, th / 2 + 0.3, 0)), S['Sand'], L['Rock'], 0.5)
+    for hh in (3.2, 6.4):
+        g.add(xform(rbox((tw + 0.18, 0.18, tw + 0.18), 0.04, 1), T(0, hh, 0)), S['Rock'], L['Rock'], 0.5)
+    g.add(xform(rbox((1.2, 2.3, 0.12), 0.04, 1), T(0, 1.45, tw / 2 + 0.02)), S['Dock'], L['Wood'], 0.5)
+    g.add(xform(rbox((1.5, 0.22, 0.2), 0.04, 1), T(0, 2.65, tw / 2 + 0.06)), S['Rock'], L['Rock'], 0.5)
+    for k in range(2):
+        g.add(xform(rbox((0.36, 0.9, 0.1), 0.03, 1), T(0, 4.6 + 2.0 * k, tw / 2 + 0.01)), S['Rock'], L['none'], 0.5, tint=0.45)
+    cf = T(0, th - 0.4, tw / 2 + 0.05)
+    add_lathe(g, cf, [(0.0, 0.0), (0.01, 0.78), (0.08, 0.82), (0.12, 0.0)], S['Sand'], L['none'], 0.7, sides=16, rot=rx(90))
+    add_lathe(g, cf, [(0.0, 0.84), (0.1, 0.9), (0.14, 0.86)], S['WoodDark'], L['none'], 0.6, sides=16, rot=rx(90))
+    g.add(xform(rbox((0.07, 0.6, 0.03), 0.01, 1), cf + Vector((0.0, 0.25, 0.14)), rz(-12)), S['WoodDark'], L['none'], 0.6)
+    g.add(xform(rbox((0.07, 0.42, 0.03), 0.01, 1), cf + Vector((0.16, -0.08, 0.14)), rz(-115)), S['WoodDark'], L['none'], 0.6)
+    by = 0.3 + th
+    g.add(xform(rbox((tw + 0.3, 0.25, tw + 0.3), 0.05, 1), T(0, by + 0.1, 0)), S['Rock'], L['Rock'], 0.55)
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            g.add(xform(rbox((0.55, 2.4, 0.55), 0.05, 1), T(sx * (tw / 2 - 0.27), by + 1.4, sz * (tw / 2 - 0.27))), S['Sand'], L['Rock'], 0.5)
+    g.add(xform(rbox((tw + 0.3, 0.3, tw + 0.3), 0.05, 1), T(0, by + 2.7, 0)), S['Rock'], L['Rock'], 0.55)
+    add_lathe(g, T(0, by + 0.95, 0), [(0.0, 0.62), (0.12, 0.6), (0.5, 0.42), (0.85, 0.3), (1.0, 0.18), (1.08, 0.0)], S['Accent'], L['none'], 0.6, sides=12)
+    g.add(xform(rbox((0.12, 0.25, 1.9), 0.03, 1), T(0, by + 2.05, 0)), S['WoodDark'], L['Wood'], 0.5)
+    add_lathe(g, T(0, by + 2.85, 0), [(0.0, 2.25), (0.25, 2.25), (4.6, 0.0)], S['Rock'], L['Wood'], 0.55, sides=4, rot=ry(45))
+    add_lathe(g, T(0, by + 7.4, 0), [(0, 0.05), (1.1, 0.035), (1.12, 0.0)], S['WoodDark'], L['none'], 0.6, sides=6)
+    d = g.solid('ChapelTower')
+    g.extra['tower_top'] = [round(x, 2), round(y + by + 8.5, 2), round(z, 2)]
+    g.extra['chapel_vane'] = [round(x, 3), round(y + by + 8.5, 3), round(z, 3)]
+    wanted_poster(g, T(tw / 2 + 0.02, 1.6, 0.5), ry(90), r)
+    g._mark = len(g.V)
+
+def overlook(g, r):
+    # benches, a coin telescope, a lamp and a little shrine-like noticeboard on the level-2 edge, facing the harbour
+    for name, x, yaw in (('OverlookBench_W', -5.5, 0.0), ('OverlookBench_E', 14.0, 0.0)):
+        bench(g, name, x, -96.45, yaw, r)
+    tx, tz = 9.0, -95.9
+    ty = land_y(tx, tz)
+    g.mark()
+    add_lathe(g, (tx, ty, tz), [(0, 0.14), (0.08, 0.12), (1.0, 0.06), (1.04, 0.09), (1.08, 0.0)], S['WoodDark'], L['none'], 0.5, sides=8)
+    g.add(xform(rbox((0.26, 0.3, 0.32), 0.08, 1), (tx, ty + 1.2, tz)), S['Accent'], L['none'], 0.55)
+    add_lathe(g, (tx, ty + 1.25, tz), [(0, 0.09), (0.55, 0.07), (0.6, 0.0)], S['Rock'], L['none'], 0.55, sides=8, rot=rx(75))
+    g.solid('CoinTelescope')
+
+def build_upper_village():
+    g = G2('Harbour_Core_Buildings_Upper', 'core', rays=16)
+    r = rng2('uppervillage')
+    for i, (x, z, W, D, eave, ridge, wall, wl, roof, trim, yaw) in enumerate(UPPER_HOUSES):
+        cottage(g, (x, LEVEL1_Y, z), W, D, eave, ridge, wall, wl, roof, trim, yaw, r, 'Cottage_%d' % i)
+    bell_tower_and_chapel(g, r)
+    overlook(g, r)
+    tops = []
+    for i, x in enumerate(LANE_LAMPS):
+        tops.append(lamp_post(g, x, road_z(x) + 3.1, 'LaneLamp_%d' % i))
+    g.extra['lamp_tops'] = [[round(v, 3) for v in t] for t in tops]
+    # a garden fence (straight runs: one box each) in front of one cottage, a gate gap at its door path
+    for i in (2,):
+        x, z, W, D = UPPER_HOUSES[i][:4]
+        zf = z + D / 2 + 1.6
+        picket_fence(g, [(x - W / 2 - 0.3, zf), (x - 0.9, zf)], 'GardenFence_%dW' % i)
+        picket_fence(g, [(x + 0.3, zf), (x + W / 2 + 0.3, zf)], 'GardenFence_%dE' % i)
+    # a field wall along the south edge of level 2 (the hills begin behind it; the invisible boundary is just beyond): visual only
+    fw = r
+    pa = -WALL_X
+    for xa, xb in ((-WALL_X, HILL_TRACK[0][0] - 1.6), (HILL_TRACK[0][0] + 1.6, WALL_X)):
+        n = max(1, int(round((xb - xa) / 3.2)))
+        for k in range(n):
+            cx = xa + (xb - xa) * (k + 0.5) / n
+            hh = fw.uniform(0.7, 0.85)
+            g.add(xform(rbox((0.6, hh, (xb - xa) / n - 0.05), 0.12, 1), (cx, LEVEL2_Y + hh / 2 - 0.1, WALL_ZS + 0.6), ry(90 + fw.uniform(-1.5, 1.5))),
+                  S['Rock'] if fw.random() < 0.75 else S['Sand'], L['Rock'], 0.6)
+    g.extra['level_y'] = dict(level0=PLATEAU_Y, level1=round(LEVEL1_Y, 3), level2=round(LEVEL2_Y, 3))
+    return g
+
+# ---- the fishing jetty and the lookout tower (Structure, box colliders) ----
+def build_jetty():
+    g = G2('Harbour_Core_Jetty', 'core', rays=16,
+           note='Round 1: the east-basin fishing jetty (stand point 11) and the lookout tower (stand point 12) with its stair. Box items '
+                'become Structure BoxColliders (deck, posts, rails, stair steps); the stair handrails and the roof are visual only.')
+    r = rng2('jetty')
+    x0, x1, z0, z1, top = JETTY
+    # deck planks across x, stringers, posts to the seabed/beach, bollards, a lamp at the head, a life ring
+    z = z0
+    k = 0
+    while z < z1 - 0.05:
+        w = min(0.42, z1 - z)
+        g.add(xform(rbox((x1 - x0 + r.uniform(-0.04, 0.06), 0.07, w - 0.035), 0.012, 1), ((x0 + x1) / 2 + r.uniform(-0.03, 0.03), top - 0.035, z + w / 2),
+                    ry(r.uniform(-0.6, 0.6))), S['Wood'] if r.random() < 0.55 else S['Dock'], L['Wood'], 0.5)
+        z += w
+        k += 1
+    for sx in (x0 + 0.25, x1 - 0.25):
+        pbox(g, (sx - 0.08, top - 0.26, z0), (sx + 0.08, top - 0.07, z1), S['WoodDark'], L['Wood'], 0.45)
+    posts = []
+    zz = z1 - 0.3
+    while zz > z0 + 1.0:
+        posts.append(zz)
+        zz -= 3.0
+    for pz in posts:
+        for px in (x0 + 0.12, x1 - 0.12):
+            foot = terrain_y(pz) - 0.05
+            add_lathe(g, (px, foot, pz), [(0, 0.13), (0.15, 0.11), (top - 0.07 - foot, 0.1), (top + 0.18 - foot, 0.1), (top + 0.22 - foot, 0.0)],
+                      S['WoodDark'], L['Wood'], 0.45, sides=7)
+            box_item(g, 'JettyPost', (px - 0.11, foot, pz - 0.11), (px + 0.11, top - 0.07, pz + 0.11))
+    box_item(g, 'JettyDeck', (x0, top - 0.12, z0), (x1, top, z1))
+    for bx in (x0 + 0.35, x1 - 0.35):
+        g.mark()
+        add_lathe(g, (bx, top, z1 - 0.35), [(0, 0.15), (0.3, 0.13), (0.36, 0.18), (0.42, 0.0)], S['WoodDark'], L['none'], 0.5, sides=10)
+        g.solid('JettyBollard')
+    lamp_post(g, x1 - 0.3, z1 - 4.6, 'JettyLamp', y=top)
+    # life ring on a post by the head
+    lc = Vector((x1 - 0.05, top + 0.9, z1 - 2.6))
+    add_lathe(g, (x1 - 0.05, top - 0.1, z1 - 2.6), [(0, 0.06), (1.2, 0.05), (1.22, 0.0)], S['WoodDark'], L['Wood'], 0.5, sides=6)
+    pts = [Vector((0.0, 0.24 * math.sin(a), 0.24 * math.cos(a))) for a in [2 * math.pi * i / 16 for i in range(16)]]
+    V, N, F, UV = tube(pts, 0.06, 6, caps=False, closed=True)
+    fsl = [((S['Sand'] if int(((math.atan2(sum(V[k].y for k in f), sum(V[k].z for k in f)) + math.pi) / (math.pi / 4))) % 2 == 0 else S['Accent']), L['Cloth']) for f in F]
+    g.add(xform((V, N, F, UV), lc + Vector((0.09, 0, 0))), 0, 0, 0.55, fsl)
+
+    # ---- lookout tower ----
+    lx0, lx1, lz0, lz1, ltop = LOOKOUT
+    sx0, sx1, sfoot = LOOKOUT_STAIR
+    # deck planks across z
+    xq = lx0
+    while xq < lx1 - 0.05:
+        w = min(0.34, lx1 - xq)
+        g.add(xform(rbox((w - 0.035, 0.08, lz1 - lz0 + r.uniform(-0.03, 0.05)), 0.012, 1), (xq + w / 2, ltop - 0.04, (lz0 + lz1) / 2)),
+              S['Wood'] if r.random() < 0.55 else S['Dock'], L['Wood'], 0.5)
+        xq += w
+    for zq in (lz0 + 0.25, (lz0 + lz1) / 2, lz1 - 0.25):
+        pbox(g, (lx0, ltop - 0.3, zq - 0.08), (lx1, ltop - 0.08, zq + 0.08), S['WoodDark'], L['Wood'], 0.45)
+    box_item(g, 'LookoutDeck', (lx0, ltop - 0.14, lz0), (lx1, ltop, lz1))
+    cols = [(lx0 + 0.2, lz0 + 0.2), (lx0 + 0.2, lz1 - 0.2), (lx1 - 0.2, lz1 - 0.2), (sx0 - 0.15, lz0 + 0.2)]
+    for (px, pz) in cols:
+        foot = terrain_y(pz) - 0.1
+        add_lathe(g, (px, foot, pz), [(0, 0.19), (0.25, 0.16), (LOOKOUT_ROOF - foot, 0.13), (LOOKOUT_ROOF - foot + 0.05, 0.0)], S['WoodDark'], L['Wood'], 0.45, sides=8)
+        box_item(g, 'LookoutPost', (px - 0.15, foot, pz - 0.15), (px + 0.15, LOOKOUT_ROOF, pz + 0.15))
+    # diagonal braces under the deck (visual)
+    for (ax_, az_), (bx_, bz_) in ((cols[0], cols[1]), (cols[1], cols[2]), (cols[0], cols[3])):
+        a = Vector((ax_, terrain_y(az_) + 0.6, az_)); b = Vector((bx_, ltop - 0.35, bz_))
+        g.add(tube([a, b], 0.06, 5), S['Wood'], L['Wood'], 0.45)
+        a2 = Vector((bx_, terrain_y(bz_) + 0.6, bz_)); b2 = Vector((ax_, ltop - 0.35, az_))
+        g.add(tube([a2, b2], 0.06, 5), S['Wood'], L['Wood'], 0.45)
+    # railings (box colliders): north, west, east, the south side west of the stair opening
+    rail_h = 1.0
+    runs = [((lx0, lz1), (lx1, lz1)), ((lx0, lz0), (lx0, lz1)), ((lx1, lz0), (lx1, lz1)), ((lx0, lz0), (sx0, lz0))]
+    for (ax_, az_), (bx_, bz_) in runs:
+        L_ = math.hypot(bx_ - ax_, bz_ - az_)
+        n = max(1, int(L_ / 0.9))
+        for k in range(n + 1):
+            t = k / n
+            px, pz = ax_ + (bx_ - ax_) * t, az_ + (bz_ - az_) * t
+            pbox(g, (px - 0.035, ltop, pz - 0.035), (px + 0.035, ltop + rail_h - 0.05, pz + 0.035), S['Wood'], L['Wood'], 0.5, r=0.012)
+        for hh in (0.5, rail_h):
+            lo = (min(ax_, bx_) - 0.05, ltop + hh - 0.07, min(az_, bz_) - 0.05)
+            hi = (max(ax_, bx_) + 0.05, ltop + hh, max(az_, bz_) + 0.05)
+            pbox(g, lo, hi, S['WoodDark'], L['Wood'], 0.45, r=0.02)
+        box_item(g, 'LookoutRail', (min(ax_, bx_) - 0.05, ltop, min(az_, bz_) - 0.05), (max(ax_, bx_) + 0.05, ltop + rail_h, max(az_, bz_) + 0.05))
+    # the stair: solid treads (box colliders), visual stringers and handrails
+    rise_total = ltop - PLATEAU_Y
+    n = 11
+    rise, tread = rise_total / n, (lz0 - sfoot) / n
+    for k in range(n):
+        za, zb = sfoot + tread * k, sfoot + tread * (k + 1)
+        ytop = PLATEAU_Y + rise * (k + 1)
+        g.add(xform(rbox((sx1 - sx0 - 0.06, 0.07, tread + 0.04), 0.012, 1), ((sx0 + sx1) / 2, ytop - 0.035, (za + zb) / 2)), S['Wood'], L['Wood'], 0.5)
+        box_item(g, 'LookoutStep', (sx0, min(ytop - 0.6, terrain_y(zb) - 0.05), za), (sx1, ytop, zb + (0.02 if k < n - 1 else 0.0)))
+    for sx in (sx0 + 0.04, sx1 - 0.04):
+        a = Vector((sx, PLATEAU_Y - 0.1, sfoot)); b = Vector((sx, ltop - 0.05, lz0))
+        g.add(xform(rbox((0.07, 0.26, (b - a).length), 0.02, 1), (a + b) / 2, rx(math.degrees(math.atan2(b.y - a.y, b.z - a.z)))), S['WoodDark'], L['Wood'], 0.45)
+        g.add(tube([a + Vector((0, 1.0, 0.1)), b + Vector((0, 1.0, 0.0))], 0.035, 5), S['Wood'], L['Wood'], 0.5)
+        for t in (0.0, 0.5, 1.0):
+            p = a.lerp(b, t)
+            pbox(g, (sx - 0.035, p.y, p.z - 0.035), (sx + 0.035, p.y + 1.0, p.z + 0.035), S['WoodDark'], L['Wood'], 0.5, r=0.012)
+    # roof (visual): a gable over the deck, a bell, a pennant pole; a telescope on a tripod; a LOOKOUT board
+    rw, rd = lx1 - lx0 + 0.7, lz1 - lz0 + 0.7
+    cx_, cz_ = (lx0 + lx1) / 2, (lz0 + lz1) / 2
+    for s_ in (-1, 1):
+        g.add(xform(rbox((rw, 0.12, rd / 2 / math.cos(math.radians(26)) + 0.08), 0.04, 1), (cx_, LOOKOUT_ROOF + 0.5, cz_ + s_ * rd / 4), rx(s_ * 26)),
+              S['Roof'], L['Wood'], 0.5)
+    g.add(xform(rbox((rw + 0.05, 0.12, 0.24), 0.04, 1), (cx_, LOOKOUT_ROOF + 0.98, cz_)), S['WoodDark'], L['Wood'], 0.5)
+    for s_ in (-1, 1):
+        pbox(g, (lx0 + 0.1, LOOKOUT_ROOF - 0.15, cz_ + s_ * (rd / 2 - 0.5) - 0.07), (lx1 - 0.1, LOOKOUT_ROOF + 0.05, cz_ + s_ * (rd / 2 - 0.5) + 0.07),
+             S['WoodDark'], L['Wood'], 0.45)
+    add_lathe(g, (cx_ - 0.8, LOOKOUT_ROOF - 0.95, cz_), [(0.0, 0.3), (0.08, 0.29), (0.35, 0.2), (0.55, 0.13), (0.62, 0.0)], S['Accent'], L['none'], 0.6, sides=10)
+    add_lathe(g, (cx_ + 1.4, LOOKOUT_ROOF + 1.0, cz_), [(0, 0.05), (2.2, 0.035), (2.22, 0.0)], S['Sand'], L['none'], 0.55, sides=6)
+    g.extra['pennant'] = [round(cx_ + 1.4, 3), round(LOOKOUT_ROOF + 3.0, 3), round(cz_, 3)]
+    tx_, tz_ = lx0 + 0.9, lz1 - 0.6
+    for a in (0, 120, 240):
+        d = Vector((math.sin(math.radians(a)), 0, math.cos(math.radians(a)))) * 0.3
+        g.add(tube([Vector((tx_, ltop, tz_)) + d, Vector((tx_, ltop + 1.15, tz_))], 0.02, 4), S['WoodDark'], L['none'], 0.5)
+    add_lathe(g, (tx_, ltop + 1.2, tz_), [(0, 0.07), (0.6, 0.055), (0.62, 0.0)], S['Accent'], L['none'], 0.55, sides=8, rot=rx(70) @ rz(-20))
+    bc = Vector((lx0 - 0.02, ltop - 0.8, cz_))
+    g.add(xform(rbox((0.06, 0.55, 2.2), 0.02, 1), bc), S['Dock'], L['Wood'], 0.5)
+
+    # ---- the tug's departure board on the breakwater root (story: the crew is leaving tonight) ----
+    bx_, bz_ = 33.6, -55.2
+    by_ = land_y(bx_, bz_)
+    g.mark()
+    for s_ in (-0.75, 0.75):
+        add_lathe(g, (bx_ + s_, by_ - 0.1, bz_), [(0, 0.06), (2.2, 0.055), (2.22, 0.0)], S['WoodDark'], L['Wood'], 0.45, sides=6)
+    g.add(xform(rbox((1.8, 1.1, 0.07), 0.03, 1), (bx_, by_ + 1.55, bz_)), S['WoodDark'], L['Wood'], 0.5)
+    g.add(xform(rbox((1.95, 0.08, 0.25), 0.02, 1), (bx_, by_ + 2.15, bz_ + 0.03)), S['Wood'], L['Wood'], 0.5)
+    rot = ry(0)
+    sign_text(g, 'LUCKY BREAK', 0.19, (bx_, by_ + 1.85, bz_ + 0.04), rot, S['Accent'])
+    sign_text(g, 'DEPARTS AT DUSK', 0.13, (bx_, by_ + 1.55, bz_ + 0.04), rot, S['Sand'])
+    g.solid('DepartureBoard')
+    return g
+
+# ---- moorings in the basin (detail: visual only) ----
+def build_moorings():
+    g = G2('Harbour_Detail_Moorings', 'detail', rays=10,
+           note='Round 1: boats moored in the east basin by the jetty, mooring lines and a stack of fish crates on the jetty. No colliders.')
+    r = rng2('moorings')
+    x0, x1, z0, z1, top = JETTY
+    rowboat(g, 'Moored_Rowboat', (53.5, 0.28, -41.6), 4.0, S['Foliage'])
+    g.items.pop()
+    # a small motor fishing boat on the east side: hull, a little wheelhouse, a mast with a lamp, crates on deck
+    c = Vector((58.6, 0.35, -39.6))
+    rot = ry(-3.0) @ rz(1.5)
+    add_part(g, hull(6.4, 2.3, 1.0, transom=0.75, sheer=0.32, hull_slot=S['Sand'], stripe=S['Foliage']), c, rot, 0.55)
+    g.add(xform(rbox((1.5, 1.4, 1.6), 0.12, 1), c + rot @ Vector((0, 1.05, -0.9)), rot), S['Sand'], L['Wood'], 0.55)
+    g.add(xform(rbox((1.7, 0.12, 1.9), 0.04, 1), c + rot @ Vector((0, 1.8, -0.9)), rot), S['Foliage'], L['Wood'], 0.55)
+    for sx in (-0.76, 0.76):
+        g.add(xform(rbox((0.04, 0.42, 0.9), 0.01, 1), c + rot @ Vector((sx, 1.25, -0.8)), rot), S['Rock'], L['none'], 0.5, tint=0.5)
+    add_lathe(g, c + rot @ Vector((0, 0.4, 1.4)), [(0, 0.06), (4.2, 0.045), (4.25, 0.0)], S['WoodDark'], L['none'], 0.5, sides=6)
+    for k in range(3):
+        g.add(xform(rbox((0.5, 0.35, 0.5), 0.03, 1), c + rot @ Vector((-0.4 + 0.45 * (k % 2), 0.55 + 0.35 * (k // 2), 1.0 + 0.1 * k)), rot @ ry(r.uniform(-15, 15))),
+              S['Accent'] if k != 1 else S['Foliage'], L['Wood'], 0.5)
+    for a, b in ((c + rot @ Vector((-1.0, 0.7, 2.6)), Vector((x1 - 0.1, top - 0.1, -37.4))), (c + rot @ Vector((-1.0, 0.7, -2.6)), Vector((x1 - 0.1, top - 0.1, -42.4)))):
+        g.add(tube(rope_line(a, b, 0.25, n=10), 0.02, 4), S['Sand'], L['Cloth'], 0.55)
+    # fenders hanging off the jetty, a crate stack and a pot pile on the deck by the head
+    for zf in (-37.0, -40.0, -43.0):
+        add_lathe(g, (x1 + 0.12, top - 0.75, zf), [(0, 0.0), (0.05, 0.11), (0.45, 0.11), (0.5, 0.0)], S['Accent'], L['none'], 0.55, sides=8)
+    for k in range(3):
+        g.add(xform(rbox((0.55, 0.32, 0.4), 0.03, 1), (x0 + 0.5, top + 0.16 + 0.32 * k, z1 - 4.0 + 0.04 * k), ry(r.uniform(-12, 12))),
+              S['Wood'] if k % 2 == 0 else S['Dock'], L['Wood'], 0.5)
+    for k in range(2):
+        lobster_pot(g, 'JettyPot_%d' % k, (x1 - 0.5, top + 0.36 * k, z1 - 7.4), r.uniform(-20, 20), 0.0)
+        g.items.pop()
+    g.items.clear()
+    return g
+
+# ---- windmill sails (core, local: they turn) ----
+def build_windmill_sails():
+    g = G2('Harbour_Core_Anim_WindmillSails', 'core', local=True, rays=8, anim='rotor',
+           note='Round 1: the windmill sails, around the hub at the origin; they turn about local +z (animHint rotor). Core: visible on Low.')
+    hub = Vector((0, 0, 0))
+    add_lathe(g, (0, 0, -0.2), [(0.0, 0.35), (0.5, 0.3), (0.62, 0.12), (0.7, 0.0)], S['WoodDark'], L['Wood'], 0.5, sides=10, rot=rx(90))
+    for k in range(4):
+        rot = rz(45 + 90 * k)
+        g.add(xform(rbox((0.16, 6.2, 0.14), 0.03, 1), Vector((0, 0, 0.25)) + rot @ Vector((0, 3.1, 0)), rot), S['WoodDark'], L['Wood'], 0.5)
+        g.add(xform(rbox((1.25, 4.6, 0.04), 0.015, 1), Vector((0, 0, 0.3)) + rot @ Vector((0.7, 3.6, 0)), rot), S['Sand'], L['Cloth'], 0.6)
+        for j in range(4):
+            g.add(xform(rbox((1.35, 0.05, 0.05), 0.012, 1), Vector((0, 0, 0.34)) + rot @ Vector((0.68, 1.6 + 1.3 * j, 0)), rot), S['WoodDark'], L['Wood'], 0.5)
+    return g
+
+def windmill_body(g):
+    x, z = WINDMILL
+    y0 = land_y(x, z) - 0.3
+    add_lathe(g, (x, y0, z), [(0.0, 2.9), (0.6, 2.8), (6.5, 2.1), (8.6, 1.85), (8.7, 0.0)], S['Sand'], L['Rock'], 0.55, sides=10,
+              ring_slots=[S['Rock'], S['Sand'], S['Sand'], S['Sand']])
+    add_lathe(g, (x, y0 + 8.6, z), [(0.0, 2.15), (0.2, 2.2), (1.2, 1.7), (2.2, 0.9), (2.7, 0.0)], S['Roof'], L['Wood'], 0.55, sides=10)
+    add_lathe(g, (x, y0 + 4.2, z), [(0.0, 2.55), (0.12, 2.6), (0.2, 0.0)], S['WoodDark'], L['Wood'], 0.55, sides=10)
+    g.add(xform(rbox((1.1, 1.9, 0.2), 0.04, 1), (x, y0 + 1.0, z + 2.75)), S['Dock'], L['Wood'], 0.5)
+    for h in (2.8, 5.6):
+        g.add(xform(rbox((0.6, 0.75, 0.18), 0.03, 1), (x, y0 + h, z + 2.55 - 0.08 * h)), S['Rock'], L['none'], 0.5, tint=0.5)
+    hub = Vector((x, y0 + 9.3, z + 2.15))
+    g.extra['windmill_hub'] = [round(hub.x, 3), round(hub.y, 3), round(hub.z, 3)]
+    return hub
+
+def build_hill_track(g):
+    # the farm track from the level-2 field gap up the hill (switchbacks), a fence along it, the farm gate; the black sedan parked at a bend,
+    # watching the harbour (story: the mafia is in town)
+    pts = [(x, z) for x, z in HILL_TRACK]
+    ground_ribbon(g, pts, 1.5, S['Sand'], L['Sand'], step=1.5, lift=0.07, seed=91, wobble=0.08)
+    r = rng2('hilltrack')
+    for i in range(len(pts) - 1):
+        (ax, az), (bx, bz) = pts[i], pts[i + 1]
+        L_ = math.hypot(bx - ax, bz - az)
+        nx, nz = -(bz - az) / L_, (bx - ax) / L_
+        n = int(L_ / 3.5)
+        for k in range(n):
+            t = (k + 0.5) / n
+            px, pz = ax + (bx - ax) * t + nx * 2.4, az + (bz - az) * t + nz * 2.4
+            if inside_walls(px, pz, 0.5):
+                continue
+            add_lathe(g, (px, land_y(px, pz) - 0.15, pz), [(0, 0.06), (1.15, 0.05), (1.18, 0.0)], S['Wood'], L['Wood'], 0.5, sides=5)
+    black_car(g, *HILL_SEDAN)
+
+def build_creek_ribbon(g):
+    # the creek out of the culvert in retaining wall 1, across the plateau and the beach into the bay (water material; visual only)
+    pts = [Vector((p[0], 0.0, p[1])) for p in CREEK]
+    dense = []
+    for i in range(len(pts) - 1):
+        a, b = pts[i], pts[i + 1]
+        n = max(1, int((b - a).length / 1.0))
+        for k in range(n):
+            dense.append(a.lerp(b, k / n))
+    dense.append(pts[-1])
+    V, N, F, UV = [], [], [], []
+    across = [-1.0, -0.5, 0.0, 0.5, 1.0]
+    for i, p in enumerate(dense):
+        t = (dense[min(i + 1, len(dense) - 1)] - dense[max(i - 1, 0)]).normalized()
+        side = Vector((t.z, 0.0, -t.x))
+        w = CREEK_HW * (1.0 + 0.25 * n2(p.x, p.z, 0.3, 95)) * (1.0 + 0.8 * smoothstep(-49.0, -44.0, p.z))
+        for a in across:
+            q = p + side * (a * w)
+            base = terrain_y(q.z) if q.z > -55.0 else PLATEAU_Y
+            y = base + 0.045 - 0.03 * abs(a) ** 4
+            if q.z > COAST_Z:
+                y = 0.03
+            V.append(Vector((q.x, y, q.z))); N.append(Vector((0, 1, 0)))
+    m = len(across)
+    for i in range(len(dense) - 1):
+        for k in range(m - 1):
+            a = i * m + k
+            q = [a, a + 1, a + m + 1, a + m]
+            pa, pb, pc = V[q[0]], V[q[1]], V[q[2]]
+            if (pb - pa).cross(pc - pa).y < 0:
+                q = list(reversed(q))
+            F.append(q); UV.append([(V[j].x, V[j].z) for j in q])
+    g.add((V, N, F, UV), S['Sand'], L['none'], 1.0)
+
+def build_creek_dressing(g, r):
+    # culvert arch in the wall, a plank footbridge where the plateau path would cross, stepping stones on the beach, reeds and pebbles
+    cx, cz = CREEK[0]
+    face_z = T1_Z + RISER_HALF + 0.12
+    g.add(xform(rbox((1.6, 1.0, 0.12), 0.05, 1), (cx, PLATEAU_Y + 0.35, face_z + 0.02)), S['Rock'], L['none'], 0.5, tint=0.25)
+    for k in range(7):
+        a = math.pi * k / 6
+        p = Vector((cx + 1.0 * math.cos(a), PLATEAU_Y - 0.1 + 0.95 * math.sin(a), face_z + 0.12))
+        g.add(xform(blob(0.28, r, (1.0, 0.8, 0.6), subdiv=1, rough=0.15), p), S['Rock'], L['Rock'], 0.6)
+    bz = -58.6
+    bx = -57.6
+    for k in range(6):
+        g.add(xform(rbox((0.32, 0.07, 2.6), 0.015, 1), (bx - 0.8 + 0.33 * k, PLATEAU_Y + 0.2 + 0.02 * math.sin(k), bz), ry(90) @ ry(r.uniform(-2, 2))),
+              S['Wood'] if k % 2 else S['Dock'], L['Wood'], 0.5)
+    for s_ in (-1, 1):
+        pbox(g, (bx - 1.0, PLATEAU_Y - 0.1, bz + s_ * 1.15 - 0.1), (bx + 1.0, PLATEAU_Y + 0.17, bz + s_ * 1.15 + 0.1), S['WoodDark'], L['Wood'], 0.45)
+    for k, z in enumerate((-52.5, -51.4, -50.3, -49.0)):
+        x = -57.6 + 0.35 * (-1) ** k
+        g.add(xform(blob(0.32, r, (1.2, 0.45, 1.0), subdiv=1, rough=0.12, flat=-0.3), (x, terrain_y(z) + 0.05, z)), S['Rock'], L['Rock'], 0.6)
+    n = 0
+    for _ in range(400):
+        if n >= 26:
+            break
+        i = r.randrange(len(CREEK) - 1)
+        (ax, az), (bx2, bz2) = CREEK[i], CREEK[i + 1]
+        t = r.random()
+        px, pz = ax + (bx2 - ax) * t, az + (bz2 - az) * t
+        side = 1 if r.random() < 0.5 else -1
+        x, z = px + side * (CREEK_HW + r.uniform(0.1, 0.7)), pz
+        if z > -46.5 or abs(z - bz) < 1.6:
+            continue
+        y = PLATEAU_Y if z < -55.0 else terrain_y(z)
+        for k in range(r.randint(4, 7)):
+            a = r.uniform(0, 2 * math.pi)
+            base = Vector((x + 0.14 * math.cos(a), y - 0.04, z + 0.14 * math.sin(a)))
+            hgt = r.uniform(0.7, 1.4)
+            g.add(blade_geo(base, (math.cos(a), 0, math.sin(a)), hgt, 0.03, 0.15, segs=2), S['Reed'], L['Grass'], 0.6)
+            if k == 0 and r.random() < 0.5:
+                top = base + Vector((0, hgt * 0.92, 0))
+                add_lathe(g, top - Vector((0, 0.18, 0)), [(0, 0.0), (0.02, 0.035), (0.16, 0.035), (0.18, 0.0)], S['WoodDark'], L['none'], 0.6, sides=5)
+        n += 1
+
+# ---- terrace dressing (detail): gardens, laundry, flower boxes, tufts and flowers on the levels, planters on the overlook ----
+def build_terrace_dressing(obst):
+    g = G2('Harbour_Detail_Terraces', 'detail', rays=8, ao_dist=0.6,
+           note='Round 1: level 1 and 2 dressing - vegetable plots, washing lines, flower boxes, potted plants, grass and flowers. No colliders.')
+    r = rng2('terracedress')
+    def tuft(x, z, n, h, slot):
+        y = land_y(x, z) - 0.02
+        for k in range(n):
+            a = r.uniform(0, 2 * math.pi)
+            off = Vector((math.cos(a), 0, math.sin(a))) * r.uniform(0.0, 0.1)
+            g.add(blade_geo(Vector((x, y, z)) + off, (math.cos(a), 0.0, math.sin(a)), h * r.uniform(0.6, 1.1), 0.045, r.uniform(0.25, 0.6), segs=2),
+                  slot, L['Grass'], 0.55)
+    def ok(x, z, m=0.3):
+        if in_ramp(x, z, 0.8) or abs(z - T1_Z) < 0.7 or abs(z - T2_Z) < 0.7:
+            return False
+        for pts, hw in PATHS:
+            if poly_dist(x, z, pts) < hw + 0.15:
+                return False
+        if road_dist(x, z) < 2.6:
+            return False
+        for (lo, hi) in obst:
+            if lo[0] - m <= x <= hi[0] + m and lo[2] - m <= z <= hi[2] + m:
+                return False
+        return True
+    # vegetable plots behind three cottages: soil beds with rows of cabbages and bean poles
+    for i in (1, 3, 6):
+        x, z, W, D = UPPER_HOUSES[i][:4]
+        bz = z - D / 2 - 1.6
+        field_patch(g, x, bz, W - 0.6, 1.6, 0.0, S['Dock'], step=1.0)
+        for row in range(2):
+            for k in range(int((W - 1.2) / 0.55)):
+                px, pz = x - W / 2 + 0.9 + 0.55 * k, bz - 0.4 + 0.8 * row
+                g.add(xform(blob(0.17, r, (1.0, 0.75, 1.0), subdiv=1, rough=0.25), (px, land_y(px, pz) + 0.28, pz)),
+                      S['Foliage'] if (k + row) % 3 else S['FoliageDark'], L['Foliage'], 0.6)
+    # washing lines between neighbouring cottages (back yards)
+    for i, j in ((0, 1), (4, 5)):
+        xa, za = UPPER_HOUSES[i][0] + UPPER_HOUSES[i][2] / 2 + 0.2, UPPER_HOUSES[i][1] - 1.0
+        xb, zb = UPPER_HOUSES[j][0] - UPPER_HOUSES[j][2] / 2 - 0.2, UPPER_HOUSES[j][1] - 1.0
+        pa, pb = Vector((xa, LEVEL1_Y + 2.1, za)), Vector((xb, LEVEL1_Y + 2.1, zb))
+        g.add(tube(rope_line(pa, pb, 0.2, n=10), 0.01, 3, caps=False), S['Sand'], L['Cloth'], 0.6)
+        d = (pb - pa).normalized()
+        yaw = math.degrees(math.atan2(d.x, d.z)) + 90
+        for k, (t, w, h, slot) in enumerate(((0.2, 0.55, 0.6, S['Accent']), (0.4, 0.5, 0.55, S['Sand']), (0.6, 0.7, 0.45, S['Roof']), (0.8, 0.45, 0.6, S['Foliage']))):
+            p = pa.lerp(pb, t) - Vector((0, 0.2 * 4 * t * (1 - t), 0))
+            g.add(xform(rbox((w, h, 0.02), 0.01, 1), p - Vector((0, h / 2, 0)), ry(yaw) @ rx(r.uniform(-5, 5))), slot, L['Cloth'], 0.65)
+    # flower boxes under the cottages' front windows
+    for (x, z, W, D, eave, ridge, wall, wl, roof, trim, yaw) in UPPER_HOUSES:
+        rot = ry(yaw)
+        for wx in ((0.6, 1.75) if W > 4.7 else (-1.4, 1.4)):
+            c = Vector((x, LEVEL1_Y, z)) + rot @ Vector((wx, 0.2 + 1.5 - 0.62, D / 2 + 0.2))
+            g.add(xform(rbox((0.85, 0.2, 0.2), 0.03, 1), c, rot), S['Wood'], L['Wood'], 0.55)
+            for k in range(4):
+                g.add(xform(blob(0.09, r, (1, 0.8, 1), subdiv=1, rough=0.2), c + rot @ Vector((-0.3 + 0.2 * k, 0.15, 0.0))),
+                      [S['Accent'], S['Roof'], S['Sand'], S['Foliage']][(k + int(x)) % 4], L['none'], 0.65)
+    # back-yard clutter on the lane side of every cottage: a crate stack with a barrel, a woodpile or a pot stack; a bench by three front doors
+    for i, (x, z, W, D, eave, ridge, wall, wl, roof, trim, yaw) in enumerate(UPPER_HOUSES):
+        bx, bz = x + (W / 2 - 0.7) * (1 if i % 2 else -1), z - D / 2 - 0.75
+        g.mark()
+        if i % 3 == 0:
+            crate_stack(g, bx, bz, r, 'YardCrates_%d' % i)
+        elif i % 3 == 1:
+            pot_stack(g, bx, bz, r, 'YardPots_%d' % i)
+        else:
+            for k in range(3):
+                geo, fs = lathe([(-0.5, 0.0), (-0.49, 0.11), (0.49, 0.11), (0.5, 0.0)], 7, cap0=True, cap1=True)
+                g.add(xform(geo, (bx - 0.25 + 0.24 * k, land_y(bx, bz) + 0.12 + 0.2 * (k == 1), bz), rx(90) @ ry(r.uniform(0, 60))), S['WoodDark'], L['Bark'], 0.45)
+        if i in (0, 3, 5):
+            bench(g, 'CottageBench_%d' % i, x + 1.6, z + D / 2 + 0.75, yaw, r)
+    g.items.clear()
+    # potted plants and a planter row on the overlook; tufts and flower clumps over both levels
+    for k, x in enumerate((-8.5, -1.0, 11.0, 17.5)):
+        z = -95.8
+        y = land_y(x, z)
+        add_lathe(g, (x, y, z), [(0, 0.2), (0.4, 0.26), (0.45, 0.28), (0.48, 0.0)], S['Dock'], L['none'], 0.55, sides=10)
+        g.add(xform(blob(0.32, r, (1.0, 0.9, 1.0), subdiv=2, rough=0.25), (x, y + 0.72, z)), S['Foliage'], L['Foliage'], 0.55)
+        for j in range(3):
+            g.add(xform(blob(0.07, r, (1, 0.8, 1), subdiv=1, rough=0.1), (x + 0.2 * math.cos(j * 2.1), y + 0.95, z + 0.2 * math.sin(j * 2.1))),
+                  [S['Accent'], S['Roof'], S['Sand']][(k + j) % 3], L['none'], 0.65)
+    placed = flowers = 0
+    for _ in range(3000):
+        if placed >= 110:
+            break
+        x, z = r.uniform(-59.0, 59.0), r.uniform(-105.6, -76.6)
+        if not ok(x, z, 0.35):
+            continue
+        tuft(x, z, r.randint(4, 7), r.uniform(0.3, 0.6), S['Reed'] if r.random() < 0.45 else S['Grass'])
+        placed += 1
+        if r.random() < 0.3:
+            col = [S['Accent'], S['Sand'], S['Roof']][flowers % 3]
+            for k in range(r.randint(4, 6)):
+                fx, fz = x + r.uniform(-0.5, 0.5), z + r.uniform(-0.5, 0.5)
+                fy = land_y(fx, fz)
+                hgt = r.uniform(0.18, 0.36)
+                g.add(blade_geo((fx, fy - 0.02, fz), (r.uniform(-1, 1), 0, r.uniform(-1, 1)), hgt, 0.012, 0.15, segs=2), S['Grass'], L['Grass'], 0.6)
+                add_lathe(g, (fx, fy + hgt - 0.02, fz), [(0, 0.0), (0.01, 0.045), (0.03, 0.05), (0.045, 0.0)], col, L['none'], 0.75, sides=5)
+            flowers += 1
+    # hedge clumps along the level-2 field wall and at the lane's ends
+    bushes = 0
+    for _ in range(600):
+        if bushes >= 46:
+            break
+        if r.random() < 0.45:
+            x, z = r.uniform(-58.0, 58.0), WALL_ZS + r.uniform(1.3, 2.2)
+        else:
+            x, z = r.uniform(-58.0, 58.0), r.uniform(-93.5, -91.0)
+        if not ok(x, z, 0.4):
+            continue
+        rad = r.uniform(0.55, 1.0)
+        g.add(xform(blob(rad, r, (1.3, 0.85, 1.0), subdiv=2, rough=0.22, flat=-0.4, yaw=r.uniform(0, 360)), (x, land_y(x, z) + 0.25 * rad, z)),
+              S['FoliageDark'] if r.random() < 0.6 else S['Foliage'], L['Foliage'], 0.55)
+        bushes += 1
+    g.extra['counts'] = dict(tufts=placed, flower_patches=flowers, bushes=bushes)
+    return g
+
+def build_gull_fly():
+    g = G2('Harbour_Detail_Anim_GullFly', 'detail', local=True, rays=8, anim='circle',
+           note='Round 1: a gliding gull (wings out, ~1 m span). Origin at the body centre; it circles its placement (animHint circle, '
+                'radius in the placement) and banks into the turn.')
+    r = rng2('gullfly')
+    g.add(xform(blob(0.13, r, (0.85, 0.8, 1.9), subdiv=2, rough=0.03, flat=-2), (0, 0, 0)), S['Sand'], L['none'], 0.7)
+    g.add(xform(blob(0.08, r, (1, 1, 1.1), subdiv=2, rough=0.02, flat=-2), (0, 0.06, 0.26)), S['Sand'], L['none'], 0.7)
+    g.add(xform(rbox((0.03, 0.03, 0.08), 0.01, 1), (0, 0.05, 0.36)), S['Accent'], L['none'], 0.7)
+    for s_ in (-1, 1):
+        inner = [Vector((s_ * 0.05, 0.02, 0.06)), Vector((s_ * 0.3, 0.06, 0.08)), Vector((s_ * 0.3, 0.05, -0.08)), Vector((s_ * 0.05, 0.0, -0.1))]
+        outer = [Vector((s_ * 0.3, 0.06, 0.08)), Vector((s_ * 0.56, 0.0, 0.0)), Vector((s_ * 0.5, 0.0, -0.1)), Vector((s_ * 0.3, 0.05, -0.08))]
+        for quad, slot in ((inner, S['Sand']), (outer, S['Rock'])):
+            nrm = (quad[1] - quad[0]).cross(quad[2] - quad[0]).normalized()
+            if nrm.y < 0:
+                nrm = -nrm
+            g.add((quad, [nrm] * 4, [[0, 1, 2, 3]], [[(0, 0), (1, 0), (1, 1), (0, 1)]]), slot, L['none'], 0.7)
+            g.add(([q - nrm * 0.004 for q in quad], [-nrm] * 4, [[0, 3, 2, 1]], [[(0, 0), (0, 1), (1, 1), (1, 0)]]), slot, L['none'], 0.7)
+    g.add(xform(rbox((0.16, 0.02, 0.12), 0.008, 1), (0, 0.0, -0.3)), S['Sand'], L['none'], 0.7)
+    for name, c, rad in (('GullFly_Pier', (-2.0, 9.0, -28.0), 7.0), ('GullFly_Basin', (46.0, 11.0, -34.0), 9.0), ('GullFly_Village', (-18.0, 13.0, -66.0), 8.0),
+                         ('GullFly_THead', (3.0, 7.5, -4.0), 5.5), ('GullFly_Tug', (38.0, 12.0, -18.0), 6.5), ('GullFly_Chapel', (6.0, 26.0, -99.0), 6.0)):
+        g.place(name, c, 0.0, radius=rad)
     return g
 
 # ---------------------------------------------------------------------------------------------------------------------------------------
@@ -4504,13 +5392,15 @@ def build_pass2():
     land = [build_dunes(), build_dunes_col()] + build_hills() + [build_river()] + build_cliffs() + \
            [build_paths(), build_stone_wall(), build_road()] + build_forest() + [build_islands(), build_backdrop()]
     bld = build_buildings()
+    upper = build_upper_village()      # round 1
+    jetty = build_jetty()              # round 1
     yard = build_yard()
     tug = [build_crew_boat(), build_crew_boat_col(), build_ice_chest()]
     trees = build_trees()
-    obst = obstacle_boxes([bld] + yard + [trees])
+    obst = obstacle_boxes([bld, upper, jetty] + yard + trees)
     detail = [build_lights(yard[0]), build_clutter(yard[0], yard[1])] + build_plants(obst) + build_shore(obst) + [build_reeds()] + \
-             build_anim_models(yard, bld)
-    return land + [bld] + yard + tug + [trees] + detail + build_code_trees()
+             build_anim_models(yard, bld, jetty, upper) + [build_moorings(), build_terrace_dressing(obst), build_gull_fly()]
+    return land + [bld, upper, jetty] + yard + tug + trees + detail + build_code_trees() + [build_windmill_sails()]
 
 def tug_footprint_world(margin=0.35):
     # the tug's hull outline (plus the fender ring / tyres) in world xz

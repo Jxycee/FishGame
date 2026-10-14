@@ -34,10 +34,12 @@ namespace FishGame.EditorTools
         public static float BeachY(float z) => Mathf.Clamp(BeachSlope * (CoastZ - z), BeachMinY, BeachMaxY);
         public static float TerrainY(float x, float z) => z <= CoastZ ? BeachY(z) : SeabedY(z);
 
-        // Seabed (Ground): x -400..400 (to the sea skirt's far edge, so the sea floor does not end at the water grid), z -47..121. Rows every 2 m in z (so the
-        // kinks at z -45 and z -9 are vertices and the surface is exactly the formula); columns every 20 m in x: every height-field attribute is independent
+        // Seabed (Ground): x -400..400 (to the sea skirt's far edge, so the sea floor does not end at the water grid), z -47..121. Rows every 2 m in z up to -9 (so the
+        // kinks at z -45 and z -9 are vertices and the surface is exactly the formula), then one row at 121 (flat; harbour round 1); columns every 20 m in x: every height-field attribute is independent
         // of x, so the surface is the same plane at any x step and the bake sees the same rays.
         public const float SeabedMinX = -400f, SeabedMaxX = 400f, SeabedMinZ = -47f, SeabedMaxZ = 121f, SeabedStepX = 20f, SeabedStepZ = 2f;
+        // Round 1: from here (the -9 m kink) out the seabed is flat, so the mesh has no rows between it and SeabedMaxZ.
+        public static float SeabedFlatFromZ => CoastZ + SeabedMaxDepth / SeabedSlope;   // -9
         // Beach and plateau (Shore): x -120..120 in 2 m steps; rows (z): the submerged lip -44.5, then -45 down to -55 every metre (the two kinks),
         // then -100 (flat plateau). Sand below BeachSandMaxY, Grass above (the slot blends across the band that crosses it).
         // The land runs to x +-400 (20 m columns, the heights do not depend on x) and z -400, the sea skirt's far edge, so the land has no visible edge.
@@ -121,8 +123,12 @@ namespace FishGame.EditorTools
         public static readonly Vector3 SceneCameraPosition = new Vector3(0f, 6f, -70f), SceneCameraLookAt = new Vector3(0f, 1.5f, -30f);
 
         // ---- invisible boundary walls (Default layer, so neither CastProbe nor the bake sees them; open question 2) ----
-        public const float WallThickness = 1f, WallMinY = -12f, WallMaxY = 6f;
-        public const float WallEastWestX = 60.5f, WallNorthZ = 60.5f, WallSouthZ = -75.5f;
+        // Round 1 (2026-10-15, map layout pass): the play area grew inland. The south wall moved from z -75.5 to -106.5 to take in the two
+        // terraces behind the village (level 1 y 3.74: the upper lane and the cottages; level 2 y 6.74: the chapel and the overlook), and the
+        // walls rise to y 16 so nobody walks over them from level 2. The terraces, their stairs and parapets are Blender land
+        // (Harbour_Dunes_Col, Harbour_Core_Walls_Tri), all outside the bake grid (z >= -60), so the castable grid only changes by the jetty.
+        public const float WallThickness = 1f, WallMinY = -12f, WallMaxY = 16f;
+        public const float WallEastWestX = 60.5f, WallNorthZ = 60.5f, WallSouthZ = -106.5f;
 
         // ---- trees (Shore): lake pattern, reused lake meshes ----
         public const int TreeCount = 16;
@@ -136,6 +142,10 @@ namespace FishGame.EditorTools
         // ---- stand points (x, y, z, facingDeg; this order) ----
         // 0-4 beach (x -48, -30, -12, 14, 48; z -46.5; BeachY + 0.05 = 0.23), 5-6 pier middle east/west, 7-8 T-head west/east end, 9 T-head front,
         // 10 breakwater tip. Facing is Unity yaw (0 = +z, 90 = +x).
+        // Round 1 (2026-10-15): 11 the east-basin fishing jetty head (deck 0.95, facing north-west into the basin), 12 the lookout tower deck
+        // (4.4 m up by the breakwater root, facing north-east over the basin): a second jetty and the first raised fishing spot. Both lanes clear
+        // the tug, the moored boats and the other lanes (fg_harbour.py lane_hit / verify_layout).
+        public const float JettyDeckTopY = 0.95f, LookoutDeckTopY = 4.4f;
         public const float StandBeachZ = -46.5f, StandLift = 0.05f;
         public static readonly Vector4[] StandPoints = BuildStandPoints();
 
@@ -151,6 +161,8 @@ namespace FishGame.EditorTools
             points.Add(new Vector4(4.5f, 1.55f, -6.5f, 90f));   // T-head east end
             points.Add(new Vector4(0f, 1.55f, -5.5f, 0f));      // T-head front
             points.Add(new Vector4(30f, 1.55f, -26f, 0f));      // breakwater tip
+            points.Add(new Vector4(55.7f, JettyDeckTopY + 0.05f, -35f, 330f));      // round 1: the east jetty head
+            points.Add(new Vector4(36.4f, LookoutDeckTopY + 0.05f, -48.3f, 30f));   // round 1: the lookout tower deck
             return points.ToArray();
         }
 
@@ -165,6 +177,7 @@ namespace FishGame.EditorTools
         //    instanced per placement (gulls, floats, flags, the windsock, the shop sign, nets, bunting, the weather vane) and animated by AmbientLife.
         //  CrewBoat: the tug, its collision mesh (Shore) and the ice chests, placed from the manifest (local models, the tug's frame).
         //  CodeTrees: the four local code-tree models, one under each Tree_NN (see PlaceTrees).
+        //  Round 1: a local core model under Land (the windmill sails) is instanced per placement and turns; it is core, so Low keeps it.
         public const string RootLand = "Land", RootVillage = "Village", RootDetail = "Detail", RootCrewBoat = "CrewBoat", RootCodeTrees = "CodeTrees";
         public const string RootSmoke = "Smoke", RootLights = "HarbourLights", RootLife = "AmbientLife";
 
@@ -233,17 +246,32 @@ namespace FishGame.EditorTools
             new VisualModel("Harbour_Core_CodeTree_PineB_Tri.fbx", RootCodeTrees, "TreeVisual"),
             new VisualModel("Harbour_Core_CodeTree_RoundA_Tri.fbx", RootCodeTrees, "TreeVisual"),
             new VisualModel("Harbour_Core_CodeTree_RoundB_Tri.fbx", RootCodeTrees, "TreeVisual"),
+            // ---- round 1 (map layout pass) ----
+            new VisualModel("Harbour_Core_Buildings_Upper.fbx", RootVillage, "UpperVillageVisual"),
+            new VisualModel("Harbour_Core_Jetty.fbx", RootVillage, "JettyVisual"),
+            new VisualModel("Harbour_Core_TerraceTrees_Tri.fbx", RootVillage, "TerraceTreesVisual"),
+            new VisualModel("Harbour_Core_Anim_WindmillSails.fbx", RootLand, "WindmillSails"),
+            new VisualModel("Harbour_Detail_Moorings.fbx", RootDetail, "MooringsVisual"),
+            new VisualModel("Harbour_Detail_Terraces.fbx", RootDetail, "TerraceDressingVisual"),
+            new VisualModel("Harbour_Detail_Anim_GullFly.fbx", RootDetail, "GullFly"),
         };
 
-        // Pass-2 collider sources: box items of these models become BoxColliders (Land: Shore; Village: Structure).
+        // Pass-2 collider sources: box items of these models become BoxColliders (Land: Shore; Village: Structure). Round 1: the stone wall model
+        // is the terrace retaining walls now (its box items are the parapets); the upper village (cottages, the chapel tower, lane lamps,
+        // overlook benches) and the jetty with the lookout tower (deck, posts, rails, stair steps) are Village boxes.
         public static readonly string[] LandBoxModels = { "Harbour_Core_Walls_Tri" };
-        public static readonly string[] VillageBoxModels = { "Harbour_Core_Buildings", "Harbour_Core_Yard_A", "Harbour_Core_Yard_B", "Harbour_Core_Trees_Tri" };
+        public static readonly string[] VillageBoxModels = { "Harbour_Core_Buildings", "Harbour_Core_Yard_A", "Harbour_Core_Yard_B", "Harbour_Core_Trees_Tri",
+                                                             "Harbour_Core_Buildings_Upper", "Harbour_Core_Jetty", "Harbour_Core_TerraceTrees_Tri" };
+        // Round 1: the windmill sails turn (AmbientLife Rotor, degrees per second); the circling gulls (AmbientLife Circle).
+        public const string WindmillSailsModel = "Harbour_Core_Anim_WindmillSails";
+        public const float WindmillDegreesPerSecond = 24f;
         public const string CrewBoatModel = "Harbour_Core_CrewBoat", CrewBoatColModel = "Harbour_Core_CrewBoat_Col", IceChestModel = "Harbour_Core_CrewBoat_IceChest";
         public const string WeatherVaneModel = "Harbour_Detail_Anim_WeatherVane", LightsModel = "Harbour_Detail_Lights";
         public const float WeatherVaneSplitY = 0.25f;   // the manifest note: only the part above y 0.25 (local) turns
         public const string WeatherVaneHeadMeshPath = AssetPaths.MeshesFolder + "/Harbour_WeatherVane_Head.asset";
         public const string WeatherVaneBaseMeshPath = AssetPaths.MeshesFolder + "/Harbour_WeatherVane_Base.asset";
         public const string BeaconBeamMeshPath = AssetPaths.MeshesFolder + "/Harbour_BeaconBeam.asset";
+        public const string GlowSphereMeshPath = AssetPaths.MeshesFolder + "/Harbour_GlowSphere.asset";   // round 1: the lamp glow spheres' low-poly mesh
         public const float TugBobMetres = 0.03f;         // the moored tug's hull visual heave (the collision mesh never moves)
         // Phase-1 pier lamps (Harbour_Props Lamp_0 / Lamp_1): the light sits in the lamp head, as the pass-2 lamp posts' (y 4.1 for a 4.53 top).
         public const float PierLampLightBelowTop = 0.43f;

@@ -26,6 +26,8 @@ namespace FishGame.Presentation
             Swing = 5,      // a hanging sign: swing about local x
             Spin = 6,       // a weather vane head: turns to a wandering wind direction
             Gull = 7,       // a perched gull: looks around in steps, an occasional hop
+            Rotor = 8,      // round 1: windmill sails, a steady turn about local z (Amplitude = degrees per second)
+            Circle = 9,     // round 1: a gliding gull circling its base position (Amplitude = radius, metres), banked into the turn
         }
 
         [Serializable]
@@ -211,6 +213,23 @@ namespace FishGame.Presentation
                     float hop = Mathf.Pow(Mathf.Max(0f, Mathf.Sin(t * 0.37f + p * 2.3f)), 24f) * 0.09f;
                     tr.localPosition = m.BasePosition + new Vector3(0f, hop, 0f);
                     tr.localRotation = m.BaseRotation * Quaternion.Euler(0f, a * step, 0f);
+                    break;
+                }
+                case MotionKind.Rotor:
+                {
+                    tr.localRotation = m.BaseRotation * Quaternion.Euler(0f, 0f, (t * a + p * Mathf.Rad2Deg) % 360f);
+                    break;
+                }
+                case MotionKind.Circle:
+                {
+                    // Counter-clockwise seen from above at ~0.22 rad/s (a lap in ~28 s), a slow height wave; the body faces along the path
+                    // and banks 18 degrees into the turn. The radius scales the angular speed down a little so big circles do not race.
+                    float w = 0.22f * Mathf.Sqrt(6f / Mathf.Max(1f, a));
+                    float ang = t * w + p;
+                    var offset = new Vector3(a * Mathf.Cos(ang), 0.6f * Mathf.Sin(t * 0.31f + p * 1.7f), a * Mathf.Sin(ang));
+                    tr.localPosition = m.BasePosition + offset;
+                    var heading = new Vector3(-Mathf.Sin(ang), 0f, Mathf.Cos(ang));
+                    tr.localRotation = Quaternion.LookRotation(heading, Vector3.up) * Quaternion.Euler(0f, 0f, 18f);
                     break;
                 }
             }

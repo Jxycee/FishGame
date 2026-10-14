@@ -22,12 +22,12 @@ namespace FishGame.Data
         // Used when a palette has no grade for a season (an asset built before the grades existed): the Summer seed.
         public static ToonGrade Default => new ToonGrade
         {
-            topGain = new Vector3(1.14f, 1.09f, 0.92f),
-            topStrength = 0.8f,
+            topGain = new Vector3(1.20f, 1.10f, 0.86f),     // harbour round 1 (2026-10-15): the round-0 grade did not read in captures; pushed
+            topStrength = 0.9f,
             topTightness = 0.35f,
-            bottomGain = new Vector3(0.86f, 0.84f, 1.10f),
-            bottomStrength = 0.7f,
-            shadeWeight = 0.55f,
+            bottomGain = new Vector3(0.84f, 0.84f, 1.16f),
+            bottomStrength = 0.85f,
+            shadeWeight = 0.6f,
             hueShift = 0.018f,
         };
 

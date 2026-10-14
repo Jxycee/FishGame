@@ -30,7 +30,7 @@ namespace FishGame.EditorTools
         // Everything the scene needs from disk, loaded once after NewScene (C 2.8 #14).
         sealed class ArtAssets
         {
-            public Material Toon, ToonTri, Water;
+            public Material Toon, ToonTri, Water, Creek;
             public Mesh WaterMesh, WaterSkirt, Seabed, Beach;
             public Mesh[] VisualMeshes;   // HarbourPierLayout.Visuals order
             public Mesh Branches;   // the lake's bare winter branches (read-only reuse; LakeDockBuilder builds it earlier in the same BuildAll)
@@ -48,6 +48,7 @@ namespace FishGame.EditorTools
             // Pass 2: the weather vane split (head turns) and the lighthouse beam, saved in place before the scene references them.
             BuildWeatherVaneMeshes(LoadModelMesh(HarbourPierLayout.WeatherVaneModel));
             HarbourPierMeshes.Save(HarbourPierLayout.BeaconBeamMeshPath, BuildBeaconBeam());
+            HarbourPierMeshes.Save(HarbourPierLayout.GlowSphereMeshPath, BuildGlowSphere());   // round 1: 112 triangles instead of Unity's 768
             AssetDatabase.SaveAssets();
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -60,6 +61,7 @@ namespace FishGame.EditorTools
                 Toon = RenderMaterialLibrary.Get("M_Toon_Base"),
                 ToonTri = RenderMaterialLibrary.Get("M_Toon_Tri"),
                 Water = RenderMaterialLibrary.Get("M_Water_Surface"),
+                Creek = RenderMaterialLibrary.Get("M_Water_Creek"),
                 WaterMesh = LoadMesh(HarbourPierLayout.WaterMeshPath),
                 WaterSkirt = LoadMesh(HarbourPierLayout.WaterSkirtMeshPath),
                 Seabed = LoadMesh(HarbourPierLayout.SeabedMeshPath),
@@ -74,7 +76,7 @@ namespace FishGame.EditorTools
                 GlowAll = RenderMaterialLibrary.Get("M_LampGlow_All"),
                 Beam = RenderMaterialLibrary.Get("M_BeaconBeam"),
                 Smoke = RenderMaterialLibrary.Get("M_Smoke"),
-                Sphere = BuiltinSphere(),
+                Sphere = LoadMesh(HarbourPierLayout.GlowSphereMeshPath),
                 BeamMesh = LoadMesh(HarbourPierLayout.BeaconBeamMeshPath),
                 VaneHead = LoadMesh(HarbourPierLayout.WeatherVaneHeadMeshPath),
                 VaneBase = LoadMesh(HarbourPierLayout.WeatherVaneBaseMeshPath),
@@ -158,12 +160,41 @@ namespace FishGame.EditorTools
             throw new System.IO.FileNotFoundException("Missing model " + meshName + ".fbx (import it first)");
         }
 
-        // Unity's built-in sphere mesh (the glow spheres), taken from a throwaway primitive.
-        static Mesh BuiltinSphere()
+        // The glow spheres' mesh (round 1): a UV sphere of radius 0.5 like Unity's built-in one (the glow objects scale it to their diameter), but
+        // 8 sides x 8 rings = 112 triangles instead of 768. The glows are small and additive, so the facets never read; at dusk the overview sees
+        // about 20 of them. Normals point out, uv0 = (longitude, latitude). Deterministic.
+        static Mesh BuildGlowSphere()
         {
-            GameObject temp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            Mesh mesh = temp.GetComponent<MeshFilter>().sharedMesh;
-            Object.DestroyImmediate(temp);
+            const int sides = 8, rings = 8;
+            var verts = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+            for (int j = 0; j <= rings; j++)
+            {
+                float v = (float)j / rings, lat = Mathf.PI * (v - 0.5f);
+                for (int i = 0; i <= sides; i++)
+                {
+                    float u = (float)i / sides, lon = 2f * Mathf.PI * u;
+                    var n = new Vector3(Mathf.Cos(lat) * Mathf.Cos(lon), Mathf.Sin(lat), Mathf.Cos(lat) * Mathf.Sin(lon));
+                    verts.Add(n * 0.5f); normals.Add(n); uvs.Add(new Vector2(u, v));
+                }
+            }
+            for (int j = 0; j < rings; j++)
+            {
+                for (int i = 0; i < sides; i++)
+                {
+                    int a = j * (sides + 1) + i, b = a + sides + 1;
+                    if (j > 0) tris.AddRange(new[] { a, b, a + 1 });                // clockwise seen from outside (Unity front faces)
+                    if (j < rings - 1) tris.AddRange(new[] { a + 1, b, b + 1 });
+                }
+            }
+            var mesh = new Mesh { name = "Harbour_GlowSphere" };
+            mesh.SetVertices(verts);
+            mesh.SetNormals(normals);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateBounds();
             return mesh;
         }
 

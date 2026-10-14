@@ -136,7 +136,8 @@ namespace FishGame.Tests.EditMode
                 Assert.That(river, Is.Not.Null);
                 Assert.That(river.gameObject.layer, Is.Not.EqualTo(Layers.Water), "the river is not on the Water layer");
                 Assert.That(river.GetComponent<Collider>(), Is.Null, "the river has no collider");
-                Assert.That(river.GetComponent<MeshRenderer>().sharedMaterial.name, Is.EqualTo("M_Water_Surface"));
+                // round 1: the shallow-ribbon water (no shore-foam band; on M_Water_Surface the river drew as a white strip)
+                Assert.That(river.GetComponent<MeshRenderer>().sharedMaterial.name, Is.EqualTo("M_Water_Creek"));
                 Transform dunes = land.transform.Find("DunesCollision");
                 Assert.That(dunes, Is.Not.Null);
                 Assert.That(dunes.GetComponent<MeshCollider>(), Is.Not.Null);

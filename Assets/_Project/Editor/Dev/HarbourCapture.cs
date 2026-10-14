@@ -60,6 +60,14 @@ namespace FishGame.EditorTools
             new Shot("dusk_village", new Vector3(-1f, Eye(1.2f), -59.5f), new Vector3(-20f, 3f, -63f), 60f, dusk: true),
             new Shot("thead_seaward", new Vector3(0f, Eye(1.5f), -6f), new Vector3(25f, 2f, 60f), 58f),
             new Shot("west_beach_cliffs", new Vector3(-40f, Eye(0.25f), -47f), new Vector3(-85f, 6f, -10f), 58f),
+            // round 1 (map layout pass): a player-eye walk along the main loop (eye = ground + MovementMath.EyeHeight)
+            new Shot("walk_pier_root", new Vector3(1.5f, Eye(1.2f), -58.8f), new Vector3(-3f, 5.5f, -92f), 60f),
+            new Shot("walk_stairs_a", new Vector3(4.4f, Eye(1.2f), -71.5f), new Vector3(4.4f, 5.2f, -86f), 60f),
+            new Shot("walk_upper_lane", new Vector3(-24f, Eye(3.74f), -87.5f), new Vector3(8f, 4.8f, -81f), 60f),
+            new Shot("walk_overlook", new Vector3(-4f, Eye(6.74f), -97.2f), new Vector3(12f, 0f, -42f), 62f),
+            new Shot("walk_creek_mouth", new Vector3(-51f, Eye(0.55f), -50.5f), new Vector3(-58f, 2.5f, -72f), 60f),
+            new Shot("walk_lookout_deck", new Vector3(36.6f, Eye(4.4f), -49.6f), new Vector3(52f, 0.5f, -30f), 60f),
+            new Shot("walk_jetty_head", new Vector3(55.6f, Eye(0.95f), -36.2f), new Vector3(33f, 2.5f, -21f), 60f),
         };
 
         public static void Capture()

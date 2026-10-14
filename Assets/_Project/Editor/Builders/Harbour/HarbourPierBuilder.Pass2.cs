@@ -43,7 +43,7 @@ namespace FishGame.EditorTools
         static void AddPass2(ArtAssets art)
         {
             var life = new LifeBuild();
-            AddLand(art);
+            AddLand(art, life);
             AddVillage(art);
             Transform hull = AddCrewBoat(art, life);
             AddDetail(art, life, hull);
@@ -63,13 +63,15 @@ namespace FishGame.EditorTools
 
         static Mesh VisualMesh(ArtAssets art, string meshName) => art.VisualMeshes[VisualIndex(meshName)];
 
+        // Round 1: the river ribbon (with the creek and the tide pools) draws with M_Water_Creek (no shore-foam band: it sits cm over the land).
         static Material MaterialFor(HarbourPierLayout.VisualModel visual, ArtAssets art) =>
-            visual.MeshName == "Harbour_Core_River" ? art.Water : visual.Triplanar ? art.ToonTri : art.Toon;
+            visual.MeshName == "Harbour_Core_River" ? art.Creek : visual.Triplanar ? art.ToonTri : art.Toon;
 
         // Flat ground ribbons, the river and the small low dressing cast nothing worth a shadow pass (GTX 900 budget).
         static bool CastsShadows(string meshName) =>
             meshName != "Harbour_Core_River" && meshName != "Harbour_Core_Paths" && meshName != "Harbour_Detail_Plants_A" && meshName != "Harbour_Detail_Plants_B"
-            && meshName != "Harbour_Detail_Reeds" && meshName != "Harbour_Detail_TidePools_Tri" && meshName != "Harbour_Detail_Shore" && meshName != "Harbour_Detail_Lights";
+            && meshName != "Harbour_Detail_Reeds" && meshName != "Harbour_Detail_TidePools_Tri" && meshName != "Harbour_Detail_Shore" && meshName != "Harbour_Detail_Lights"
+            && meshName != "Harbour_Detail_Terraces" && meshName != "Harbour_Detail_Anim_GullFly";
 
         // World models of one parent at the origin (collision models get a MeshCollider only); returns the root.
         static GameObject AddWorldModels(ArtAssets art, string rootName, int layer)
@@ -109,10 +111,26 @@ namespace FishGame.EditorTools
         }
 
         // Shore: the land shape, the backdrop, the river (water material; Shore, never Water; no collider), the stone wall boxes, the dune collision.
-        static void AddLand(ArtAssets art)
+        // Round 1: local core models under Land (the windmill sails) are instanced per placement, visual only, and turn (AmbientLife Rotor).
+        static void AddLand(ArtAssets art, LifeBuild life)
         {
             GameObject root = AddWorldModels(art, HarbourPierLayout.RootLand, Layers.Shore);
             foreach (string name in HarbourPierLayout.LandBoxModels) AddBoxItems(root.transform, HarbourPierManifest.Find(art.Manifest, name));
+            foreach (HarbourPierLayout.VisualModel visual in HarbourPierLayout.Visuals)
+            {
+                if (visual.Parent != HarbourPierLayout.RootLand) continue;
+                HarbourPierManifest.Model model = HarbourPierManifest.Find(art.Manifest, visual.MeshName);
+                if (!model.local_space) continue;
+                if (visual.MeshName != HarbourPierLayout.WindmillSailsModel) throw new System.InvalidOperationException("no placement rule for the local Land model " + visual.MeshName);
+                foreach (HarbourPierManifest.Placement p in model.placements)
+                {
+                    var go = new GameObject(p.name);
+                    go.transform.SetParent(root.transform, false);
+                    go.transform.SetPositionAndRotation(HarbourPierManifest.ToVector(p.position), Quaternion.Euler(0f, p.yaw_deg, 0f));
+                    AddMesh(go, VisualMesh(art, visual.MeshName), MaterialFor(visual, art), true);
+                    life.Move(go.transform, AmbientLife.MotionKind.Rotor, HarbourPierLayout.WindmillDegreesPerSecond);
+                }
+            }
             BuilderUtil.SetLayerRecursive(root, Layers.Shore);
         }
 
@@ -231,6 +249,7 @@ namespace FishGame.EditorTools
                         case "SwingSign": life.Move(go.transform, AmbientLife.MotionKind.Swing, 7f); break;
                         case "HangingNet": life.Move(go.transform, AmbientLife.MotionKind.Sway, 3.5f, Vector3.right); break;
                         case "Bunting": life.Move(go.transform, AmbientLife.MotionKind.Sway, 7f, PrincipalAxisXZ(mesh)); break;
+                        case "GullFly": life.Move(go.transform, AmbientLife.MotionKind.Circle, p.radius > 0f ? p.radius : 6f); break;
                         default: throw new System.InvalidOperationException("no motion for the local detail model " + visual.MeshName);
                     }
                 }
@@ -395,8 +414,13 @@ namespace FishGame.EditorTools
         static void AddHarbourLights(ArtAssets art, LifeBuild life, Transform hull)
         {
             GameObject root = Root(HarbourPierLayout.RootLights, Layers.Default);
-            foreach (HarbourPierManifest.Item item in HarbourPierManifest.Find(art.Manifest, "Harbour_Core_Yard_A").items)
-                if (item.light != null && item.light.Length == 3) AddLamp(root.transform, art, life, "Lamp_" + item.name, HarbourPierManifest.ToVector(item.light), 7f, 1.6f, 0.26f);
+            // Every pass-2 lamp post (round 0 the village's Yard_A; round 1 also the upper lane and the jetty head), in manifest order.
+            foreach (HarbourPierManifest.Model model in art.Manifest)
+            {
+                if (model.group == null || model.items == null) continue;
+                foreach (HarbourPierManifest.Item item in model.items)
+                    if (item.light != null && item.light.Length == 3) AddLamp(root.transform, art, life, "Lamp_" + item.name, HarbourPierManifest.ToVector(item.light), 7f, 1.6f, 0.26f);
+            }
             foreach (HarbourPierManifest.Item item in HarbourPierManifest.Find(art.Manifest, "Harbour_Props").items)
             {
                 if (!item.name.StartsWith("Lamp_", System.StringComparison.Ordinal)) continue;

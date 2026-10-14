@@ -37,6 +37,7 @@ namespace FishGame.EditorTools
             public float[] size;
             public float height_scale;     // code trees: the Pcg32 height (the parent Tree_NN's localScale)
             public bool pine;              // code trees
+            public float radius;           // round 1: a circling gull's circle radius (animHint circle)
         }
 
         // Pass 2: a named point (smoke, lights); `frame` "CrewBoat local" for the points on the tug, else world.
@@ -79,7 +80,7 @@ namespace FishGame.EditorTools
         [Serializable]
         public sealed class Pass2
         {
-            public Point[] smoke_points;   // all seven, world or CrewBoat local
+            public Point[] smoke_points;   // every smoke point, world or CrewBoat local
             public Point[] light_points;
         }
 

@@ -646,10 +646,13 @@ namespace FishGame.Tests.EditMode
             Color[] top = { new Color(0.38f, 0.52f, 0.78f, 1f), new Color(0.33f, 0.58f, 0.92f, 1f), new Color(0.30f, 0.30f, 0.58f, 1f), new Color(0.04f, 0.06f, 0.16f, 1f) };
             Color[] horizon = { new Color(0.98f, 0.74f, 0.56f, 1f), new Color(0.74f, 0.86f, 0.96f, 1f), new Color(0.98f, 0.56f, 0.36f, 1f), new Color(0.12f, 0.16f, 0.30f, 1f) };
             Color[] ground = { new Color(0.36f, 0.34f, 0.36f, 1f), new Color(0.40f, 0.40f, 0.36f, 1f), new Color(0.30f, 0.26f, 0.30f, 1f), new Color(0.05f, 0.05f, 0.08f, 1f) };
-            Color[] shade = { new Color(0.42f, 0.40f, 0.52f, 1f), new Color(0.46f, 0.50f, 0.62f, 1f), new Color(0.40f, 0.32f, 0.46f, 1f), new Color(0.12f, 0.14f, 0.26f, 1f) };
+            // Harbour round 1 (2026-10-15, critic pass): Day fog 0.008 -> 0.0062 (the hills behind the harbour washed out); Dusk shade and fog
+            // violet (0.34, 0.30, 0.50) / (0.66, 0.52, 0.62) at 0.0085 instead of the orange (0.40, 0.32, 0.46) / (0.80, 0.56, 0.46) at 0.010, so
+            // dusk has a complementary cool haze against the orange sun instead of one orange wash.
+            Color[] shade = { new Color(0.42f, 0.40f, 0.52f, 1f), new Color(0.46f, 0.50f, 0.62f, 1f), new Color(0.34f, 0.30f, 0.50f, 1f), new Color(0.12f, 0.14f, 0.26f, 1f) };
             Color[] ambient = { new Color(0.70f, 0.62f, 0.66f, 1f), new Color(0.80f, 0.86f, 0.92f, 1f), new Color(0.66f, 0.52f, 0.56f, 1f), new Color(0.30f, 0.36f, 0.52f, 1f) };
-            Color[] fog = { new Color(0.86f, 0.74f, 0.66f, 1f), new Color(0.74f, 0.84f, 0.92f, 1f), new Color(0.80f, 0.56f, 0.46f, 1f), new Color(0.10f, 0.13f, 0.22f, 1f) };
-            float[] fogDensity = { 0.010f, 0.008f, 0.010f, 0.014f };
+            Color[] fog = { new Color(0.86f, 0.74f, 0.66f, 1f), new Color(0.74f, 0.84f, 0.92f, 1f), new Color(0.66f, 0.52f, 0.62f, 1f), new Color(0.10f, 0.13f, 0.22f, 1f) };
+            float[] fogDensity = { 0.010f, 0.0062f, 0.0085f, 0.014f };
             float[] warm = { 0.6f, 0f, 1f, 0f };
             float[] cool = { 0f, 0f, 0f, 1f };
             for (int p = 0; p < 4; p++)

@@ -130,6 +130,18 @@ namespace FishGame.EditorTools
             surfaceChanged |= SetColor(surface, Shader.PropertyToID("_FoamColor"), new Color(0.96f, 0.99f, 1.0f, 1.0f));
             if (surfaceChanged) EditorUtility.SetDirty(surface);
 
+            // Harbour round 1 (2026-10-15): the same water on shallow visual ribbons (the river, the creek, the tide pools) that sit a few cm over the
+            // land. On M_Water_Surface their whole width is inside the shore-foam band and they drew as white strips; here the foam band is gone and
+            // the depth range is a few cm, so they read as clear shallow water over the bed.
+            Material creek = EnsureMaterial("M_Water_Creek", RequireShader("FishGame/Water"), out bool creekChanged);
+            creekChanged |= SetColor(creek, Shader.PropertyToID("_ShallowColor"), water.ShallowColor);
+            creekChanged |= SetColor(creek, Shader.PropertyToID("_DeepColor"), water.DeepColor);
+            foreach (var p in WaterLook) creekChanged |= SetFloat(creek, Shader.PropertyToID(p.Key), p.Value);
+            creekChanged |= SetFloat(creek, Shader.PropertyToID("_DepthRange"), 0.16f);
+            creekChanged |= SetFloat(creek, Shader.PropertyToID("_FoamWidth"), 0.001f);
+            creekChanged |= SetColor(creek, Shader.PropertyToID("_FoamColor"), new Color(0.96f, 0.99f, 1.0f, 1.0f));
+            if (creekChanged) EditorUtility.SetDirty(creek);
+
             Material line = EnsureMaterial("M_Line", RequireShader("FishGame/Line"), out bool lineChanged);   // shader defaults
             if (lineChanged) EditorUtility.SetDirty(line);
             Material sky = EnsureMaterial("M_Sky", RequireShader("FishGame/GradientSky"), out bool skyChanged);   // shader defaults
