@@ -80,6 +80,11 @@ Also on the board:
 
 ## 10. Harbour detail pass (user, 2026-10-14) - DONE, merged into main 36f8abb
 - **Quality-first run (user, 2026-10-14):** "stop focusing purely on GTX 900 cards and just make the best map possible". The spec Graphics tab note was revised (53732a7): no per-view cap, Low is a best-effort fallback.
+  - **PAUSED 2026-10-14 (PC restart + weekly usage at 97%, resets 2026-10-18 ~02:00 CDT).**
+    - Round 1: critics 6.6 / 6.8 / 6.7. Artist r1 bbf16d1 pushed on harbour-art3 (SSAO, bloom, height fog, painted rock/stone/plaster/roof, lawn carpet, bay destinations, life on the water). EditMode 1389/1390 (1 skipped), PlayMode 139/139.
+    - Round 2: critics 6.8 / 6.7 / 7.2 (cached in the run). The r2 artist was cut off before writing anything; the worktree is clean.
+    - Resume: Workflow({scriptPath: ~/.claude/projects/C--Dev-FishGame/0f9e3f02-.../workflows/scripts/harbour-best-wf_8dc74d12-0fa.js, resumeFromRunId: 'wf_8dc74d12-0fa', args as in the run}). r1 and the r2 critics return cached.
+    - This work needs the PC (Unity + live Blender) and cannot run in the cloud. Cloud-session notes: docs/superpowers/handoff/cloud-environment.md.
   - Run wf_8dc74d12-0fa (script ~/.claude/projects/C--Dev-FishGame/0f9e3f02-.../workflows/scripts/harbour-best-*.js) on branch harbour-art3, worktree C:\Dev\FishGame-harbour-art.
   - Up to 4 rounds of 3 critics + an Opus artist, pass at >= 8.5 with no category < 7.5, then a final gate. Shots: scratchpad/harbour-best/r<N>. The controller merges into main after it finishes.
   - Never SendMessage workflow agents (memory: workflow-agent-messaging).
