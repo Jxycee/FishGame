@@ -1,0 +1,16 @@
+{
+  "enabledPlugins": {
+    "csharp-lsp@claude-plugins-official": true,
+    "playwright@claude-plugins-official": false,
+    "typescript-lsp@claude-plugins-official": false,
+    "security-guidance@claude-plugins-official": false,
+    "superdesign@superdesign": false,
+    "yapui@local-desktop-app-uploads": false,
+    "brightdata-plugin@synced": false,
+    "data@synced": false,
+    "design@synced": false,
+    "engineering@synced": false,
+    "cowork-plugin-management@synced": false,
+    "pdf-viewer@synced": false
+  }
+}

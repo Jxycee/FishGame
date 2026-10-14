@@ -16,6 +16,11 @@ Co-op (1–4) friend-slop rogue-lite fishing game. Unity 6000.6.5f1 (URP), Netco
 - Editor scripts that build scenes/prefabs: `-executeMethod FishGame.EditorTools.<Class>.<Method>`.
 - Logs and test results go in the session scratchpad, never in the repo.
 
+## Token efficiency (user, 2026-10-14)
+- Navigate C# with the LSP tool (csharp-lsp plugin, csharp-ls): definitions, references and symbols before reading whole files. In a worktree that has no `.csproj`/`.slnx`, first run `powershell -NoProfile -ExecutionPolicy Bypass -File C:\Dev\FishGame\Tools\sync-csproj.ps1` (copies Unity's generated project files from the main checkout; gitignored, never commit them).
+- Briefs name exact files and symbols (file:line). Send follow-ups to an existing agent with SendMessage instead of spawning a fresh one.
+- Plugins and connectors unused here are off for this project (`.claude/settings.json`); don't turn them back on for FishGame work without asking.
+
 ## Code conventions
 - Gameplay code under `Assets/_Project/`, split by assembly definition (see spec for the list).
 - Pure C# logic (fishing tension model, spawn resolver, quota math) lives in classes with no MonoBehaviour dependency so EditMode tests cover it.
