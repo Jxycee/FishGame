@@ -21,6 +21,14 @@
 //  - No normal maps: the look gets its surface relief from the analytic smooth normals of SmoothMeshBuilder and the albedo/detail array
 //    (the _NORMALMAP path and its tangent interpolator were removed in the review fixes).
 //  - Ambient occlusion is baked into the vertex colour by the builders and the fish bake (no SSAO: it would force a DepthNormals prepass).
+//
+// Colour grade (asset study 2026-10-14, PEAK/RV "grey masks, colour from parameters"), on the materials with _FGGrade > 0 (M_Toon_Base, M_Toon_Tri;
+// the fish, body, skin and brass keep 0 and render as before). Values come from the palette's per-season ToonGrade (FishGameCommon globals).
+//  - Hue: albedo = HueRotate(albedo, FG_ObjectHueNoise() * _FGGradeParams.y * _FGGrade), per vertex, from the object origin (no material instances).
+//  - Top: albedo *= lerp(1, _FGTopTint.rgb, smoothstep(_FGGradeParams.x, 1, n.y) * _FGTopTint.w * _FGGrade) (warmer, lighter upward faces).
+//  - Bottom: the shade colour *= lerp(1, _FGBottomTint.rgb, _FGBottomTint.w * _FGGrade * lerp(_FGGradeParams.z, 1, saturate(-n.y))), so shadowed
+//    and down-facing sides go cool blue-purple; the lit side is untouched. Multiplicative only: a dark phase stays dark.
+//  ALU only (no texture sample, no keyword): the painted layers stay greyscale-multiplied by the palette as before.
 Shader "FishGame/Toon"
 {
     Properties
@@ -42,6 +50,7 @@ Shader "FishGame/Toon"
         _SpecStrength("Toon Highlight Strength", Range(0, 1)) = 0
         _SpecPower("Toon Highlight Power", Range(4, 256)) = 48
         [Toggle(_FG_TRIPLANAR)] _UseTriplanar("World Triplanar Mapping", Float) = 0
+        _FGGrade("Colour Grade (palette top / bottom tint, hue shift)", Range(0, 1)) = 0
     }
 
     SubShader
@@ -67,6 +76,7 @@ Shader "FishGame/Toon"
             half _SpecPower;
             half _UseTriplanar;
             half _FGMacro;
+            half _FGGrade;           // asset study 2026-10-14: 0 = no colour grade (default), 1 = the palette's full grade
         CBUFFER_END
         ENDHLSL
 
@@ -188,6 +198,7 @@ Shader "FishGame/Toon"
                 half3 vertexFactor = lerp(input.color.rgb, 2.0h * input.color.rgb, _JitterEncoded);   // BF-7: grey meshes have r == g == b
                 half3 baseRgb = _UsePalette > 0.5h ? FG_PaletteColor(input.uv1.x) * vertexFactor : vertexFactor;
                 half3 albedo = baseRgb * _BaseColor.rgb;
+                albedo = FG_HueRotate(albedo, FG_ObjectHueNoise() * (_FGGradeParams.y * _FGGrade));
                 half grey = dot(albedo, half3(0.2126h, 0.7152h, 0.0722h));   // Rec.709 luma (the colours here are linear, not gamma-encoded)
                 output.albedo = lerp(albedo, grey.xxx, _Desaturate);
                 output.fogFactor = FG_FogFactor(pos.positionCS.z);
@@ -212,9 +223,14 @@ Shader "FishGame/Toon"
                 half4 shadowMask = CalculateShadowMask(inputData);
                 Light mainLight = GetMainLight(inputData.shadowCoord, inputData.positionWS, shadowMask);
                 half3 albedo = input.albedo * texFactor;
+                // Colour grade: a warm light gain on upward faces, a cool gain on the shaded and down-facing sides (header).
+                half topMask = smoothstep(_FGGradeParams.x, 1.0h, n.y) * (_FGTopTint.w * _FGGrade);
+                albedo *= lerp(half3(1.0h, 1.0h, 1.0h), _FGTopTint.rgb, topMask);
+                half bottomMask = _FGBottomTint.w * _FGGrade * lerp(_FGGradeParams.z, 1.0h, saturate(-n.y));
+                half3 shade = _ToonShade.rgb * lerp(half3(1.0h, 1.0h, 1.0h), _FGBottomTint.rgb, bottomMask);
 
                 half band = FG_ToonBand(saturate(dot(n, mainLight.direction)), mainLight.shadowAttenuation);
-                half3 tint = lerp(_ToonShade.rgb, mainLight.color, band);
+                half3 tint = lerp(shade, mainLight.color, band);
                 half3 lit = albedo * tint + albedo * _ToonAmbient.rgb * 0.15h;
                 // Sky fill: a soft hemisphere term so shaded sides pick up sky colour from above and ground bounce from below.
                 lit += albedo * lerp(_SkyGround.rgb, _SkyTop.rgb, saturate(n.y * 0.5h + 0.5h)) * _SkyFill;

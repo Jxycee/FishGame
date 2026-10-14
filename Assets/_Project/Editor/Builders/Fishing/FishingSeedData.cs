@@ -268,6 +268,29 @@ namespace FishGame.EditorTools
             };
         }
 
+        // The toon colour grade per season (Spring, Summer, Autumn, Winter; asset study 2026-10-14, ToonGrade): a warm light gain on upward faces,
+        // a cool blue-purple gain on the shaded side, and a small per-object hue shift. Summer is ToonGrade.Default.
+        internal static ToonGrade[] ToonGrades()
+        {
+            return new[]
+            {
+                Grade(new Vector3(1.12f, 1.10f, 0.94f), 0.8f, 0.35f, new Vector3(0.88f, 0.86f, 1.08f), 0.65f, 0.55f, 0.020f),
+                ToonGrade.Default,
+                Grade(new Vector3(1.16f, 1.06f, 0.86f), 0.85f, 0.35f, new Vector3(0.88f, 0.82f, 1.06f), 0.75f, 0.55f, 0.022f),
+                Grade(new Vector3(1.08f, 1.08f, 1.06f), 0.7f, 0.40f, new Vector3(0.84f, 0.88f, 1.14f), 0.75f, 0.60f, 0.012f),
+            };
+        }
+
+        private static ToonGrade Grade(Vector3 topGain, float topStrength, float topTightness, Vector3 bottomGain, float bottomStrength,
+            float shadeWeight, float hueShift)
+        {
+            return new ToonGrade
+            {
+                topGain = topGain, topStrength = topStrength, topTightness = topTightness,
+                bottomGain = bottomGain, bottomStrength = bottomStrength, shadeWeight = shadeWeight, hueShift = hueShift,
+            };
+        }
+
         private static PaletteSeason Season(string name, Color[] summer, Color grass, Color foliage, Color foliageDark, Color reed, Color blossom,
             Color foliageAlt)
         {

@@ -35,6 +35,7 @@ Material:
     m_Floats:
     - _Desaturate: 0
     - _FGArrayGain: 2
+    - _FGGrade: 1
     - _FGMacro: 0.7
     - _FGNormalStrength: 1
     - _FGTexWeight: 1
@@ -49,6 +50,7 @@ Material:
     - _SpecStrength: 0
     - _UseNormalMap: 0
     - _UsePalette: 1
+    - _UseTriplanar: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

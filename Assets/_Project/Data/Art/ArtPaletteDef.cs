@@ -17,6 +17,7 @@ namespace FishGame.Data
         private static readonly PaletteSeason[] NoSeasons = new PaletteSeason[0];
         private static readonly DayPhaseAmbient[] NoPhases = new DayPhaseAmbient[0];
         private static readonly FishIconTile[] NoTiles = new FishIconTile[0];
+        private static readonly ToonGrade[] NoGrades = new ToonGrade[0];
 
         [SerializeField] private string[] slotNames;
         [SerializeField] private PaletteSeason[] seasons;
@@ -35,6 +36,7 @@ namespace FishGame.Data
 
         [SerializeField] private Texture2D fishIconAtlas;           // M3 (T21): the baked journal icons (Editor/Dev/FishIconBaker); null until baked
         [SerializeField] private FishIconTile[] fishIconTiles;      // M3 (T21): one tile per species id
+        [SerializeField] private ToonGrade[] toonGrades;            // asset study 2026-10-14: the toon top / bottom tint and hue shift, one per season
 
         public Texture2D FishIconAtlas => fishIconAtlas;
         public IReadOnlyList<FishIconTile> FishIconTiles => fishIconTiles ?? NoTiles;
@@ -60,6 +62,22 @@ namespace FishGame.Data
         {
             fishIconAtlas = atlas;
             fishIconTiles = tiles == null ? null : (FishIconTile[])tiles.Clone();
+        }
+
+        public IReadOnlyList<ToonGrade> ToonGrades => toonGrades ?? NoGrades;
+
+        // The grade of one season; ToonGrade.Default when the season is out of range or the palette has no grade for it (never throws, so a
+        // palette built before the grades existed still renders graded).
+        public ToonGrade ToonGradeFor(int season)
+        {
+            if (toonGrades == null || season < 0 || season >= toonGrades.Length) return ToonGrade.Default;
+            return toonGrades[season];
+        }
+
+        // Used by the content builder (in-place fill when empty) and by tests. The array is copied (null stays null). Configure leaves it alone.
+        public void ConfigureToonGrades(ToonGrade[] grades)
+        {
+            toonGrades = grades == null ? null : (ToonGrade[])grades.Clone();
         }
 
         public SunMoonSettings SunMoon => sunMoon;

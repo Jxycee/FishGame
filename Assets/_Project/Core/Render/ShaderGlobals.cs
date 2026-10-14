@@ -21,6 +21,10 @@ namespace FishGame.Core
         public const string SkyGround = "_SkyGround";
         public const string SeasonTint = "_FGSeasonTint";       // Vector4[16]: season / base per palette slot (M3-D23, CCR-F1); dormant hook, no M3 shader reads it
         public const string DayFraction = "_FGDayFraction";     // float 0..1, DayClock.DayFraction of the world minute
-        public const string LampGlow = "_FGLampGlow";           // float 0..1, DayNightMath.LampGlow: string-light bulbs and lamps (FishGame/LampGlow)
+        public const string LampGlow = "_FGLampGlow";
+        // Toon colour grade (asset study 2026-10-14; ArtPaletteDef.ToonGradeFor(season), pushed raw by PaletteGlobals). All zero (never pushed) = off.
+        public const string TopTint = "_FGTopTint";             // Vector4: xyz albedo gain on upward faces, w strength
+        public const string BottomTint = "_FGBottomTint";       // Vector4: xyz gain on the shade-side light, w strength
+        public const string GradeParams = "_FGGradeParams";     // Vector4: x top tightness (n.y), y per-object hue shift (turns), z shade weight           // float 0..1, DayNightMath.LampGlow: string-light bulbs and lamps (FishGame/LampGlow)
     }
 }

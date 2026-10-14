@@ -312,3 +312,32 @@ MonoBehaviour:
     y: 0
     w: 256
     h: 128
+  toonGrades:
+  - topGain: {x: 1.12, y: 1.1, z: 0.94}
+    topStrength: 0.8
+    topTightness: 0.35
+    bottomGain: {x: 0.88, y: 0.86, z: 1.08}
+    bottomStrength: 0.65
+    shadeWeight: 0.55
+    hueShift: 0.02
+  - topGain: {x: 1.14, y: 1.09, z: 0.92}
+    topStrength: 0.8
+    topTightness: 0.35
+    bottomGain: {x: 0.86, y: 0.84, z: 1.1}
+    bottomStrength: 0.7
+    shadeWeight: 0.55
+    hueShift: 0.018
+  - topGain: {x: 1.16, y: 1.06, z: 0.86}
+    topStrength: 0.85
+    topTightness: 0.35
+    bottomGain: {x: 0.88, y: 0.82, z: 1.06}
+    bottomStrength: 0.75
+    shadeWeight: 0.55
+    hueShift: 0.022
+  - topGain: {x: 1.08, y: 1.08, z: 1.06}
+    topStrength: 0.7
+    topTightness: 0.4
+    bottomGain: {x: 0.84, y: 0.88, z: 1.14}
+    bottomStrength: 0.75
+    shadeWeight: 0.6
+    hueShift: 0.012

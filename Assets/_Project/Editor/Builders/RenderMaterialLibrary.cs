@@ -52,6 +52,7 @@ namespace FishGame.EditorTools
         static readonly int DesaturateId = Shader.PropertyToID("_Desaturate");
         static readonly int RimPowId = Shader.PropertyToID("_RimPow");
         static readonly int RimStrengthId = Shader.PropertyToID("_RimStrength");
+        static readonly int GradeId = Shader.PropertyToID("_FGGrade");
 
         // R74 realistic-toon look per material (FishGame/Toon header). Array null = untextured (_FGTexWeight 0).
         internal readonly struct ToonLook
@@ -59,11 +60,13 @@ namespace FishGame.EditorTools
             public readonly float RampMid, RampSoft, RimPow, RimStrength, SkyFill, SpecStrength, SpecPower, Gain, Tiling, Macro;
             public readonly Texture2DArray Array;
             public readonly bool Triplanar;   // _FG_TRIPLANAR (world triplanar mapping); otherwise uv0
+            public readonly float Grade;      // _FGGrade: the palette's toon colour grade (top / bottom tint, hue shift); 0 = off
             public ToonLook(float rampMid, float rampSoft, float rimPow, float rimStrength, float skyFill, float specStrength, float specPower,
-                Texture2DArray array, float gain, float tiling, float macro = 0f, bool triplanar = false)
+                Texture2DArray array, float gain, float tiling, float macro = 0f, bool triplanar = false, float grade = 0f)
             {
                 RampMid = rampMid; RampSoft = rampSoft; RimPow = rimPow; RimStrength = rimStrength; SkyFill = skyFill;
                 SpecStrength = specStrength; SpecPower = specPower; Array = array; Gain = gain; Tiling = tiling; Macro = macro; Triplanar = triplanar;
+                Grade = grade;
             }
         }
 
@@ -80,7 +83,8 @@ namespace FishGame.EditorTools
             Texture2DArray env = TextureArrayPostprocessor.Load(AssetPaths.EnvDetailArray);
             Texture2DArray skin = TextureArrayPostprocessor.Load(AssetPaths.FishSkinArray);
 
-            var envLook = new ToonLook(0.30f, 0.28f, 3.5f, 0.18f, 0.22f, 0f, 48f, env, 2f, EnvTiling, 0.7f);
+            // Asset study 2026-10-14: the environment materials take the palette's full colour grade; fish, clothes, skin and brass stay ungraded.
+            var envLook = new ToonLook(0.30f, 0.28f, 3.5f, 0.18f, 0.22f, 0f, 48f, env, 2f, EnvTiling, 0.7f, grade: 1f);
             var clothLook = new ToonLook(0.30f, 0.28f, 3f, 0.25f, 0.22f, 0f, 48f, env, 2f, ClothTiling);
             // Skin: the env array at tiling 1 so the head's +Z face maps exactly onto the face tile (EnvTextureLayers.Face).
             var skinLook = new ToonLook(0.30f, 0.28f, 3f, 0.25f, 0.22f, 0.10f, 32f, env, 2f, 1f);
@@ -89,7 +93,7 @@ namespace FishGame.EditorTools
 
             EnsureToon(toon, "M_Toon_Base", true, true, Color.white, envLook);
             // R74 adoption (shader split): the same environment look with world triplanar mapping, for meshes built with uv1.z = 1 (rocks, canopies).
-            var envTriLook = new ToonLook(0.30f, 0.28f, 3.5f, 0.18f, 0.22f, 0f, 48f, env, 2f, EnvTiling, 0.7f, true);
+            var envTriLook = new ToonLook(0.30f, 0.28f, 3.5f, 0.18f, 0.22f, 0f, 48f, env, 2f, EnvTiling, 0.7f, true, 1f);
             EnsureToon(toon, "M_Toon_Tri", true, true, Color.white, envTriLook);
             EnsureToon(toon, "M_Toon_Fish", false, false, Color.white, fishLook);
             EnsureToon(toon, "M_Toon_FishFallback", false, true, Color.white, fallbackLook);
@@ -362,6 +366,7 @@ namespace FishGame.EditorTools
             changed |= SetFloat(material, MacroId, look.Macro);
             changed |= SetFloat(material, Shader.PropertyToID("_UseTriplanar"), look.Triplanar ? 1f : 0f);
             changed |= SetKeyword(material, "_FG_TRIPLANAR", look.Triplanar);
+            changed |= SetFloat(material, GradeId, look.Grade);
             if (material.GetTexture(AlbedoArrayId) != look.Array) { material.SetTexture(AlbedoArrayId, look.Array); changed = true; }
             if (changed) EditorUtility.SetDirty(material);
         }

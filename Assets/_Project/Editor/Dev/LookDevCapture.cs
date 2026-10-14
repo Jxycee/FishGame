@@ -548,7 +548,7 @@ namespace FishGame.EditorTools
 
         internal static void PushPalette(ArtPaletteDef palette) => PushPalette(palette, palette.M2Season);   // internal: FishIconBaker reuses the globals
 
-        // Same push as PaletteGlobals.Apply: the linearised palette, then the season for the seasonal scenery.
+        // Same push as PaletteGlobals.Apply: the linearised palette, the season's toon grade, then the season for the seasonal scenery.
         internal static void PushPalette(ArtPaletteDef palette, int season)
         {
             Vector4[] authored = palette.PaletteVectors(season);
@@ -559,6 +559,7 @@ namespace FishGame.EditorTools
                 linear[i] = new Vector4(c.r, c.g, c.b, c.a);
             }
             Shader.SetGlobalVectorArray(ShaderGlobals.Palette, linear);
+            FishGame.Presentation.PaletteGlobals.PushToonGrade(palette, season);
             SeasonalVisibility.SetSeason(season);
         }
 

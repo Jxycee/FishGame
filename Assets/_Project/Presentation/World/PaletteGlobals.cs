@@ -1,5 +1,5 @@
 // Authority: local only (every peer); never writes gameplay state.
-// Pushes the art palette (16 slots, linearised) and the _FGSeasonTint hook for the world's season (spec 10.2/10.3, C 7.18, ruling F3, M3-D78),
+// Pushes the art palette (16 slots, linearised), the season's toon colour grade (_FGTopTint, _FGBottomTint, _FGGradeParams) and the _FGSeasonTint hook for the world's season (spec 10.2/10.3, C 7.18, ruling F3, M3-D78),
 // and in edit mode / without a DayNightController the Day phase colours. ArtPaletteDef.PaletteVectors allocates, so Apply runs on enable, on
 // editor validate and on a real season change only (HandleWorldChanged), never per frame (C 16.2).
 // M3 (T18): the season comes from IWorldContext (attached lazily in play mode, P6); with no world state it is ArtPaletteDef.M2Season (Summer).
@@ -31,6 +31,9 @@ namespace FishGame.Presentation
         private static readonly int SkyTopId = Shader.PropertyToID(ShaderGlobals.SkyTop);
         private static readonly int SkyHorizonId = Shader.PropertyToID(ShaderGlobals.SkyHorizon);
         private static readonly int SkyGroundId = Shader.PropertyToID(ShaderGlobals.SkyGround);
+        private static readonly int TopTintId = Shader.PropertyToID(ShaderGlobals.TopTint);
+        private static readonly int BottomTintId = Shader.PropertyToID(ShaderGlobals.BottomTint);
+        private static readonly int GradeParamsId = Shader.PropertyToID(ShaderGlobals.GradeParams);
 
         [SerializeField] private ArtPaletteDef palette;
 
@@ -117,6 +120,7 @@ namespace FishGame.Presentation
                 Linearise(def.PaletteVectors(season), _vectors);
                 Shader.SetGlobalVectorArray(PaletteId, _vectors);
                 PushSeasonTint(def, season);
+                PushToonGrade(def, season);
                 // Seasonal scenery (bare winter trees, spring blossoms, snowy pines) follows the pushed season. M3 T18 keeps this call on
                 // every push, so a runtime season change re-applies the palette AND switches the trees in one place.
                 SeasonalVisibility.SetSeason(season);
@@ -145,6 +149,16 @@ namespace FishGame.Presentation
             }
 
             ApplyCount++;
+        }
+
+        // The toon colour grade of a season (asset study 2026-10-14): raw vectors, no sRGB conversion (ToonGrade: the tints are gains, 1 = neutral).
+        // Allocation-free. Public static so the editor captures push exactly what the runtime pushes.
+        public static void PushToonGrade(ArtPaletteDef def, int season)
+        {
+            ToonGrade g = def.ToonGradeFor(season);
+            Shader.SetGlobalVector(TopTintId, g.TopTintVector);
+            Shader.SetGlobalVector(BottomTintId, g.BottomTintVector);
+            Shader.SetGlobalVector(GradeParamsId, g.ParamsVector);
         }
 
         // The attached world's season when it has state, otherwise the M2 season (menus, edit mode, before the first sync).
