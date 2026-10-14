@@ -30,16 +30,25 @@ def newest_run():
 
 
 def newest_shots(override):
+    """Newest round folder (r0, r0b, r1, ...) that already holds PNGs, searched one level into subfolders.
+    Returns (round dir, [paths relative to it, newest first])."""
     roots = [override] if override else glob.glob(os.path.join(TEMP_ROOT, "*", "scratchpad", "harbour-polish"))
-    rounds = []
+    best, best_files, best_time = None, [], -1.0
     for root in roots:
-        if root and os.path.isdir(root):
-            rounds += [d for d in glob.glob(os.path.join(root, "r*")) if os.path.isdir(d)]
-    if not rounds:
-        return None, []
-    latest = max(rounds, key=os.path.getmtime)
-    pngs = sorted(glob.glob(os.path.join(latest, "*.png")), key=os.path.getmtime, reverse=True)
-    return latest, [os.path.basename(p) for p in pngs[:12]]
+        if not (root and os.path.isdir(root)):
+            continue
+        for d in glob.glob(os.path.join(root, "r*")):
+            if not os.path.isdir(d):
+                continue
+            pngs = glob.glob(os.path.join(d, "*.png")) + glob.glob(os.path.join(d, "*", "*.png"))
+            if not pngs:
+                continue
+            newest = max(os.path.getmtime(p) for p in pngs)
+            if newest > best_time:
+                best_time = newest
+                best = d
+                best_files = [os.path.relpath(p, d).replace(os.sep, "/") for p in sorted(pngs, key=os.path.getmtime, reverse=True)[:16]]
+    return best, best_files
 
 
 def classify(tool, detail):
@@ -222,9 +231,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/status.json":
             return self.send(200, "application/json", json.dumps(status(self.shots_override)).encode("utf-8"))
         if path.startswith("/shot/"):
-            name = os.path.basename(path[len("/shot/"):])
+            from urllib.parse import unquote
+            name = unquote(path[len("/shot/"):])
             d, files = newest_shots(self.shots_override)
-            if d and name in files:
+            if d and name in files:   # only files the listing returned, so no path tricks
                 with open(os.path.join(d, name), "rb") as f:
                     return self.send(200, "image/png", f.read())
         self.send(404, "text/plain", b"not found")

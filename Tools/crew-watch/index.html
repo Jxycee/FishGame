@@ -211,7 +211,7 @@ function render(s) {
   if (sd.dataset.key !== key) {
     sd.dataset.key = key;
     document.getElementById('shotDir').textContent = s.shots.dir ? '(' + s.shots.dir + ')' : '';
-    sd.innerHTML = s.shots.files.length ? s.shots.files.map(f => `<figure><img loading="lazy" src="/shot/${encodeURIComponent(f)}?k=${encodeURIComponent(key.length + s.shots.dir)}" alt="${esc(f)}"><figcaption>${esc(f.replace(/\.png$/, '').replace(/_/g, ' '))}</figcaption></figure>`).join('') : '<p class="muted">No screenshots yet.</p>';
+    sd.innerHTML = s.shots.files.length ? s.shots.files.map(f => `<figure><img loading="lazy" src="/shot/${f.split('/').map(encodeURIComponent).join('/')}?k=${encodeURIComponent(key.length + s.shots.dir)}" alt="${esc(f)}"><figcaption>${esc(f.replace(/\.png$/, '').replace(/[_/]/g, ' '))}</figcaption></figure>`).join('') : '<p class="muted">No screenshots yet.</p>';
   }
 }
 
