@@ -4,7 +4,7 @@
 
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
-_Last updated: 2026-10-14. **M3 MERGED INTO MAIN** (7af8041; check on main PASS: EditMode 1378 incl. 1 skip, PlayMode 139). Harbour detail pass Blender side done (branch harbour-art2; Unity side next). Reference asset study done (research/2026-10-14-reference-style-notes.md: grey masks + colour parameters, top/bottom tint, crown cards, LODs). In flight: research notes (mafia counter-play; voice-mimic seagulls). Next: user's board checks, harbour pass into Unity, then the M4 design session (inputs: docs/superpowers/design/2026-10-14-m4-design-inputs.md)._
+_Last updated: 2026-10-14. **M3 MERGED INTO MAIN** (7af8041; check on main PASS: EditMode 1378 incl. 1 skip, PlayMode 139). Harbour detail pass + 4 polish rounds merged into main (36f8abb). Reference asset study done (research/2026-10-14-reference-style-notes.md: grey masks + colour parameters, top/bottom tint, crown cards, LODs). In flight: research notes (mafia counter-play; voice-mimic seagulls). Next: user's board checks, harbour pass into Unity, then the M4 design session (inputs: docs/superpowers/design/2026-10-14-m4-design-inputs.md)._
 
 ## 1. Read these next (in order)
 1. `C:\Dev\FishGame-m3\CLAUDE.md`: project rules (Git: no PRs; merge yourself when reviewed and green; PlayMode guard).
@@ -78,7 +78,7 @@ Also on the board:
 - winter tree colliders;
 - the online-cancel message.
 
-## 10. Harbour detail pass (user, 2026-10-14) - Blender side DONE, Unity side next
+## 10. Harbour detail pass (user, 2026-10-14) - DONE, merged into main 36f8abb
 - **Polish workflow RUNNING again (run wf_f8fbbf2a-074, resumed 2026-10-14; user: rounds cover map creation + the player environment, not only details: third critic "world" lens, layout + playerSpace scores, macro-first punch list, artist may reshape terrain/areas).** Integration finished by the controller: harbour-art2 5f8ffd5 (pass-2 FBX in Unity, AmbientLife motion/lamps, Low detail toggle, grid rebaked for the tug, HarbourCapture tool; EditMode 1381/1382, PlayMode 139/139). Round-0 shots: scratchpad/harbour-polish/r0 (baseline: fog too heavy, big flat grass, sparse trees, plastic cyan water). Resume = run Workflow with scriptPath ~/.claude/projects/C--Dev-FishGame/0f9e3f02-.../workflows/scripts/harbour-polish-wf_f18c5f35-033.js (integration step replaced by its result; next: toon shader top/bottom tint, then up to 5 critic+artist rounds, pass = overall >= 8.5, no category < 7.5; final check + review; controller merges into main). Worktree C:\Dev\FishGame-harbour-art (Library copied). Unity rewrites .vscode/settings.json there: never commit it.
 - **Polish rounds (2026-10-14):**
   - **Scores:** r1 critics 5.8 / 6.2 / 5.5 (average 5.8). After artist r1 (897c31b, 51523e9: terraced town, chapel, windmill, lookout tower stand point 12, east-basin jetty stand point 11, creek, farm hills, mafia hints), r2 critics scored 6.0 / 5.8 / 6.3.
@@ -93,6 +93,19 @@ Also on the board:
     - Tests: EditMode 1388/1389 (1 skipped), PlayMode 139/139. Worst views: Low 325k, High 495k.
     - r3 critics: 6.5 / 6.8 / 6.8, average 6.7 (up from 6.0). Layout is stuck at 5.5.
     - Run resumed again so artist r3 gets PERF3.
+  - **Workflow finished** (5 rounds, 21 agents, ~2.2M subagent tokens): critic averages 5.8 → 6.0 → 6.7 → 6.9 → 6.7. The 8.5 target was not reached; scores plateaued at about 6.8.
+    - Weakest: layout 5.5-6.2, surfaces 5.5. Strongest: lighting and dusk 7-7.6, cohesion 7-7.5.
+    - r3 (bb37300): West Horn and lagoon, bent lane and village square, bed-mapped water.
+    - r4 (8a390f0, 35d66b1): creek glen, West Head waterfall, reef and Skerries, East Ledge stand 14, villagers/dog/ducks, toon clouds.
+    - Final gate (Sonnet) fixed the generator ROOT path (27cc5d6). Check on the branch: EditMode 1389/1389, PlayMode 139/139 with -dev-profile fgtest. Worst view: Low 384,592 (under 500k), High 534,204.
+  - **Next (harbour):**
+    - the presets change from the perf research (Medium shadow tier, Low 35 m, High 120 m with 3 cascades, extra lights 3/4/8, FSR on Low, LOD bias);
+    - LODs or billboards for the forest, walls, hedges and ivy;
+    - thin the crown cards on Low (alpha cover up to 2.8 screens in eye views);
+    - village layout (cross-cut, building ring) and wall/ground surface blending, the critics' remaining asks;
+    - per-zone fish tables (reef, ledge, lagoon, creek marsh);
+    - stand 14 is 2.4 m from the jetty edge (no test enforces 3 m).
+  - Unused leftovers: the parked r2-copy-work patches (folded in by r2) and worktree C:\Dev\FishGame-harbour-art (can be removed). Tests run without -dev-profile fgtest touch the user's real LocalLow settings; always pass the profile.
   - **Perf research** (docs/superpowers/research/2026-10-14-friendslop-graphics-settings.md, user: follow the average):
     - Low budget 500k triangles per view, plus renderer, shadow-caster and alpha-coverage audits. This is PERF3 in the script from r3; the controller restarts the run after r2 to apply it.
     - Presets change to make after the workflow, on harbour-art2: Medium shadow tier 50 m/2048/2; Low 35 m; High 120 m/2048/3 cascades; extra lights 3/4/8; FSR on Low; LOD bias 0.7/1.0/1.5.
