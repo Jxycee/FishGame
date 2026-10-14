@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crew Watch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky-top: #2b2350; --sky-mid: #8a4f7d; --sky-low: #f2a65e;
+    --sea: #1e5b73; --sea-deep: #143d55; --foam: #cfeef2;
+    --wood: #8b5a3c; --wood-dark: #5e3a26;
+    --ink: #f6efe3; --muted: #c9bfd6; --panel: rgba(28, 22, 48, .82); --line: rgba(246, 239, 227, .14);
+    --sculpt: #b98cff; --unity: #63d3ff; --read: #ffd36b; --build: #ff9d5c; --wait: #8fe3a6; --think: #f7a8d8; --ship: #ffef8a; --shell: #9fb4ff;
+    --done: #8fe3a6; --failed: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--sea-deep); color: var(--ink); font: 500 15px/1.45 Nunito, system-ui, sans-serif; }
+  body { padding: 0 16px 32px; }
+  h1, h2, .num { font-family: "Baloo 2", system-ui, sans-serif; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; padding: 18px 0 10px; }
+  header h1 { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: .5px; }
+  header .run { color: var(--muted); font-size: 13px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); font-size: 13px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--wait); box-shadow: 0 0 8px var(--wait); animation: pulse 1.6s infinite; }
+  .dot.off { background: var(--muted); box-shadow: none; animation: none; }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  /* ---------- the scene ---------- */
+  .scene { position: relative; height: 380px; border-radius: 18px; overflow: hidden;
+    background: linear-gradient(var(--sky-top), var(--sky-mid) 45%, var(--sky-low) 62%, var(--sea) 62%, var(--sea-deep)); }
+  .sun { position: absolute; left: 70%; top: 34%; width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(#ffe7a3, #ffb45c 60%, transparent 70%); filter: blur(1px); }
+  .hill { position: absolute; bottom: 38%; border-radius: 50% 50% 0 0; background: #4a3560; }
+  .wave { position: absolute; left: -50%; width: 200%; height: 14px; border-radius: 50%; border-top: 3px solid var(--foam); opacity: .25; animation: drift 9s linear infinite; }
+  @keyframes drift { to { transform: translateX(25%); } }
+  .tug { position: absolute; right: 6%; bottom: 33%; width: 150px; animation: bob 3.2s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(5px) rotate(-1.2deg); } }
+  .smoke { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: rgba(240, 235, 245, .55); animation: puff 3s ease-out infinite; }
+  @keyframes puff { from { transform: translate(0, 0) scale(.6); opacity: .8; } to { transform: translate(-30px, -70px) scale(2.2); opacity: 0; } }
+  .dock { position: absolute; left: 0; right: 0; bottom: 0; height: 34%; background: repeating-linear-gradient(90deg, var(--wood) 0 46px, var(--wood-dark) 46px 49px); box-shadow: inset 0 6px 0 rgba(0,0,0,.18); }
+  .crew { position: absolute; left: 0; right: 0; bottom: 14%; display: flex; justify-content: center; gap: 26px; padding: 40px 12px 0; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
+  .mate { position: relative; width: 140px; flex: 0 0 auto; text-align: center; }
+  .mate svg { width: 140px; height: 165px; overflow: visible; }
+  .mate .tag { font: 700 12px/1.2 Nunito, sans-serif; color: var(--ink); text-shadow: 0 1px 2px #0008; margin-top: -4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bubble { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); padding: 3px 9px; border-radius: 12px; background: var(--ink); color: #2b2350; font: 800 12px/1.3 "Baloo 2", sans-serif; white-space: nowrap; box-shadow: 0 2px 6px #0006; }
+  .bubble::after { content: ""; position: absolute; left: 50%; bottom: -6px; border: 6px solid transparent; border-top-color: var(--ink); border-bottom: 0; transform: translateX(-50%); }
+  .empty-dock { position: absolute; left: 0; right: 0; bottom: 40%; text-align: center; font: 700 18px "Baloo 2", sans-serif; color: var(--ink); text-shadow: 0 2px 4px #0008; }
+
+  /* body + eye animation */
+  .body-g { transform-origin: 56px 110px; animation: idle 2.6s ease-in-out infinite; }
+  @keyframes idle { 50% { transform: scaleY(.97) translateY(1px); } }
+  .pupils { animation: side 4s ease-in-out infinite; }
+  @keyframes side { 0%, 40% { transform: translateX(0); } 50%, 70% { transform: translateX(4px); } 80%, 100% { transform: translateX(-3px); } }
+  .act-read .pupils { animation: scan 1.2s ease-in-out infinite; }
+  @keyframes scan { 50% { transform: translate(4px, 2px); } }
+  .act-build .tool-g, .act-ship .tool-g { transform-origin: 84px 78px; animation: hammer .5s ease-in-out infinite; }
+  @keyframes hammer { 50% { transform: rotate(-38deg); } }
+  .act-sculpt .tool-g { transform-origin: 84px 80px; animation: carve .9s ease-in-out infinite; }
+  @keyframes carve { 50% { transform: rotate(18deg) translateY(-3px); } }
+  .act-unity .screen { animation: flicker 1.1s steps(2) infinite; }
+  @keyframes flicker { 50% { opacity: .55; } }
+  .act-wait .tool-g { transform-origin: 84px 70px; animation: rod 2.4s ease-in-out infinite; }
+  @keyframes rod { 50% { transform: rotate(6deg); } }
+  .act-wait .float { animation: floaty 1.4s ease-in-out infinite; }
+  @keyframes floaty { 50% { transform: translateY(4px); } }
+  .act-think .thought { animation: rise 2s ease-in-out infinite; }
+  @keyframes rise { 50% { transform: translateY(-4px); } }
+  .st-done .body-g { animation: hop 1.8s ease-in-out 2; }
+  @keyframes hop { 30% { transform: translateY(-12px); } 60% { transform: translateY(0); } }
+  .st-done, .st-failed { opacity: .75; }
+
+  /* ---------- panels ---------- */
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 14px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .panel h2 { margin: 0 0 8px; font-size: 18px; font-weight: 700; }
+  .phases { display: flex; flex-wrap: wrap; gap: 6px; }
+  .phase { padding: 3px 10px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+  .phase.on { color: #2b2350; background: var(--ink); border-color: var(--ink); font-weight: 700; }
+  .agent { display: grid; grid-template-columns: 10px 1fr auto; gap: 4px 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .agent:first-of-type { border-top: 0; }
+  .agent .sw { width: 10px; border-radius: 4px; }
+  .agent .name { font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+  .agent .meta { color: var(--muted); font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .agent .now { grid-column: 2 / 4; color: var(--ink); font-size: 13.5px; overflow-wrap: anywhere; }
+  .agent .now b { color: var(--muted); font-weight: 700; }
+  .agent .say { grid-column: 2 / 4; color: var(--muted); font-size: 12.5px; font-style: italic; overflow-wrap: anywhere; }
+  .scores table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
+  .scores th, .scores td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--line); }
+  .scores th:first-child, .scores td:first-child { text-align: left; }
+  .scores .wrap { overflow-x: auto; }
+  .num.big { font-size: 34px; font-weight: 800; line-height: 1; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+  .shots figure { margin: 0; }
+  .shots img { width: 100%; border-radius: 8px; display: block; aspect-ratio: 16/9; object-fit: cover; background: #0003; cursor: zoom-in; }
+  .shots figcaption { font-size: 12px; color: var(--muted); margin-top: 3px; overflow-wrap: anywhere; }
+  .muted { color: var(--muted); }
+  dialog { border: 0; padding: 0; background: transparent; max-width: 96vw; }
+  dialog img { max-width: 96vw; max-height: 90vh; border-radius: 10px; display: block; }
+  dialog::backdrop { background: #000c; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Crew Watch</h1>
+  <span class="pill"><span class="dot" id="live"></span><span id="liveTxt">connecting</span></span>
+  <span class="run" id="run"></span>
+</header>
+
+<section class="scene" aria-label="Agents at work on the dock">
+  <div class="sun"></div>
+  <div class="hill" style="left:-5%;width:45%;height:120px"></div>
+  <div class="hill" style="left:30%;width:40%;height:80px;background:#5a3f6e"></div>
+  <div class="wave" style="bottom:30%"></div><div class="wave" style="bottom:25%;animation-duration:12s"></div><div class="wave" style="bottom:36%;animation-duration:7s"></div>
+  <div class="tug" aria-hidden="true">
+    <span class="smoke" style="left:40px;top:-6px"></span><span class="smoke" style="left:40px;top:-6px;animation-delay:1s"></span><span class="smoke" style="left:40px;top:-6px;animation-delay:2s"></span>
+    <svg viewBox="0 0 150 80"><path d="M6 46 h138 l-14 26 H22 z" fill="#c4473a"/><path d="M14 66 h120" stroke="#f3e6c8" stroke-width="4"/><rect x="34" y="20" width="56" height="27" rx="5" fill="#f3e6c8"/><rect x="42" y="26" width="14" height="10" rx="2" fill="#63d3ff"/><rect x="62" y="26" width="14" height="10" rx="2" fill="#63d3ff"/><rect x="38" y="4" width="10" height="17" fill="#3a2e4a"/><text x="96" y="60" font-size="8" font-family="Baloo 2" fill="#f3e6c8">LUCKY BREAK</text></svg>
+  </div>
+  <div class="dock"></div>
+  <div class="crew" id="crew"></div>
+  <div class="empty-dock" id="empty" hidden>No crew on the dock. Start a workflow and they'll show up here.</div>
+</section>
+
+<div class="row">
+  <section class="panel"><h2>Workflow</h2><div class="phases" id="phases"></div><p class="muted" id="summary" style="margin:10px 0 0"></p></section>
+  <section class="panel scores"><h2>Critic scores</h2><div id="scores" class="muted">No scores yet. They appear after the first critique round.</div></section>
+</div>
+<div class="row"><section class="panel"><h2>Crew log</h2><div id="agents"></div></section></div>
+<div class="row"><section class="panel"><h2>Latest screenshots <span class="muted" id="shotDir" style="font-size:13px"></span></h2><div class="shots" id="shots"><p class="muted">No screenshots yet.</p></div></section></div>
+<dialog id="zoom"><img id="zoomImg" alt=""></dialog>
+
+<script>
+const COLORS = { sculpt: '--sculpt', unity: '--unity', read: '--read', build: '--build', wait: '--wait', think: '--think', ship: '--ship', shell: '--shell' };
+const VERB = { sculpt: 'Sculpting in Blender', unity: 'Running Unity', read: 'Reading', build: 'Building', wait: 'Waiting (fishing)', think: 'Thinking', ship: 'Shipping', shell: 'At the terminal' };
+const BUBBLE = { sculpt: 'carving', unity: 'compiling', read: 'reading', build: 'hammering', wait: 'waiting', think: 'hmm', ship: 'pushing', shell: 'typing' };
+const BODY = ['#f2b880', '#9fd8c4', '#f7a8b8', '#b9c4ff', '#ffd98a', '#c8a2e8'];
+const col = a => `var(${COLORS[a] || '--think'})`;
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmtT = s => { s = Math.max(0, Math.round(s || 0)); const m = Math.floor(s / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m ${s % 60}s`; };
+const fmtK = n => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n || 0);
+const short = l => l.replace(/^critic:/, '').replace(/\s*\+.*$/, '').slice(0, 22);
+
+function prop(act) {
+  switch (act) {
+    case 'sculpt': return `<g class="tool-g"><rect x="80" y="62" width="4" height="26" rx="2" fill="#6b4a2f"/><circle cx="82" cy="60" r="5" fill="${'#b98cff'}"/></g><g><circle cx="100" cy="92" r="10" fill="#d9c7f5"/><circle cx="96" cy="84" r="5" fill="#d9c7f5"/></g>`;
+    case 'unity': return `<rect x="76" y="66" width="34" height="24" rx="4" fill="#24314a"/><rect class="screen" x="79" y="69" width="28" height="18" rx="2" fill="#63d3ff"/><rect x="90" y="90" width="6" height="8" fill="#24314a"/>`;
+    case 'read': return `<path d="M72 84 l14 -4 l14 4 v16 l-14 -4 l-14 4z" fill="#ffd36b" stroke="#a5792a" stroke-width="1.5"/>`;
+    case 'build': case 'ship': return `<g class="tool-g"><rect x="82" y="60" width="4" height="30" rx="2" fill="#6b4a2f"/><rect x="74" y="56" width="20" height="9" rx="2" fill="#7d8a99"/></g>${act === 'ship' ? '<rect x="86" y="92" width="18" height="14" rx="2" fill="#c98d4f"/>' : ''}`;
+    case 'wait': return `<g class="tool-g"><path d="M80 92 L110 40" stroke="#6b4a2f" stroke-width="3"/><path d="M110 40 L114 108" stroke="#e8e2d0" stroke-width="1"/></g><g class="float"><circle cx="114" cy="110" r="4" fill="#ff6b6b"/></g>`;
+    case 'shell': return `<rect x="74" y="80" width="30" height="16" rx="3" fill="#2f2a44"/><text x="78" y="92" font-size="9" fill="#9fb4ff" font-family="monospace">&gt;_</text>`;
+    default: return `<g class="thought"><circle cx="86" cy="30" r="4" fill="#fff8"/><circle cx="94" cy="20" r="6" fill="#fff9"/><circle cx="104" cy="8" r="9" fill="#fffb"/></g>`;
+  }
+}
+
+function mate(a, i) {
+  const act = a.state === 'running' ? a.activity : a.state;
+  const body = BODY[i % BODY.length];
+  const done = a.state === 'done', failed = a.state === 'failed';
+  const face = failed ? '<path d="M46 64 l6 6 m0 -6 l-6 6 M62 64 l6 6 m0 -6 l-6 6" stroke="#2b2350" stroke-width="2.5"/>'
+    : `<ellipse cx="49" cy="66" rx="8" ry="9" fill="#fff"/><ellipse cx="66" cy="66" rx="8" ry="9" fill="#fff"/><g class="pupils"><circle cx="51" cy="67" r="3.6" fill="#2b2350"/><circle cx="68" cy="67" r="3.6" fill="#2b2350"/></g>`;
+  const mouth = done ? '<path d="M50 82 q8 7 16 0" stroke="#2b2350" stroke-width="2.5" fill="none"/>' : '<path d="M53 83 h10" stroke="#2b2350" stroke-width="2.5"/>';
+  const bubble = a.state === 'running' ? BUBBLE[a.activity] || 'busy' : (done ? 'done!' : 'oops');
+  return `<div class="mate act-${esc(a.activity)} st-${esc(a.state)}" title="${esc(a.label)}">
+    <div class="bubble">${esc(bubble)}</div>
+    <svg viewBox="0 0 112 132" aria-hidden="true">
+      <ellipse cx="56" cy="124" rx="34" ry="6" fill="#0003"/>
+      <g class="body-g">
+        <path d="M24 118 Q20 62 56 46 Q92 62 88 118 Z" fill="${body}" stroke="#2b2350" stroke-width="2.5"/>
+        <path d="M34 50 Q56 30 78 50" fill="${col(a.activity)}" stroke="#2b2350" stroke-width="2.5"/>
+        ${face}${mouth}
+        <circle cx="38" cy="98" r="7" fill="${body}" stroke="#2b2350" stroke-width="2.5"/>
+      </g>
+      ${a.state === 'running' ? prop(a.activity) : ''}
+    </svg>
+    <div class="tag">${esc(short(a.label))}</div>
+  </div>`;
+}
+
+function render(s) {
+  const live = s.run && !s.ended;
+  document.getElementById('live').className = 'dot' + (live ? '' : ' off');
+  document.getElementById('liveTxt').textContent = !s.run ? 'no workflow found' : (s.ended ? 'workflow finished' : 'live');
+  document.getElementById('run').textContent = s.run ? 'run ' + s.run : '';
+
+  const running = s.agents.filter(a => a.state === 'running');
+  const onDock = running.length ? running : s.agents.slice(-3);
+  document.getElementById('crew').innerHTML = onDock.map((a, i) => mate(a, s.agents.indexOf(a))).join('');
+  document.getElementById('empty').hidden = onDock.length > 0;
+
+  const cur = running[0]?.phase || s.agents[s.agents.length - 1]?.phase;
+  document.getElementById('phases').innerHTML = s.phases.map(p => `<span class="phase${p === cur ? ' on' : ''}">${esc(p)}</span>`).join('') || '<span class="muted">Waiting for the first agent.</span>';
+  const tok = s.agents.reduce((n, a) => n + (a.processed || 0), 0);
+  const doneN = s.agents.filter(a => a.state === 'done').length;
+  document.getElementById('summary').textContent = s.agents.length ? `${doneN} of ${s.agents.length} agents done, ${running.length} at work. ${fmtK(tok)} tokens processed so far (mostly cached reads).` : '';
+
+  document.getElementById('agents').innerHTML = s.agents.slice().reverse().map(a => {
+    const c = a.state === 'running' ? col(a.activity) : `var(--${a.state === 'failed' ? 'failed' : 'done'})`;
+    const doing = a.state === 'running' ? `<b>${esc(VERB[a.activity] || 'Working')}:</b> ${esc(a.tool)} ${esc(a.detail)}` : `<b>${a.state === 'failed' ? 'Failed' : 'Finished'}</b> after ${a.tools} steps`;
+    return `<div class="agent"><span class="sw" style="background:${c}"></span><span class="name">${esc(a.label)} <span class="muted" style="font-weight:500">· ${esc(a.phase)}</span></span>
+      <span class="meta">${fmtT(a.elapsed)} · ${a.tools} steps · ${fmtK(a.context)} context · ${fmtK(a.processed)} processed</span>
+      <span class="now">${doing}</span>${a.text && a.state === 'running' ? `<span class="say">"${esc(a.text)}"</span>` : ''}</div>`;
+  }).join('') || '<p class="muted">Nobody yet.</p>';
+
+  if (s.scores.length) {
+    const cats = Object.keys(s.scores[0].scores);
+    document.getElementById('scores').innerHTML = `<div class="wrap"><table><tr><th>Critic</th><th>Overall</th>${cats.map(c => `<th>${esc(c)}</th>`).join('')}</tr>${
+      s.scores.map(r => `<tr><td>${esc(short(r.label))}</td><td class="num"><b>${esc(r.overall)}</b></td>${cats.map(c => `<td>${esc(r.scores[c])}</td>`).join('')}</tr>`).join('')}</table></div>`;
+  }
+
+  const sd = document.getElementById('shots'); const key = (s.shots.dir || '') + s.shots.files.join();
+  if (sd.dataset.key !== key) {
+    sd.dataset.key = key;
+    document.getElementById('shotDir').textContent = s.shots.dir ? '(' + s.shots.dir + ')' : '';
+    sd.innerHTML = s.shots.files.length ? s.shots.files.map(f => `<figure><img loading="lazy" src="/shot/${encodeURIComponent(f)}?k=${encodeURIComponent(key.length + s.shots.dir)}" alt="${esc(f)}"><figcaption>${esc(f.replace(/\.png$/, '').replace(/_/g, ' '))}</figcaption></figure>`).join('') : '<p class="muted">No screenshots yet.</p>';
+  }
+}
+
+document.getElementById('shots').addEventListener('click', e => {
+  if (e.target.tagName !== 'IMG') return;
+  document.getElementById('zoomImg').src = e.target.src; document.getElementById('zoom').showModal();
+});
+document.getElementById('zoom').addEventListener('click', e => e.currentTarget.close());
+
+async function tick() {
+  try { const r = await fetch('/status.json', { cache: 'no-store' }); render(await r.json()); }
+  catch { document.getElementById('live').className = 'dot off'; document.getElementById('liveTxt').textContent = 'server not running'; }
+  setTimeout(tick, document.hidden ? 15000 : 3000);
+}
+tick();
+</script>
+</body>
+</html>
