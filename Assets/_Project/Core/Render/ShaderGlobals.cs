@@ -21,5 +21,6 @@ namespace FishGame.Core
         public const string SkyGround = "_SkyGround";
         public const string SeasonTint = "_FGSeasonTint";       // Vector4[16]: season / base per palette slot (M3-D23, CCR-F1); dormant hook, no M3 shader reads it
         public const string DayFraction = "_FGDayFraction";     // float 0..1, DayClock.DayFraction of the world minute
+        public const string LampGlow = "_FGLampGlow";           // float 0..1, DayNightMath.LampGlow: string-light bulbs and lamps (FishGame/LampGlow)
     }
 }

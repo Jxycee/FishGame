@@ -138,6 +138,39 @@ namespace FishGame.EditorTools
             particleChanged |= SetVector(particle, Shader.PropertyToID("_CameraFadeParams"), new Vector4(0f, float.PositiveInfinity, 0f, 0f));
             if (particleChanged) EditorUtility.SetDirty(particle);
 
+            // Harbour round 0 (2026-10-14): the night glow (FishGame/LampGlow, additive; _FGLampGlow drives it) for the string-light bulbs (palette
+            // slot 10, Accent, of Harbour_Detail_Lights) and for the small lamp, mast and beacon glow spheres (every vertex), and the chimney smoke
+            // (URP particles, alpha blend, the soft puff texture).
+            Shader glowShader = RequireShader("FishGame/LampGlow");
+            Material bulbs = EnsureMaterial("M_LampGlow", glowShader, out bool bulbsChanged);
+            bulbsChanged |= SetFloat(bulbs, Shader.PropertyToID("_Slot"), 10f);
+            bulbsChanged |= SetFloat(bulbs, Shader.PropertyToID("_Inflate"), 0.012f);
+            bulbsChanged |= SetFloat(bulbs, Shader.PropertyToID("_GlowBoost"), 2.5f);
+            bulbsChanged |= SetQueue(bulbs, 3050);
+            if (bulbsChanged) EditorUtility.SetDirty(bulbs);
+            Material spheres = EnsureMaterial("M_LampGlow_All", glowShader, out bool spheresChanged);
+            spheresChanged |= SetFloat(spheres, Shader.PropertyToID("_Slot"), -1f);
+            spheresChanged |= SetFloat(spheres, Shader.PropertyToID("_Inflate"), 0f);
+            spheresChanged |= SetFloat(spheres, Shader.PropertyToID("_GlowBoost"), 3f);
+            spheresChanged |= SetQueue(spheres, 3050);
+            if (spheresChanged) EditorUtility.SetDirty(spheres);
+            Material beam = EnsureMaterial("M_BeaconBeam", glowShader, out bool beamChanged);   // the lighthouse's sweeping beam: faint, every vertex
+            beamChanged |= SetFloat(beam, Shader.PropertyToID("_Slot"), -1f);
+            beamChanged |= SetFloat(beam, Shader.PropertyToID("_Inflate"), 0f);
+            beamChanged |= SetFloat(beam, Shader.PropertyToID("_GlowBoost"), 0.22f);
+            beamChanged |= SetColor(beam, Shader.PropertyToID("_GlowColor"), new Color(1.0f, 0.9f, 0.7f, 1f));
+            beamChanged |= SetQueue(beam, 3060);
+            if (beamChanged) EditorUtility.SetDirty(beam);
+
+            Texture2D puff = EnsureSoftPuffTexture();
+            Material smoke = EnsureMaterial("M_Smoke", RequireShader("Universal Render Pipeline/Particles/Unlit"), out bool smokeChanged);
+            smokeChanged |= SetTransparentAlphaBlend(smoke, 3000);
+            smokeChanged |= SetColor(smoke, BaseColorId, Color.white);
+            smokeChanged |= SetVector(smoke, Shader.PropertyToID("_CameraFadeParams"), new Vector4(0f, float.PositiveInfinity, 0f, 0f));
+            int baseMapId = Shader.PropertyToID("_BaseMap");
+            if (smoke.GetTexture(baseMapId) != puff) { smoke.SetTexture(baseMapId, puff); smokeChanged = true; }
+            if (smokeChanged) EditorUtility.SetDirty(smoke);
+
             // Queue 3100 draws after the transparent water (ZWrite Off), so the marker is never tinted or hidden by it. Cull Off: marker winding never matters.
             // URP's material importer recomputes the queue of every URP/Unlit material (opaque = 2000 + _QueueOffset, transparent = 3000 + _QueueOffset) and
             // there is no queue override on this shader, so an opaque marker would be reset to 2000 on the next import. The marker is therefore an alpha-blend
@@ -150,6 +183,52 @@ namespace FishGame.EditorTools
             markerChanged |= SetPassEnabled(marker, "MotionVectors", false);   // what the URP importer settles on for a double-sided (Cull Off) Unlit material
             if (!marker.doubleSidedGI) { marker.doubleSidedGI = true; markerChanged = true; }
             if (markerChanged) EditorUtility.SetDirty(marker);
+        }
+
+        // A 64 x 64 soft round puff (white, alpha = a smooth radial falloff with a little lumpy noise), written once and re-written only when the
+        // bytes differ, so the asset and its GUID are stable. Deterministic: pure maths, no Random.
+        internal const string SoftPuffPath = AssetPaths.TexturesFolder + "/T_SoftPuff.png";
+
+        static Texture2D EnsureSoftPuffTexture()
+        {
+            const int n = 64;
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false);
+            var px = new Color32[n * n];
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float u = (x + 0.5f) / n * 2f - 1f, v = (y + 0.5f) / n * 2f - 1f;
+                    float r = Mathf.Sqrt(u * u + v * v);
+                    float a = Mathf.Atan2(v, u);
+                    float lump = 1f + 0.08f * Mathf.Sin(a * 5f + 0.7f) + 0.05f * Mathf.Sin(a * 9f + 2.1f);
+                    float k = Mathf.Clamp01(1f - r * lump);
+                    float alpha = k * k * (3f - 2f * k);
+                    px[y * n + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(alpha * 255f));
+                }
+            tex.SetPixels32(px);
+            tex.Apply();
+            byte[] png = tex.EncodeToPNG();
+            Object.DestroyImmediate(tex);
+            string abs = BuilderUtil.Abs(SoftPuffPath);
+            if (!System.IO.File.Exists(abs) || !System.Linq.Enumerable.SequenceEqual(System.IO.File.ReadAllBytes(abs), png))
+            {
+                BuilderUtil.EnsureFolder(AssetPaths.TexturesFolder);
+                System.IO.File.WriteAllBytes(abs, png);
+                AssetDatabase.ImportAsset(SoftPuffPath, ImportAssetOptions.ForceUpdate);
+            }
+            var importer = (TextureImporter)AssetImporter.GetAtPath(SoftPuffPath);
+            if (importer.alphaIsTransparency != true || importer.wrapMode != TextureWrapMode.Clamp || importer.sRGBTexture != true
+                || importer.textureCompression != TextureImporterCompression.Uncompressed)
+            {
+                importer.alphaIsTransparency = true;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.sRGBTexture = true;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.SaveAndReimport();
+            }
+            Texture2D asset = AssetDatabase.LoadAssetAtPath<Texture2D>(SoftPuffPath);
+            if (asset == null) throw new System.InvalidOperationException("could not import " + SoftPuffPath);
+            return asset;
         }
 
         // URP transparent surface, alpha blend, ZWrite off: exactly what BaseShaderGUI.SetupMaterialBlendMode would write (so an import changes nothing).

@@ -48,6 +48,17 @@ namespace FishGame.Core
             z = (float)(-c * Math.Sin(az));
         }
 
+        // Lamps and string lights (harbour round 0): 1 at night, 0 by day; smoothstep ramp over `window` (day fraction) before sunset and after
+        // sunrise, so the lights come on through dusk and are fully lit at the sunset flip. Pure, no allocation.
+        public static float LampGlow(float dayFraction, float sunriseFraction, float sunsetFraction, float window)
+        {
+            if (float.IsNaN(dayFraction)) return 0f;
+            if (!(dayFraction > sunriseFraction) || !(dayFraction < sunsetFraction)) return 1f;
+            float w = window > MinFlipWindow ? window : MinFlipWindow;
+            float day = Math.Min(Smooth01((dayFraction - sunriseFraction) / w), Smooth01((sunsetFraction - dayFraction) / w));
+            return 1f - day;
+        }
+
         // 1 by day; smoothstep fade over flipWindow after sunrise and before sunset; 0 at and outside the flips (B-D14).
         public static float SunWeight(float dayFraction, float sunriseFraction, float sunsetFraction, float flipWindow)
         {

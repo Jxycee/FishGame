@@ -25,7 +25,7 @@ using UnityEngine.SceneManagement;
 
 namespace FishGame.EditorTools
 {
-    public static class HarbourPierBuilder
+    public static partial class HarbourPierBuilder
     {
         // Everything the scene needs from disk, loaded once after NewScene (C 2.8 #14).
         sealed class ArtAssets
@@ -33,17 +33,22 @@ namespace FishGame.EditorTools
             public Material Toon, ToonTri, Water;
             public Mesh WaterMesh, WaterSkirt, Seabed, Beach;
             public Mesh[] VisualMeshes;   // HarbourPierLayout.Visuals order
-            // The lake's tree meshes (read-only reuse; LakeDockBuilder builds them earlier in the same BuildAll).
-            public Mesh Trunk, CanopyPine, CanopyPineSnow, Blossoms, Branches;
-            public Mesh[] CanopyRound;
+            public Mesh Branches;   // the lake's bare winter branches (read-only reuse; LakeDockBuilder builds it earlier in the same BuildAll)
             public VolumeProfile WarmProfile, CoolProfile;
             public ArtPaletteDef Palette;
             public HarbourPierManifest.Model[] Manifest;
+            // pass 2 (HarbourPierBuilder.Pass2.cs)
+            public Material Glow, GlowAll, Beam, Smoke;
+            public Mesh Sphere, BeamMesh, VaneHead, VaneBase;
         }
 
         public static void Build()
         {
             HarbourPierMeshes.BuildAll();   // water, seabed, beach: on disk before the scene references them
+            // Pass 2: the weather vane split (head turns) and the lighthouse beam, saved in place before the scene references them.
+            BuildWeatherVaneMeshes(LoadModelMesh(HarbourPierLayout.WeatherVaneModel));
+            HarbourPierMeshes.Save(HarbourPierLayout.BeaconBeamMeshPath, BuildBeaconBeam());
+            AssetDatabase.SaveAssets();
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -60,16 +65,19 @@ namespace FishGame.EditorTools
                 Seabed = LoadMesh(HarbourPierLayout.SeabedMeshPath),
                 Beach = LoadMesh(HarbourPierLayout.BeachMeshPath),
                 VisualMeshes = LoadVisualMeshes(),
-                Trunk = LoadMesh(LakeDockLayout.TrunkMeshPath),
-                CanopyPine = LoadMesh(LakeDockLayout.CanopyPineMeshPath),
-                CanopyPineSnow = LoadMesh(LakeDockLayout.CanopyPineSnowMeshPath),
-                Blossoms = LoadMesh(LakeDockLayout.BlossomsMeshPath),
                 Branches = LoadMesh(LakeDockLayout.BranchesMeshPath),
-                CanopyRound = System.Array.ConvertAll(LakeDockLayout.RoundCanopyMeshPaths, LoadMesh),
                 WarmProfile = LoadProfile(AssetPaths.WarmVolumeProfile),
                 CoolProfile = LoadProfile(AssetPaths.CoolVolumeProfile),
                 Palette = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset),
                 Manifest = HarbourPierManifest.Load(),
+                Glow = RenderMaterialLibrary.Get("M_LampGlow"),
+                GlowAll = RenderMaterialLibrary.Get("M_LampGlow_All"),
+                Beam = RenderMaterialLibrary.Get("M_BeaconBeam"),
+                Smoke = RenderMaterialLibrary.Get("M_Smoke"),
+                Sphere = BuiltinSphere(),
+                BeamMesh = LoadMesh(HarbourPierLayout.BeaconBeamMeshPath),
+                VaneHead = LoadMesh(HarbourPierLayout.WeatherVaneHeadMeshPath),
+                VaneBase = LoadMesh(HarbourPierLayout.WeatherVaneBaseMeshPath),
             };
             // The harbour zone's grid (baked in place below) and the cast gate's minLandDepth.
             var registry = AssetDatabase.LoadAssetAtPath<ContentRegistry>(AssetPaths.ContentRegistryAsset);
@@ -95,6 +103,7 @@ namespace FishGame.EditorTools
             AddBreakwater(art);
             AddPier(art);
             AddProps(art);
+            AddPass2(art);
             AddLadders();
             AddSeaBounds();
             AddBellAnchor(bellPrefab);
@@ -140,6 +149,22 @@ namespace FishGame.EditorTools
                 meshes[i] = found;
             }
             return meshes;
+        }
+
+        static Mesh LoadModelMesh(string meshName)
+        {
+            foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(HarbourPierLayout.ModelsFolder + "/" + meshName + ".fbx"))
+                if (asset is Mesh m) return m;
+            throw new System.IO.FileNotFoundException("Missing model " + meshName + ".fbx (import it first)");
+        }
+
+        // Unity's built-in sphere mesh (the glow spheres), taken from a throwaway primitive.
+        static Mesh BuiltinSphere()
+        {
+            GameObject temp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            Mesh mesh = temp.GetComponent<MeshFilter>().sharedMesh;
+            Object.DestroyImmediate(temp);
+            return mesh;
         }
 
         static VolumeProfile LoadProfile(string path)
@@ -312,15 +337,17 @@ namespace FishGame.EditorTools
                 AddSphere(beach, "Rock_" + i.ToString("00"), HarbourPierManifest.ToVector(rocks[i].position), rocks[i].radius);
         }
 
-        // mirrors LakeDockBuilder.PlaceTrees (Shore, reused lake meshes, seasonal visibility), with the harbour's numbers and streams:
-        // 16 trees at x [-58, 58], z [-73, -60], height [0.8, 1.3], never within 6 m of the pier root (x 0), the breakwater (x 30) or the hut;
-        // canopy shape from harbour_pier.canopy (60% pine), the round trees' foliage variants a balanced shuffle from harbour_pier.foliage.
+        // mirrors LakeDockBuilder.PlaceTrees (Shore) with the harbour's numbers and streams: 16 trees at x [-58, 58], z [-73, -60], height [0.8, 1.3],
+        // never within 6 m of the pier root (x 0), the breakwater (x 30) or the hut; pine or round from harbour_pier.canopy (60% pine).
+        // Round 0 (2026-10-14): the Trunk (capsule) and Canopy (sphere) primitives keep their colliders exactly as before but draw nothing; the
+        // visual is the painterly Blender code tree the manifest places at this Tree_NN (Harbour_Core_CodeTree_*, a local model under the tree root,
+        // so the root's localScale, the Pcg32 height, scales it). The manifest's ported position and kind must match the Pcg32 draw (checked here).
+        // Seasons: a round tree shows its leafy Blender crown in spring to autumn and the lake's bare Branches mesh in winter; a pine is evergreen.
         static void PlaceTrees(Transform parent, ArtAssets art)
         {
             Pcg32 rng = Rng.Stream(HarbourPierLayout.Seed, HarbourPierLayout.TreeStream, 0UL);
             Pcg32 canopyRng = Rng.Stream(HarbourPierLayout.Seed, HarbourPierLayout.CanopyStream, 0UL);
-            var trees = new List<GameObject>();
-            var isPine = new List<bool>();
+            Dictionary<string, (Mesh mesh, HarbourPierManifest.Placement at)> codeTrees = CodeTreePlacements(art);
             int placed = 0;
             for (int attempt = 0; attempt < HarbourPierLayout.MaxAttempts && placed < HarbourPierLayout.TreeCount; attempt++)
             {
@@ -328,63 +355,62 @@ namespace FishGame.EditorTools
                 float z = rng.Range(HarbourPierLayout.TreeMinZ, HarbourPierLayout.TreeMaxZ);
                 float height = rng.Range(HarbourPierLayout.TreeMinHeight, HarbourPierLayout.TreeMaxHeight);
                 if (HarbourPierLayout.TreeBlocked(x, z)) continue;
-                var tree = new GameObject("Tree_" + placed.ToString("00"));
+                string name = "Tree_" + placed.ToString("00");
+                var tree = new GameObject(name);
                 tree.transform.SetParent(parent, false);
                 tree.transform.localPosition = new Vector3(x, HarbourPierLayout.BeachY(z), z);
                 tree.transform.localScale = new Vector3(height, height, height);
                 GameObject trunk = BuilderUtil.EnsurePrimitive(tree.transform, "Trunk", PrimitiveType.Cylinder, new Vector3(0f, 1f, 0f),
-                    Quaternion.identity, new Vector3(0.4f, 1f, 0.4f), art.Toon, true);
+                    Quaternion.identity, new Vector3(0.4f, 1f, 0.4f), null, true);
                 GameObject canopy = BuilderUtil.EnsurePrimitive(tree.transform, "Canopy", PrimitiveType.Sphere, new Vector3(0f, 2.6f, 0f),
-                    Quaternion.identity, new Vector3(2.4f, 2.4f, 2.4f), art.ToonTri, true);
-                trunk.GetComponent<MeshFilter>().sharedMesh = art.Trunk;
+                    Quaternion.identity, new Vector3(2.4f, 2.4f, 2.4f), null, true);
+                StripRenderer(trunk);
+                StripRenderer(canopy);
                 bool pine = canopyRng.NextFloat() < LakeDockLayout.PineChance;
-                canopy.GetComponent<MeshFilter>().sharedMesh = pine ? art.CanopyPine : art.CanopyRound[0];
-                trees.Add(tree);
-                isPine.Add(pine);
+
+                if (!codeTrees.TryGetValue(name, out var codeTree)) throw new System.InvalidOperationException("the manifest places no code tree at " + name);
+                Vector3 ported = HarbourPierManifest.ToVector(codeTree.at.position);
+                if (Mathf.Abs(ported.x - x) > 0.011f || Mathf.Abs(ported.z - z) > 0.011f || codeTree.at.pine != pine
+                    || Mathf.Abs(codeTree.at.height_scale - height) > 0.011f)
+                    throw new System.InvalidOperationException(name + ": the manifest's code tree (" + ported + ", pine " + codeTree.at.pine + ", h " + codeTree.at.height_scale
+                                                               + ") differs from the Pcg32 draw (" + x + ", " + z + ", pine " + pine + ", h " + height + "): re-port CODE_TREES in fg_harbour.py");
+                MeshRenderer visual = AddVisual(tree.transform, "TreeVisual", codeTree.mesh, art.ToonTri, Quaternion.Euler(0f, codeTree.at.yaw_deg, 0f), true);
+                if (!pine)
+                {
+                    MeshRenderer branches = AddVisual(tree.transform, "Branches", art.Branches, art.Toon,
+                        Quaternion.Euler(0f, (placed * LakeDockLayout.BranchesYawStepDegrees) % 360f, 0f), true);
+                    tree.AddComponent<SeasonalVisibility>().Configure(new[]
+                    {
+                        new SeasonalVisibility.Entry(visual, SeasonalLook.MaskLeafy),
+                        new SeasonalVisibility.Entry(branches, SeasonalLook.MaskWinter),
+                    });
+                }
+                BuilderUtil.SetLayerRecursive(tree, Layers.Shore);
                 placed++;
             }
             if (placed < HarbourPierLayout.TreeCount)
                 throw new System.InvalidOperationException("Placed only " + placed + " of " + HarbourPierLayout.TreeCount + " trees");
+        }
 
-            int roundCount = 0;
-            foreach (bool pine in isPine) if (!pine) roundCount++;
-            Pcg32 foliageRng = Rng.Stream(HarbourPierLayout.Seed, HarbourPierLayout.FoliageStream, 0UL);
-            int[] variants = SeasonalLook.BalancedVariants(ref foliageRng, roundCount, LakeDockLayout.RoundFoliageSlots.Length);
-            int round = 0;
-            for (int i = 0; i < trees.Count; i++)
+        static void StripRenderer(GameObject go)
+        {
+            Object.DestroyImmediate(go.GetComponent<MeshRenderer>());
+            Object.DestroyImmediate(go.GetComponent<MeshFilter>());
+        }
+
+        // Tree_NN -> (its code-tree mesh, its manifest placement), from the four Harbour_Core_CodeTree_* models.
+        static Dictionary<string, (Mesh, HarbourPierManifest.Placement)> CodeTreePlacements(ArtAssets art)
+        {
+            var map = new Dictionary<string, (Mesh, HarbourPierManifest.Placement)>();
+            for (int i = 0; i < HarbourPierLayout.Visuals.Length; i++)
             {
-                if (isPine[i]) AddPineSeasons(trees[i], art);
-                else AddRoundSeasons(trees[i], i, variants[round++], art);
-                BuilderUtil.SetLayerRecursive(trees[i], Layers.Shore);
+                HarbourPierLayout.VisualModel visual = HarbourPierLayout.Visuals[i];
+                if (visual.Parent != HarbourPierLayout.RootCodeTrees) continue;
+                foreach (HarbourPierManifest.Placement p in HarbourPierManifest.Find(art.Manifest, visual.MeshName).placements)
+                    map.Add(p.name, (art.VisualMeshes[i], p));
             }
-        }
-
-        // mirrors LakeDockBuilder.AddRoundSeasons
-        static void AddRoundSeasons(GameObject tree, int index, int variant, ArtAssets art)
-        {
-            Transform canopy = tree.transform.Find("Canopy");
-            canopy.GetComponent<MeshFilter>().sharedMesh = art.CanopyRound[variant];
-            MeshRenderer blossoms = AddVisual(canopy, "Blossoms", art.Blossoms, art.ToonTri, Quaternion.identity, false);
-            MeshRenderer branches = AddVisual(tree.transform, "Branches", art.Branches, art.Toon,
-                Quaternion.Euler(0f, (index * LakeDockLayout.BranchesYawStepDegrees) % 360f, 0f), true);
-            tree.AddComponent<SeasonalVisibility>().Configure(new[]
-            {
-                new SeasonalVisibility.Entry(canopy.GetComponent<MeshRenderer>(), SeasonalLook.MaskLeafy),
-                new SeasonalVisibility.Entry(blossoms, SeasonalLook.MaskSpring),
-                new SeasonalVisibility.Entry(branches, SeasonalLook.MaskWinter),
-            });
-        }
-
-        // mirrors LakeDockBuilder.AddPineSeasons
-        static void AddPineSeasons(GameObject tree, ArtAssets art)
-        {
-            Transform canopy = tree.transform.Find("Canopy");
-            MeshRenderer snowy = AddVisual(canopy, "CanopyWinter", art.CanopyPineSnow, art.ToonTri, Quaternion.identity, true);
-            tree.AddComponent<SeasonalVisibility>().Configure(new[]
-            {
-                new SeasonalVisibility.Entry(canopy.GetComponent<MeshRenderer>(), SeasonalLook.MaskLeafy),
-                new SeasonalVisibility.Entry(snowy, SeasonalLook.MaskWinter),
-            });
+            if (map.Count != HarbourPierLayout.TreeCount) throw new System.InvalidOperationException("the manifest places " + map.Count + " code trees, expected " + HarbourPierLayout.TreeCount);
+            return map;
         }
 
         // Shore: the walkable box (x 28..32, z -56..-25, y -6..1.5) on the root, one sphere per boulder and per rubble stone (manifest centres and radii;

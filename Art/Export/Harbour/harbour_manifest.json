@@ -5633,7 +5633,7 @@
    "vertices": 7269,
    "bounds_min": [
     -42.2191,
-    1.045,
+    1.1738,
     -73.9292
    ],
    "bounds_max": [
@@ -7733,6 +7733,328 @@
    ],
    "animHint": "spin (turns to the wind)",
    "note": "A fish weather vane over N/E/S/W arms; origin at the spindle base. Only the upper part (y > 0.25) should spin."
+  },
+  {
+   "name": "Harbour_Core_CodeTree_PineA_Tri",
+   "file": "Art/Export/Harbour/Harbour_Core_CodeTree_PineA_Tri.fbx",
+   "group": "core",
+   "triangles": 2214,
+   "vertices": 1170,
+   "bounds_min": [
+    -2.0049,
+    -0.162,
+    -2.4278
+   ],
+   "bounds_max": [
+    2.3555,
+    5.8386,
+    2.1758
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    2,
+    4
+   ],
+   "layers": [
+    2,
+    4
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Tree_00",
+     "position": [
+      54.49,
+      1.2,
+      -66.68
+     ],
+     "yaw_deg": 0.0,
+     "frame": "Tree_00 local (the code tree root; its localScale is the height)",
+     "height_scale": 1.19,
+     "pine": true
+    },
+    {
+     "name": "Tree_07",
+     "position": [
+      40.75,
+      1.2,
+      -72.96
+     ],
+     "yaw_deg": 242.5,
+     "frame": "Tree_07 local (the code tree root; its localScale is the height)",
+     "height_scale": 1.2,
+     "pine": true
+    },
+    {
+     "name": "Tree_09",
+     "position": [
+      -24.12,
+      1.2,
+      -65.5
+     ],
+     "yaw_deg": 157.5,
+     "frame": "Tree_09 local (the code tree root; its localScale is the height)",
+     "height_scale": 1.24,
+     "pine": true
+    },
+    {
+     "name": "Tree_14",
+     "position": [
+      -48.58,
+      1.2,
+      -60.43
+     ],
+     "yaw_deg": 125.0,
+     "frame": "Tree_14 local (the code tree root; its localScale is the height)",
+     "height_scale": 0.94,
+     "pine": true
+    }
+   ],
+   "note": "Code-tree pine (straight). Origin at the trunk foot, height scale 1: parent under Tree_NN (localScale = the Pcg32 height)."
+  },
+  {
+   "name": "Harbour_Core_CodeTree_PineB_Tri",
+   "file": "Art/Export/Harbour/Harbour_Core_CodeTree_PineB_Tri.fbx",
+   "group": "core",
+   "triangles": 2214,
+   "vertices": 1170,
+   "bounds_min": [
+    -2.4918,
+    -0.1577,
+    -2.1894
+   ],
+   "bounds_max": [
+    1.7839,
+    5.5491,
+    2.3796
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    1,
+    2,
+    4
+   ],
+   "layers": [
+    2,
+    4
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Tree_03",
+     "position": [
+      48.06,
+      1.2,
+      -68.4
+     ],
+     "yaw_deg": 52.5,
+     "frame": "Tree_03 local (the code tree root; its localScale is the height)",
+     "height_scale": 1.15,
+     "pine": true
+    },
+    {
+     "name": "Tree_08",
+     "position": [
+      -53.19,
+      1.2,
+      -65.65
+     ],
+     "yaw_deg": 20.0,
+     "frame": "Tree_08 local (the code tree root; its localScale is the height)",
+     "height_scale": 1.09,
+     "pine": true
+    },
+    {
+     "name": "Tree_10",
+     "position": [
+      -30.21,
+      1.2,
+      -70.56
+     ],
+     "yaw_deg": 295.0,
+     "frame": "Tree_10 local (the code tree root; its localScale is the height)",
+     "height_scale": 1.27,
+     "pine": true
+    },
+    {
+     "name": "Tree_15",
+     "position": [
+      -40.35,
+      1.2,
+      -62.04
+     ],
+     "yaw_deg": 262.5,
+     "frame": "Tree_15 local (the code tree root; its localScale is the height)",
+     "height_scale": 0.83,
+     "pine": true
+    }
+   ],
+   "note": "Code-tree pine (wind-bent toward +x). Origin at the trunk foot, height scale 1: parent under Tree_NN."
+  },
+  {
+   "name": "Harbour_Core_CodeTree_RoundA_Tri",
+   "file": "Art/Export/Harbour/Harbour_Core_CodeTree_RoundA_Tri.fbx",
+   "group": "core",
+   "triangles": 905,
+   "vertices": 507,
+   "bounds_min": [
+    -1.9927,
+    -0.215,
+    -2.0808
+   ],
+   "bounds_max": [
+    2.126,
+    4.5558,
+    2.0092
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    1,
+    2,
+    4
+   ],
+   "layers": [
+    2,
+    4
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Tree_01",
+     "position": [
+      16.7,
+      1.2,
+      -61.25
+     ],
+     "yaw_deg": 137.5,
+     "frame": "Tree_01 local (the code tree root; its localScale is the height)",
+     "height_scale": 1.07,
+     "pine": false
+    },
+    {
+     "name": "Tree_04",
+     "position": [
+      37.66,
+      1.2,
+      -67.95
+     ],
+     "yaw_deg": 190.0,
+     "frame": "Tree_04 local (the code tree root; its localScale is the height)",
+     "height_scale": 1.0,
+     "pine": false
+    },
+    {
+     "name": "Tree_06",
+     "position": [
+      -17.56,
+      1.2,
+      -67.4
+     ],
+     "yaw_deg": 105.0,
+     "frame": "Tree_06 local (the code tree root; its localScale is the height)",
+     "height_scale": 1.19,
+     "pine": false
+    },
+    {
+     "name": "Tree_12",
+     "position": [
+      -25.81,
+      1.2,
+      -72.72
+     ],
+     "yaw_deg": 210.0,
+     "frame": "Tree_12 local (the code tree root; its localScale is the height)",
+     "height_scale": 0.94,
+     "pine": false
+    }
+   ],
+   "note": "Code-tree leafy tree. Origin at the trunk foot, height scale 1: parent under Tree_NN (leafy seasons; winter shows the bare branches)."
+  },
+  {
+   "name": "Harbour_Core_CodeTree_RoundB_Tri",
+   "file": "Art/Export/Harbour/Harbour_Core_CodeTree_RoundB_Tri.fbx",
+   "group": "core",
+   "triangles": 810,
+   "vertices": 452,
+   "bounds_min": [
+    -2.4341,
+    -0.2257,
+    -2.1063
+   ],
+   "bounds_max": [
+    2.2077,
+    4.8713,
+    2.294
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    2,
+    4
+   ],
+   "layers": [
+    2,
+    4
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Tree_02",
+     "position": [
+      -45.04,
+      1.2,
+      -66.85
+     ],
+     "yaw_deg": 275.0,
+     "frame": "Tree_02 local (the code tree root; its localScale is the height)",
+     "height_scale": 0.94,
+     "pine": false
+    },
+    {
+     "name": "Tree_05",
+     "position": [
+      -51.52,
+      1.2,
+      -60.92
+     ],
+     "yaw_deg": 327.5,
+     "frame": "Tree_05 local (the code tree root; its localScale is the height)",
+     "height_scale": 0.89,
+     "pine": false
+    },
+    {
+     "name": "Tree_11",
+     "position": [
+      -28.93,
+      1.2,
+      -72.3
+     ],
+     "yaw_deg": 72.5,
+     "frame": "Tree_11 local (the code tree root; its localScale is the height)",
+     "height_scale": 1.26,
+     "pine": false
+    },
+    {
+     "name": "Tree_13",
+     "position": [
+      -49.07,
+      1.2,
+      -63.21
+     ],
+     "yaw_deg": 347.5,
+     "frame": "Tree_13 local (the code tree root; its localScale is the height)",
+     "height_scale": 1.21,
+     "pine": false
+    }
+   ],
+   "note": "Code-tree leafy tree (variant B). Origin at the trunk foot, height scale 1: parent under Tree_NN."
   }
  ],
  "total_triangles": 82812,
@@ -7747,17 +8069,17 @@
   },
   "triangles": {
    "phase1": 82812,
-   "pass2_core": 149706,
+   "pass2_core": 155849,
    "pass2_detail": 43164,
    "pass2_col_not_drawn": 1674,
-   "pass2_extra_from_instances": 6861
+   "pass2_extra_from_instances": 25290
   },
   "notes": [
    "Placement: every pass-2 FBX object is at the origin with an identity transform. World models: place at the Unity origin. Local models (local_space true: the tug, its collision mesh, the ice chest, the Anim_* pieces): instantiate once per placement at position with yaw_deg about +y. Ice chest placements are in the CrewBoat local frame (parent them to the placed tug).",
    "Materials: \"_Tri\" -> M_Toon_Tri (the HarbourModelPostprocessor uv1.z fix applies), others M_Toon_Base, Harbour_Core_River -> the water material (no palette slot fits water; it also holds the tide-pool discs). Col models: MeshCollider only, no renderer.",
    "Low preset: hide every group \"detail\" model. No detail model carries a collider, so Low changes nothing in gameplay.",
    "Colliders: box items -> BoxCollider from bounds_min/max (Structure layer like the phase-1 props, except the stone wall and gate pillars: Shore). Walkable land: Harbour_Dunes_Col (MeshCollider, Shore layer, inside the walls only). The tug: Harbour_Core_CrewBoat_Col (MeshCollider on the placed tug; walkable decks, deckhouse interior, upper deck, wheelhouse). Tug ladders: LadderVolume boxes from Harbour_Core_CrewBoat.ladders (local frame). Ice chests: a BoxCollider each (size in the placement).",
-   "Code trees: the 16 HarbourPierBuilder trees still stand on the plateau (y 1.2): the dunes are flattened within ~1.3 m of each trunk and ramp up from 4.6 m, so no tree floats or sinks. Pass-2 buildings and props keep >= 2.5 m from each trunk (positions ported from Pcg32).",
+   "Code trees: the 16 HarbourPierBuilder trees still stand on the plateau (y 1.2): the dunes are flattened within ~1.3 m of each trunk and ramp up from 4.6 m, so no tree floats or sinks. Pass-2 buildings and props keep >= 2.5 m from each trunk (positions ported from Pcg32). Their visuals are the four local Harbour_Core_CodeTree_* models (round 0): one placement per Tree_NN, parented under it so its localScale (the Pcg32 height) scales the tree and the trunk and canopy colliders stay as they were.",
    "Backdrop (hills, cliffs, forest, islands, road, backdrop, river): no colliders; outside the walls; invisible to the bake.",
    "Beach foam: the code beach/water already draws the foam line and wet edge at the coast; no extra foam mesh was added.",
    "The in-water solid objects are the tug (hull box or its MeshCollider) and the gangway; everything else in the water is visual only (floats, seaweed, gull on a buoy, river and pool water). See verification for their clearance from the stand circles and cast lanes.",

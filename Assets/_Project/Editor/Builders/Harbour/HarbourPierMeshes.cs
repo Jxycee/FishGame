@@ -32,7 +32,7 @@ namespace FishGame.EditorTools
         }
 
         // mirrors LakeDockMeshes.Save. Copies the built mesh into the existing asset (GUID kept) or creates the asset. The temporary mesh is destroyed.
-        static void Save(string assetPath, Mesh built)
+        internal static void Save(string assetPath, Mesh built)
         {
             BuilderUtil.EnsureFolder(BuilderUtil.Folder(assetPath));
             string name = Path.GetFileNameWithoutExtension(assetPath);

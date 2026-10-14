@@ -1239,8 +1239,11 @@ def build_groups(only=None):
     return out
 
 def u_bounds(g):
-    lo = [min(v[i] for v in g.V) for i in range(3)]
-    hi = [max(v[i] for v in g.V) for i in range(3)]
+    # Over the vertices that faces use: a part whose faces all collapsed (G2.add drops zero-area faces) leaves loose vertices in the FBX, and
+    # Unity's import drops unused vertices, so the manifest bounds must not count them (round 0: Yard_B's pot-stack base).
+    used = sorted(set(k for f in g.F for k in f)) if g.F else range(len(g.V))
+    lo = [min(g.V[k][i] for k in used) for i in range(3)]
+    hi = [max(g.V[k][i] for k in used) for i in range(3)]
     return [round(x, 4) for x in lo], [round(x, 4) for x in hi]
 
 def export_fbx(ob, path):
@@ -2223,11 +2226,11 @@ def leaf_clump(rad, r, scale, sub):
     # a soft, lumpy leaf clump (ragged silhouette): an icosphere pushed by two noise octaves, flattened underneath
     return blob(rad, r, scale, subdiv=sub, rough=0.32, flat=-0.45, yaw=r.uniform(0, 360))
 
-def tree_pine(g, base, h, slot, sides=7, lean=(0.0, 0.0)):
+def tree_pine(g, base, h, slot, sides=7, lean=(0.0, 0.0), key=None):
     # A coastal pine built from layered, drooping branch clumps (RV There Yet style): a slightly bent tapering trunk, 4-6 tiers of
     # 3-5 flattened clumps hanging off it, smaller toward the top, biased downwind when the tree leans; a ragged top tuft.
     base = Vector(base)
-    r = rng2('pine.%d.%d' % (int(round(base.x * 10)), int(round(base.z * 10))))
+    r = rng2(key or 'pine.%d.%d' % (int(round(base.x * 10)), int(round(base.z * 10))))
     # detail level: near trees (sides >= 9) 80-triangle clumps in 5 tiers; mid 20-triangle clumps in 4 tiers; far 3 tiers of 3
     near, far = sides >= 9, sides <= 6
     sub = 2 if near else 1
@@ -2257,10 +2260,10 @@ def tree_pine(g, base, h, slot, sides=7, lean=(0.0, 0.0)):
     top = trunk_at(1.0)
     g.add(xform(leaf_clump(0.13 * h, r, (0.8, 1.5, 0.8), sub), top - Vector((0, 0.04 * h, 0))), slot, L['Foliage'], 0.55)
 
-def tree_round(g, base, h, r, slot, sub=1, trunk=True):
+def tree_round(g, base, h, r, slot, sub=1, trunk=True, key=None):
     # A leafier tree: a forked tapering trunk carrying 6-9 lumpy clumps on a squashed dome, so the canopy reads as clustered leaves.
     base = Vector(base)
-    rr = rng2('leafy.%d.%d' % (int(round(base.x * 10)), int(round(base.z * 10))))
+    rr = rng2(key or 'leafy.%d.%d' % (int(round(base.x * 10)), int(round(base.z * 10))))
     sub2 = 2 if sub >= 2 else 1
     crown = base + Vector((0, 0.6 * h, 0))
     if trunk:
@@ -4308,6 +4311,40 @@ def build_trees():
         it['bounds_note'] = 'bounds_min/max = the trunk collider; the canopy (visual_bounds) stays walk-under'
     return g
 
+# ---------------------------------------------------------------------------------------------------------------------------------------
+# Round 0 (2026-10-14): the 16 code trees (HarbourPierBuilder.PlaceTrees) get painterly visuals. Four LOCAL models (two pines, two leafy
+# trees) authored at the origin for a tree of height scale 1; Unity parents one under each Tree_NN (whose localScale is the Pcg32 height), so
+# the trunk and canopy colliders stay exactly where they were. Local models bake AO against themselves only, so no other FBX changes.
+# ---------------------------------------------------------------------------------------------------------------------------------------
+CODE_TREE_PINE_H, CODE_TREE_ROUND_H = 5.4, 4.3
+
+def build_code_trees():
+    variants = [
+        G2('Harbour_Core_CodeTree_PineA_Tri', 'core', tri=True, local=True, rays=10, ao_dist=1.2,
+           note='Code-tree pine (straight). Origin at the trunk foot, height scale 1: parent under Tree_NN (localScale = the Pcg32 height).'),
+        G2('Harbour_Core_CodeTree_PineB_Tri', 'core', tri=True, local=True, rays=10, ao_dist=1.2,
+           note='Code-tree pine (wind-bent toward +x). Origin at the trunk foot, height scale 1: parent under Tree_NN.'),
+        G2('Harbour_Core_CodeTree_RoundA_Tri', 'core', tri=True, local=True, rays=10, ao_dist=1.2,
+           note='Code-tree leafy tree. Origin at the trunk foot, height scale 1: parent under Tree_NN (leafy seasons; winter shows the bare branches).'),
+        G2('Harbour_Core_CodeTree_RoundB_Tri', 'core', tri=True, local=True, rays=10, ao_dist=1.2,
+           note='Code-tree leafy tree (variant B). Origin at the trunk foot, height scale 1: parent under Tree_NN.'),
+    ]
+    r = rng2('codetrees')
+    tree_pine(variants[0], (0.0, 0.0, 0.0), CODE_TREE_PINE_H, S['FoliageDark'], sides=10, lean=(0.0, 0.0), key='codetree.pineA')
+    tree_pine(variants[1], (0.0, 0.0, 0.0), CODE_TREE_PINE_H * 0.95, S['Foliage'], sides=10, lean=(3.0, 10.0), key='codetree.pineB')
+    tree_round(variants[2], (0.0, 0.0, 0.0), CODE_TREE_ROUND_H, r, S['Foliage'], sub=2, key='codetree.roundA')
+    tree_round(variants[3], (0.0, 0.0, 0.0), CODE_TREE_ROUND_H * 1.05, r, S['FoliageDark'], sub=2, key='codetree.roundB')
+    pines = rounds = 0
+    for i, (x, z, h, pine) in enumerate(CODE_TREES):
+        if pine:
+            g = variants[pines % 2]; pines += 1
+        else:
+            g = variants[2 + rounds % 2]; rounds += 1
+        yaw = (i * 137.5) % 360.0
+        g.place('Tree_%02d' % i, (x, PLATEAU_Y, z), yaw, frame='Tree_%02d local (the code tree root; its localScale is the height)' % i,
+                height_scale=h, pine=pine)
+    return variants
+
 def build_shore(obst):
     g = G2('Harbour_Detail_Shore', 'detail', rays=10)
     t = G2('Harbour_Detail_TidePools_Tri', 'detail', tri=True, rays=10)
@@ -4473,7 +4510,7 @@ def build_pass2():
     obst = obstacle_boxes([bld] + yard + [trees])
     detail = [build_lights(yard[0]), build_clutter(yard[0], yard[1])] + build_plants(obst) + build_shore(obst) + [build_reeds()] + \
              build_anim_models(yard, bld)
-    return land + [bld] + yard + tug + [trees] + detail
+    return land + [bld] + yard + tug + [trees] + detail + build_code_trees()
 
 def tug_footprint_world(margin=0.35):
     # the tug's hull outline (plus the fender ring / tyres) in world xz
@@ -4620,7 +4657,9 @@ PASS2_NOTES = [
     '(MeshCollider on the placed tug; walkable decks, deckhouse interior, upper deck, wheelhouse). Tug ladders: LadderVolume boxes from '
     'Harbour_Core_CrewBoat.ladders (local frame). Ice chests: a BoxCollider each (size in the placement).',
     'Code trees: the 16 HarbourPierBuilder trees still stand on the plateau (y 1.2): the dunes are flattened within ~1.3 m of each trunk and '
-    'ramp up from 4.6 m, so no tree floats or sinks. Pass-2 buildings and props keep >= 2.5 m from each trunk (positions ported from Pcg32).',
+    'ramp up from 4.6 m, so no tree floats or sinks. Pass-2 buildings and props keep >= 2.5 m from each trunk (positions ported from Pcg32). '
+    'Their visuals are the four local Harbour_Core_CodeTree_* models (round 0): one placement per Tree_NN, parented under it so its '
+    'localScale (the Pcg32 height) scales the tree and the trunk and canopy colliders stay as they were.',
     'Backdrop (hills, cliffs, forest, islands, road, backdrop, river): no colliders; outside the walls; invisible to the bake.',
     'Beach foam: the code beach/water already draws the foam line and wet edge at the coast; no extra foam mesh was added.',
     'The in-water solid objects are the tug (hull box or its MeshCollider) and the gangway; everything else in the water is visual only '
@@ -4780,6 +4819,8 @@ def place_preview_instances(groups, objs):
                 inst.hide_render = True
             # Unity yaw about +y (clockwise from above) -> Blender rotation about +z
             inst.rotation_euler = (0.0, 0.0, math.radians(-p.get('yaw_deg', 0.0)))
+            if 'height_scale' in p:
+                inst.scale = (p['height_scale'],) * 3
 
 def terrain_proxy2():
     # preview only: the code beach + seabed over the full code extent (x +-120, z -100..120)

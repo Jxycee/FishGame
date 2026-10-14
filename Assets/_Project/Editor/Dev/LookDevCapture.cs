@@ -440,7 +440,7 @@ namespace FishGame.EditorTools
             Debug.Log("FG LOOKDEV harbour captured " + HarbourShots.Length + " shots");
         }
 
-        static string Arg(string name)
+        internal static string Arg(string name)
         {
             string[] args = System.Environment.GetCommandLineArgs();
             for (int i = 0; i + 1 < args.Length; i++) if (args[i] == name) return args[i + 1];
@@ -562,7 +562,7 @@ namespace FishGame.EditorTools
             SeasonalVisibility.SetSeason(season);
         }
 
-        static void PushWaves(WaterSettingsDef water)
+        internal static void PushWaves(WaterSettingsDef water)
         {
             var waves = new Vector4[ShaderGlobals.WavesLength];
             for (int i = 0; i < 3 && i < water.DirAmpLenSpeed.Count; i++) waves[i] = water.DirAmpLenSpeed[i];
@@ -595,7 +595,7 @@ namespace FishGame.EditorTools
 
         // ---- scene props ----
 
-        static Light FindSun()
+        internal static Light FindSun()
         {
             GameObject go = GameObject.Find("Sun");
             if (go == null || go.GetComponent<Light>() == null) throw new System.InvalidOperationException("no Sun light in the lake scene");

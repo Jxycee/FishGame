@@ -28,6 +28,8 @@ namespace FishGame.Presentation
         private static readonly int SkyHorizonId = Shader.PropertyToID(ShaderGlobals.SkyHorizon);
         private static readonly int SkyGroundId = Shader.PropertyToID(ShaderGlobals.SkyGround);
         private static readonly int DayFractionId = Shader.PropertyToID(ShaderGlobals.DayFraction);
+        private static readonly int LampGlowId = Shader.PropertyToID(ShaderGlobals.LampGlow);
+        internal const float LampGlowWindow = 0.05f;   // day fraction (72 game minutes): lamps come on through dusk (DayNightMath.LampGlow)
 
         private const int LookCount = 3;   // Clear 0, Rain 1, Fog 2 (ArtPaletteDef.weatherLooks)
 
@@ -200,6 +202,8 @@ namespace FishGame.Presentation
             Shader.SetGlobalColor(SkyHorizonId, skyHorizon);
             Shader.SetGlobalColor(SkyGroundId, skyGround);
             Shader.SetGlobalFloat(DayFractionId, f);
+            float glow = DayNightMath.LampGlow(f, _sunMoon.sunriseFraction, _sunMoon.sunsetFraction, LampGlowWindow);
+            Shader.SetGlobalFloat(LampGlowId, glow);   // the string-light shader and AmbientLife's lamps read this global
             RenderSettings.fogColor = fogColor;       // fog and fogMode are never written: the scene builder switched fog on (spec 10.3)
             RenderSettings.fogDensity = fog;
             if (warmVolume != null) warmVolume.weight = warm;

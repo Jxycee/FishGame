@@ -156,6 +156,17 @@ namespace FishGame.EditorTools
 
         // ---- Blender visuals (Content/Models/Harbour): file, parent root, child name. Placed at the origin with an identity transform, no collider. ----
         public const string RootPier = "Pier", RootBreakwater = "Breakwater", RootBeach = "Beach", RootProps = "Props";
+        // Pass 2 (harbour-art2 detail pass, round 0 2026-10-14). Parent tags of the pass-2 models:
+        //  Land (Shore layer): land shape, backdrop and the river (water material, not the Water layer, no collider), the stone wall (Shore boxes)
+        //    and the walkable dune collision mesh (Harbour_Dunes_Col: MeshCollider only).
+        //  Village (Structure): buildings, yards, the village trees; their box items become Structure BoxColliders (trunk-only for the trees, the
+        //    net shed's back half only, as the manifest's bounds give them).
+        //  Detail (Default): every "detail" model (no colliders); AmbientLife hides the Detail root on the Low preset. Local detail models are
+        //    instanced per placement (gulls, floats, flags, the windsock, the shop sign, nets, bunting, the weather vane) and animated by AmbientLife.
+        //  CrewBoat: the tug, its collision mesh (Shore) and the ice chests, placed from the manifest (local models, the tug's frame).
+        //  CodeTrees: the four local code-tree models, one under each Tree_NN (see PlaceTrees).
+        public const string RootLand = "Land", RootVillage = "Village", RootDetail = "Detail", RootCrewBoat = "CrewBoat", RootCodeTrees = "CodeTrees";
+        public const string RootSmoke = "Smoke", RootLights = "HarbourLights", RootLife = "AmbientLife";
 
         public readonly struct VisualModel
         {
@@ -179,7 +190,63 @@ namespace FishGame.EditorTools
             new VisualModel("Harbour_Props.fbx", RootProps, "PropsVisual"),
             new VisualModel("Harbour_Dressing.fbx", RootProps, "DressingVisual"),
             new VisualModel("Harbour_Boats.fbx", RootProps, "BoatsVisual"),
+            // ---- pass 2 ----
+            new VisualModel("Harbour_Core_Dunes_Tri.fbx", RootLand, "DunesVisual"),
+            new VisualModel("Harbour_Dunes_Col.fbx", RootLand, "DunesCollision"),
+            new VisualModel("Harbour_Core_Hills_A_Tri.fbx", RootLand, "HillsAVisual"),
+            new VisualModel("Harbour_Core_Hills_B_Tri.fbx", RootLand, "HillsBVisual"),
+            new VisualModel("Harbour_Core_River.fbx", RootLand, "RiverVisual"),
+            new VisualModel("Harbour_Core_Cliffs_West_Tri.fbx", RootLand, "CliffsWestVisual"),
+            new VisualModel("Harbour_Core_Cliffs_East_Tri.fbx", RootLand, "CliffsEastVisual"),
+            new VisualModel("Harbour_Core_Paths.fbx", RootLand, "PathsVisual"),
+            new VisualModel("Harbour_Core_Walls_Tri.fbx", RootLand, "StoneWallVisual"),
+            new VisualModel("Harbour_Core_Road.fbx", RootLand, "RoadVisual"),
+            new VisualModel("Harbour_Core_Forest_Tri.fbx", RootLand, "ForestVisual"),
+            new VisualModel("Harbour_Core_HeadlandTrees_Tri.fbx", RootLand, "HeadlandTreesVisual"),
+            new VisualModel("Harbour_Core_Islands_Tri.fbx", RootLand, "IslandsVisual"),
+            new VisualModel("Harbour_Core_Backdrop.fbx", RootLand, "BackdropVisual"),
+            new VisualModel("Harbour_Core_Buildings.fbx", RootVillage, "BuildingsVisual"),
+            new VisualModel("Harbour_Core_Yard_A.fbx", RootVillage, "YardAVisual"),
+            new VisualModel("Harbour_Core_Yard_B.fbx", RootVillage, "YardBVisual"),
+            new VisualModel("Harbour_Core_Trees_Tri.fbx", RootVillage, "VillageTreesVisual"),
+            new VisualModel("Harbour_Core_CrewBoat.fbx", RootCrewBoat, "HullVisual"),
+            new VisualModel("Harbour_Core_CrewBoat_Col.fbx", RootCrewBoat, "Collision"),
+            new VisualModel("Harbour_Core_CrewBoat_IceChest.fbx", RootCrewBoat, "IceChest"),
+            new VisualModel("Harbour_Detail_Lights.fbx", RootDetail, "StringLightsVisual"),
+            new VisualModel("Harbour_Detail_Clutter.fbx", RootDetail, "ClutterVisual"),
+            new VisualModel("Harbour_Detail_Plants_A.fbx", RootDetail, "PlantsAVisual"),
+            new VisualModel("Harbour_Detail_Plants_B.fbx", RootDetail, "PlantsBVisual"),
+            new VisualModel("Harbour_Detail_Shore.fbx", RootDetail, "ShoreDressingVisual"),
+            new VisualModel("Harbour_Detail_TidePools_Tri.fbx", RootDetail, "TidePoolsVisual"),
+            new VisualModel("Harbour_Detail_Reeds.fbx", RootDetail, "ReedsVisual"),
+            new VisualModel("Harbour_Detail_Anim_Gull.fbx", RootDetail, "Gull"),
+            new VisualModel("Harbour_Detail_Anim_Buoy.fbx", RootDetail, "Float"),
+            new VisualModel("Harbour_Detail_Anim_Flag.fbx", RootDetail, "Flag"),
+            new VisualModel("Harbour_Detail_Anim_WindSock.fbx", RootDetail, "WindSock"),
+            new VisualModel("Harbour_Detail_Anim_SwingSign.fbx", RootDetail, "SwingSign"),
+            new VisualModel("Harbour_Detail_Anim_HangingNet.fbx", RootDetail, "HangingNet"),
+            new VisualModel("Harbour_Detail_Anim_Bunting_A.fbx", RootDetail, "Bunting"),
+            new VisualModel("Harbour_Detail_Anim_Bunting_B.fbx", RootDetail, "Bunting"),
+            new VisualModel("Harbour_Detail_Anim_Bunting_C.fbx", RootDetail, "Bunting"),
+            new VisualModel("Harbour_Detail_Anim_WeatherVane.fbx", RootDetail, "WeatherVane"),
+            new VisualModel("Harbour_Core_CodeTree_PineA_Tri.fbx", RootCodeTrees, "TreeVisual"),
+            new VisualModel("Harbour_Core_CodeTree_PineB_Tri.fbx", RootCodeTrees, "TreeVisual"),
+            new VisualModel("Harbour_Core_CodeTree_RoundA_Tri.fbx", RootCodeTrees, "TreeVisual"),
+            new VisualModel("Harbour_Core_CodeTree_RoundB_Tri.fbx", RootCodeTrees, "TreeVisual"),
         };
+
+        // Pass-2 collider sources: box items of these models become BoxColliders (Land: Shore; Village: Structure).
+        public static readonly string[] LandBoxModels = { "Harbour_Core_Walls_Tri" };
+        public static readonly string[] VillageBoxModels = { "Harbour_Core_Buildings", "Harbour_Core_Yard_A", "Harbour_Core_Yard_B", "Harbour_Core_Trees_Tri" };
+        public const string CrewBoatModel = "Harbour_Core_CrewBoat", CrewBoatColModel = "Harbour_Core_CrewBoat_Col", IceChestModel = "Harbour_Core_CrewBoat_IceChest";
+        public const string WeatherVaneModel = "Harbour_Detail_Anim_WeatherVane", LightsModel = "Harbour_Detail_Lights";
+        public const float WeatherVaneSplitY = 0.25f;   // the manifest note: only the part above y 0.25 (local) turns
+        public const string WeatherVaneHeadMeshPath = AssetPaths.MeshesFolder + "/Harbour_WeatherVane_Head.asset";
+        public const string WeatherVaneBaseMeshPath = AssetPaths.MeshesFolder + "/Harbour_WeatherVane_Base.asset";
+        public const string BeaconBeamMeshPath = AssetPaths.MeshesFolder + "/Harbour_BeaconBeam.asset";
+        public const float TugBobMetres = 0.03f;         // the moored tug's hull visual heave (the collision mesh never moves)
+        // Phase-1 pier lamps (Harbour_Props Lamp_0 / Lamp_1): the light sits in the lamp head, as the pass-2 lamp posts' (y 4.1 for a 4.53 top).
+        public const float PierLampLightBelowTop = 0.43f;
 
         // Manifest item sources for the colliders (HarbourPierManifest): sphere items and box items per FBX mesh.
         public const string RocksModel = "Harbour_Rocks_Tri", BoulderModel = "Harbour_Breakwater_Tri", RubbleModel = "Harbour_BreakwaterBase_Tri";
