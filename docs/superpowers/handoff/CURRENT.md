@@ -81,11 +81,8 @@ Also on the board:
 ## 10. Harbour detail pass (user, 2026-10-14) - DONE, merged into main 36f8abb
 - **Quality-first run (user, 2026-10-14):** "stop focusing purely on GTX 900 cards and just make the best map possible". The spec Graphics tab note was revised (53732a7): no per-view cap, Low is a best-effort fallback.
   - **PAUSED 2026-10-14 (PC restart + weekly usage at 97%, resets 2026-10-18 ~02:00 CDT).**
-- **Cloud agents (2026-10-14, user has cloud credits; local weekly usage at 97%):**
-  1. Opus review + merge-prep of fix/save-newer-schema-readonly (c5b48d5) and fix/journal-write-debounce (be18558). These are the Ponytail-benchmark baseline fixes, now pushed. They still need a local Unity test run before merge.
-  2. Sonnet read-only review of harbour-art3 round 1 (bbf16d1).
-  3. Opus M4 design draft on branch m4-design-draft (docs/superpowers/design/2026-10-14-m4-design-draft.md: R76/R78 rows, open questions, task outline).
-  Results arrive in this local session.
+- **Cloud delegation (2026-10-14):** Agent isolation "remote" fell back to local worktrees and used the weekly plan (97% to 98%), so it was stopped. Only the Sonnet review of harbour-art3 r1 finished: sound to build on, 2 medium findings (foliage alpha-to-coverage swells cards on Low; far mountains lost in fog and past the 400 m far clip while casting shadows). The findings are in scratchpad harbour-best/r1-review.md, and the r2 artist brief points to them.
+  - The save-fix review and the M4 design draft are ready-to-paste briefs for cloud sessions the USER starts: docs/superpowers/handoff/cloud-briefs.md. The fix/* branches are pushed.
     - Round 1: critics 6.6 / 6.8 / 6.7. Artist r1 bbf16d1 pushed on harbour-art3 (SSAO, bloom, height fog, painted rock/stone/plaster/roof, lawn carpet, bay destinations, life on the water). EditMode 1389/1390 (1 skipped), PlayMode 139/139.
     - Round 2: critics 6.8 / 6.7 / 7.2 (cached in the run). The r2 artist was cut off before writing anything; the worktree is clean.
     - Resume: Workflow({scriptPath: ~/.claude/projects/C--Dev-FishGame/0f9e3f02-.../workflows/scripts/harbour-best-wf_8dc74d12-0fa.js, resumeFromRunId: 'wf_8dc74d12-0fa', args as in the run}). r1 and the r2 critics return cached.
