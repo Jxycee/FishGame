@@ -195,7 +195,7 @@ function render(s) {
 
   document.getElementById('agents').innerHTML = s.agents.slice().reverse().map(a => {
     const c = a.state === 'running' ? col(a.activity) : `var(--${a.state === 'failed' ? 'failed' : 'done'})`;
-    const doing = a.state === 'running' ? `<b>${esc(VERB[a.activity] || 'Working')}:</b> ${esc(a.tool)} ${esc(a.detail)}` : `<b>${a.state === 'failed' ? 'Failed' : 'Finished'}</b> after ${a.tools} steps`;
+    const doing = a.state === 'running' ? `<b>${esc(VERB[a.activity] || 'Working')}:</b> ${esc(a.tool)} ${esc(a.detail)}` : `<b>${a.state === 'failed' ? 'Failed' : a.state === 'stopped' ? 'Stopped (restarted)' : 'Finished'}</b> after ${a.tools} steps`;
     return `<div class="agent"><span class="sw" style="background:${c}"></span><span class="name">${esc(a.label)} <span class="muted" style="font-weight:500">· ${esc(a.phase)}</span></span>
       <span class="meta">${fmtT(a.elapsed)} · ${a.tools} steps · ${fmtK(a.context)} context · ${fmtK(a.processed)} processed</span>
       <span class="now">${doing}</span>${a.text && a.state === 'running' ? `<span class="say">"${esc(a.text)}"</span>` : ''}</div>`;

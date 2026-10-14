@@ -180,6 +180,10 @@ def status(shots_override):
             if not aid:
                 continue
             a = agents.get(aid)
+            if a is None and typ == "started":
+                for other in agents.values():   # a restarted step (same label) supersedes the old, unfinished one
+                    if other["label"] == e.get("label") and other["state"] == "running":
+                        other["state"] = "stopped"
             if a is None:
                 a = agents[aid] = {"id": aid, "label": e.get("label", aid), "phase": e.get("phase", ""), "state": "running"}
                 order.append(aid)
