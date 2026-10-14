@@ -213,6 +213,83 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(1, _warnings.FindAll(w => w.Contains("FG SAVE")).Count, "Save adds no further warning");
         }
 
+        // A newer build changed "seen" from a number to an object: this build cannot deserialize the file, but it is not corrupt.
+        private const string NewerUnparsable =
+            "{ \"schemaVersion\": 2, \"journal\": { \"bluegill\": { \"seen\": { \"total\": 3 }, \"caught\": 1 } } }";
+
+        [Test]
+        public void SaveService_NewerSchemaUnparsable_ReadOnlyAndUntouched()
+        {
+            Assert.IsNull(SaveService.DeserializeOrNull(NewerUnparsable), "precondition: this build cannot read the file");
+            File.WriteAllText(_path, NewerUnparsable);
+
+            var svc = new SaveService(_path);
+            svc.Load();
+            Assert.IsTrue(svc.IsReadOnly);
+            Assert.AreEqual(MetaLoadSource.Defaults, svc.LoadedFrom);
+            Assert.AreEqual(0, svc.Current.Journal.Count);
+            Assert.AreEqual(1, _warnings.FindAll(w => w.Contains("FG SAVE")).Count, "one warning on load");
+
+            svc.Current.Journal["bluegill"] = new JournalEntry { Seen = 1 };
+            svc.Save();
+            svc.Save();
+
+            Assert.AreEqual(NewerUnparsable, File.ReadAllText(_path), "the newer file is byte-identical after Save");
+            Assert.IsFalse(File.Exists(_path + ".corrupt"), "a newer file is not corrupt");
+            Assert.IsFalse(File.Exists(_path + ".bak"));
+            Assert.IsFalse(File.Exists(_path + ".tmp"));
+            Assert.AreEqual(1, _warnings.FindAll(w => w.Contains("FG SAVE")).Count, "Save adds no further warning");
+        }
+
+        [Test]
+        public void SaveService_NewerSchemaUnparsable_WithGoodBak_LoadsBakReadOnly()
+        {
+            SavedService(1); // main = A
+            SavedService(2); // main = B, .bak = A
+            string bakBefore = File.ReadAllText(_path + ".bak");
+            File.WriteAllText(_path, NewerUnparsable);
+
+            var svc = new SaveService(_path);
+            svc.Load();
+            Assert.IsTrue(svc.IsReadOnly);
+            Assert.AreEqual(MetaLoadSource.Backup, svc.LoadedFrom);
+            Assert.AreEqual(1, svc.Current.Journal["bluegill"].Seen);
+
+            svc.Save();
+            Assert.AreEqual(NewerUnparsable, File.ReadAllText(_path));
+            Assert.AreEqual(bakBefore, File.ReadAllText(_path + ".bak"));
+            Assert.IsFalse(File.Exists(_path + ".corrupt"));
+        }
+
+        [Test]
+        public void SaveService_TruncatedFileWithSchemaVersion_StillCorrupt()
+        {
+            const string truncated = "{ \"schemaVersion\": 2, \"journal\": { \"bluegill\": ";
+            File.WriteAllText(_path, truncated);
+
+            var svc = new SaveService(_path);
+            svc.Load();
+            Assert.IsFalse(svc.IsReadOnly);
+            Assert.AreEqual(MetaLoadSource.Defaults, svc.LoadedFrom);
+
+            svc.Save();
+            Assert.AreEqual(truncated, File.ReadAllText(_path + ".corrupt"), "a genuinely broken file is still preserved as .corrupt");
+        }
+
+        [Test]
+        public void SaveService_TryReadNewerSchemaVersion_OnlyForWellFormedNewerObjects()
+        {
+            long v;
+            Assert.IsTrue(SaveService.TryReadNewerSchemaVersion("{ \"SchemaVersion\": 7, \"journal\": 5 }", out v));
+            Assert.AreEqual(7, v);
+            Assert.IsFalse(SaveService.TryReadNewerSchemaVersion("{ \"schemaVersion\": 1, \"journal\": 5 }", out v));
+            Assert.IsFalse(SaveService.TryReadNewerSchemaVersion("{ \"journal\": 5 }", out v));
+            Assert.IsFalse(SaveService.TryReadNewerSchemaVersion("{ \"schemaVersion\": \"2\" }", out v));
+            Assert.IsFalse(SaveService.TryReadNewerSchemaVersion("[2]", out v));
+            Assert.IsFalse(SaveService.TryReadNewerSchemaVersion("", out v));
+            Assert.IsFalse(SaveService.TryReadNewerSchemaVersion(null, out v));
+        }
+
         [Test]
         public void SaveService_BothCorrupt_DefaultsAndKeepsCorruptCopy()
         {

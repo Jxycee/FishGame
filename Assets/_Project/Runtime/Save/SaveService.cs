@@ -1,12 +1,14 @@
 // Authority: local only (each machine writes its own meta file; spec 12.10, R32). Main thread. Never throws into gameplay.
 // meta.json v1 (MetaSave) serialized with Newtonsoft (M3-D30): camelCase property names, dictionary keys (species ids) unchanged.
-// Load order main -> .bak -> defaults. A file with a newer SchemaVersion than 1 loads read-only and is never written.
+// Load order main -> .bak -> defaults. A file with a newer SchemaVersion than 1 loads read-only and is never written, even when
+// this build cannot deserialize it (the schemaVersion is probed first, so such a file is never treated as corrupt).
 // An unparsable file is copied to path + ".corrupt" before the first Save can push it into .bak and overwrite it.
 using System;
 using System.Globalization;
 using System.IO;
 using FishGame.Core;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using UnityEngine;
 
@@ -63,16 +65,25 @@ namespace FishGame.Runtime
             MetaSave loaded = DeserializeOrNull(mainText);
             MetaLoadSource source = MetaLoadSource.Main;
             _unreadableOnDisk = false;
+            // A main file with a newer schemaVersion that this build cannot deserialize (a field changed type) is not corrupt: it is
+            // left untouched on disk and the session runs read-only, so an older build never damages a newer build's save.
+            bool newerUnparsed = false;
+            long newerVersion = 0;
 
             if (loaded == null)
             {
+                newerUnparsed = TryReadNewerSchemaVersion(mainText, out newerVersion);
                 string backupText = AtomicFile.ReadAllTextOrNull(FilePath + AtomicFile.BackupSuffix);
                 loaded = DeserializeOrNull(backupText);
                 // A main file that exists but did not load (corrupt, or locked so that it read as missing) is copied to .corrupt and
                 // removed before the first Save, so it is neither rotated into .bak over a good backup nor replaced by an empty journal.
                 bool mainExists = File.Exists(FilePath);
-                _unreadableOnDisk = mainExists;
-                if (loaded != null)
+                _unreadableOnDisk = mainExists && !newerUnparsed;
+                if (newerUnparsed)
+                {
+                    source = loaded != null ? MetaLoadSource.Backup : MetaLoadSource.Defaults;
+                }
+                else if (loaded != null)
                 {
                     source = MetaLoadSource.Backup;
                     Debug.LogWarning("FG SAVE main meta file unreadable; loaded the .bak (" + FilePath + ")");
@@ -91,10 +102,11 @@ namespace FishGame.Runtime
             if (_current.Journal == null) _current.Journal = new System.Collections.Generic.Dictionary<string, JournalEntry>();
             LoadedFrom = source;
 
-            IsReadOnly = _current.SchemaVersion > 1;
+            IsReadOnly = newerUnparsed || _current.SchemaVersion > 1;
             if (IsReadOnly)
             {
-                Debug.LogWarning("FG SAVE meta file schema " + _current.SchemaVersion + " is newer than this build; journal is read-only this session (" + FilePath + ")");
+                long version = newerUnparsed ? newerVersion : _current.SchemaVersion;
+                Debug.LogWarning("FG SAVE meta file schema " + version + " is newer than this build; journal is read-only this session (" + FilePath + ")");
             }
 
             Debug.Log("FG SAVE loaded " + source + " " + FilePath);
@@ -159,6 +171,30 @@ namespace FishGame.Runtime
             catch (Exception)
             {
                 return null; // Load runs inside AppBootstrap.Compose: nothing may escape and stop the app from starting
+            }
+        }
+
+        // True when json is a well-formed JSON object whose integer schemaVersion is greater than 1 (matched case-insensitively, as
+        // Newtonsoft does when deserializing). Reads only the version, so it works when the rest of the file does not fit MetaSave.
+        internal static bool TryReadNewerSchemaVersion(string json, out long version)
+        {
+            version = 0;
+            if (string.IsNullOrWhiteSpace(json)) return false;
+            try
+            {
+                JObject root = JObject.Parse(json);
+                foreach (JProperty p in root.Properties())
+                {
+                    if (!string.Equals(p.Name, "schemaVersion", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (p.Value.Type != JTokenType.Integer) return false;
+                    version = (long)p.Value;
+                    return version > 1;
+                }
+                return false;
+            }
+            catch (Exception)
+            {
+                return false; // malformed, truncated or not an object: genuinely corrupt
             }
         }
 
