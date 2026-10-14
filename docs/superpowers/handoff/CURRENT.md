@@ -80,6 +80,11 @@ Also on the board:
 
 ## 10. Harbour detail pass (user, 2026-10-14) - Blender side DONE, Unity side next
 - **Polish workflow RUNNING again (run wf_f8fbbf2a-074, resumed 2026-10-14; user: rounds cover map creation + the player environment, not only details: third critic "world" lens, layout + playerSpace scores, macro-first punch list, artist may reshape terrain/areas).** Integration finished by the controller: harbour-art2 5f8ffd5 (pass-2 FBX in Unity, AmbientLife motion/lamps, Low detail toggle, grid rebaked for the tug, HarbourCapture tool; EditMode 1381/1382, PlayMode 139/139). Round-0 shots: scratchpad/harbour-polish/r0 (baseline: fog too heavy, big flat grass, sparse trees, plastic cyan water). Resume = run Workflow with scriptPath ~/.claude/projects/C--Dev-FishGame/0f9e3f02-.../workflows/scripts/harbour-polish-wf_f18c5f35-033.js (integration step replaced by its result; next: toon shader top/bottom tint, then up to 5 critic+artist rounds, pass = overall >= 8.5, no category < 7.5; final check + review; controller merges into main). Worktree C:\Dev\FishGame-harbour-art (Library copied). Unity rewrites .vscode/settings.json there: never commit it.
+- **Polish rounds (2026-10-14):**
+  - **Scores:** r1 critics 5.8 / 6.2 / 5.5 (average 5.8). After artist r1 (897c31b, 51523e9: terraced town, chapel, windmill, lookout tower stand point 12, east-basin jetty stand point 11, creek, farm hills, mafia hints), r2 critics scored 6.0 / 5.8 / 6.3.
+  - **Blockers:** scores stall on items the artist had skipped as out of bounds: water look, crown-card trees, coast/breakwater reshape, ground cover.
+  - **User decision (2026-10-14):** all four unlocked, including restyling the Lake Dock water (shared material); "best creativity".
+  - **How the unlocks reach the artist:** artist r2 was told by message; the script adds UNLOCK to artist prompts from r3. The controller restarts the run with resumeFromRunId after r2, so r1/r2 come back cached.
 - **Status (2026-10-14):** branch `harbour-art2` pushed. Commits 3bfd603 (detail pass) and dbeaf30 (fixes). Phase-1 FBX are byte-identical; the rebuild from an empty Blender is deterministic. 37 new FBX (core 149.7k tris, detail 43.2k hidden on Low) plus a `pass2` manifest block (placements, animHint, smoke/light points, ladders).
 - **Triangles (worst view):**
   - High: ~372k (22k over the old 350k aim).
