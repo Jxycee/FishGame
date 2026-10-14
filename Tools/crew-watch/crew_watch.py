@@ -32,7 +32,7 @@ def newest_run():
 def newest_shots(override):
     """Newest round folder (r0, r0b, r1, ...) that already holds PNGs, searched one level into subfolders.
     Returns (round dir, [paths relative to it, newest first])."""
-    roots = [override] if override else glob.glob(os.path.join(TEMP_ROOT, "*", "scratchpad", "harbour-polish"))
+    roots = [override] if override else glob.glob(os.path.join(TEMP_ROOT, "*", "scratchpad", "harbour-*"))
     best, best_files, best_time = None, [], -1.0
     for root in roots:
         if not (root and os.path.isdir(root)):

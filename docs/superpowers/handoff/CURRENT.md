@@ -79,6 +79,10 @@ Also on the board:
 - the online-cancel message.
 
 ## 10. Harbour detail pass (user, 2026-10-14) - DONE, merged into main 36f8abb
+- **Quality-first run (user, 2026-10-14):** "stop focusing purely on GTX 900 cards and just make the best map possible". The spec Graphics tab note was revised (53732a7): no per-view cap, Low is a best-effort fallback.
+  - Run wf_8dc74d12-0fa (script ~/.claude/projects/C--Dev-FishGame/0f9e3f02-.../workflows/scripts/harbour-best-*.js) on branch harbour-art3, worktree C:\Dev\FishGame-harbour-art.
+  - Up to 4 rounds of 3 critics + an Opus artist, pass at >= 8.5 with no category < 7.5, then a final gate. Shots: scratchpad/harbour-best/r<N>. The controller merges into main after it finishes.
+  - Never SendMessage workflow agents (memory: workflow-agent-messaging).
 - **Polish workflow RUNNING again (run wf_f8fbbf2a-074, resumed 2026-10-14; user: rounds cover map creation + the player environment, not only details: third critic "world" lens, layout + playerSpace scores, macro-first punch list, artist may reshape terrain/areas).** Integration finished by the controller: harbour-art2 5f8ffd5 (pass-2 FBX in Unity, AmbientLife motion/lamps, Low detail toggle, grid rebaked for the tug, HarbourCapture tool; EditMode 1381/1382, PlayMode 139/139). Round-0 shots: scratchpad/harbour-polish/r0 (baseline: fog too heavy, big flat grass, sparse trees, plastic cyan water). Resume = run Workflow with scriptPath ~/.claude/projects/C--Dev-FishGame/0f9e3f02-.../workflows/scripts/harbour-polish-wf_f18c5f35-033.js (integration step replaced by its result; next: toon shader top/bottom tint, then up to 5 critic+artist rounds, pass = overall >= 8.5, no category < 7.5; final check + review; controller merges into main). Worktree C:\Dev\FishGame-harbour-art (Library copied). Unity rewrites .vscode/settings.json there: never commit it.
 - **Polish rounds (2026-10-14):**
   - **Scores:** r1 critics 5.8 / 6.2 / 5.5 (average 5.8). After artist r1 (897c31b, 51523e9: terraced town, chapel, windmill, lookout tower stand point 12, east-basin jetty stand point 11, creek, farm hills, mafia hints), r2 critics scored 6.0 / 5.8 / 6.3.
