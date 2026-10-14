@@ -88,6 +88,11 @@ Also on the board:
   - **Round 2 restart (controller error):** a SendMessage to the running r2 artist cloned it. Both copies then edited the worktree, and stopping one stopped both.
     - Recovery: their work was parked in scratchpad/r2-copy-work (patches and files). The run resumed from the cache (wf_f8fbbf2a-074), and a fresh r2 artist got the unlocks, the user's dusk note and the parked work. HEAD has the local WIP commit 5086384.
     - Lesson saved to memory: never message workflow agents.
+  - **Round 2 done:** 20b9c88 + 3fd741c, pushed.
+    - Added: crown-card trees everywhere, ~8k GPU ground tufts (detail, hidden on Low), coast spit/shingle/mole/shelf, tug moved 4.2 m east and 3 m north with a 7 m gangway, creek shelter and market corner. The water is calmer (Lake Dock too; collider dump identical) and the day warmer; dusk untouched.
+    - Tests: EditMode 1388/1389 (1 skipped), PlayMode 139/139. Worst views: Low 325k, High 495k.
+    - r3 critics: 6.5 / 6.8 / 6.8, average 6.7 (up from 6.0). Layout is stuck at 5.5.
+    - Run resumed again so artist r3 gets PERF3.
   - **Perf research** (docs/superpowers/research/2026-10-14-friendslop-graphics-settings.md, user: follow the average):
     - Low budget 500k triangles per view, plus renderer, shadow-caster and alpha-coverage audits. This is PERF3 in the script from r3; the controller restarts the run after r2 to apply it.
     - Presets change to make after the workflow, on harbour-art2: Medium shadow tier 50 m/2048/2; Low 35 m; High 120 m/2048/3 cascades; extra lights 3/4/8; FSR on Low; LOD bias 0.7/1.0/1.5.
