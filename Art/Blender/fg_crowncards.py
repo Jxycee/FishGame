@@ -14,7 +14,7 @@
 import math, os, random, zlib
 import numpy as np
 
-ROOT = r'C:\Dev\FishGame-harbour-art'
+ROOT = os.environ.get('FG_ROOT') or os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))   # repo root, wherever the branch is checked out
 OUT = os.path.join(ROOT, 'Assets', '_Project', 'Content', 'Textures', 'T_CrownCards.png')
 SIZE = 1024
 SEED = 0xC40C0C5

@@ -20,7 +20,22 @@
 import bpy, bmesh, math, json, os, zlib, random
 from mathutils import Vector, Matrix, noise
 
-ROOT = r'C:\Dev\FishGame-harbour-art'
+# Repo root: FG_ROOT, else two levels above this file (when run with --python), else the repo above the working directory (a script exec'd in
+# Blender has no __file__), else the main checkout. Never a worktree path: the generator must work wherever the branch is checked out.
+def _repo_root():
+    if os.environ.get('FG_ROOT'):
+        return os.environ['FG_ROOT']
+    if '__file__' in globals():
+        return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    d = os.getcwd()
+    while True:
+        if os.path.exists(os.path.join(d, 'Art', 'Blender', 'fg_harbour.py')):
+            return d
+        if os.path.dirname(d) == d:
+            return r'C:\Dev\FishGame'
+        d = os.path.dirname(d)
+
+ROOT = _repo_root()
 EXPORT_DIR = os.path.join(ROOT, 'Art', 'Export', 'Harbour')
 SCRIPT_PATH = os.path.join(ROOT, 'Art', 'Blender', 'fg_harbour.py')
 MANIFEST_PATH = os.path.join(EXPORT_DIR, 'harbour_manifest.json')
