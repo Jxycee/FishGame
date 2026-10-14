@@ -65,14 +65,16 @@ namespace FishGame.EditorTools
 
         // Round 1: the river ribbon (with the creek and the tide pools) draws with M_Water_Creek (no shore-foam band: it sits cm over the land).
         static Material MaterialFor(HarbourPierLayout.VisualModel visual, ArtAssets art) =>
-            visual.MeshName == "Harbour_Core_River" ? art.Creek : visual.Cards ? art.Foliage : visual.Triplanar ? art.ToonTri : art.Toon;
+            visual.MeshName == "Harbour_Core_River" ? art.Creek : visual.MeshName == HarbourPierLayout.WaterfallModel ? art.Waterfall
+            : visual.Cards ? art.Foliage : visual.Triplanar ? art.ToonTri : art.Toon;
 
         // Flat ground ribbons, the river and the small low dressing cast nothing worth a shadow pass (GTX 900 budget).
         static bool CastsShadows(string meshName) =>
             meshName != "Harbour_Core_River" && meshName != "Harbour_Core_Paths" && meshName != "Harbour_Detail_Plants_A" && meshName != "Harbour_Detail_Plants_B"
             && meshName != "Harbour_Detail_Reeds" && meshName != "Harbour_Detail_TidePools_Tri" && meshName != "Harbour_Detail_Shore" && meshName != "Harbour_Detail_Lights"
             && meshName != "Harbour_Detail_Terraces" && meshName != "Harbour_Detail_Anim_GullFly" && meshName != "Harbour_Detail_StorySigns"
-            && meshName != "Harbour_Detail_Anim_Duck" && meshName != "Harbour_Detail_Anim_Crab";
+            && meshName != "Harbour_Detail_Anim_Duck" && meshName != "Harbour_Detail_Anim_Crab"
+            && meshName != HarbourPierLayout.WaterfallModel;   // round 4: running water casts no shadow
 
         // World models of one parent at the origin (collision models get a MeshCollider only); returns the root.
         static GameObject AddWorldModels(ArtAssets art, string rootName, int layer)
@@ -258,6 +260,12 @@ namespace FishGame.EditorTools
                         case "Crab": life.Move(go.transform, AmbientLife.MotionKind.Gull, 50f); break;
                         case "Cat": life.Move(go.transform, AmbientLife.MotionKind.Gull, 30f); break;
                         case "Laundry": life.Move(go.transform, AmbientLife.MotionKind.Sway, 9f, PrincipalAxisXZ(mesh)); break;
+                        // round 4: villagers (idle or strolling), the dog, hens and the goat
+                        case "Villager": life.Move(go.transform, AmbientLife.MotionKind.Idle, 28f); break;
+                        case "Walker": life.Move(go.transform, AmbientLife.MotionKind.Walk, p.radius > 0f ? p.radius : 5f); break;
+                        case "Dog": life.Move(go.transform, AmbientLife.MotionKind.Walk, p.radius > 0f ? p.radius : 3f); break;
+                        case "Hen": life.Move(go.transform, AmbientLife.MotionKind.Gull, 45f); break;
+                        case "Goat": life.Move(go.transform, AmbientLife.MotionKind.Gull, 25f); break;
                         default: throw new System.InvalidOperationException("no motion for the local detail model " + visual.MeshName);
                     }
                 }
@@ -324,6 +332,7 @@ namespace FishGame.EditorTools
             const int sides = 8;
             var verts = new List<Vector3>();
             var normals = new List<Vector3>();
+            var colors = new List<Color>();   // round 4: r = 1 at the lamp, 0 at the far end (LampGlow _BeamFade)
             var tris = new List<int>();
             foreach (float dir in both ? new[] { 1f, -1f } : new[] { 1f })
             {
@@ -332,8 +341,8 @@ namespace FishGame.EditorTools
                 {
                     float a = i * Mathf.PI * 2f / sides;
                     var n = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f);
-                    verts.Add(n * r0); normals.Add(n);
-                    verts.Add(n * r1 + new Vector3(0f, 0f, length * dir)); normals.Add(n);
+                    verts.Add(n * r0); normals.Add(n); colors.Add(Color.white);
+                    verts.Add(n * r1 + new Vector3(0f, 0f, length * dir)); normals.Add(n); colors.Add(new Color(0f, 0f, 0f, 1f));
                 }
                 for (int i = 0; i < sides; i++)
                 {
@@ -345,6 +354,7 @@ namespace FishGame.EditorTools
             var mesh = new Mesh { name = name };
             mesh.SetVertices(verts);
             mesh.SetNormals(normals);
+            mesh.SetColors(colors);
             mesh.SetTriangles(tris, 0);
             mesh.RecalculateBounds();
             return mesh;
@@ -364,9 +374,10 @@ namespace FishGame.EditorTools
                 go.transform.SetParent(onTug ? hull : root.transform, false);
                 go.transform.localPosition = HarbourPierManifest.ToVector(sp.position);
                 go.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);   // the cone's +z points up
-                bool wisp = sp.name.StartsWith("Campfire", System.StringComparison.Ordinal);
+                bool wisp = sp.name.StartsWith("Campfire", System.StringComparison.Ordinal) || sp.name.StartsWith("Cigarette", System.StringComparison.Ordinal);
+                bool mist = sp.name.StartsWith("Mist", System.StringComparison.Ordinal);   // round 4: the spray at the foot of the West Head fall
                 bool far = go.transform.position.magnitude > 80f;
-                life.Smoke.Add(AddSmokeSystem(go, art.Smoke, (uint)(1001 + i), wisp ? 0.45f : (far ? 1.8f : 1f), wisp ? 0.6f : 1f));
+                life.Smoke.Add(AddSmokeSystem(go, art.Smoke, (uint)(1001 + i), mist ? 2.6f : (wisp ? 0.45f : (far ? 1.8f : 1f)), mist ? 3f : (wisp ? 0.6f : 1f)));
             }
         }
 

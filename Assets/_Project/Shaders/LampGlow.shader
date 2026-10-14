@@ -4,6 +4,9 @@
 // the wires and posts of the same mesh draw nothing. _Slot < 0 makes every vertex glow (the glow spheres, whose meshes carry no uv1).
 // Brightness = _GlowColor * _GlowBoost * _FGLampGlow (DayNightMath.LampGlow, pushed by DayNightController; 0 by day, so nothing draws by day).
 // The vertices are pushed out along the normal by _Inflate metres so the glow wraps the lit surface. Fog fades the glow to black (additive).
+// Harbour round 4 (2026-10-18, critics: "the searchlight reads as a hard translucent triangle, a glitch"): with _BeamFade 1 (the beams) the glow
+// fades along the beam (vertex colour r: 1 at the lamp, 0 at the far end) and toward the cone's silhouette (normal across the view), so a beam
+// is a soft shaft of light, not a flat wedge. Off (0): unchanged.
 Shader "FishGame/LampGlow"
 {
     Properties
@@ -12,6 +15,7 @@ Shader "FishGame/LampGlow"
         _GlowBoost("Glow Boost", Range(0, 8)) = 2.5
         _Slot("Palette Slot That Glows (-1 = all)", Float) = 10
         _Inflate("Inflate (m)", Float) = 0.012
+        _BeamFade("Beam Fade (length and silhouette)", Range(0, 1)) = 0
     }
 
     SubShader
@@ -40,6 +44,7 @@ Shader "FishGame/LampGlow"
                 half _GlowBoost;
                 float _Slot;
                 float _Inflate;
+                half _BeamFade;
             CBUFFER_END
 
             float _FGLampGlow;
@@ -49,12 +54,14 @@ Shader "FishGame/LampGlow"
                 float4 positionOS : POSITION;
                 float3 normalOS   : NORMAL;
                 float4 uv1        : TEXCOORD1;
+                half4  color      : COLOR;
             };
 
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
                 half   fogFactor  : TEXCOORD0;
+                half   fade       : TEXCOORD1;
             };
 
             Varyings GlowVert(Attributes input)
@@ -65,12 +72,16 @@ Shader "FishGame/LampGlow"
                 float4 clip = TransformObjectToHClip(p);
                 o.positionCS = on > 0.5 ? clip : float4(0.0, 0.0, -2.0, 1.0);   // outside the clip volume: the triangle is culled
                 o.fogFactor = FG_FogFactor(clip.z);
+                float3 nW = TransformObjectToWorldNormal(input.normalOS);
+                float3 vW = normalize(_WorldSpaceCameraPos - TransformObjectToWorld(p));
+                half side = (half)saturate(abs(dot(nW, vW)) * 1.6);
+                o.fade = lerp(1.0h, input.color.r * side * side, _BeamFade);
                 return o;
             }
 
             half4 GlowFrag(Varyings input) : SV_Target
             {
-                half3 rgb = _GlowColor.rgb * (_GlowBoost * saturate(_FGLampGlow));
+                half3 rgb = _GlowColor.rgb * (_GlowBoost * saturate(_FGLampGlow) * input.fade);
                 return half4(MixFogColor(rgb, half3(0.0h, 0.0h, 0.0h), input.fogFactor), 1.0h);
             }
             ENDHLSL

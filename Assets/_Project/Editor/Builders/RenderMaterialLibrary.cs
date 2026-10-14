@@ -145,8 +145,10 @@ namespace FishGame.EditorTools
             // land. On M_Water_Surface their whole width is inside the shore-foam band and they drew as white strips; here the foam band is gone and
             // the depth range is a few cm, so they read as clear shallow water over the bed.
             Material creek = EnsureMaterial("M_Water_Creek", RequireShader("FishGame/Water"), out bool creekChanged);
-            creekChanged |= SetColor(creek, Shader.PropertyToID("_ShallowColor"), water.ShallowColor);
-            creekChanged |= SetColor(creek, Shader.PropertyToID("_DeepColor"), water.DeepColor);
+            // Harbour round 4 (2026-10-18, critics: "a pale turquoise strip lying on the lawn"): a deeper green-teal, a little clearer, over the dark
+            // gravel bed the creek and the river now run on (fg_harbour.py build_glen), so they read as running water in a bed, not paint.
+            creekChanged |= SetColor(creek, Shader.PropertyToID("_ShallowColor"), new Color(0.16f, 0.50f, 0.46f, 0.6f));
+            creekChanged |= SetColor(creek, Shader.PropertyToID("_DeepColor"), new Color(0.05f, 0.27f, 0.33f, 0.92f));
             foreach (var p in WaterLook) creekChanged |= SetFloat(creek, Shader.PropertyToID(p.Key), p.Value);
             creekChanged |= SetFloat(creek, Shader.PropertyToID("_DepthRange"), 0.16f);
             creekChanged |= SetFloat(creek, Shader.PropertyToID("_FoamWidth"), 0.001f);
@@ -168,6 +170,10 @@ namespace FishGame.EditorTools
             harbourChanged |= SetColor(harbour, Shader.PropertyToID("_ZoneDeep"), new Color(0.1f, 0.52f, 0.52f, 0.95f));
             harbourChanged |= SetFloat(harbour, Shader.PropertyToID("_SolidShade"), 0.3f);
             if (harbourChanged) EditorUtility.SetDirty(harbour);
+
+            // Harbour round 4: the West Head brook and its fall (FishGame/Waterfall, shader defaults: streaks scrolled by _WaterTime).
+            Material fall = EnsureMaterial("M_Waterfall", RequireShader("FishGame/Waterfall"), out bool fallChanged);
+            if (fallChanged) EditorUtility.SetDirty(fall);
 
             Material line = EnsureMaterial("M_Line", RequireShader("FishGame/Line"), out bool lineChanged);   // shader defaults
             if (lineChanged) EditorUtility.SetDirty(line);
@@ -200,7 +206,8 @@ namespace FishGame.EditorTools
             Material beam = EnsureMaterial("M_BeaconBeam", glowShader, out bool beamChanged);   // the lighthouse's sweeping beam: faint, every vertex
             beamChanged |= SetFloat(beam, Shader.PropertyToID("_Slot"), -1f);
             beamChanged |= SetFloat(beam, Shader.PropertyToID("_Inflate"), 0f);
-            beamChanged |= SetFloat(beam, Shader.PropertyToID("_GlowBoost"), 0.22f);
+            beamChanged |= SetFloat(beam, Shader.PropertyToID("_GlowBoost"), 0.42f);   // round 4: brighter at the lamp, faded along and at the edges
+            beamChanged |= SetFloat(beam, Shader.PropertyToID("_BeamFade"), 1f);
             beamChanged |= SetColor(beam, Shader.PropertyToID("_GlowColor"), new Color(1.0f, 0.9f, 0.7f, 1f));
             beamChanged |= SetQueue(beam, 3060);
             if (beamChanged) EditorUtility.SetDirty(beam);

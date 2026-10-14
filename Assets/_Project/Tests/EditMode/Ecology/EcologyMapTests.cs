@@ -524,9 +524,10 @@ namespace FishGame.Tests.EditMode
                 GameObject stands = Root(scene, "StandPoints");
                 Assert.That(stands, Is.Not.Null, "StandPoints root");
                 IReadOnlyList<Vector4> layout = HarbourPierLayout.StandPoints;
-                // 13 since harbour round 1 (2026-10-15): + the east jetty head and the lookout tower deck; 14 since round 3: + the West Horn's tip
-                Assert.That(layout.Count, Is.EqualTo(14));
-                Assert.That(stands.transform.childCount, Is.EqualTo(14), "StandPoints children");
+                // 13 since harbour round 1 (2026-10-15): + the east jetty head and the lookout tower deck; 14 since round 3: + the West Horn's tip;
+                // 15 since round 4: + the East Ledge
+                Assert.That(layout.Count, Is.EqualTo(15));
+                Assert.That(stands.transform.childCount, Is.EqualTo(15), "StandPoints children");
                 for (int i = 0; i < layout.Count; i++)
                 {
                     Transform t = stands.transform.Find("StandPoint_" + i);

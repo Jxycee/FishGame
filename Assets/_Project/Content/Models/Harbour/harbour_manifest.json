@@ -3927,8 +3927,8 @@
    "name": "Harbour_Core_Dunes_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Dunes_Tri.fbx",
    "group": "core",
-   "triangles": 4840,
-   "vertices": 2780,
+   "triangles": 5198,
+   "vertices": 2987,
    "bounds_min": [
     -60.5,
     1.14,
@@ -3943,18 +3943,20 @@
    "material": "M_Toon_Tri",
    "slots": [
     0,
+    4,
     6
    ],
    "layers": [
     1,
+    5,
     6
    ],
    "local_space": false,
    "items": [],
    "max_slope_deg": 84.2,
    "groundcover_counts": {
-    "grass": 5104,
-    "grass_dry": 1406,
+    "grass": 5096,
+    "grass_dry": 1450,
     "flower_white": 270,
     "flower_orange": 172,
     "flower_red": 190,
@@ -3965,8 +3967,8 @@
    "name": "Harbour_Dunes_Col",
    "file": "Art/Export/Harbour/Harbour_Dunes_Col.fbx",
    "group": "col",
-   "triangles": 6712,
-   "vertices": 3805,
+   "triangles": 7496,
+   "vertices": 4266,
    "bounds_min": [
     -65.7222,
     -9.3,
@@ -3996,8 +3998,8 @@
    "name": "Harbour_Core_Coast_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Coast_Tri.fbx",
    "group": "core",
-   "triangles": 8950,
-   "vertices": 5105,
+   "triangles": 9184,
+   "vertices": 5230,
    "bounds_min": [
     -65.6059,
     -9.3,
@@ -4062,7 +4064,7 @@
    "name": "Harbour_Core_Hills_A_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Hills_A_Tri.fbx",
    "group": "core",
-   "triangles": 4168,
+   "triangles": 4172,
    "vertices": 2249,
    "bounds_min": [
     -200.5,
@@ -4079,15 +4081,13 @@
    "slots": [
     0,
     1,
-    5,
     6,
     7,
-    8
+    15
    ],
    "layers": [
     1,
     2,
-    5,
     6
    ],
    "local_space": false,
@@ -4097,8 +4097,8 @@
    "name": "Harbour_Core_Hills_B_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Hills_B_Tri.fbx",
    "group": "core",
-   "triangles": 4574,
-   "vertices": 2427,
+   "triangles": 4576,
+   "vertices": 2428,
    "bounds_min": [
     0.0,
     1.14,
@@ -4114,15 +4114,13 @@
    "slots": [
     0,
     1,
-    5,
     6,
     7,
-    8
+    15
    ],
    "layers": [
     1,
     2,
-    5,
     6
    ],
    "local_space": false,
@@ -4132,17 +4130,17 @@
    "name": "Harbour_Core_River",
    "file": "Art/Export/Harbour/Harbour_Core_River.fbx",
    "group": "core",
-   "triangles": 1036,
-   "vertices": 674,
+   "triangles": 996,
+   "vertices": 649,
    "bounds_min": [
     -168.88,
-    -0.2766,
+    -0.1086,
     -138.1068
    ],
    "bounds_max": [
-    60.92,
+    60.85,
     1.26,
-    -35.1718
+    -39.628
    ],
    "triplanar": false,
    "material": "M_Water_Creek (water without the shore-foam band, not toon): the river the crew came down, the creek, the tide pools",
@@ -4160,17 +4158,17 @@
    "name": "Harbour_Core_Cliffs_West_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Cliffs_West_Tri.fbx",
    "group": "core",
-   "triangles": 6412,
-   "vertices": 3398,
+   "triangles": 6092,
+   "vertices": 3230,
    "bounds_min": [
     -116.0176,
-    -3.3742,
-    -80.0532
+    -3.7637,
+    -80.0482
    ],
    "bounds_max": [
     -83.9018,
-    13.1692,
-    37.6134
+    14.6357,
+    36.964
    ],
    "triplanar": true,
    "material": "M_Toon_Tri",
@@ -4180,6 +4178,7 @@
    ],
    "layers": [
     1,
+    5,
     6
    ],
    "local_space": false,
@@ -4192,14 +4191,14 @@
    "triangles": 7900,
    "vertices": 4182,
    "bounds_min": [
-    59.6633,
-    -3.1955,
+    58.8109,
+    -3.3695,
     -80.0
    ],
    "bounds_max": [
     101.9037,
-    12.0643,
-    51.037
+    13.1781,
+    51.9415
    ],
    "triplanar": true,
    "material": "M_Toon_Tri",
@@ -4209,6 +4208,7 @@
    ],
    "layers": [
     1,
+    5,
     6
    ],
    "local_space": false,
@@ -4221,18 +4221,19 @@
    "triangles": 4128,
    "vertices": 2655,
    "bounds_min": [
-    -56.9394,
+    -51.9006,
     1.16,
     -106.4
    ],
    "bounds_max": [
-    46.1684,
+    57.1401,
     6.785,
-    -55.6211
+    -55.5974
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
    "slots": [
+    3,
     5,
     7
    ],
@@ -4271,6 +4272,7 @@
    "layers": [
     0,
     3,
+    5,
     6,
     7
    ],
@@ -6099,6 +6101,7 @@
    ],
    "layers": [
     0,
+    5,
     6
    ],
    "local_space": false,
@@ -6128,7 +6131,8 @@
     4,
     5,
     6,
-    7
+    7,
+    8
    ],
    "layers": [
     0,
@@ -6153,7 +6157,7 @@
    "vertices": 8256,
    "bounds_min": [
     -179.6638,
-    1.2077,
+    -0.647,
     -179.2053
    ],
    "bounds_max": [
@@ -6185,7 +6189,7 @@
    "vertices": 17552,
    "bounds_min": [
     -183.6718,
-    3.6219,
+    0.7775,
     -183.5986
    ],
    "bounds_max": [
@@ -6217,12 +6221,12 @@
    "vertices": 542,
    "bounds_min": [
     -143.6378,
-    10.9444,
+    10.3549,
     -65.2664
    ],
    "bounds_max": [
     126.8998,
-    18.5794,
+    17.8103,
     18.8064
    ],
    "triplanar": true,
@@ -6317,7 +6321,7 @@
      "name": "KeeperCottageChimney",
      "position": [
       96.2,
-      16.93,
+      17.62,
       31.2
      ]
     },
@@ -6343,7 +6347,7 @@
      "name": "LighthouseLamp",
      "position": [
       92.0,
-      24.84,
+      24.68,
       41.0
      ],
      "animHint": "beacon"
@@ -7052,12 +7056,12 @@
    "bounds_min": [
     -57.1797,
     3.64,
-    -95.1405
+    -95.3301
    ],
    "bounds_max": [
     52.35,
     7.07,
-    -81.5825
+    -81.3791
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -10979,8 +10983,8 @@
    "name": "Harbour_Detail_Plants_A",
    "file": "Art/Export/Harbour/Harbour_Detail_Plants_A.fbx",
    "group": "detail",
-   "triangles": 12886,
-   "vertices": 19057,
+   "triangles": 12922,
+   "vertices": 19129,
    "bounds_min": [
     -59.8367,
     1.151,
@@ -11027,8 +11031,8 @@
    "name": "Harbour_Detail_Plants_B",
    "file": "Art/Export/Harbour/Harbour_Detail_Plants_B.fbx",
    "group": "detail",
-   "triangles": 13478,
-   "vertices": 20290,
+   "triangles": 13412,
+   "vertices": 20158,
    "bounds_min": [
     -0.1074,
     1.1579,
@@ -11324,31 +11328,28 @@
    "name": "Harbour_Detail_Reeds",
    "file": "Art/Export/Harbour/Harbour_Detail_Reeds.fbx",
    "group": "detail",
-   "triangles": 4358,
-   "vertices": 7128,
+   "triangles": 4606,
+   "vertices": 8088,
    "bounds_min": [
     -162.2071,
-    0.1409,
+    0.1512,
     -136.9516
    ],
    "bounds_max": [
-    -53.678,
+    -53.4151,
     2.8495,
-    -46.2402
+    -46.2959
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
    "slots": [
-    3,
     4,
     6,
-    7,
-    8
+    7
    ],
    "layers": [
     0,
     1,
-    3,
     6
    ],
    "local_space": false,
@@ -12109,17 +12110,17 @@
    "name": "Harbour_Detail_Moorings",
    "file": "Art/Export/Harbour/Harbour_Detail_Moorings.fbx",
    "group": "detail",
-   "triangles": 4934,
-   "vertices": 2805,
+   "triangles": 3192,
+   "vertices": 1880,
    "bounds_min": [
     52.8805,
-    -0.5197,
+    -0.121,
     -43.2112
    ],
    "bounds_max": [
-    59.75,
-    4.9999,
-    -36.3541
+    57.23,
+    1.91,
+    -36.89
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -12128,7 +12129,6 @@
     3,
     4,
     5,
-    6,
     8,
     10
    ],
@@ -13005,8 +13005,8 @@
    "triangles": 17407,
    "vertices": 19063,
    "bounds_min": [
-    -57.95,
-    0.95,
+    -56.35,
+    0.9899,
     -112.6514
    ],
    "bounds_max": [
@@ -13379,7 +13379,7 @@
      "collider": "box",
      "position": [
       -52.3,
-      2.229,
+      2.749,
       -54.469
      ],
      "footprint": [
@@ -13389,12 +13389,12 @@
      ],
      "bounds_min": [
       -53.304,
-      1.004,
+      1.524,
       -55.0
      ],
      "bounds_max": [
       -51.297,
-      3.454,
+      3.974,
       -53.938
      ]
     },
@@ -13402,9 +13402,9 @@
      "name": "ShelterPost_0",
      "collider": "box",
      "position": [
-      -55.995,
-      2.275,
-      -55.2
+      -54.395,
+      2.693,
+      -54.2
      ],
      "footprint": [
       0.209,
@@ -13412,23 +13412,23 @@
       0.214
      ],
      "bounds_min": [
-      -56.099,
-      0.95,
-      -55.307
+      -54.499,
+      1.368,
+      -54.307
      ],
      "bounds_max": [
-      -55.89,
-      3.6,
-      -55.093
+      -54.29,
+      4.018,
+      -54.093
      ]
     },
     {
      "name": "ShelterPost_1",
      "collider": "box",
      "position": [
-      -55.995,
-      2.275,
-      -58.8
+      -54.395,
+      2.693,
+      -57.8
      ],
      "footprint": [
       0.209,
@@ -13436,23 +13436,23 @@
       0.214
      ],
      "bounds_min": [
-      -56.099,
-      0.95,
-      -58.907
+      -54.499,
+      1.368,
+      -57.907
      ],
      "bounds_max": [
-      -55.89,
-      3.6,
-      -58.693
+      -54.29,
+      4.018,
+      -57.693
      ]
     },
     {
      "name": "ShelterPost_2",
      "collider": "box",
      "position": [
-      -53.195,
-      2.275,
-      -58.8
+      -51.595,
+      2.693,
+      -57.8
      ],
      "footprint": [
       0.209,
@@ -13460,23 +13460,23 @@
       0.214
      ],
      "bounds_min": [
-      -53.299,
-      0.95,
-      -58.907
+      -51.699,
+      1.368,
+      -57.907
      ],
      "bounds_max": [
-      -53.09,
-      3.6,
-      -58.693
+      -51.49,
+      4.018,
+      -57.693
      ]
     },
     {
      "name": "ShelterPost_3",
      "collider": "box",
      "position": [
-      -53.195,
-      2.275,
-      -55.2
+      -51.595,
+      2.693,
+      -54.2
      ],
      "footprint": [
       0.209,
@@ -13484,23 +13484,23 @@
       0.214
      ],
      "bounds_min": [
-      -53.299,
-      0.95,
-      -55.307
+      -51.699,
+      1.368,
+      -54.307
      ],
      "bounds_max": [
-      -53.09,
-      3.6,
-      -55.093
+      -51.49,
+      4.018,
+      -54.093
      ]
     },
     {
      "name": "PicnicTable",
      "collider": "box",
      "position": [
-      -54.6,
-      1.588,
-      -57.0
+      -53.0,
+      2.006,
+      -56.0
      ],
      "footprint": [
       0.8,
@@ -13508,23 +13508,23 @@
       1.8
      ],
      "bounds_min": [
-      -55.0,
-      1.2,
-      -57.9
+      -53.4,
+      1.618,
+      -56.9
      ],
      "bounds_max": [
-      -54.2,
-      1.975,
-      -56.1
+      -52.6,
+      2.393,
+      -55.1
      ]
     },
     {
      "name": "PicnicBench_0",
      "collider": "box",
      "position": [
-      -55.35,
-      1.435,
-      -57.0
+      -53.75,
+      1.853,
+      -56.0
      ],
      "footprint": [
       0.3,
@@ -13532,23 +13532,23 @@
       1.8
      ],
      "bounds_min": [
-      -55.5,
-      1.2,
-      -57.9
+      -53.9,
+      1.618,
+      -56.9
      ],
      "bounds_max": [
-      -55.2,
-      1.67,
-      -56.1
+      -53.6,
+      2.088,
+      -55.1
      ]
     },
     {
      "name": "PicnicBench_1",
      "collider": "box",
      "position": [
-      -53.85,
-      1.435,
-      -57.0
+      -52.25,
+      1.853,
+      -56.0
      ],
      "footprint": [
       0.3,
@@ -13556,23 +13556,23 @@
       1.8
      ],
      "bounds_min": [
-      -54.0,
-      1.2,
-      -57.9
+      -52.4,
+      1.618,
+      -56.9
      ],
      "bounds_max": [
-      -53.7,
-      1.67,
-      -56.1
+      -52.1,
+      2.088,
+      -55.1
      ]
     },
     {
      "name": "RodRack",
      "collider": "box",
      "position": [
-      -56.207,
-      2.525,
-      -57.0
+      -54.607,
+      2.943,
+      -56.0
      ],
      "footprint": [
       0.254,
@@ -13580,23 +13580,23 @@
       1.6
      ],
      "bounds_min": [
-      -56.334,
-      1.245,
-      -57.8
+      -54.734,
+      1.663,
+      -56.8
      ],
      "bounds_max": [
-      -56.08,
-      3.805,
-      -56.2
+      -54.48,
+      4.223,
+      -55.2
      ]
     },
     {
      "name": "ShelterLantern",
      "collider": "none",
      "position": [
-      -54.6,
-      3.85,
-      -57.9
+      -53.0,
+      4.268,
+      -56.9
      ],
      "footprint": [
       0.3,
@@ -13604,19 +13604,19 @@
       0.3
      ],
      "bounds_min": [
-      -54.75,
-      3.69,
-      -58.05
+      -53.15,
+      4.108,
+      -57.05
      ],
      "bounds_max": [
-      -54.45,
-      4.05,
-      -57.75
+      -52.85,
+      4.468,
+      -56.75
      ],
      "light": [
-      -54.6,
-      3.85,
-      -57.9
+      -53.0,
+      4.268,
+      -56.9
      ]
     },
     {
@@ -13903,7 +13903,7 @@
    ],
    "bounds_max": [
     29.5512,
-    3.192,
+    3.7123,
     -33.8013
    ],
    "triplanar": false,
@@ -14981,6 +14981,1299 @@
    "local_space": false,
    "items": [],
    "note": "Round 3: setts over the breakwater walk (visual; the walkable top is the phase-1 box at y 1.5)."
+  },
+  {
+   "name": "Harbour_Core_Glen_Tri",
+   "file": "Art/Export/Harbour/Harbour_Core_Glen_Tri.fbx",
+   "group": "core",
+   "triangles": 1852,
+   "vertices": 1094,
+   "bounds_min": [
+    -99.9383,
+    0.1023,
+    -99.9589
+   ],
+   "bounds_max": [
+    -47.5,
+    2.6917,
+    -46.1029
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    0,
+    4,
+    6
+   ],
+   "layers": [
+    1,
+    5
+   ],
+   "local_space": false,
+   "items": [],
+   "note": "Round 4: the creek glen's earth banks between z -59.5 and the beach (the dunes mesh draws them behind z -59.5)."
+  },
+  {
+   "name": "Harbour_Detail_Glen",
+   "file": "Art/Export/Harbour/Harbour_Detail_Glen.fbx",
+   "group": "detail",
+   "triangles": 3402,
+   "vertices": 2052,
+   "bounds_min": [
+    -60.1239,
+    0.5137,
+    -70.154
+   ],
+   "bounds_max": [
+    -54.5333,
+    3.1331,
+    -49.3704
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    2,
+    6,
+    11,
+    15
+   ],
+   "layers": [
+    0,
+    1,
+    6
+   ],
+   "local_space": false,
+   "items": [],
+   "note": "Round 4: the creek glen's stones (in the bed and at the foot of the banks), ferns and flowers on the bank tops. No colliders."
+  },
+  {
+   "name": "Harbour_Core_Waterfall",
+   "file": "Art/Export/Harbour/Harbour_Core_Waterfall.fbx",
+   "group": "core",
+   "triangles": 368,
+   "vertices": 240,
+   "bounds_min": [
+    -121.5618,
+    -0.35,
+    -61.2107
+   ],
+   "bounds_max": [
+    -98.0675,
+    11.63,
+    -19.879
+   ],
+   "triplanar": false,
+   "material": "M_Waterfall (FishGame/Waterfall: uv0 = across, metres along the flow)",
+   "slots": [
+    5
+   ],
+   "layers": [
+    0
+   ],
+   "local_space": false,
+   "items": [],
+   "note": "Round 4: the West Head brook and its 8 m fall into the sea (visual, outside the walls; no collider, no shadows).",
+   "smoke_points": [
+    {
+     "name": "MistFall",
+     "position": [
+      -97.98,
+      0.4,
+      -22.31
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Harbour_Core_FallRocks_Tri",
+   "file": "Art/Export/Harbour/Harbour_Core_FallRocks_Tri.fbx",
+   "group": "core",
+   "triangles": 1840,
+   "vertices": 984,
+   "bounds_min": [
+    -122.2038,
+    -0.5103,
+    -60.9697
+   ],
+   "bounds_max": [
+    -94.1827,
+    11.7427,
+    -19.8313
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    6,
+    11
+   ],
+   "layers": [
+    0,
+    6
+   ],
+   "local_space": false,
+   "items": [],
+   "note": "Round 4: the waterfall plunge - foam puffs (white) and wet rocks at its foot, boulders along the brook. Visual, outside the walls."
+  },
+  {
+   "name": "Harbour_Core_Reef_Tri",
+   "file": "Art/Export/Harbour/Harbour_Core_Reef_Tri.fbx",
+   "group": "core",
+   "triangles": 4978,
+   "vertices": 2568,
+   "bounds_min": [
+    -39.5037,
+    -2.2921,
+    5.6705
+   ],
+   "bounds_max": [
+    17.6001,
+    5.8351,
+    29.5954
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    9
+   ],
+   "layers": [
+    3,
+    6
+   ],
+   "local_space": false,
+   "items": [],
+   "note": "Round 4: the reef off the pier - rock stacks and a half-sunk fishing boat, beyond every lane and cast; visual only (no collider)."
+  },
+  {
+   "name": "Harbour_Detail_Reef",
+   "file": "Art/Export/Harbour/Harbour_Detail_Reef.fbx",
+   "group": "detail",
+   "triangles": 990,
+   "vertices": 1320,
+   "bounds_min": [
+    -36.6075,
+    0.02,
+    2.222
+   ],
+   "bounds_max": [
+    17.3825,
+    0.02,
+    31.3186
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    2,
+    7
+   ],
+   "layers": [
+    2
+   ],
+   "local_space": false,
+   "items": [],
+   "note": "Round 4: kelp mats at the surface round the reef stacks. No colliders."
+  },
+  {
+   "name": "Harbour_Core_EastLedge_Tri",
+   "file": "Art/Export/Harbour/Harbour_Core_EastLedge_Tri.fbx",
+   "group": "core",
+   "triangles": 1286,
+   "vertices": 738,
+   "bounds_min": [
+    56.0903,
+    -1.3197,
+    -46.0719
+   ],
+   "bounds_max": [
+    65.3966,
+    3.8745,
+    -28.9104
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    4,
+    6,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    6
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "LedgeBoulder_0",
+     "collider": "box",
+     "position": [
+      57.345,
+      -0.266,
+      -45.166
+     ],
+     "footprint": [
+      1.75,
+      0.955,
+      1.685
+     ],
+     "bounds_min": [
+      56.47,
+      -0.744,
+      -46.009
+     ],
+     "bounds_max": [
+      58.219,
+      0.211,
+      -44.324
+     ]
+    },
+    {
+     "name": "LedgeBoulder_1",
+     "collider": "box",
+     "position": [
+      57.15,
+      -0.307,
+      -43.037
+     ],
+     "footprint": [
+      2.12,
+      1.151,
+      1.839
+     ],
+     "bounds_min": [
+      56.09,
+      -0.883,
+      -43.957
+     ],
+     "bounds_max": [
+      58.21,
+      0.268,
+      -42.118
+     ]
+    },
+    {
+     "name": "LedgeBoulder_2",
+     "collider": "box",
+     "position": [
+      57.314,
+      -0.255,
+      -40.808
+     ],
+     "footprint": [
+      1.641,
+      0.898,
+      1.552
+     ],
+     "bounds_min": [
+      56.493,
+      -0.704,
+      -41.584
+     ],
+     "bounds_max": [
+      58.134,
+      0.194,
+      -40.032
+     ]
+    },
+    {
+     "name": "LedgeBoulder_3",
+     "collider": "box",
+     "position": [
+      57.428,
+      -0.269,
+      -38.969
+     ],
+     "footprint": [
+      1.617,
+      1.024,
+      1.846
+     ],
+     "bounds_min": [
+      56.62,
+      -0.781,
+      -39.892
+     ],
+     "bounds_max": [
+      58.237,
+      0.243,
+      -38.046
+     ]
+    },
+    {
+     "name": "LedgeBoulder_4",
+     "collider": "box",
+     "position": [
+      62.186,
+      -0.34,
+      -38.157
+     ],
+     "footprint": [
+      1.934,
+      1.243,
+      2.251
+     ],
+     "bounds_min": [
+      61.219,
+      -0.962,
+      -39.282
+     ],
+     "bounds_max": [
+      63.153,
+      0.281,
+      -37.032
+     ]
+    },
+    {
+     "name": "LedgeBoulder_5",
+     "collider": "box",
+     "position": [
+      62.307,
+      -0.313,
+      -41.635
+     ],
+     "footprint": [
+      1.905,
+      1.154,
+      1.892
+     ],
+     "bounds_min": [
+      61.355,
+      -0.89,
+      -42.581
+     ],
+     "bounds_max": [
+      63.26,
+      0.264,
+      -40.689
+     ]
+    },
+    {
+     "name": "LedgeBoulder_6",
+     "collider": "box",
+     "position": [
+      62.0,
+      0.107,
+      -45.003
+     ],
+     "footprint": [
+      1.783,
+      1.075,
+      2.138
+     ],
+     "bounds_min": [
+      61.108,
+      -0.43,
+      -46.072
+     ],
+     "bounds_max": [
+      62.891,
+      0.645,
+      -43.934
+     ]
+    },
+    {
+     "name": "LedgeBoulder_7",
+     "collider": "box",
+     "position": [
+      62.206,
+      -0.394,
+      -34.73
+     ],
+     "footprint": [
+      2.352,
+      1.474,
+      2.558
+     ],
+     "bounds_min": [
+      61.03,
+      -1.131,
+      -36.009
+     ],
+     "bounds_max": [
+      63.383,
+      0.343,
+      -33.451
+     ]
+    },
+    {
+     "name": "LedgeBoulder_8",
+     "collider": "box",
+     "position": [
+      63.999,
+      -0.452,
+      -30.495
+     ],
+     "footprint": [
+      2.795,
+      1.735,
+      3.17
+     ],
+     "bounds_min": [
+      62.601,
+      -1.32,
+      -32.081
+     ],
+     "bounds_max": [
+      65.397,
+      0.416,
+      -28.91
+     ]
+    },
+    {
+     "name": "LedgeBollard",
+     "collider": "box",
+     "position": [
+      61.1,
+      1.219,
+      -39.0
+     ],
+     "footprint": [
+      0.26,
+      0.68,
+      0.247
+     ],
+     "bounds_min": [
+      60.97,
+      0.879,
+      -39.124
+     ],
+     "bounds_max": [
+      61.23,
+      1.559,
+      -38.876
+     ]
+    },
+    {
+     "name": "LedgeLamp",
+     "collider": "box",
+     "position": [
+      61.2,
+      2.209,
+      -41.2
+     ],
+     "footprint": [
+      0.7,
+      3.33,
+      0.34
+     ],
+     "bounds_min": [
+      60.85,
+      0.544,
+      -41.37
+     ],
+     "bounds_max": [
+      61.55,
+      3.874,
+      -41.03
+     ],
+     "light": [
+      61.2,
+      3.44,
+      -41.2
+     ]
+    }
+   ],
+   "note": "Round 4: the East Ledge boulders (Structure boxes), a bollard and a lantern post; the walkable shelf is the coast bar \"Shelf\"."
+  },
+  {
+   "name": "Harbour_Detail_EastLedge",
+   "file": "Art/Export/Harbour/Harbour_Detail_EastLedge.fbx",
+   "group": "detail",
+   "triangles": 1290,
+   "vertices": 860,
+   "bounds_min": [
+    58.2911,
+    0.02,
+    -40.0558
+   ],
+   "bounds_max": [
+    61.7708,
+    1.2994,
+    -33.3867
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    2,
+    5,
+    7,
+    10
+   ],
+   "layers": [
+    0,
+    2,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "LedgeRope",
+     "position": [
+      61.513,
+      1.025,
+      -39.808
+     ],
+     "footprint": [
+      0.517,
+      0.092,
+      0.495
+     ],
+     "collider": "none (low, walkable)",
+     "bounds_min": [
+      61.254,
+      0.979,
+      -40.056
+     ],
+     "bounds_max": [
+      61.771,
+      1.071,
+      -39.561
+     ]
+    }
+   ],
+   "note": "Round 4: kelp at the East Ledge foot, a rope coil, a bait bucket. No colliders."
+  },
+  {
+   "name": "Harbour_Detail_Anim_LedgeFloat",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_LedgeFloat.fbx",
+   "group": "detail",
+   "triangles": 155,
+   "vertices": 120,
+   "bounds_min": [
+    -0.19,
+    -0.18,
+    -0.19
+   ],
+   "bounds_max": [
+    0.19,
+    1.12,
+    0.24
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    4,
+    9,
+    11
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "LedgeFloat_0",
+     "position": [
+      64.4,
+      0.0,
+      -26.0
+     ],
+     "yaw_deg": 141.43,
+     "animHint": "bob"
+    },
+    {
+     "name": "LedgeFloat_1",
+     "position": [
+      65.0,
+      0.0,
+      -21.5
+     ],
+     "yaw_deg": 34.2,
+     "animHint": "bob"
+    }
+   ],
+   "animHint": "bob",
+   "note": "Round 4: the East Ledge red-and-white floats (origin at the waterline). Bob. Visual only."
+  },
+  {
+   "name": "Harbour_Detail_Anim_ReefMarker",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_ReefMarker.fbx",
+   "group": "detail",
+   "triangles": 380,
+   "vertices": 317,
+   "bounds_min": [
+    -0.62,
+    -0.5,
+    -0.6045
+   ],
+   "bounds_max": [
+    0.62,
+    3.2275,
+    0.6045
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    4,
+    9,
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "ReefMarker",
+     "position": [
+      -21.4,
+      0.0,
+      4.4
+     ],
+     "yaw_deg": 0.0,
+     "animHint": "bob"
+    }
+   ],
+   "animHint": "bob",
+   "note": "Round 4: the reef marker buoy - a 2.6 m red-and-white spar with a cage and a ball topmark (origin at the waterline). Bobs."
+  },
+  {
+   "name": "Harbour_Detail_Anim_Fisher",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_Fisher.fbx",
+   "group": "detail",
+   "triangles": 764,
+   "vertices": 483,
+   "bounds_min": [
+    -0.362,
+    0.0105,
+    -0.3516
+   ],
+   "bounds_max": [
+    0.6337,
+    2.6096,
+    1.5599
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    4,
+    5,
+    7
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Fisher_Beach",
+     "position": [
+      -3.4,
+      0.552,
+      -49.6
+     ],
+     "yaw_deg": 352.0,
+     "animHint": "idle"
+    },
+    {
+     "name": "Fisher_Lagoon",
+     "position": [
+      -46.0,
+      0.168,
+      -46.4
+     ],
+     "yaw_deg": 25.0,
+     "animHint": "idle"
+    }
+   ],
+   "animHint": "idle",
+   "note": "Round 4: a toon villager (fisher; origin between the feet, facing +z). Idles: shifts its weight and looks about. Visual only."
+  },
+  {
+   "name": "Harbour_Detail_Anim_Stallkeeper",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_Stallkeeper.fbx",
+   "group": "detail",
+   "triangles": 712,
+   "vertices": 425,
+   "bounds_min": [
+    -0.362,
+    0.0106,
+    -0.245
+   ],
+   "bounds_max": [
+    0.362,
+    1.5383,
+    0.25
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    8,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Stallkeeper_Fish",
+     "position": [
+      -7.35,
+      3.74,
+      -82.15
+     ],
+     "yaw_deg": 192.0,
+     "animHint": "idle"
+    },
+    {
+     "name": "Stallkeeper_Produce",
+     "position": [
+      -2.48,
+      3.74,
+      -81.6
+     ],
+     "yaw_deg": 176.0,
+     "animHint": "idle"
+    }
+   ],
+   "animHint": "idle",
+   "note": "Round 4: a toon villager (stallkeeper; origin between the feet, facing +z). Idles: shifts its weight and looks about. Visual only."
+  },
+  {
+   "name": "Harbour_Detail_Anim_Dockhand",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_Dockhand.fbx",
+   "group": "detail",
+   "triangles": 848,
+   "vertices": 528,
+   "bounds_min": [
+    -0.3043,
+    0.0105,
+    -0.245
+   ],
+   "bounds_max": [
+    0.3043,
+    1.6547,
+    0.54
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Dockhand_Breakwater",
+     "position": [
+      29.2,
+      1.525,
+      -50.5
+     ],
+     "yaw_deg": 0.0,
+     "animHint": "walk",
+     "radius": 7.0
+    },
+    {
+     "name": "Dockhand_Jetty",
+     "position": [
+      55.7,
+      0.95,
+      -49.4
+     ],
+     "yaw_deg": 0.0,
+     "animHint": "walk",
+     "radius": 6.5
+    }
+   ],
+   "animHint": "walk",
+   "note": "Round 4: a toon villager (dockhand; origin between the feet, facing +z). Strolls back and forth along its facing (radius = the path, m). Visual only."
+  },
+  {
+   "name": "Harbour_Detail_Anim_Walker",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_Walker.fbx",
+   "group": "detail",
+   "triangles": 688,
+   "vertices": 413,
+   "bounds_min": [
+    -0.362,
+    0.0105,
+    -0.245
+   ],
+   "bounds_max": [
+    0.362,
+    1.5316,
+    0.2738
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    4,
+    6,
+    8,
+    13
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Walker_BaitLane",
+     "position": [
+      -21.0,
+      1.2,
+      -61.05
+     ],
+     "yaw_deg": 270.0,
+     "animHint": "walk",
+     "radius": 6.5
+    },
+    {
+     "name": "Walker_UpperLane",
+     "position": [
+      1.0,
+      3.74,
+      -88.4
+     ],
+     "yaw_deg": 270.0,
+     "animHint": "walk",
+     "radius": 6.0
+    },
+    {
+     "name": "Walker_Plateau",
+     "position": [
+      8.4,
+      1.2,
+      -61.5
+     ],
+     "yaw_deg": 90.0,
+     "animHint": "walk",
+     "radius": 5.0
+    }
+   ],
+   "animHint": "walk",
+   "note": "Round 4: a toon villager (walker; origin between the feet, facing +z). Strolls back and forth along its facing (radius = the path, m). Visual only."
+  },
+  {
+   "name": "Harbour_Detail_Anim_Kid",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_Kid.fbx",
+   "group": "detail",
+   "triangles": 688,
+   "vertices": 413,
+   "bounds_min": [
+    -0.2553,
+    0.021,
+    -0.2132
+   ],
+   "bounds_max": [
+    0.2553,
+    1.1274,
+    0.2738
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    4,
+    5,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Kid_Stairs",
+     "position": [
+      6.4,
+      1.2,
+      -72.6
+     ],
+     "yaw_deg": 200.0,
+     "animHint": "idle"
+    },
+    {
+     "name": "Kid_Beach",
+     "position": [
+      4.2,
+      0.432,
+      -48.6
+     ],
+     "yaw_deg": 30.0,
+     "animHint": "idle"
+    }
+   ],
+   "animHint": "idle",
+   "note": "Round 4: a toon villager (kid; origin between the feet, facing +z). Idles: shifts its weight and looks about. Visual only."
+  },
+  {
+   "name": "Harbour_Detail_Anim_Gardener",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_Gardener.fbx",
+   "group": "detail",
+   "triangles": 752,
+   "vertices": 492,
+   "bounds_min": [
+    -0.362,
+    0.0102,
+    -0.3399
+   ],
+   "bounds_max": [
+    0.362,
+    1.554,
+    0.3399
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    4,
+    5,
+    8,
+    9
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Gardener_Laundry",
+     "position": [
+      -47.0,
+      2.84,
+      -79.6
+     ],
+     "yaw_deg": 160.0,
+     "animHint": "idle"
+    },
+    {
+     "name": "Gardener_Square",
+     "position": [
+      4.4,
+      3.74,
+      -90.6
+     ],
+     "yaw_deg": 230.0,
+     "animHint": "idle"
+    }
+   ],
+   "animHint": "idle",
+   "note": "Round 4: a toon villager (gardener; origin between the feet, facing +z). Idles: shifts its weight and looks about. Visual only."
+  },
+  {
+   "name": "Harbour_Detail_Anim_Thug",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_Thug.fbx",
+   "group": "detail",
+   "triangles": 776,
+   "vertices": 505,
+   "bounds_min": [
+    -0.362,
+    0.0105,
+    -0.2833
+   ],
+   "bounds_max": [
+    0.362,
+    1.564,
+    0.2833
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    6,
+    9
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Thug_Sedan",
+     "position": [
+      11.6,
+      10.74,
+      -121.2
+     ],
+     "yaw_deg": 6.0,
+     "animHint": "idle"
+    },
+    {
+     "name": "Thug_Sedan2",
+     "position": [
+      20.2,
+      7.125,
+      -108.6
+     ],
+     "yaw_deg": 350.0,
+     "animHint": "idle"
+    },
+    {
+     "name": "Thug_StairD",
+     "position": [
+      36.4,
+      3.74,
+      -80.6
+     ],
+     "yaw_deg": 20.0,
+     "animHint": "idle"
+    }
+   ],
+   "animHint": "idle",
+   "note": "Round 4: a toon villager (thug; origin between the feet, facing +z). Idles: shifts its weight and looks about. Visual only.",
+   "smoke_points": [
+    {
+     "name": "CigaretteThug",
+     "position": [
+      36.55,
+      5.04,
+      -80.35
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Harbour_Detail_Anim_Dog",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_Dog.fbx",
+   "group": "detail",
+   "triangles": 436,
+   "vertices": 260,
+   "bounds_min": [
+    -0.1602,
+    0.0043,
+    -0.4469
+   ],
+   "bounds_max": [
+    0.1601,
+    0.8721,
+    0.5966
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    9
+   ],
+   "layers": [
+    0
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Dog_BaitShop",
+     "position": [
+      -16.6,
+      1.2,
+      -60.4
+     ],
+     "yaw_deg": 270.0,
+     "animHint": "walk",
+     "radius": 3.5
+    },
+    {
+     "name": "Dog_Beach",
+     "position": [
+      6.6,
+      0.336,
+      -47.8
+     ],
+     "yaw_deg": 70.0,
+     "animHint": "walk",
+     "radius": 4.0
+    }
+   ],
+   "animHint": "walk",
+   "note": "Round 4: a toon dog (0.55 m at the shoulder; origin between its feet, facing +z). Trots back and forth (radius = the path, m)."
+  },
+  {
+   "name": "Harbour_Detail_Anim_Hen",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_Hen.fbx",
+   "group": "detail",
+   "triangles": 252,
+   "vertices": 144,
+   "bounds_min": [
+    -0.0882,
+    -0.0041,
+    -0.1954
+   ],
+   "bounds_max": [
+    0.0901,
+    0.4364,
+    0.195
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Hen_0",
+     "position": [
+      -34.6,
+      1.2,
+      -64.0
+     ],
+     "yaw_deg": 30.0,
+     "animHint": "gull"
+    },
+    {
+     "name": "Hen_1",
+     "position": [
+      -35.3,
+      1.2,
+      -64.9
+     ],
+     "yaw_deg": 200.0,
+     "animHint": "gull"
+    },
+    {
+     "name": "Hen_2",
+     "position": [
+      -33.9,
+      1.2,
+      -65.4
+     ],
+     "yaw_deg": 120.0,
+     "animHint": "gull"
+    },
+    {
+     "name": "Hen_3",
+     "position": [
+      -34.8,
+      1.2,
+      -66.0
+     ],
+     "yaw_deg": 300.0,
+     "animHint": "gull"
+    },
+    {
+     "name": "Hen_4",
+     "position": [
+      -33.6,
+      1.2,
+      -64.2
+     ],
+     "yaw_deg": 80.0,
+     "animHint": "gull"
+    }
+   ],
+   "animHint": "gull",
+   "note": "Round 4: a toon hen (0.35 m; origin between its feet). Pecks and looks about (the perched-gull motion)."
+  },
+  {
+   "name": "Harbour_Detail_Anim_Goat",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_Goat.fbx",
+   "group": "detail",
+   "triangles": 360,
+   "vertices": 218,
+   "bounds_min": [
+    -0.175,
+    0.0042,
+    -0.3
+   ],
+   "bounds_max": [
+    0.175,
+    1.1613,
+    0.5296
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    4,
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Goat_Knoll",
+     "position": [
+      -46.6,
+      2.566,
+      -55.3
+     ],
+     "yaw_deg": 140.0,
+     "animHint": "gull"
+    }
+   ],
+   "animHint": "gull",
+   "note": "Round 4: a toon goat (0.8 m; origin between its feet) on the knoll by the creek. Looks about."
+  },
+  {
+   "name": "Harbour_Detail_Farm",
+   "file": "Art/Export/Harbour/Harbour_Detail_Farm.fbx",
+   "group": "detail",
+   "triangles": 1692,
+   "vertices": 1113,
+   "bounds_min": [
+    -42.2,
+    9.6189,
+    -134.9792
+   ],
+   "bounds_max": [
+    -28.6239,
+    15.5973,
+    -119.8
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    4,
+    7,
+    11
+   ],
+   "layers": [
+    0,
+    1,
+    7
+   ],
+   "local_space": false,
+   "items": [],
+   "note": "Round 4: the valley farm life - a flock of sheep, haystacks by the barn, a hay cart. Backdrop, no colliders."
   }
  ],
  "total_triangles": 82812,
@@ -14995,10 +16288,10 @@
   },
   "triangles": {
    "phase1": 82812,
-   "pass2_core": 257768,
-   "pass2_detail": 126187,
-   "pass2_col_not_drawn": 7758,
-   "pass2_extra_from_instances": 13991
+   "pass2_core": 268330,
+   "pass2_detail": 138848,
+   "pass2_col_not_drawn": 8542,
+   "pass2_extra_from_instances": 22282
   },
   "notes": [
    "Placement: every pass-2 FBX object is at the origin with an identity transform. World models: place at the Unity origin. Local models (local_space true: the tug, its collision mesh, the ice chest, the Anim_* pieces): instantiate once per placement at position with yaw_deg about +y. Ice chest placements are in the CrewBoat local frame (parent them to the placed tug).",
@@ -15045,7 +16338,7 @@
    },
    {
     "name": "Jetty (deck and posts) vs the other lanes",
-    "min_clearance_m": 0.49,
+    "min_clearance_m": 0.0,
     "solid": true
    },
    {
@@ -15084,8 +16377,8 @@
     "solid": true
    },
    {
-    "name": "Coast Shelf (above the water)",
-    "min_clearance_m": 1.77,
+    "name": "Coast Shelf (above the water) vs the other lanes",
+    "min_clearance_m": 0.25,
     "solid": true
    },
    {
@@ -15099,6 +16392,16 @@
     "solid": true
    },
    {
+    "name": "Reef stacks and wreck",
+    "min_clearance_m": 2.19,
+    "solid": false
+   },
+   {
+    "name": "East Ledge boulders vs the other lanes",
+    "min_clearance_m": 0.26,
+    "solid": true
+   },
+   {
     "name": "Seaweed and driftwood (35 clumps)",
     "min_clearance_m": 1.05,
     "solid": false
@@ -15109,7 +16412,7 @@
     "name": "KeeperCottageChimney",
     "position": [
      96.2,
-     16.93,
+     17.62,
      31.2
     ]
    },
@@ -15210,6 +16513,22 @@
      -66.6
     ],
     "note": "a thin wisp only"
+   },
+   {
+    "name": "MistFall",
+    "position": [
+     -97.98,
+     0.4,
+     -22.31
+    ]
+   },
+   {
+    "name": "CigaretteThug",
+    "position": [
+     36.55,
+     5.04,
+     -80.35
+    ]
    }
   ],
   "light_points": [
@@ -15217,7 +16536,7 @@
     "name": "LighthouseLamp",
     "position": [
      92.0,
-     24.84,
+     24.68,
      41.0
     ],
     "animHint": "beacon"

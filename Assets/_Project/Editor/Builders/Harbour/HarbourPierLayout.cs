@@ -174,6 +174,9 @@ namespace FishGame.EditorTools
             points.Add(new Vector4(55.7f, JettyDeckTopY + 0.05f, -35f, 352f));      // round 1: the east jetty head
             points.Add(new Vector4(36.4f, LookoutDeckTopY + 0.05f, -48.3f, 36f));   // round 1: the lookout tower deck
             points.Add(new Vector4(-45.6f, 1.0f, -16.8f, 32f));   // round 3: the West Horn's tip, over the open bay (y = the horn's crest + 0.05)
+            // round 4 (2026-10-18): the East Ledge, a boulder shelf at the east cliff's foot (the coast bar "Shelf", walkable from the east beach),
+            // over the east basin past the jetty head (y = the ledge's top + 0.05; 3 m clear of the jetty; fg_harbour.py LEDGE_STAND)
+            points.Add(new Vector4(60.0f, 1.03f, -37.6f, 352f));
             return points.ToArray();
         }
 
@@ -297,6 +300,30 @@ namespace FishGame.EditorTools
             new VisualModel("Harbour_Detail_Lagoon.fbx", RootDetail, "LagoonDressingVisual"),
             new VisualModel("Harbour_Detail_Ivy.fbx", RootDetail, "IvyVisual"),   // round 3: ivy curtains and coping pots on the terrace walls
             new VisualModel("Harbour_Core_BreakwaterSetts_Tri.fbx", RootBreakwater, "BreakwaterSettsVisual"),   // round 3: setts over the walk (visual)
+            // ---- round 4 (the creek glen, the West Head brook and fall) ----
+            new VisualModel("Harbour_Core_Glen_Tri.fbx", RootLand, "GlenVisual"),
+            new VisualModel("Harbour_Detail_Glen.fbx", RootDetail, "GlenDressingVisual"),
+            new VisualModel("Harbour_Core_Waterfall.fbx", RootLand, "WaterfallVisual"),          // M_Waterfall (FishGame/Waterfall), no shadows
+            new VisualModel("Harbour_Core_FallRocks_Tri.fbx", RootLand, "FallRocksVisual"),
+            // ---- round 4 (the reef off the pier, the East Ledge) ----
+            new VisualModel("Harbour_Core_Reef_Tri.fbx", RootLand, "ReefVisual"),                  // visual only, past every lane
+            new VisualModel("Harbour_Detail_Reef.fbx", RootDetail, "ReefKelpVisual"),
+            new VisualModel("Harbour_Core_EastLedge_Tri.fbx", RootVillage, "EastLedgeVisual"),     // its boulders and bollard are Structure boxes
+            new VisualModel("Harbour_Detail_EastLedge.fbx", RootDetail, "EastLedgeDressingVisual"),
+            new VisualModel("Harbour_Detail_Anim_LedgeFloat.fbx", RootDetail, "Float"),
+            new VisualModel("Harbour_Detail_Anim_ReefMarker.fbx", RootDetail, "Float"),
+            // ---- round 4 (life: villagers, the dog, hens and a goat; AmbientLife Idle / Walk / the perched-gull look-about) ----
+            new VisualModel("Harbour_Detail_Anim_Fisher.fbx", RootDetail, "Villager"),
+            new VisualModel("Harbour_Detail_Anim_Stallkeeper.fbx", RootDetail, "Villager"),
+            new VisualModel("Harbour_Detail_Anim_Kid.fbx", RootDetail, "Villager"),
+            new VisualModel("Harbour_Detail_Anim_Gardener.fbx", RootDetail, "Villager"),
+            new VisualModel("Harbour_Detail_Anim_Thug.fbx", RootDetail, "Villager"),     // the mafia men (story)
+            new VisualModel("Harbour_Detail_Anim_Dockhand.fbx", RootDetail, "Walker"),
+            new VisualModel("Harbour_Detail_Anim_Walker.fbx", RootDetail, "Walker"),
+            new VisualModel("Harbour_Detail_Anim_Dog.fbx", RootDetail, "Dog"),
+            new VisualModel("Harbour_Detail_Anim_Hen.fbx", RootDetail, "Hen"),
+            new VisualModel("Harbour_Detail_Anim_Goat.fbx", RootDetail, "Goat"),
+            new VisualModel("Harbour_Detail_Farm.fbx", RootDetail, "FarmLifeVisual"),   // sheep, haystacks (static)
         };
 
         // Pass-2 collider sources: box items of these models become BoxColliders (Land: Shore; Village: Structure). Round 1: the stone wall model
@@ -306,9 +333,11 @@ namespace FishGame.EditorTools
         public static readonly string[] VillageBoxModels = { "Harbour_Core_Buildings", "Harbour_Core_Yard_A", "Harbour_Core_Yard_B", "Harbour_Core_Trees_Tri",
                                                              "Harbour_Core_Buildings_Upper", "Harbour_Core_Jetty", "Harbour_Core_TerraceTrees_Tri",
                                                              "Harbour_Core_Story", "Harbour_Core_Lagoon",      // round 3: the lagoon dock and the beacon
-                                                             "Harbour_Core_Buildings_UpperEast", "Harbour_Core_VillageLane" };   // round 3: cottages, fences, square   // round 2: the derrick, crates, poster post, fingerpost, breakwater parapet
+                                                             "Harbour_Core_Buildings_UpperEast", "Harbour_Core_VillageLane",
+                                                             "Harbour_Core_EastLedge_Tri" };   // round 4: the East Ledge's boulders   // round 3: cottages, fences, square   // round 2: the derrick, crates, poster post, fingerpost, breakwater parapet
         // Round 1: the windmill sails turn (AmbientLife Rotor, degrees per second); the circling gulls (AmbientLife Circle).
         public const string WindmillSailsModel = "Harbour_Core_Anim_WindmillSails";
+        public const string WaterfallModel = "Harbour_Core_Waterfall";   // round 4: drawn with M_Waterfall
         public const float WindmillDegreesPerSecond = 24f;
         public const string CrewBoatModel = "Harbour_Core_CrewBoat", CrewBoatColModel = "Harbour_Core_CrewBoat_Col", IceChestModel = "Harbour_Core_CrewBoat_IceChest";
         public const string WeatherVaneModel = "Harbour_Detail_Anim_WeatherVane", LightsModel = "Harbour_Detail_Lights";

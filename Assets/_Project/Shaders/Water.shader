@@ -26,6 +26,9 @@
 //      _FoamWidth of vertical depth) eases the hard toon foam line into the water where rocks, piles and hulls meet it.
 //   12. Harbour round 2b: steep beds (hulls, piles, walls) read deeper in the colour ramp (_SteepDeepen); the foam keeps the true depth.
 //   11. Harbour round 2b: a low sun widens and brightens the glints (the dusk sun path); a high sun keeps them small and sparse.
+//   14. Harbour round 4 (2026-10-18, critics: "hard-edged white pill-shaped whitecaps on the far water at dusk read as stickers"): past
+//      ~18-60 m the glints soften (a wider anti-aliased edge), break into sparkles along the ripple noise, lose a third of their strength and,
+//      under a low sun, take more of the light's hue - the dusk sun path stays golden and glittering, without solid white ellipses.
 //   13. Harbour round 3 (2026-10-17): the bed map. With _BedMapOn the body colour and opacity follow the NATURAL bed baked per map (_BedMap r =
 //      bed height in metres over the water grid's rect, _BedMapST = x0, z0, 1/width, 1/height; fg_harbour.py build_bedmap): rocks, hulls and
 //      piles near the surface no longer glow turquoise, and the floor-to-seabed join has no crease. The screen depth keeps the contact foam;
@@ -325,13 +328,16 @@ Shader "FishGame/Water"
                 // keeps round 1's golden sun path while the high day sun stays sparse and small.
                 half lowSun = (half)(1.0 - saturate(L.y / 0.45));
                 float spec = pow(saturate(dot(nG, (float3)H)), (float)_GlintPower * lerp(1.0, 0.4, (float)lowSun));
-                float glintAA = max(0.02, fwidth(spec));   // edge width follows the screen-space rate of change (no shimmer at distance)
+                // 14. Far glints (round 4): softer edges, broken into sparkles, a little weaker and warmer under a low sun.
+                half farG = (half)saturate((input.eyeDepth - 18.0) / 45.0);
+                float glintAA = max(0.02 + 0.12 * farG, fwidth(spec));   // edge width follows the screen-space rate of change (no shimmer at distance)
                 half glintCut = _GlintThreshold - 0.12h * lowSun;
                 half glint = (half)smoothstep(glintCut - glintAA, glintCut + glintAA, spec);
                 glint *= (half)smoothstep(_GlintNear, _GlintNear * 2.5, input.eyeDepth);
+                glint *= lerp(1.0h, (half)smoothstep(0.32, 0.62, n2.x) * (half)smoothstep(0.25, 0.6, n1.x) * 1.6h, farG);
                 half lightPeak = max(max(lightColor.r, lightColor.g), max(lightColor.b, 0.001h));
-                half3 glintColor = lerp(1.0h.xxx, lightColor / lightPeak, 0.6h) * lightPeak;
-                rgb += glint * _GlintStrength * (1.0h + 0.3h * lowSun) * glintColor;
+                half3 glintColor = lerp(1.0h.xxx, lightColor / lightPeak, 0.6h + 0.3h * lowSun * farG) * lightPeak;
+                rgb += glint * _GlintStrength * (1.0h + 0.3h * lowSun) * (1.0h - 0.35h * farG) * glintColor;
                 alpha = saturate(alpha + glint);
 
                 // 8. Foam and ripples.

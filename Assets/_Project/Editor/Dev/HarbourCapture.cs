@@ -72,6 +72,12 @@ namespace FishGame.EditorTools
             new Shot("lagoon_dock_eye", new Vector3(-48.5f, Eye(0.7f), -48.5f), new Vector3(-44f, 0.6f, -22f), 62f),
             new Shot("horn_tip_eye", new Vector3(-45.6f, Eye(1.0f), -16.8f), new Vector3(-18f, 3f, -48f), 62f),
             new Shot("village_square", new Vector3(8.5f, Eye(3.74f), -86f), new Vector3(-6f, 4.8f, -90f), 62f),
+            // round 4 (the creek glen, the West Head fall, the reef, the East Ledge)
+            new Shot("creek_glen_eye", new Vector3(-56.4f, Eye(0.7f), -50.4f), new Vector3(-57.6f, 2.0f, -66f), 62f),
+            new Shot("west_fall_view", new Vector3(-55f, Eye(1.6f), -31f), new Vector3(-97f, 5f, -22f), 55f),
+            new Shot("reef_from_thead", new Vector3(-4.5f, Eye(1.5f), -6.5f), new Vector3(-26f, 1.6f, 11f), 58f),
+            new Shot("east_ledge_eye", new Vector3(60f, Eye(1.03f), -37.6f), new Vector3(50f, 0.8f, -17f), 62f),
+            new Shot("ledge_from_beach", new Vector3(47f, Eye(0.25f), -47.5f), new Vector3(60f, 1.4f, -38f), 60f),
         };
 
         public static void Capture()

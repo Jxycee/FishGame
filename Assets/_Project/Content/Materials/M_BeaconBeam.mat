@@ -25,7 +25,8 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _GlowBoost: 0.22
+    - _BeamFade: 1
+    - _GlowBoost: 0.42
     - _Inflate: 0
     - _Slot: -1
     m_Colors:

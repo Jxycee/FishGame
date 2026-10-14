@@ -28,6 +28,8 @@ namespace FishGame.Presentation
             Gull = 7,       // a perched gull: looks around in steps, an occasional hop
             Rotor = 8,      // round 1: windmill sails, a steady turn about local z (Amplitude = degrees per second)
             Circle = 9,     // round 1: a gliding gull circling its base position (Amplitude = radius, metres), banked into the turn
+            Idle = 10,      // round 4: a standing villager: a slow weight shift and a look about (Amplitude = look, degrees)
+            Walk = 11,      // round 4: a villager or the dog strolling back and forth along its base facing (Amplitude = path length, metres)
         }
 
         [Serializable]
@@ -88,6 +90,8 @@ namespace FishGame.Presentation
             smokeColor = new Color[smoke.Length];
             for (int i = 0; i < smoke.Length; i++) smokeColor[i] = smoke[i].main.startColor.color;
         }
+
+        private const float WalkSpeed = 0.85f, WalkTurn = 1.4f;   // round 4: a stroll (m/s) and the turn at each end (s)
 
         private void OnEnable()
         {
@@ -218,6 +222,35 @@ namespace FishGame.Presentation
                 case MotionKind.Rotor:
                 {
                     tr.localRotation = m.BaseRotation * Quaternion.Euler(0f, 0f, (t * a + p * Mathf.Rad2Deg) % 360f);
+                    break;
+                }
+                case MotionKind.Idle:
+                {
+                    float look = a * Mathf.Sin(t * 0.37f + p) + a * 0.35f * Mathf.Sin(t * 1.13f + p * 2.1f);
+                    float sway = 2.2f * Mathf.Sin(t * 0.83f + p * 1.3f);
+                    float breathe = 0.012f * Mathf.Sin(t * 1.7f + p);
+                    tr.localPosition = m.BasePosition + new Vector3(0f, breathe, 0f);
+                    tr.localRotation = m.BaseRotation * Quaternion.Euler(0f, look, sway);
+                    break;
+                }
+                case MotionKind.Walk:
+                {
+                    // Out along the base facing at WalkSpeed, a turn on the spot, back, a turn: one loop per period; a step bounce and a hip roll
+                    // while moving. The phase spreads the walkers along their loops.
+                    float leg = Mathf.Max(0.5f, a) / WalkSpeed;
+                    float period = 2f * (leg + WalkTurn);
+                    float u = Mathf.Repeat(t + p / (2f * Mathf.PI) * period, period);
+                    float s, yaw;
+                    bool moving;
+                    if (u < leg) { s = u / leg; yaw = 0f; moving = true; }
+                    else if (u < leg + WalkTurn) { s = 1f; yaw = 180f * Mathf.SmoothStep(0f, 1f, (u - leg) / WalkTurn); moving = false; }
+                    else if (u < 2f * leg + WalkTurn) { s = 1f - (u - leg - WalkTurn) / leg; yaw = 180f; moving = true; }
+                    else { s = 0f; yaw = 180f + 180f * Mathf.SmoothStep(0f, 1f, (u - 2f * leg - WalkTurn) / WalkTurn); moving = false; }
+                    float stride = u * 2f * Mathf.PI * 1.9f;
+                    float bounce = moving ? 0.035f * Mathf.Abs(Mathf.Sin(stride)) : 0f;
+                    Vector3 forward = m.BaseRotation * Vector3.forward;
+                    tr.localPosition = m.BasePosition + forward * (s * a) + new Vector3(0f, bounce, 0f);
+                    tr.localRotation = m.BaseRotation * Quaternion.Euler(0f, yaw, moving ? 3f * Mathf.Sin(stride) : 0f);
                     break;
                 }
                 case MotionKind.Circle:

@@ -30,7 +30,7 @@ namespace FishGame.EditorTools
         // Everything the scene needs from disk, loaded once after NewScene (C 2.8 #14).
         sealed class ArtAssets
         {
-            public Material Toon, ToonTri, Water, Creek, Foliage;
+            public Material Toon, ToonTri, Water, Creek, Foliage, Waterfall;
             public Mesh WaterMesh, WaterSkirt, Seabed, Beach;
             public Mesh[] VisualMeshes;   // HarbourPierLayout.Visuals order
             public Mesh Branches;   // the lake's bare winter branches (read-only reuse; LakeDockBuilder builds it earlier in the same BuildAll)
@@ -66,6 +66,7 @@ namespace FishGame.EditorTools
                 Foliage = RenderMaterialLibrary.Get("M_Toon_Foliage"),
                 Water = RenderMaterialLibrary.Get(HarbourBedMap.MaterialName),   // round 3 (was M_Water_Surface: the same look plus the bed map)
                 Creek = RenderMaterialLibrary.Get("M_Water_Creek"),
+                Waterfall = RenderMaterialLibrary.Get("M_Waterfall"),   // round 4: the West Head brook and fall
                 WaterMesh = LoadMesh(HarbourPierLayout.WaterMeshPath),
                 WaterSkirt = LoadMesh(HarbourPierLayout.WaterSkirtMeshPath),
                 Seabed = LoadMesh(HarbourPierLayout.SeabedMeshPath),

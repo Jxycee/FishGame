@@ -22,11 +22,16 @@ Material:
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _BedMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _AmbientStrength: 0.35
     - _BedCover: 0.35
+    - _BedMapOn: 0
     - _CalmDistance: 70
     - _CausticStrength: 0.12
     - _CrestAmount: 0.25
@@ -55,9 +60,14 @@ Material:
     - _Saturation: 0.95
     - _ShadeContrast: 0.1
     - _ShadeSoft: 0.2
+    - _SolidShade: 0.3
+    - _SteepDeepen: 0
     m_Colors:
-    - _DeepColor: {r: 0.03, g: 0.35999998, b: 0.62, a: 0.97}
+    - _BedMapST: {r: 0, g: 0, b: 0, a: 0}
+    - _DeepColor: {r: 0.05, g: 0.27, b: 0.33, a: 0.92}
     - _FoamColor: {r: 0.96, g: 0.98999995, b: 1, a: 1}
-    - _ShallowColor: {r: 0.29999998, g: 0.86, b: 0.8, a: 0.68}
+    - _ShallowColor: {r: 0.16, g: 0.5, b: 0.46, a: 0.6}
+    - _ZoneDeep: {r: 0.09999997, g: 0.52, b: 0.52, a: 0.95}
+    - _ZoneShallow: {r: 0.41999996, g: 0.88, b: 0.72, a: 0.62}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
