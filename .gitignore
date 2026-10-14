@@ -116,3 +116,7 @@ InitTestScene*.unity*
 
 # EditMode test scratch content (FishingContentBuilderTests builds here and deletes it again); never committed
 /Assets/_Project/Tests/__Temp*
+
+# Claude Code: agent worktrees and personal settings
+.claude/worktrees/
+.claude/settings.local.json

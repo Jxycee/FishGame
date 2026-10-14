@@ -79,6 +79,7 @@ Also on the board:
 - the online-cancel message.
 
 ## 10. Harbour detail pass (user, 2026-10-14) - Blender side DONE, Unity side next
+- **Polish workflow PAUSED (user, 2026-10-14: frees the PC for gaming; resume when the user says so).** Integration finished by the controller: harbour-art2 5f8ffd5 (pass-2 FBX in Unity, AmbientLife motion/lamps, Low detail toggle, grid rebaked for the tug, HarbourCapture tool; EditMode 1381/1382, PlayMode 139/139). Round-0 shots: scratchpad/harbour-polish/r0 (baseline: fog too heavy, big flat grass, sparse trees, plastic cyan water). Resume = run Workflow with scriptPath ~/.claude/projects/C--Dev-FishGame/0f9e3f02-.../workflows/scripts/harbour-polish-wf_f18c5f35-033.js (integration step replaced by its result; next: toon shader top/bottom tint, then up to 5 critic+artist rounds, pass = overall >= 8.5, no category < 7.5; final check + review; controller merges into main). Worktree C:\Dev\FishGame-harbour-art (Library copied). Unity rewrites .vscode/settings.json there: never commit it.
 - **Status (2026-10-14):** branch `harbour-art2` pushed. Commits 3bfd603 (detail pass) and dbeaf30 (fixes). Phase-1 FBX are byte-identical; the rebuild from an empty Blender is deterministic. 37 new FBX (core 149.7k tris, detail 43.2k hidden on Low) plus a `pass2` manifest block (placements, animHint, smoke/light points, ladders).
 - **Triangles (worst view):**
   - High: ~372k (22k over the old 350k aim).
@@ -120,4 +121,13 @@ Also on the board:
 
 ## 12. Ideas queued for the design session
 - Seagulls that steal voices (user, 2026-10-14): like the Lethal Company voice-mimic mods (Skinwalkers/Mirage), gulls record short clips of players and squawk them back positionally. Needs voice chat first (Vivox likely). Research: docs/superpowers/research/2026-10-14-voice-mimic-seagulls.md (in progress). Must have an opt-out setting.
-- REA MCP: takes ~42 s to start vs the 30 s default connect timeout. FIXED 2026-10-14: MCP_TIMEOUT=90000 in ~/.claude/settings.json env (applies from the next session).
+- Token efficiency (user, 2026-10-14):
+  - **Ponytail benchmark:** 2 tasks with and without its rules (Sonnet, no Unity). Diffs were 37-60% smaller, but tokens only 1-4% lower, and the save fix lost tests and the read-only .bak view. Not adopted.
+  - **Code navigation:** installed the .NET 10 SDK, `csharp-ls` 0.28.0 (global dotnet tool) and the csharp-lsp plugin (project scope). `Tools/sync-csproj.ps1` gives worktrees Unity's project files.
+  - **Turned off for this project** (.claude/settings.json):
+    - plugins: playwright, typescript-lsp, security-guidance, superdesign, yapui;
+    - synced plugins: brightdata, data, design, engineering, cowork-plugin-management, pdf-viewer;
+    - the `rea` MCP server (~/.claude.json project entry; it timed out every session).
+  - **Account default:** the claude.ai connectors Vercel, Supabase and Gmail are now off by default for new sessions. Re-enable them from the + menu, Connectors.
+  - **Benchmark branches kept** (worktree-agent-*): the two without Ponytail are real backlog fixes (newer-schema meta.json read-only; journal write debounce). They need a Unity test run plus an Opus review (save data) before merging.
+  - The REA study is finished.
