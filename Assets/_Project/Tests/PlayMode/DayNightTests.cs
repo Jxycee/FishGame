@@ -331,7 +331,7 @@ namespace FishGame.Tests.PlayMode
                     if (minutes[k] == 300)
                         Assert.That(_sun.intensity, Is.EqualTo(phase.lightIntensity * look.lightMult).Within(1e-4f), "sun intensity x lightMult: " + at);
 
-                    // Post-process volume weights follow the pure phase, whatever the weather (seeds: Dawn 0.6/0, Day 0/0, Dusk 1/0, Night 0/1).
+                    // Post-process volume weights follow the pure phase, whatever the weather (seeds: Dawn 0.6/0, Day 0.4/0, Dusk 1/0, Night 0/1).
                     Assert.That(VolumeWeight("WarmVolume"), Is.EqualTo(WarmSeeds[k]).Within(1e-5f), "WarmVolume weight: " + at);
                     Assert.That(VolumeWeight("CoolVolume"), Is.EqualTo(CoolSeeds[k]).Within(1e-5f), "CoolVolume weight: " + at);
                 }
@@ -363,7 +363,8 @@ namespace FishGame.Tests.PlayMode
             logs.AssertNoWarnings("fog readability");
         }
 
-        private static readonly float[] WarmSeeds = { 0.6f, 0f, 1f, 0f };
+        // Harbour round 3 (user: bring the dusk warmth into the day) set the Day phase's warm volume to 0.4 in ArtPalette.asset; round 4 updates this pin.
+        private static readonly float[] WarmSeeds = { 0.6f, 0.4f, 1f, 0f };
         private static readonly float[] CoolSeeds = { 0f, 0f, 0f, 1f };
 
         // The URP Volume component's weight, by reflection (this assembly does not reference Unity.RenderPipelines.Core.Runtime).

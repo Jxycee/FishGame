@@ -32,7 +32,7 @@ namespace FishGame.EditorTools
         }
 
         // mirrors LakeDockMeshes.Save. Copies the built mesh into the existing asset (GUID kept) or creates the asset. The temporary mesh is destroyed.
-        static void Save(string assetPath, Mesh built)
+        internal static void Save(string assetPath, Mesh built)
         {
             BuilderUtil.EnsureFolder(BuilderUtil.Folder(assetPath));
             string name = Path.GetFileNameWithoutExtension(assetPath);
@@ -49,25 +49,37 @@ namespace FishGame.EditorTools
             EditorUtility.SetDirty(existing);
         }
 
-        // 160 x 160 cells of 1.5 m = 240 m, centred, y 0 (25,921 vertices, 16-bit safe). 1.5 m cells keep spec 10.4's wavelength >= 4 cells (seeds >= 6 m).
+        // 128 x 112 cells of 1.5 m (x -96..96, z -48..120), y 0 (14,577 vertices, 16-bit safe): MeshBuilder.Grid moved by WaterOffset (harbour round 2,
+        // see HarbourPierLayout). 1.5 m cells keep spec 10.4's wavelength >= 4 cells (seeds >= 6 m).
         static Mesh BuildWater()
         {
-            return MeshBuilder.Grid(HarbourPierLayout.WaterGridCells, HarbourPierLayout.WaterGridCells, HarbourPierLayout.WaterCellSize, "Harbour_Water");
+            int cx = HarbourPierLayout.WaterCellsX, cz = HarbourPierLayout.WaterCellsZ;
+            float size = HarbourPierLayout.WaterCellSize;
+            Mesh mesh = MeshBuilder.Grid(cx, cz, size, "Harbour_Water");
+            Vector3[] v = mesh.vertices;
+            for (int i = 0; i < v.Length; i++) v[i] = new Vector3(v[i].x + WaterOffsetX, 0f, v[i].z + WaterOffsetZ);
+            mesh.vertices = v;
+            mesh.bounds = new Bounds(new Vector3(WaterOffsetX, 0f, WaterOffsetZ), new Vector3(cx * size, 2f, cz * size));   // +-1 m covers the shader displacement
+            return mesh;
         }
 
-        // The sea beyond the water grid: a ring between the grid's 640-vertex border (the very same expression as MeshBuilder.Grid, so the vertices match
-        // bit for bit and leave no crack) and a square at +-SkirtOuterHalfExtent with 8 segments per side. The two loops are zipped by perimeter fraction
-        // (outer vertex k sits at k / 32 of the way round, inner vertex i at i / 640), which is the four trapezoid strips of the ring. Normals up, y 0,
-        // 16-bit safe. Not Toon (water shader): no vertex colours or uv1.
+        // The grid's centre: MeshBuilder.Grid is centred at the origin, the water rectangle at ((min + max) / 2).
+        static float WaterOffsetX => HarbourPierLayout.WaterMinX + HarbourPierLayout.WaterCellsX * HarbourPierLayout.WaterCellSize * 0.5f;
+        static float WaterOffsetZ => HarbourPierLayout.WaterMinZ + HarbourPierLayout.WaterCellsZ * HarbourPierLayout.WaterCellSize * 0.5f;
+
+        // The sea beyond the water grid: a ring between the grid's 480-vertex border (the very same expression as BuildWater, so the vertices match
+        // bit for bit and leave no crack) and a square at +-SkirtOuterHalfExtent with 8 segments per side. Round 2: the grid is a rectangle off the
+        // origin, so each of the four sides is zipped to its own outer side by fraction along that side (four trapezoid strips; the corners are
+        // shared). Normals up, y 0, 16-bit safe. Not Toon (water shader): no vertex colours or uv1.
         static Mesh BuildWaterSkirt()
         {
-            int cells = HarbourPierLayout.WaterGridCells;
+            int cx = HarbourPierLayout.WaterCellsX, cz = HarbourPierLayout.WaterCellsZ;
             float size = HarbourPierLayout.WaterCellSize;
             var inner = new List<Vector3>();   // counter-clockwise from (min, min): along z = min, along x = max, back along z = max, down x = min
-            for (int i = 0; i <= cells; i++) inner.Add(new Vector3(GridCoord(cells, size, i), 0f, GridCoord(cells, size, 0)));
-            for (int j = 1; j <= cells; j++) inner.Add(new Vector3(GridCoord(cells, size, cells), 0f, GridCoord(cells, size, j)));
-            for (int i = cells - 1; i >= 0; i--) inner.Add(new Vector3(GridCoord(cells, size, i), 0f, GridCoord(cells, size, cells)));
-            for (int j = cells - 1; j >= 1; j--) inner.Add(new Vector3(GridCoord(cells, size, 0), 0f, GridCoord(cells, size, j)));
+            for (int i = 0; i <= cx; i++) inner.Add(new Vector3(GridX(i), 0f, GridZ(0)));
+            for (int j = 1; j <= cz; j++) inner.Add(new Vector3(GridX(cx), 0f, GridZ(j)));
+            for (int i = cx - 1; i >= 0; i--) inner.Add(new Vector3(GridX(i), 0f, GridZ(cz)));
+            for (int j = cz - 1; j >= 1; j--) inner.Add(new Vector3(GridX(0), 0f, GridZ(j)));
 
             float e = HarbourPierLayout.SkirtOuterHalfExtent;
             int seg = HarbourPierLayout.SkirtOuterSegmentsPerSide;
@@ -81,19 +93,25 @@ namespace FishGame.EditorTools
             vertices.AddRange(outer);
             int ni = inner.Count, no = outer.Count;
             var triangles = new List<int>();
-            int a = 0, b = 0;
-            while (a < ni || b < no)
+            int[] innerCorner = { 0, cx, cx + cz, 2 * cx + cz, ni };
+            int[] outerCorner = { 0, seg, 2 * seg, 3 * seg, no };
+            for (int side = 0; side < 4; side++)
             {
-                int ia = a % ni, ib = ni + b % no;
-                if (b >= no || (a < ni && (long)(a + 1) * no <= (long)(b + 1) * ni))
+                int i0 = innerCorner[side], i1 = innerCorner[side + 1], o0 = outerCorner[side], o1 = outerCorner[side + 1];
+                int a = i0, b = o0;
+                while (a < i1 || b < o1)
                 {
-                    AddIndexedUp(vertices, triangles, ia, (a + 1) % ni, ib);   // advance the inner loop
-                    a++;
-                }
-                else
-                {
-                    AddIndexedUp(vertices, triangles, ib, ia, ni + (b + 1) % no);   // advance the outer loop
-                    b++;
+                    int ia = a % ni, ib = ni + b % no;
+                    if (b >= o1 || (a < i1 && (long)(a + 1 - i0) * (o1 - o0) <= (long)(b + 1 - o0) * (i1 - i0)))
+                    {
+                        AddIndexedUp(vertices, triangles, ia, (a + 1) % ni, ib);   // advance the inner side
+                        a++;
+                    }
+                    else
+                    {
+                        AddIndexedUp(vertices, triangles, ib, ia, ni + (b + 1) % no);   // advance the outer side
+                        b++;
+                    }
                 }
             }
 
@@ -114,14 +132,26 @@ namespace FishGame.EditorTools
             return mesh;
         }
 
-        // MeshBuilder.Grid's vertex coordinate along one axis, written the same way so the floats are identical.
+        // BuildWater's vertex coordinates (MeshBuilder.Grid's expression plus the offset), written the same way so the floats are identical.
         static float GridCoord(int cells, float size, int i) => -cells * size * 0.5f + i * size;
+        static float GridX(int i) => GridCoord(HarbourPierLayout.WaterCellsX, HarbourPierLayout.WaterCellSize, i) + WaterOffsetX;
+        static float GridZ(int j) => GridCoord(HarbourPierLayout.WaterCellsZ, HarbourPierLayout.WaterCellSize, j) + WaterOffsetZ;
 
-        // x -400..400 (20 m columns), z -47..121 on 2 m rows: the kinks of SeabedY (z -45 and z -9) are rows, so the surface is exactly the formula.
+        // x -400..400 (20 m columns), z -47..-9 on 2 m rows, then one row at 121: the kinks of SeabedY (z -45 and z -9) are rows, so the surface is
+        // exactly the formula. Harbour round 1 (2026-10-15): past z -9 the seabed is flat at -9 m, so its 65 rows of 2 m became one 130 m band (the
+        // same plane, the same bake rays: ~5,100 fewer triangles in every sea view).
         static Mesh BuildSeabed()
         {
             int nx = Mathf.RoundToInt((HarbourPierLayout.SeabedMaxX - HarbourPierLayout.SeabedMinX) / HarbourPierLayout.SeabedStepX) + 1;
-            int nz = Mathf.RoundToInt((HarbourPierLayout.SeabedMaxZ - HarbourPierLayout.SeabedMinZ) / HarbourPierLayout.SeabedStepZ) + 1;
+            var rows = new List<float>();
+            for (int i = 0; ; i++)
+            {
+                float z = HarbourPierLayout.SeabedMinZ + i * HarbourPierLayout.SeabedStepZ;
+                if (z > HarbourPierLayout.SeabedFlatFromZ + 0.001f) break;
+                rows.Add(z);
+            }
+            rows.Add(HarbourPierLayout.SeabedMaxZ);
+            int nz = rows.Count;
             var vertices = new List<Vector3>(nx * nz);
             var normals = new List<Vector3>(nx * nz);
             var uv0 = new List<Vector2>(nx * nz);
@@ -130,7 +160,7 @@ namespace FishGame.EditorTools
             var triangles = new List<int>((nx - 1) * (nz - 1) * 6);
             for (int iz = 0; iz < nz; iz++)
             {
-                float z = HarbourPierLayout.SeabedMinZ + iz * HarbourPierLayout.SeabedStepZ;
+                float z = rows[iz];
                 float y = HarbourPierLayout.SeabedY(z);
                 float slope = (HarbourPierLayout.SeabedY(z + 1f) - HarbourPierLayout.SeabedY(z - 1f)) * 0.5f;
                 Vector3 normal = new Vector3(0f, 1f, -slope).normalized;
@@ -162,10 +192,66 @@ namespace FishGame.EditorTools
         // Rows (z): the submerged lip -44.5, then -45 down to -55 every metre (the two kinks), then -100 (flat plateau). Each band between two rows has its
         // own vertices, so its texture layer (uv1.y) is constant over the band; the palette slot is per vertex (sand below BeachSandMaxY, grass above),
         // so the band that crosses the edge blends sand into grass.
+        // Harbour round 3 (2026-10-17, critics: "the lawn is a flat saturated lime plane"): the village lawn (the plateau inside the walls, x -60..60,
+        // z -55..-79) is a 2 m grid of its own whose vertices carry a painted variation - large soft patches of olive (Reed) and blue-green
+        // (FoliageAlt) in the grass, and darker and lighter value patches in the vertex colour (the ao channel) - from deterministic value noise
+        // (no Random). The rest of the plateau keeps its 20 m columns; every height is still exactly BeachY (flat at 1.2 here).
+        const float LawnX0 = -60f, LawnX1 = 60f, LawnZ0 = -79f, LawnStep = 2f;
+
+        static float LawnNoise(float x, float z, float scale, float seed)
+        {
+            float px = x / scale + seed * 17.13f, pz = z / scale - seed * 9.71f;
+            float ix = Mathf.Floor(px), iz = Mathf.Floor(pz), fx = px - ix, fz = pz - iz;
+            fx = fx * fx * (3f - 2f * fx); fz = fz * fz * (3f - 2f * fz);
+            float a = Hash(ix, iz), b = Hash(ix + 1f, iz), c = Hash(ix, iz + 1f), d = Hash(ix + 1f, iz + 1f);
+            return Mathf.Lerp(Mathf.Lerp(a, b, fx), Mathf.Lerp(c, d, fx), fz);
+        }
+
+        static float Hash(float x, float z)
+        {
+            float h = Mathf.Sin(x * 127.1f + z * 311.7f) * 43758.5453f;
+            return h - Mathf.Floor(h);
+        }
+
+        static void AddLawn(List<Vector3> vertices, List<Vector3> normals, List<Vector2> uv0, List<Vector4> uv1, List<Color> colors, List<int> triangles)
+        {
+            float y = HarbourPierLayout.BeachY(HarbourPierLayout.BeachFlatFromZ);
+            int nx = Mathf.RoundToInt((LawnX1 - LawnX0) / LawnStep) + 1;
+            int nz = Mathf.RoundToInt((HarbourPierLayout.BeachFlatFromZ - LawnZ0) / LawnStep) + 1;
+            int start = vertices.Count;
+            for (int iz = 0; iz < nz; iz++)
+            {
+                float z = HarbourPierLayout.BeachFlatFromZ - iz * LawnStep;
+                for (int ix = 0; ix < nx; ix++)
+                {
+                    float x = LawnX0 + ix * LawnStep;
+                    float olive = LawnNoise(x, z, 9f, 1f) * 0.7f + LawnNoise(x, z, 3.5f, 2f) * 0.3f;
+                    float cool = LawnNoise(x, z, 13f, 3f);
+                    byte slot = olive > 0.66f ? LakeDockLayout.SlotReed : (cool > 0.72f ? LakeDockLayout.SlotFoliageAlt : LakeDockLayout.SlotGrass);
+                    // the grid's border keeps the plateau's plain grass, so it meets the 20 m band without a seam
+                    if (ix == 0 || ix == nx - 1 || iz == 0 || iz == nz - 1) slot = LakeDockLayout.SlotGrass;
+                    float value = 0.84f + 0.2f * LawnNoise(x, z, 6f, 4f);
+                    vertices.Add(new Vector3(x, y, z));
+                    normals.Add(Vector3.up);
+                    uv0.Add(new Vector2(x, z));
+                    uv1.Add(new Vector4(slot, EnvTextureLayers.Grass, SmoothMeshBuilder.MappingUv, 0f));
+                    colors.Add(new Color(0.5f * value, 0.5f * value, 0.5f * value, 1f));
+                }
+            }
+            for (int iz = 0; iz + 1 < nz; iz++)
+                for (int ix = 0; ix + 1 < nx; ix++)
+                {
+                    int a = start + iz * nx + ix, b = start + (iz + 1) * nx + ix, c = start + (iz + 1) * nx + ix + 1, d = start + iz * nx + ix + 1;
+                    AddIndexedUp(vertices, triangles, a, b, c);
+                    AddIndexedUp(vertices, triangles, a, c, d);
+                }
+        }
+
         static Mesh BuildBeach()
         {
             var rows = new List<float> { HarbourPierLayout.BeachLipZ };
             for (float z = HarbourPierLayout.CoastZ; z >= HarbourPierLayout.BeachFlatFromZ - 0.001f; z -= 1f) rows.Add(z);
+            rows.Add(LawnZ0);   // round 3: the plateau band splits at the lawn grid's back edge
             rows.Add(HarbourPierLayout.BeachEndZ);
             int nx = Mathf.RoundToInt((HarbourPierLayout.BeachMaxX - HarbourPierLayout.BeachMinX) / HarbourPierLayout.BeachStep) + 1;
 
@@ -197,13 +283,17 @@ namespace FishGame.EditorTools
                         colors.Add(new Color(0.5f, 0.5f, 0.5f, 1f));
                     }
                 }
+                bool lawnBand = Mathf.Approximately(zA, HarbourPierLayout.BeachFlatFromZ) && Mathf.Approximately(zB, LawnZ0);
                 for (int ix = 0; ix + 1 < nx; ix++)
                 {
+                    float xa = HarbourPierLayout.BeachMinX + ix * HarbourPierLayout.BeachStep;
+                    if (lawnBand && xa >= LawnX0 - 0.001f && xa + HarbourPierLayout.BeachStep <= LawnX1 + 0.001f) continue;   // the lawn grid fills it
                     int a = start + ix, b = start + nx + ix, c = start + nx + ix + 1, d = start + ix + 1;
                     AddIndexedUp(vertices, triangles, a, b, c);
                     AddIndexedUp(vertices, triangles, a, c, d);
                 }
             }
+            AddLawn(vertices, normals, uv0, uv1, colors, triangles);
             return Finish("Harbour_Beach", vertices, normals, uv0, uv1, colors, triangles);
         }
 

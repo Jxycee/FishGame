@@ -21,6 +21,19 @@
 //   7. Saturation lift (_Saturation) before fog; fog at _FogAmount of URP fog (water would otherwise wash to the fog colour).
 //   8. Shore foam: vertical depth band with a smooth edge wobbled by hash value noise (stepped, wrapped time cross-faded), plus _Ripples
 //      (foam and brightness only); lit by light + ambient.
+//   10. Harbour round 2 (2026-10-16, calmer toon water): the slope shade and the crest tint fade to _FarCalm of their strength by
+//      _CalmDistance metres (seen from above, the far sea no longer blotches), and a soft contact band (_FoamSoft over _FoamSoftWidth x
+//      _FoamWidth of vertical depth) eases the hard toon foam line into the water where rocks, piles and hulls meet it.
+//   12. Harbour round 2b: steep beds (hulls, piles, walls) read deeper in the colour ramp (_SteepDeepen); the foam keeps the true depth.
+//   11. Harbour round 2b: a low sun widens and brightens the glints (the dusk sun path); a high sun keeps them small and sparse.
+//   14. Harbour round 4 (2026-10-18, critics: "hard-edged white pill-shaped whitecaps on the far water at dusk read as stickers"): past
+//      ~18-60 m the glints soften (a wider anti-aliased edge), break into sparkles along the ripple noise, lose a third of their strength and,
+//      under a low sun, take more of the light's hue - the dusk sun path stays golden and glittering, without solid white ellipses.
+//   13. Harbour round 3 (2026-10-17): the bed map. With _BedMapOn the body colour and opacity follow the NATURAL bed baked per map (_BedMap r =
+//      bed height in metres over the water grid's rect, _BedMapST = x0, z0, 1/width, 1/height; fg_harbour.py build_bedmap): rocks, hulls and
+//      piles near the surface no longer glow turquoise, and the floor-to-seabed join has no crease. The screen depth keeps the contact foam;
+//      a solid nearer the surface than the bed darkens the body by up to _SolidShade. g = zone tint toward _ZoneShallow / _ZoneDeep (the
+//      calm creek lagoon). Off (the lake): exactly the screen-depth path above.
 //   9. Lakebed cover: the bed is flat-shaded low-poly, so over a shallow bed the opacity is raised toward 1 (_BedCover, keeping the first
 //      few cm at the waterline clear) and soft caustic veins (|ripple octave 1 - octave 2| near zero, _CausticStrength) break up what
 //      still shows through. The caustics fade with depth and distance.
@@ -37,28 +50,39 @@ Shader "FishGame/Water"
         _FoamWidth("Foam Width (m)", Float) = 0.35
         _LightTint("Light Hue On Body", Range(0, 1)) = 0.35
         _AmbientStrength("Ambient Strength", Range(0, 1)) = 0.35
-        _NormalBoost("Wave Normal Boost", Range(1, 16)) = 6
-        _ShadeContrast("Slope Shade Contrast", Range(0, 0.5)) = 0.14
+        _NormalBoost("Wave Normal Boost", Range(1, 16)) = 4.5
+        _ShadeContrast("Slope Shade Contrast", Range(0, 0.5)) = 0.1
         _ShadeSoft("Slope Shade Softness", Range(0.01, 1)) = 0.2
         _DetailScale("Ripple Size (m)", Float) = 1.6
-        _DetailStrength("Ripple Slope", Range(0, 1)) = 0.12
+        _DetailStrength("Ripple Slope", Range(0, 1)) = 0.09
         _DetailSpeed("Ripple Drift (m/s)", Float) = 0.3
         _DetailFade("Ripple Fade Distance (m)", Float) = 60
         _BedCover("Shallow Bed Cover", Range(0, 1)) = 0.35
-        _CausticStrength("Shallow Caustics", Range(0, 1)) = 0.15
-        _CrestAmount("Crest Lighten", Range(0, 1)) = 0.35
+        _CausticStrength("Shallow Caustics", Range(0, 1)) = 0.12
+        _CrestAmount("Crest Lighten", Range(0, 1)) = 0.25
         _CrestHeight("Crest Height (m, about the sum of wave amplitudes)", Float) = 0.11
-        _GlintPower("Glint Power", Range(4, 512)) = 96
-        _GlintThreshold("Glint Threshold", Range(0.01, 0.99)) = 0.5
-        _GlintStrength("Glint Strength", Range(0, 2)) = 1.0
+        _GlintPower("Glint Power", Range(4, 512)) = 220
+        _GlintThreshold("Glint Threshold", Range(0.01, 0.99)) = 0.62
+        _GlintStrength("Glint Strength", Range(0, 2)) = 0.85
         _GlintFlatten("Glint Sun Height Scale", Range(0.1, 1)) = 0.7
-        _GlintRipple("Glint Ripple Weight", Range(0, 6)) = 3
+        _GlintRipple("Glint Ripple Weight", Range(0, 6)) = 2.2
         _GlintNear("Glint Fade-In Distance (m)", Float) = 6
-        _ReflectStrength("Sky Reflection Strength", Range(0, 1)) = 0.4
+        _ReflectStrength("Sky Reflection Strength", Range(0, 1)) = 0.36
         _ReflectZenith("Sky Reflection Zenith Mix", Range(0, 1)) = 0.6
         _FresnelPower("Fresnel Power", Range(1, 8)) = 4
-        _Saturation("Saturation", Range(0, 2)) = 1.15
+        _Saturation("Saturation", Range(0, 2)) = 0.95
         _FogAmount("Fog Amount", Range(0, 1)) = 0.35
+        _FoamSoft("Soft Contact Band Strength", Range(0, 1)) = 0.32
+        _FoamSoftWidth("Soft Contact Band Width (x Foam Width)", Range(1, 8)) = 2.4
+        _CalmDistance("Far Calm Distance (m)", Float) = 70
+        _FarCalm("Far Shade And Crest Strength", Range(0, 1)) = 0.35
+        _SteepDeepen("Steep Bed Extra Depth (m)", Range(0, 8)) = 0
+        [NoScaleOffset] _BedMap("Bed Map (r = bed y m, g = zone)", 2D) = "black" {}
+        _BedMapST("Bed Map Rect (x0, z0, 1/w, 1/h)", Vector) = (0, 0, 0, 0)
+        _BedMapOn("Bed Map On", Range(0, 1)) = 0
+        _ZoneShallow("Zone Shallow Colour (a = opacity)", Color) = (0.42, 0.88, 0.72, 0.62)
+        _ZoneDeep("Zone Deep Colour (a = opacity)", Color) = (0.1, 0.52, 0.52, 0.95)
+        _SolidShade("Submerged Solid Darkening", Range(0, 1)) = 0.3
     }
 
     SubShader
@@ -113,7 +137,19 @@ Shader "FishGame/Water"
                 half _FresnelPower;
                 half _Saturation;
                 half _FogAmount;
+                half _FoamSoft;
+                half _FoamSoftWidth;
+                float _CalmDistance;
+                half _FarCalm;
+                half _SteepDeepen;
+                float4 _BedMapST;
+                half _BedMapOn;
+                half4 _ZoneShallow;
+                half4 _ZoneDeep;
+                half _SolidShade;
             CBUFFER_END
+            TEXTURE2D(_BedMap);
+            SAMPLER(sampler_BedMap);
 
             struct Attributes { float4 positionOS : POSITION; };
 
@@ -218,16 +254,41 @@ Shader "FishGame/Water"
             #endif
                 float3 sceneWS = ComputeWorldSpacePosition(screenUV, rawDepth, UNITY_MATRIX_I_VP);
                 float depthV = max(0.0, positionWS.y - sceneWS.y);
-                half depthT = (half)(1.0 - exp(-depthV / max(_DepthRange, 0.001)));
+                // 12. Steep beds (round 2b): under a hull, a pile or a wall the vertical depth stays small all the way down, so the body read as
+                // a glowing turquoise sheet. Where the bed is steep (its screen-space normal from the reconstructed position) the colour ramp
+                // reads up to _SteepDeepen metres deeper; the foam still uses the true depth (the contact ring stays).
+                float3 bedDx = ddx(sceneWS), bedDy = ddy(sceneWS);
+                float3 bedN = cross(bedDy, bedDx);
+                half steep = (half)(1.0 - smoothstep(0.2, 0.45, abs(bedN.y) * rsqrt(max(dot(bedN, bedN), 1e-12))));
+                // not across a depth discontinuity (an underwater rock's silhouette): there the 2x2-pixel derivatives are noise, not a slope
+                float bedJump = max(length(bedDx), length(bedDy)) / max(input.eyeDepth, 0.1);
+                steep *= (half)(1.0 - smoothstep(0.012, 0.03, bedJump));
+                // 13. Bed map (round 3): colour and opacity from the natural bed; the screen depth keeps the foam (below).
+                float depthC = depthV + steep * _SteepDeepen;
+                half zone = 0.0h, solid = 0.0h;
+                if (_BedMapOn > 0.5h)
+                {
+                    float4 bm = SAMPLE_TEXTURE2D_LOD(_BedMap, sampler_BedMap, (xz - _BedMapST.xy) * _BedMapST.zw, 0);
+                    float bedDepth = max(0.0, positionWS.y - bm.r);
+                    solid = (half)(saturate((bedDepth - depthV) / 0.8) * (1.0 - smoothstep(0.2, 2.5, depthV)));
+                    depthC = bedDepth;
+                    zone = (half)saturate(bm.g);
+                }
+                half depthT = (half)(1.0 - exp(-depthC / max(_DepthRange, 0.001)));
+                half4 shallowC = lerp(_ShallowColor, _ZoneShallow, zone);
+                half4 deepC = lerp(_DeepColor, _ZoneDeep, zone);
 
-                half3 body = WaterSqr(lerp(sqrt(_ShallowColor.rgb), sqrt(_DeepColor.rgb), depthT));
-                half alpha = lerp(_ShallowColor.a, _DeepColor.a, depthT);
+                half3 body = WaterSqr(lerp(sqrt(shallowC.rgb), sqrt(deepC.rgb), depthT));
+                half alpha = lerp(shallowC.a, deepC.a, depthT);
                 // 9. Cover the flat-shaded bed: opacity toward 1 once the bed is more than a few cm down (the waterline stays clear).
-                alpha = lerp(alpha, 1.0h, _BedCover * (half)smoothstep(0.08, 0.9, depthV));
+                alpha = lerp(alpha, 1.0h, _BedCover * (half)smoothstep(0.08, 0.9, depthC));
+                body *= 1.0h - _SolidShade * solid;
 
                 // 4. Crests toward the shallow colour (per-pixel height, so no interpolation kinks).
                 half crest = (half)saturate(h0 / max(_CrestHeight, 0.001) * 0.5 + 0.5);
-                body = lerp(body, _ShallowColor.rgb, crest * crest * _CrestAmount);
+                // 10. Far calm: shade and crest contrast fade with distance (round 2).
+                half farCalm = (half)lerp(1.0, _FarCalm, saturate(input.eyeDepth / max(_CalmDistance, 0.001)));
+                body = lerp(body, shallowC.rgb, crest * crest * _CrestAmount * farCalm);
 
                 // 3. Light: luminance with partial hue, plus ambient.
                 Light mainLight = GetMainLight();
@@ -239,13 +300,13 @@ Shader "FishGame/Water"
                 half3 L = mainLight.direction;
                 half slopeDelta = dot(nB, L) - L.y;
                 half band = smoothstep(-_ShadeSoft, _ShadeSoft, slopeDelta);
-                half shade = 1.0h + _ShadeContrast * (band * 2.0h - 1.0h);
+                half shade = 1.0h + _ShadeContrast * farCalm * (band * 2.0h - 1.0h);
 
                 half3 rgb = body * (lightTint * shade + _ToonAmbient.rgb * _AmbientStrength);
 
                 // 9. Caustic veins over a shallow bed (where the two ripple octaves cross), near the camera only.
                 half veins = 1.0h - (half)saturate(abs(n1.x - n2.x) * 9.0);
-                half causticMask = (1.0h - depthT) * (half)smoothstep(0.03, 0.25, depthV) * detailFade;
+                half causticMask = (1.0h - depthT) * (half)smoothstep(0.03, 0.25, depthC) * detailFade;
                 rgb += veins * veins * _CausticStrength * causticMask * lightTint;
 
                 // 6. Sky reflection (colour, not grey).
@@ -263,13 +324,20 @@ Shader "FishGame/Water"
                 // under the camera reads as a hole, not a glint. Colour: the light's hue at 60 % over white, at the light's peak channel.
                 half3 Lg = normalize(half3(L.x, L.y * _GlintFlatten, L.z));
                 half3 H = normalize(Lg + V);
-                float spec = pow(saturate(dot(nG, (float3)H)), (float)_GlintPower);
-                float glintAA = max(0.02, fwidth(spec));   // edge width follows the screen-space rate of change (no shimmer at distance)
-                half glint = (half)smoothstep(_GlintThreshold - glintAA, _GlintThreshold + glintAA, spec);
+                // 11. Low sun (round 2b): as the sun nears the horizon the glints widen (power x0.4, threshold -0.12) and brighten (x1.3), so dusk
+                // keeps round 1's golden sun path while the high day sun stays sparse and small.
+                half lowSun = (half)(1.0 - saturate(L.y / 0.45));
+                float spec = pow(saturate(dot(nG, (float3)H)), (float)_GlintPower * lerp(1.0, 0.4, (float)lowSun));
+                // 14. Far glints (round 4): softer edges, broken into sparkles, a little weaker and warmer under a low sun.
+                half farG = (half)saturate((input.eyeDepth - 18.0) / 45.0);
+                float glintAA = max(0.02 + 0.12 * farG, fwidth(spec));   // edge width follows the screen-space rate of change (no shimmer at distance)
+                half glintCut = _GlintThreshold - 0.12h * lowSun;
+                half glint = (half)smoothstep(glintCut - glintAA, glintCut + glintAA, spec);
                 glint *= (half)smoothstep(_GlintNear, _GlintNear * 2.5, input.eyeDepth);
+                glint *= lerp(1.0h, (half)smoothstep(0.32, 0.62, n2.x) * (half)smoothstep(0.25, 0.6, n1.x) * 1.6h, farG);
                 half lightPeak = max(max(lightColor.r, lightColor.g), max(lightColor.b, 0.001h));
-                half3 glintColor = lerp(1.0h.xxx, lightColor / lightPeak, 0.6h) * lightPeak;
-                rgb += glint * _GlintStrength * glintColor;
+                half3 glintColor = lerp(1.0h.xxx, lightColor / lightPeak, 0.6h + 0.3h * lowSun * farG) * lightPeak;
+                rgb += glint * _GlintStrength * (1.0h + 0.3h * lowSun) * (1.0h - 0.35h * farG) * glintColor;
                 alpha = saturate(alpha + glint);
 
                 // 8. Foam and ripples.
@@ -282,6 +350,10 @@ Shader "FishGame/Water"
                 half wobble = (half)(0.35 + 0.4 * lerp(WaterValueNoise(foamUV, tStep * 7.0), WaterValueNoise(foamUV, tNext * 7.0), tFade));
                 half foamEdge = 1.0h - (half)saturate(depthV / max(_FoamWidth, 0.001));
                 half foam = saturate(smoothstep(wobble - 0.04h, wobble + 0.04h, foamEdge) + (half)ripple * 0.6h);
+                // 10. Soft contact band: a quadratic fade from the waterline out to _FoamSoftWidth foam widths (round 2).
+                half softEdge = 1.0h - (half)saturate(depthV / max(_FoamWidth * _FoamSoftWidth, 0.001));
+                // round 3: not against a solid standing in deep water (a hull, a boulder, a pile): there it drew a pale band down the flank
+                foam = max(foam, softEdge * softEdge * _FoamSoft * (half)(0.75 + 0.25 * wobble) * (1.0h - solid));
                 rgb += (half)ripple * 0.25h * lightColor;              // ripples add brightness only (spec 10.4)
                 half3 foamLit = _FoamColor.rgb * (lightColor * 0.9h + _ToonAmbient.rgb * 0.3h);
                 rgb = lerp(rgb, foamLit, foam);

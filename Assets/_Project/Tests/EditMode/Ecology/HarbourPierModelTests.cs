@@ -197,6 +197,12 @@ namespace FishGame.Tests.EditMode
                 Assert.That(SameBytes(BuilderUtil.Abs(path), System.IO.Path.Combine(artFolder, visual.File)), Is.True, path + " differs from Art/Export/Harbour/" + visual.File);
                 Assert.That(mesh.triangles.Length / 3, Is.LessThanOrEqualTo(LakeDockLayout.MaxCombinedTriangles), path + " triangle budget");
                 Assert.That(mesh.vertexCount, Is.LessThan(65535), path + " 16-bit safe");
+                if (HarbourPierManifest.IsCollision(entry))
+                {
+                    // Pass-2 collision meshes (*_Col): drawn by nothing, so no colours, no uv1, no mapping. Never on a renderer (Pass2 test).
+                    Assert.That(visual.Triplanar, Is.False, path + " a collision mesh is not a _Tri model");
+                    continue;
+                }
                 Assert.That(mesh.HasVertexAttribute(VertexAttribute.Color), Is.True, path + " has vertex colours (Col)");
                 Assert.That(mesh.HasVertexAttribute(VertexAttribute.TexCoord1), Is.True, path + " has uv1 (Layer)");
                 Assert.That(mesh.HasVertexAttribute(VertexAttribute.Normal), Is.True, path + " has normals");

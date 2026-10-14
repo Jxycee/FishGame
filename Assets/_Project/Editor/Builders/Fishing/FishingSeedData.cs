@@ -268,6 +268,29 @@ namespace FishGame.EditorTools
             };
         }
 
+        // The toon colour grade per season (Spring, Summer, Autumn, Winter; asset study 2026-10-14, ToonGrade): a warm light gain on upward faces,
+        // a cool blue-purple gain on the shaded side, and a small per-object hue shift. Summer is ToonGrade.Default.
+        internal static ToonGrade[] ToonGrades()
+        {
+            return new[]
+            {
+                Grade(new Vector3(1.17f, 1.11f, 0.88f), 0.9f, 0.35f, new Vector3(0.86f, 0.86f, 1.14f), 0.8f, 0.6f, 0.020f),
+                ToonGrade.Default,
+                Grade(new Vector3(1.22f, 1.07f, 0.82f), 0.9f, 0.35f, new Vector3(0.86f, 0.80f, 1.12f), 0.85f, 0.6f, 0.022f),
+                Grade(new Vector3(1.10f, 1.10f, 1.08f), 0.8f, 0.40f, new Vector3(0.82f, 0.86f, 1.20f), 0.85f, 0.65f, 0.012f),
+            };
+        }
+
+        private static ToonGrade Grade(Vector3 topGain, float topStrength, float topTightness, Vector3 bottomGain, float bottomStrength,
+            float shadeWeight, float hueShift)
+        {
+            return new ToonGrade
+            {
+                topGain = topGain, topStrength = topStrength, topTightness = topTightness,
+                bottomGain = bottomGain, bottomStrength = bottomStrength, shadeWeight = shadeWeight, hueShift = hueShift,
+            };
+        }
+
         private static PaletteSeason Season(string name, Color[] summer, Color grass, Color foliage, Color foliageDark, Color reed, Color blossom,
             Color foliageAlt)
         {
@@ -288,10 +311,17 @@ namespace FishGame.EditorTools
             {
                 Phase(0f, Rgb(1.00f, 0.78f, 0.60f), 0.8f, Rgb(0.38f, 0.52f, 0.78f), Rgb(0.98f, 0.74f, 0.56f), Rgb(0.36f, 0.34f, 0.36f),
                     Rgb(0.42f, 0.40f, 0.52f), Rgb(0.70f, 0.62f, 0.66f), Rgb(0.86f, 0.74f, 0.66f), 0.010f, 0.6f, 0f),
-                Phase(0.10f, Rgb(1.00f, 0.96f, 0.88f), 1.1f, Rgb(0.33f, 0.58f, 0.92f), Rgb(0.74f, 0.86f, 0.96f), Rgb(0.40f, 0.40f, 0.36f),
-                    Rgb(0.46f, 0.50f, 0.62f), Rgb(0.80f, 0.86f, 0.92f), Rgb(0.74f, 0.84f, 0.92f), 0.008f, 0f, 0f),
+                // harbour round 1: day haze -22% (the hills read). Round 2b (user: "bring the dusk warmth and glow into the day"): a warmer
+                // sun (0.96, 0.88 -> 0.92, 0.80) a touch brighter (1.1 -> 1.15), a warm horizon and ambient, a thinner warm haze (0.0062 -> 0.0052)
+                // and a quarter of the dusk warm volume (0 -> 0.25). Dawn, dusk and night are untouched.
+                // Harbour round 3 (user: "the dusk captures are the best so far - bring that warmth and glow into the day"): a golden afternoon
+                // sun (0.92, 0.80 -> 0.89, 0.74), a warm sand horizon (0.84, 0.88, 0.90 -> 0.93, 0.87, 0.78) and haze (-> 0.90, 0.85, 0.77), a
+                // warmer ambient (0.86 grey -> 0.90, 0.86, 0.80) and 0.4 of the dusk warm volume; the sky top and the shade stay blue, so the
+                // warm-light / cool-shade split reads. Dawn, dusk and night are untouched.
+                Phase(0.10f, Rgb(1.00f, 0.89f, 0.74f), 1.15f, Rgb(0.33f, 0.58f, 0.92f), Rgb(0.93f, 0.87f, 0.78f), Rgb(0.40f, 0.40f, 0.36f),
+                    Rgb(0.46f, 0.50f, 0.62f), Rgb(0.90f, 0.86f, 0.80f), Rgb(0.90f, 0.85f, 0.77f), 0.0052f, 0.4f, 0f),
                 Phase(0.55f, Rgb(1.00f, 0.62f, 0.40f), 0.8f, Rgb(0.30f, 0.30f, 0.58f), Rgb(0.98f, 0.56f, 0.36f), Rgb(0.30f, 0.26f, 0.30f),
-                    Rgb(0.40f, 0.32f, 0.46f), Rgb(0.66f, 0.52f, 0.56f), Rgb(0.80f, 0.56f, 0.46f), 0.010f, 1f, 0f),
+                    Rgb(0.34f, 0.30f, 0.50f), Rgb(0.66f, 0.52f, 0.56f), Rgb(0.66f, 0.52f, 0.62f), 0.0085f, 1f, 0f),   // round 1: violet shade and haze against the orange sun
                 Phase(0.70f, Rgb(0.62f, 0.70f, 0.92f), 0.25f, Rgb(0.04f, 0.06f, 0.16f), Rgb(0.12f, 0.16f, 0.30f), Rgb(0.05f, 0.05f, 0.08f),
                     Rgb(0.12f, 0.14f, 0.26f), Rgb(0.30f, 0.36f, 0.52f), Rgb(0.10f, 0.13f, 0.22f), 0.014f, 0f, 1f),
             };
@@ -307,11 +337,13 @@ namespace FishGame.EditorTools
             };
         }
 
-        // Water look (FishGame/Water): saturated shallow teal -> deep blue over a vertical depth range; alpha is opacity (the bed shows only in the shallows).
-        internal static readonly Color WaterShallowColor = new Color(0.30f, 0.86f, 0.80f, 0.68f);
-        internal static readonly Color WaterDeepColor = new Color(0.03f, 0.36f, 0.62f, 0.97f);
-        internal const float WaterDepthRange = 1.6f;
-        internal const float WaterFoamWidth = 0.35f;
+        // Water look (FishGame/Water): shallow turquoise -> deep teal-navy over a vertical depth range; alpha is opacity (the bed shows only in the shallows).
+        // Harbour round 2 (2026-10-16, user unlock "calmer stylised toon water"): less saturated shallows (0.30, 0.86, 0.80) -> (0.36, 0.80, 0.72),
+        // a teal-navy deep (0.03, 0.36, 0.62) -> (0.03, 0.22, 0.34) over a longer ramp (1.6 -> 2.6 m), a slightly wider foam band (0.35 -> 0.4).
+        internal static readonly Color WaterShallowColor = new Color(0.36f, 0.80f, 0.72f, 0.64f);
+        internal static readonly Color WaterDeepColor = new Color(0.03f, 0.22f, 0.34f, 0.97f);
+        internal const float WaterDepthRange = 2.6f;
+        internal const float WaterFoamWidth = 0.4f;
 
         // One row per recipe in SfxRecipes.All order, mixing fields copied from the Core recipe (maxDistance 0 stays 0: the AudioBus default 30).
         internal static List<SfxCueRow> CueRows()

@@ -51,6 +51,18 @@ namespace FishGame.Presentation
         // The live applier, so the editor hooks below can put the asset back even when OnDestroy never runs.
         private static GraphicsApplier s_active;
 
+        // Scene detail (harbour round 0): false on the Low preset (GraphicsPresets.ShowsSceneDetail). AmbientLife hides its collider-free detail
+        // objects while it is false. True when no applier runs (tests, the editor), so a scene shows everything by default.
+        public static bool SceneDetailVisible { get; private set; } = true;
+        public static event Action<bool> SceneDetailChanged;
+
+        private static void SetSceneDetail(bool visible)
+        {
+            if (visible == SceneDetailVisible) return;
+            SceneDetailVisible = visible;
+            SceneDetailChanged?.Invoke(visible);
+        }
+
         private readonly ISettings _settings;
         private readonly UniversalRenderPipelineAsset _asset;
         private readonly int _originalVSync, _originalTargetFrameRate;
@@ -89,6 +101,8 @@ namespace FishGame.Presentation
         private static void ResetStatics()
         {
             s_active = null;
+            SceneDetailVisible = true;
+            SceneDetailChanged = null;
         }
 
 #if UNITY_EDITOR
@@ -136,6 +150,8 @@ namespace FishGame.Presentation
             _settings.Changed -= OnSettingsChanged;
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 
+            SetSceneDetail(true);
+
             if (_touchedFrame)
             {
                 QualitySettings.vSyncCount = _originalVSync;
@@ -160,6 +176,7 @@ namespace FishGame.Presentation
 
         private void Apply(SettingsData data)
         {
+            SetSceneDetail(GraphicsPresets.ShowsSceneDetail(data.graphicsPreset, data.renderScalePercent));
             var now = new Snapshot(data);
             if (_hasLast && now.Equals(_last)) return;
 

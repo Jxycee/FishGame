@@ -21,6 +21,44 @@ namespace FishGame.EditorTools
             public float radius;           // sphere items
             public float[] bounds_min;     // box and sphere items: the item's world AABB
             public float[] bounds_max;
+            public float[] light;          // pass 2: a lamp post's light point (world)
+            public string light_colour;    // round 2: "green" for the mole's harbour light; else the warm lamp colour
+        }
+
+        // Pass 2: one instance of a local model (position + yaw about +y; a frame other than world is named in `frame`).
+        [Serializable]
+        public sealed class Placement
+        {
+            public string name;
+            public float[] position;
+            public float yaw_deg;
+            public string animHint;
+            public string frame;
+            public string collider;        // ice chests: "box" with `size`
+            public float[] size;
+            public float height_scale;     // code trees: the Pcg32 height (the parent Tree_NN's localScale)
+            public bool pine;              // code trees
+            public float radius;           // round 1: a circling gull's circle radius (animHint circle)
+        }
+
+        // Pass 2: a named point (smoke, lights); `frame` "CrewBoat local" for the points on the tug, else world.
+        [Serializable]
+        public sealed class Point
+        {
+            public string name;
+            public float[] position;
+            public string frame;
+            public string animHint;
+            public float yaw_deg;   // round 3: the searchlight's resting heading
+        }
+
+        // Pass 2: the tug's ladders (CrewBoat local frame): the LadderVolume box is volume_min..volume_max.
+        [Serializable]
+        public sealed class Ladder
+        {
+            public string name;
+            public float[] volume_min;
+            public float[] volume_max;
         }
 
         [Serializable]
@@ -31,12 +69,28 @@ namespace FishGame.EditorTools
             public float[] bounds_min;     // the model's world AABB
             public float[] bounds_max;
             public Item[] items;
+            // pass 2 (absent on the phase-1 models)
+            public string group;           // "core", "detail", "col"
+            public bool local_space;       // authored around its own pivot: instantiate once per placement
+            public Placement[] placements;
+            public Ladder[] ladders;       // CrewBoat
+            public Point[] light_points;
+            public Point[] smoke_points;
+            public float[] interior_light; // CrewBoat local
+        }
+
+        [Serializable]
+        public sealed class Pass2
+        {
+            public Point[] smoke_points;   // every smoke point, world or CrewBoat local
+            public Point[] light_points;
         }
 
         [Serializable]
         sealed class Doc
         {
             public Model[] fbx;
+            public Pass2 pass2;
         }
 
         public static Model[] Load()
@@ -47,6 +101,17 @@ namespace FishGame.EditorTools
             if (file == null || file.fbx == null || file.fbx.Length == 0) throw new InvalidOperationException("Harbour manifest has no fbx list");
             return file.fbx;
         }
+
+        public static Pass2 LoadPass2()
+        {
+            string path = BuilderUtil.Abs(HarbourPierLayout.ManifestPath);
+            Doc file = JsonUtility.FromJson<Doc>(System.IO.File.ReadAllText(path));
+            if (file == null || file.pass2 == null || file.pass2.smoke_points == null) throw new InvalidOperationException("Harbour manifest has no pass2 block");
+            return file.pass2;
+        }
+
+        public static bool IsDetail(Model model) => model.group == "detail";
+        public static bool IsCollision(Model model) => model.group == "col";
 
         public static Model Find(Model[] models, string name)
         {

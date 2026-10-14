@@ -50,7 +50,7 @@ namespace FishGame.Tests.PlayMode
             rig.Locomotion = rig.Player.GetComponent<PlayerLocomotion>();
             rig.Controller = FishingRodController.Local;
             yield return PlayModeHarness.WaitUntil(() => rig.Locomotion.IsGrounded, PlayModeHarness.DefaultTimeoutSeconds, "never grounded on the harbour deck");
-            Assert.That(LadderVolume.All.Count, Is.EqualTo(2), "the harbour's two ladder volumes");
+            Assert.That(LadderVolume.All.Count, Is.EqualTo(4), "the harbour's ladder volumes: the pier's two and the tug's two (round 0)");
         }
 
         private static bool OnDeck(FishingRig rig, bool head)

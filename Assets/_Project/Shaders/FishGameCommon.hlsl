@@ -17,6 +17,11 @@ half4  _ToonAmbient;
 half4  _SkyTop;
 half4  _SkyHorizon;
 half4  _SkyGround;
+// Toon colour grade (asset study 2026-10-14; ArtPaletteDef.ToonGradeFor(season), pushed by PaletteGlobals.PushToonGrade). GAINS, not colours:
+// pushed raw with SetGlobalVector (no sRGB conversion), 1 = neutral; w is the strength. Never pushed (all zero) = no change anywhere.
+half4  _FGTopTint;       // xyz albedo gain on upward faces, w strength
+half4  _FGBottomTint;    // xyz gain on the shade-side light (cool blue-purple), w strength
+half4  _FGGradeParams;   // x top tightness (n.y where the top tint starts), y per-object hue shift (+/- turns), z shade weight
 
 half3 FG_PaletteColor(float slot)
 {
@@ -62,6 +67,24 @@ float FG_Hash21(float2 p)
     p = frac(p * float2(123.34, 456.21));
     p += dot(p, p + 45.32);
     return frac(p.x * p.y);
+}
+
+// Per-object hue-shift input in [-1, 1]: a smooth sum of sines of the object origin's world xz (about 3-5 m periods), so neighbouring props differ
+// while a carried or bobbing object only drifts slowly (never pops), and vertical bobbing never changes it (y is left out). Needs no per-object
+// material instance (SRP Batcher safe: the object matrix is per draw). Merged meshes share their object's value.
+half FG_ObjectHueNoise()
+{
+    float2 o = float2(UNITY_MATRIX_M._m03, UNITY_MATRIX_M._m23);
+    return (half)(sin(dot(o, float2(1.37, 0.71))) * 0.55 + sin(dot(o, float2(-0.53, 1.91)) + 1.7) * 0.45);
+}
+
+// Hue rotation by `turns` of the colour wheel around the grey axis (Rodrigues), luma-neutral to first order; cheaper than an HSV round trip.
+half3 FG_HueRotate(half3 c, half turns)
+{
+    half s, co;
+    sincos(turns * 6.2831853h, s, co);
+    const half3 k = half3(0.57735h, 0.57735h, 0.57735h);
+    return max(c * co + cross(k, c) * s + k * (dot(k, c) * (1.0h - co)), 0.0h);
 }
 
 // One fog path for every FishGame shader (URP built-in fog, spec 10.3).

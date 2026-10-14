@@ -89,6 +89,16 @@ namespace FishGame.Core
             return false;
         }
 
+        // Scene detail (harbour round 0, 2026-10-14): collider-free dressing (plants, clutter, gulls, flags, string lights) is hidden on Low, the
+        // GTX 900 class target. Custom keeps it while its render scale is above Low's 75 percent (a Custom tweak of Low stays lean). Gameplay never
+        // changes: no detail object carries a collider.
+        public static bool ShowsSceneDetail(int preset, int renderScalePercent)
+        {
+            if (preset == (int)QualityPreset.Low) return false;
+            if (preset == (int)QualityPreset.Custom) return renderScalePercent > Table[(int)QualityPreset.Low].RenderScalePercent;
+            return true;
+        }
+
         // The preset whose three rows equal these values, or Custom.
         public static int Match(int renderScalePercent, int shadows, int aa)
         {

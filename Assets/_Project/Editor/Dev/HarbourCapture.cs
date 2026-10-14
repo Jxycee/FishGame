@@ -1,0 +1,309 @@
+// Harbour polish capture (harbour round 0, 2026-10-14). Authority: none (editor-only dev tool). Never saves the scene or any asset.
+// Batch entry (needs a graphics device: run WITHOUT -nographics):
+//   Unity.exe -batchmode -projectPath <proj> -quit -executeMethod FishGame.EditorTools.HarbourCapture.Capture -fgShotOut <abs dir>
+// Opens Spot_HarbourPier, pushes the shader globals the runtime pushes (palette, waves, day fraction, lamp glow; LookDevCapture's helpers), poses
+// the ambient life at a fixed time (AmbientLife.Pose), pre-warms the smoke (ParticleSystem.Simulate, fixed seeds) and renders a FIXED set of
+// 1280 x 720 shots with stable names (Shots), so every polish round compares like with like. low_preset_overview is rendered with the Low preset
+// applied: the detail hidden (AmbientLife.ApplyDetail(false)) and the URP shadow tier of Low set on the asset IN MEMORY and put back after.
+// Writes tris.txt: per shot, the triangles of the renderers that camera sees (frustum and culling mask, enabled and active), with the detail
+// drawn (High) and hidden (Low), the renderer counts, and the worst view of each.
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using FishGame.Core;
+using FishGame.Data;
+using FishGame.Presentation;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
+
+namespace FishGame.EditorTools
+{
+    public static class HarbourCapture
+    {
+        const int Width = 1280, Height = 720;
+        const int DayPhase = 1, DuskPhase = 2;
+        const float PoseTime = 7.3f;        // seconds: the ambient-life pose every shot uses
+        const float SmokeWarmSeconds = 12f;
+
+        struct Shot
+        {
+            public string Name;
+            public Vector3 Eye, Target;
+            public float Fov;
+            public bool Dusk, Low;
+            public Shot(string name, Vector3 eye, Vector3 target, float fov, bool dusk = false, bool low = false)
+            {
+                Name = name; Eye = eye; Target = target; Fov = fov; Dusk = dusk; Low = low;
+            }
+        }
+
+        static float Eye(float groundY) => groundY + MovementMath.EyeHeight;
+
+        // Fixed views (world: x east, z out to sea, the coast along z -45, the plateau y 1.2, the deck y 1.5). Stable names: never rename a shot.
+        static readonly Shot[] Shots =
+        {
+            new Shot("overview_high", new Vector3(48f, 30f, 8f), new Vector3(-4f, 0f, -52f), 50f),
+            new Shot("pier_from_beach", new Vector3(-7f, Eye(0.25f), -47.5f), new Vector3(1.5f, 1.6f, -10f), 55f),
+            new Shot("tug_hero", new Vector3(54.5f, 3.2f, -13.0f), new Vector3(40.7f, 2.4f, -19.5f), 46f),   // round 2b: follows the moved tug (+4.2 x, +3 z)
+            new Shot("village_street", new Vector3(-4f, 4.6f, -56.5f), new Vector3(14f, 2.6f, -64f), 58f),
+            new Shot("bait_lane_player_eye", new Vector3(-11f, Eye(1.2f), -60.6f), new Vector3(-28f, 2.6f, -63.5f), 58f),
+            new Shot("breakwater_walk", new Vector3(30f, Eye(1.5f), -53.5f), new Vector3(32.5f, 2.2f, -24f), 60f),
+            new Shot("shoreline_east", new Vector3(36f, Eye(0.25f), -47.2f), new Vector3(80f, 5f, -22f), 58f),
+            new Shot("dunes_backdrop", new Vector3(2f, 3.4f, -30f), new Vector3(-2f, 5.5f, -95f), 55f),
+            new Shot("dusk_overview", new Vector3(48f, 30f, 8f), new Vector3(-4f, 0f, -52f), 50f, dusk: true),
+            new Shot("low_preset_overview", new Vector3(48f, 30f, 8f), new Vector3(-4f, 0f, -52f), 50f, low: true),
+            // extras
+            new Shot("dusk_village", new Vector3(-1f, Eye(1.2f), -59.5f), new Vector3(-20f, 3f, -63f), 60f, dusk: true),
+            new Shot("thead_seaward", new Vector3(0f, Eye(1.5f), -6f), new Vector3(25f, 2f, 60f), 58f),
+            new Shot("west_beach_cliffs", new Vector3(-40f, Eye(0.25f), -47f), new Vector3(-85f, 6f, -10f), 58f),
+            // round 1 (map layout pass): a player-eye walk along the main loop (eye = ground + MovementMath.EyeHeight)
+            new Shot("walk_pier_root", new Vector3(1.5f, Eye(1.2f), -58.8f), new Vector3(-3f, 5.5f, -92f), 60f),
+            new Shot("walk_stairs_a", new Vector3(4.4f, Eye(1.2f), -71.5f), new Vector3(4.4f, 5.2f, -86f), 60f),
+            new Shot("walk_upper_lane", new Vector3(-24f, Eye(3.74f), -87.5f), new Vector3(8f, 4.8f, -81f), 60f),
+            new Shot("walk_overlook", new Vector3(-4f, Eye(6.74f), -97.2f), new Vector3(12f, 0f, -42f), 62f),
+            new Shot("walk_creek_mouth", new Vector3(-51f, Eye(0.55f), -50.5f), new Vector3(-58f, 2.5f, -72f), 60f),
+            new Shot("walk_lookout_deck", new Vector3(36.6f, Eye(4.4f), -49.6f), new Vector3(52f, 0.5f, -30f), 60f),
+            new Shot("walk_jetty_head", new Vector3(55.6f, Eye(0.95f), -36.2f), new Vector3(33f, 2.5f, -21f), 60f),
+            // round 3 (the creek lagoon and the West Horn)
+            new Shot("lagoon_dock_eye", new Vector3(-48.5f, Eye(0.7f), -48.5f), new Vector3(-44f, 0.6f, -22f), 62f),
+            new Shot("horn_tip_eye", new Vector3(-45.6f, Eye(1.0f), -16.8f), new Vector3(-18f, 3f, -48f), 62f),
+            new Shot("village_square", new Vector3(8.5f, Eye(3.74f), -86f), new Vector3(-6f, 4.8f, -90f), 62f),
+            // round 4 (the creek glen, the West Head fall, the reef, the East Ledge)
+            new Shot("creek_glen_eye", new Vector3(-56.4f, Eye(0.7f), -50.4f), new Vector3(-57.6f, 2.0f, -66f), 62f),
+            new Shot("west_fall_view", new Vector3(-55f, Eye(1.6f), -31f), new Vector3(-97f, 5f, -22f), 55f),
+            new Shot("reef_from_thead", new Vector3(-4.5f, Eye(1.5f), -6.5f), new Vector3(-26f, 1.6f, 11f), 58f),
+            new Shot("east_ledge_eye", new Vector3(60f, Eye(1.03f), -37.6f), new Vector3(50f, 0.8f, -17f), 62f),
+            new Shot("ledge_from_beach", new Vector3(47f, Eye(0.25f), -47.5f), new Vector3(60f, 1.4f, -38f), 60f),
+        };
+
+        public static void Capture()
+        {
+            string outDir = LookDevCapture.Arg("-fgShotOut");
+            if (string.IsNullOrEmpty(outDir)) throw new System.ArgumentException("-fgShotOut <abs dir> is required");
+            Directory.CreateDirectory(outDir);
+
+            Scene scene = EditorSceneManager.OpenScene(AssetPaths.HarbourPierScene, OpenSceneMode.Single);
+            var palette = AssetDatabase.LoadAssetAtPath<ArtPaletteDef>(AssetPaths.ArtPaletteAsset);
+            var water = AssetDatabase.LoadAssetAtPath<WaterSettingsDef>(AssetPaths.WaterSettingsAsset);
+            if (palette == null || water == null) throw new System.InvalidOperationException("palette or water settings missing");
+            LookDevCapture.PushPalette(palette);
+            LookDevCapture.PushWaves(water);
+            Light sun = LookDevCapture.FindSun();
+            Quaternion daySun = sun.transform.rotation;
+
+            AmbientLife life = Object.FindAnyObjectByType<AmbientLife>();
+            if (life == null) throw new System.InvalidOperationException("the harbour scene has no AmbientLife (run the build)");
+            var detail = new List<GameObject>();
+            for (int i = 0; i < life.DetailCount; i++) detail.Add(life.Detail(i));
+            // round 2b: the instanced ground cover (Detail) draws through Graphics.RenderMeshInstanced: Update does not run in the editor, so each
+            // shot submits it for the capture camera before each render, and its triangles join the High count (tris_top: D:GroundCover).
+            GroundCover cover = Object.FindAnyObjectByType<GroundCover>();
+
+            var cameraGo = new GameObject("HarbourCaptureCamera");
+            Camera camera = cameraGo.AddComponent<Camera>();
+            camera.nearClipPlane = MovementMath.NearClip;
+            camera.farClipPlane = MovementMath.FarClip;
+            cameraGo.AddComponent<UniversalAdditionalCameraData>().renderPostProcessing = true;
+            Camera sceneCamera = GameObject.Find("SceneCamera")?.GetComponent<Camera>();
+            if (sceneCamera != null) sceneCamera.enabled = false;
+
+            var asset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+            float shadowDistance = asset != null ? asset.shadowDistance : 0f;
+            int shadowRes = asset != null ? asset.mainLightShadowmapResolution : 0, cascades = asset != null ? asset.shadowCascadeCount : 0;
+
+            var report = new StringBuilder();
+            var top = new StringBuilder();   // round 2: the largest renderers per shot (tris_top.txt), to see where the Low budget goes
+            top.Append("# shot: the 14 largest renderers the camera sees (triangles; D: = detail, hidden on Low)\n");
+            report.Append("# shot | high_tris | low_tris | high_renderers | low_renderers | high_shadow_casters | low_shadow_casters | alpha_cover_high | alpha_cover_low | grass_drawn | grass_within_25m\n");
+            report.Append("#   (renderers this camera sees; Low = detail hidden. Round 3 audits: shadow casters = visible renderers with shadow casting on (a proxy:\n");
+            report.Append("#   the shadow pass culls by the light's frustum); alpha_cover = the summed screen fraction of the alpha-tested renderers' projected bounds\n");
+            report.Append("#   (crown cards, _ALPHATEST_ON: an overdraw proxy, 1.0 = one full screen); grass = instanced ground-cover tufts drawn (High only))\n");
+            long worstHigh = 0, worstLow = 0;
+            string worstHighShot = "", worstLowShot = "";
+            try
+            {
+                foreach (Shot s in Shots)
+                {
+                    float dayFraction = s.Dusk ? DuskFraction(palette) : DayNightControllerHoldFraction;
+                    float glow = DayNightMath.LampGlow(dayFraction, palette.SunMoon.sunriseFraction, palette.SunMoon.sunsetFraction, 0.05f);
+                    Quaternion sunRot = s.Dusk ? DuskSun(palette, dayFraction) : daySun;
+                    LookDevCapture.ApplyPhase(palette, s.Dusk ? DuskPhase : DayPhase, sun, sunRot);
+                    Shader.SetGlobalFloat(ShaderGlobals.DayFraction, dayFraction);
+                    Shader.SetGlobalFloat(ShaderGlobals.LampGlow, glow);
+                    Color tint = s.Dusk ? Color.Lerp(palette.Phases[DuskPhase].toonAmbient, sun.color, Mathf.Clamp01(sun.intensity)) : Color.white;
+                    tint.a = 1f;
+
+                    life.ApplyDetail(true);
+                    if (asset != null && s.Low)
+                    {
+                        ShadowParams low = GraphicsPresets.ShadowFor((int)ShadowTier.Low);
+                        asset.shadowDistance = low.Distance;
+                        asset.mainLightShadowmapResolution = low.Resolution;
+                        asset.shadowCascadeCount = low.Cascades;
+                    }
+                    life.Pose(PoseTime, glow, tint);
+                    WarmSmoke();
+
+                    camera.transform.position = s.Eye;
+                    camera.transform.rotation = Quaternion.LookRotation(s.Target - s.Eye, Vector3.up);
+                    camera.fieldOfView = s.Fov;
+                    var seen = new List<KeyValuePair<long, string>>();
+                    Count(camera, detail, out long highTris, out long lowTris, out int highR, out int lowR, seen, out int highS, out int lowS,
+                          out float alphaHigh, out float alphaLow);
+                    int grassDrawn = 0, grassNear = 0;
+                    if (cover != null)
+                    {
+                        cover.CountInstances(camera, 25f, out grassDrawn, out grassNear);
+                        long coverTris = cover.CountTriangles(GeometryUtility.CalculateFrustumPlanes(camera), camera);
+                        highTris += coverTris;
+                        seen.Add(new KeyValuePair<long, string>(coverTris, "D:GroundCover(instanced)"));
+                    }
+                    seen.Sort((a, b) => b.Key != a.Key ? b.Key.CompareTo(a.Key) : string.CompareOrdinal(a.Value, b.Value));
+                    top.Append(s.Name).Append(':');
+                    for (int k = 0; k < seen.Count && k < 14; k++) top.Append(' ').Append(seen[k].Value).Append('=').Append(seen[k].Key);
+                    top.Append('\n');
+                    report.Append(s.Name).Append(" | ").Append(highTris).Append(" | ").Append(lowTris).Append(" | ").Append(highR).Append(" | ").Append(lowR)
+                          .Append(" | ").Append(highS).Append(" | ").Append(lowS)
+                          .Append(" | ").Append(alphaHigh.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))
+                          .Append(" | ").Append(alphaLow.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))
+                          .Append(" | ").Append(grassDrawn).Append(" | ").Append(grassNear).Append('\n');
+                    if (highTris > worstHigh) { worstHigh = highTris; worstHighShot = s.Name; }
+                    if (lowTris > worstLow) { worstLow = lowTris; worstLowShot = s.Name; }
+                    life.ApplyDetail(!s.Low);   // after the counts: an inactive renderer has no bounds
+                    Render(camera, Path.Combine(outDir, s.Name + ".png"), s.Low ? null : cover);
+
+                    if (asset != null && s.Low)
+                    {
+                        asset.shadowDistance = shadowDistance;
+                        asset.mainLightShadowmapResolution = shadowRes;
+                        asset.shadowCascadeCount = cascades;
+                    }
+                }
+            }
+            finally
+            {
+                life.ApplyDetail(true);
+                if (asset != null)
+                {
+                    asset.shadowDistance = shadowDistance;
+                    asset.mainLightShadowmapResolution = shadowRes;
+                    asset.shadowCascadeCount = cascades;
+                }
+                Object.DestroyImmediate(cameraGo);
+            }
+            report.Append("worst_high ").Append(worstHigh).Append(' ').Append(worstHighShot).Append('\n');
+            report.Append("worst_low ").Append(worstLow).Append(' ').Append(worstLowShot).Append('\n');
+            File.WriteAllText(Path.Combine(outDir, "tris.txt"), report.ToString());
+            File.WriteAllText(Path.Combine(outDir, "tris_top.txt"), top.ToString());
+            Debug.Log("FG HARBOUR CAPTURE " + Shots.Length + " shots out=" + outDir + " worst_high=" + worstHigh + " (" + worstHighShot + ") worst_low=" + worstLow + " (" + worstLowShot + ")");
+        }
+
+        // DayNightController.DayHoldFraction (internal to Presentation): the noon-ish hold the scene shows without a world state.
+        const float DayNightControllerHoldFraction = 0.25f;
+
+        // Late dusk: 0.02 of a day before sunset (the lamps are about two thirds on), the sun low in the west.
+        static float DuskFraction(ArtPaletteDef palette) => palette.SunMoon.sunsetFraction - 0.02f;
+
+        static Quaternion DuskSun(ArtPaletteDef palette, float f)
+        {
+            DayNightMath.SunDirection(f, palette.SunMoon.sunriseFraction, palette.SunMoon.sunsetFraction, palette.SunMoon.minElevationDeg,
+                                      out float x, out float y, out float z);
+            return Quaternion.LookRotation(new Vector3(-x, -y, -z), Vector3.up);
+        }
+
+        static void WarmSmoke()
+        {
+            foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+                foreach (ParticleSystem ps in root.GetComponentsInChildren<ParticleSystem>(false))
+                    ps.Simulate(SmokeWarmSeconds, true, true, true);
+        }
+
+        static bool Under(Transform t, List<GameObject> roots)
+        {
+            for (Transform u = t; u != null; u = u.parent) if (roots.Contains(u.gameObject)) return true;
+            return false;
+        }
+
+        // Triangles of the mesh renderers this camera would draw: active, enabled, on a layer in its culling mask, inside its frustum. The Low
+        // count leaves out everything under the detail objects (what Low hides). Shadow-caster passes are not counted.
+        static void Count(Camera camera, List<GameObject> detail, out long high, out long low, out int highR, out int lowR,
+                          List<KeyValuePair<long, string>> seen, out int highS, out int lowS, out float alphaHigh, out float alphaLow)
+        {
+            Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
+            high = low = 0; highR = lowR = 0; highS = lowS = 0; alphaHigh = alphaLow = 0f;
+            foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+                foreach (MeshRenderer r in root.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    bool inDetail = Under(r.transform, detail);
+                    // Detail is counted as High draws it (active), whatever the current shot set.
+                    bool active = inDetail ? ActiveIgnoring(r.transform, detail) : r.gameObject.activeInHierarchy;
+                    if (!active || !r.enabled || r.forceRenderingOff) continue;
+                    if ((camera.cullingMask & (1 << r.gameObject.layer)) == 0) continue;
+                    if (!GeometryUtility.TestPlanesAABB(planes, r.bounds)) continue;
+                    MeshFilter f = r.GetComponent<MeshFilter>();
+                    if (f == null || f.sharedMesh == null) continue;
+                    long tris = 0;
+                    for (int s = 0; s < f.sharedMesh.subMeshCount; s++) tris += f.sharedMesh.GetIndexCount(s) / 3;
+                    high += tris; highR++;
+                    if (!inDetail) { low += tris; lowR++; }
+                    if (r.shadowCastingMode != ShadowCastingMode.Off) { highS++; if (!inDetail) lowS++; }
+                    Material m = r.sharedMaterial;
+                    if (m != null && m.IsKeywordEnabled("_ALPHATEST_ON"))
+                    {
+                        float cover = ScreenCover(camera, r.bounds);
+                        alphaHigh += cover;
+                        if (!inDetail) alphaLow += cover;
+                    }
+                    seen?.Add(new KeyValuePair<long, string>(tris, (inDetail ? "D:" : "") + (r.transform.parent != null ? r.transform.parent.name + "/" : "") + r.name));
+                }
+        }
+
+        // The screen fraction of a world box's projected rectangle, clipped to the viewport (a corner behind the camera opens it to that side).
+        static float ScreenCover(Camera camera, Bounds b)
+        {
+            float x0 = 1f, x1 = 0f, y0 = 1f, y1 = 0f;
+            for (int k = 0; k < 8; k++)
+            {
+                Vector3 c = b.center + Vector3.Scale(b.extents, new Vector3((k & 1) == 0 ? -1f : 1f, (k & 2) == 0 ? -1f : 1f, (k & 4) == 0 ? -1f : 1f));
+                Vector3 v = camera.WorldToViewportPoint(c);
+                if (v.z <= 0f) { v.x = v.x < 0.5f ? 0f : 1f; v.y = v.y < 0.5f ? 0f : 1f; }
+                x0 = Mathf.Min(x0, v.x); x1 = Mathf.Max(x1, v.x); y0 = Mathf.Min(y0, v.y); y1 = Mathf.Max(y1, v.y);
+            }
+            return Mathf.Max(0f, Mathf.Min(x1, 1f) - Mathf.Max(x0, 0f)) * Mathf.Max(0f, Mathf.Min(y1, 1f) - Mathf.Max(y0, 0f));
+        }
+
+        // activeInHierarchy, treating the detail objects themselves as active (the Low shot deactivates them).
+        static bool ActiveIgnoring(Transform t, List<GameObject> detail)
+        {
+            for (Transform u = t; u != null; u = u.parent)
+                if (!u.gameObject.activeSelf && !detail.Contains(u.gameObject)) return false;
+            return true;
+        }
+
+        static void Render(Camera camera, string path, GroundCover cover = null)
+        {
+            // Inactive detail renderers report empty bounds; render after the counts. Two frames: shadow and depth history settled.
+            var rt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 };
+            camera.targetTexture = rt;
+            cover?.Submit(camera);
+            camera.Render();
+            cover?.Submit(camera);
+            camera.Render();
+            RenderTexture previous = RenderTexture.active;
+            RenderTexture.active = rt;
+            var tex = new Texture2D(Width, Height, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, Width, Height), 0, 0);
+            tex.Apply();
+            RenderTexture.active = previous;
+            camera.targetTexture = null;
+            File.WriteAllBytes(path, tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+            rt.Release();
+            Object.DestroyImmediate(rt);
+        }
+    }
+}

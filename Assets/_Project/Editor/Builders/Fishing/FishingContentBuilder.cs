@@ -107,6 +107,13 @@ namespace FishGame.EditorTools
                     FishingSeedData.PaletteSkinTone, FishingSeedData.PalettePhases(), FishingSeedData.PaletteUiAccent, FishingSeedData.PaletteUiGood,
                     FishingSeedData.PaletteUiWarn, FishingSeedData.PaletteUiBad, FishingSeedData.PaletteUiPanel, FishingSeedData.PaletteUiText,
                     FishingSeedData.PaletteM2Season));
+            // Asset study 2026-10-14 (allowed in-place fill, like the M3 palette fields): a palette made before the toon grades existed gets the seeds.
+            if (palette.ToonGrades.Count == 0)
+            {
+                palette.ConfigureToonGrades(FishingSeedData.ToonGrades());
+                EditorUtility.SetDirty(palette);
+                Debug.Log("FG CONTENT fishing: filled ArtPalette toonGrades");
+            }
             var water = Ensure<WaterSettingsDef>(Rooted(AssetPaths.WaterSettingsAsset), d =>
             {
                 WaveSet w = FishingSeedData.Waves;

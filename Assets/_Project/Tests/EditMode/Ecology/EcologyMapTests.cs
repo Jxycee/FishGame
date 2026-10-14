@@ -524,8 +524,10 @@ namespace FishGame.Tests.EditMode
                 GameObject stands = Root(scene, "StandPoints");
                 Assert.That(stands, Is.Not.Null, "StandPoints root");
                 IReadOnlyList<Vector4> layout = HarbourPierLayout.StandPoints;
-                Assert.That(layout.Count, Is.EqualTo(11));
-                Assert.That(stands.transform.childCount, Is.EqualTo(11), "StandPoints children");
+                // 13 since harbour round 1 (2026-10-15): + the east jetty head and the lookout tower deck; 14 since round 3: + the West Horn's tip;
+                // 15 since round 4: + the East Ledge
+                Assert.That(layout.Count, Is.EqualTo(15));
+                Assert.That(stands.transform.childCount, Is.EqualTo(15), "StandPoints children");
                 for (int i = 0; i < layout.Count; i++)
                 {
                     Transform t = stands.transform.Find("StandPoint_" + i);
@@ -586,9 +588,17 @@ namespace FishGame.Tests.EditMode
             ShoreGrid g = zone.Grid;
             // Straight out from the coast, at least 35 m from the breakwater (land), the coast is the nearest land for the whole z range (the pier is
             // Structure and the walls are Default, so neither counts). Axis-aligned chamfer distance is exact: shore = z + 45.
-            foreach (float x in new[] { -50.5f, -40.5f, -20.5f, -10.5f })
+            // Harbour round 2: the west sand spit (x -62..-55, z -44..-37) curls round the creek mouth, so the x -50.5 and -40.5 columns (their
+            // nearest land is the spit tip now) became x -30.5 and -25.5; the spit itself is land.
+            // Round 3: the spit grew into the West Horn (a dune hook to x -36, z -17 round the creek lagoon) and a rock point stands in the bay at
+            // x -21, so the columns moved to the bay's middle (x -10.5, -5.5, 5.5) and stop at z -24.5 (beyond it the horn or the breakwater is
+            // nearer than the beach).
+            Assert.That(g.IsWater(-58.2f, -38.2f), Is.False, "the West Horn's arm is land");
+            Assert.That(g.IsWater(-45.6f, -16.8f), Is.False, "the West Horn's tip is land");
+            Assert.That(g.IsWater(-47.5f, -32.5f), Is.True, "the creek lagoon is water");
+            foreach (float x in new[] { -10.5f, -5.5f, 5.5f })
             {
-                for (float z = -44.5f; z <= -10.5f; z += 1f)
+                for (float z = -44.5f; z <= -24.5f; z += 1f)
                 {
                     Assert.That(g.IsWater(x, z), Is.True, "water at (" + x + ", " + z + ")");
                     Assert.That(Mathf.Abs(g.ShoreM(x, z) - (z + 45f)), Is.LessThanOrEqualTo(0.05f), "shore distance at (" + x + ", " + z + "): " + g.ShoreM(x, z));
@@ -648,7 +658,7 @@ namespace FishGame.Tests.EditMode
                     y.GetUVs(1, uy);
                     Assert.That(uy, Is.EqualTo(ux), x.name + " uv1");
 
-                    if (x.name == "Harbour_Water" || x.name == "Harbour_WaterSkirt") continue;   // the water meshes (51,200 and 672 triangles, 16-bit) are not Toon: no colours or uv1
+                    if (x.name == "Harbour_Water" || x.name == "Harbour_WaterSkirt") continue;   // the water meshes (28,672 and 512 triangles since harbour round 2, 16-bit) are not Toon: no colours or uv1
                     Assert.That(x.triangles.Length / 3, Is.LessThanOrEqualTo(LakeDockLayout.MaxCombinedTriangles), x.name + " triangle limit");
                     Assert.That(x.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.Color), Is.True, x.name + " has vertex colours");
                     Assert.That(ux.Count, Is.EqualTo(x.vertexCount), x.name + " has uv1 on every vertex");
@@ -675,15 +685,16 @@ namespace FishGame.Tests.EditMode
         {
             Assert.That(skirt.name, Is.EqualTo("Harbour_WaterSkirt"));
             var skirtVertices = new HashSet<Vector3>(skirt.vertices);
-            float edge = HarbourPierLayout.WaterGridCells * HarbourPierLayout.WaterCellSize * 0.5f;
+            // Harbour round 2: the grid is a rectangle off the origin (x -96..96, z -48..120)
+            float x0 = HarbourPierLayout.WaterMinX, x1 = HarbourPierLayout.WaterMaxX, z0 = HarbourPierLayout.WaterMinZ, z1 = HarbourPierLayout.WaterMaxZ;
             int border = 0;
             foreach (Vector3 v in water.vertices)
             {
-                if (Mathf.Max(Mathf.Abs(v.x), Mathf.Abs(v.z)) != edge) continue;
+                if (v.x != x0 && v.x != x1 && v.z != z0 && v.z != z1) continue;
                 border++;
                 Assert.That(skirtVertices.Contains(v), Is.True, "the water grid's border vertex " + v + " is not a skirt vertex (bit for bit)");
             }
-            Assert.That(border, Is.EqualTo(4 * HarbourPierLayout.WaterGridCells), "the grid's border has 640 vertices");
+            Assert.That(border, Is.EqualTo(2 * (HarbourPierLayout.WaterCellsX + HarbourPierLayout.WaterCellsZ)), "the grid's border has 480 vertices");
             Vector3[] vs = skirt.vertices;
             Vector3[] ns = skirt.normals;
             float far = 0f;
@@ -702,7 +713,7 @@ namespace FishGame.Tests.EditMode
                 Assert.That(c.y, Is.GreaterThan(0f), "skirt triangle " + t / 3 + " faces up");
                 area += c.y * 0.5f;
             }
-            float want = 4f * HarbourPierLayout.SkirtOuterHalfExtent * HarbourPierLayout.SkirtOuterHalfExtent - 4f * edge * edge;
+            float want = 4f * HarbourPierLayout.SkirtOuterHalfExtent * HarbourPierLayout.SkirtOuterHalfExtent - (x1 - x0) * (z1 - z0);
             Assert.That(area, Is.EqualTo(want).Within(want * 1e-3f), "the skirt covers exactly the ring between the grid and the far square (no gap, no overlap)");
         }
 

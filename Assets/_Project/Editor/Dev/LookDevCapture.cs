@@ -440,7 +440,7 @@ namespace FishGame.EditorTools
             Debug.Log("FG LOOKDEV harbour captured " + HarbourShots.Length + " shots");
         }
 
-        static string Arg(string name)
+        internal static string Arg(string name)
         {
             string[] args = System.Environment.GetCommandLineArgs();
             for (int i = 0; i + 1 < args.Length; i++) if (args[i] == name) return args[i + 1];
@@ -548,7 +548,7 @@ namespace FishGame.EditorTools
 
         internal static void PushPalette(ArtPaletteDef palette) => PushPalette(palette, palette.M2Season);   // internal: FishIconBaker reuses the globals
 
-        // Same push as PaletteGlobals.Apply: the linearised palette, then the season for the seasonal scenery.
+        // Same push as PaletteGlobals.Apply: the linearised palette, the season's toon grade, then the season for the seasonal scenery.
         internal static void PushPalette(ArtPaletteDef palette, int season)
         {
             Vector4[] authored = palette.PaletteVectors(season);
@@ -559,10 +559,11 @@ namespace FishGame.EditorTools
                 linear[i] = new Vector4(c.r, c.g, c.b, c.a);
             }
             Shader.SetGlobalVectorArray(ShaderGlobals.Palette, linear);
+            FishGame.Presentation.PaletteGlobals.PushToonGrade(palette, season);
             SeasonalVisibility.SetSeason(season);
         }
 
-        static void PushWaves(WaterSettingsDef water)
+        internal static void PushWaves(WaterSettingsDef water)
         {
             var waves = new Vector4[ShaderGlobals.WavesLength];
             for (int i = 0; i < 3 && i < water.DirAmpLenSpeed.Count; i++) waves[i] = water.DirAmpLenSpeed[i];
@@ -595,7 +596,7 @@ namespace FishGame.EditorTools
 
         // ---- scene props ----
 
-        static Light FindSun()
+        internal static Light FindSun()
         {
             GameObject go = GameObject.Find("Sun");
             if (go == null || go.GetComponent<Light>() == null) throw new System.InvalidOperationException("no Sun light in the lake scene");

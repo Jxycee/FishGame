@@ -36,6 +36,7 @@ Material:
     m_Floats:
     - _Desaturate: 0
     - _FGArrayGain: 2
+    - _FGGrade: 1
     - _FGMacro: 0.7
     - _FGNormalStrength: 1
     - _FGTexWeight: 1

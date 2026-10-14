@@ -60,7 +60,8 @@ namespace FishGame.EditorTools
                 "_MAIN_LIGHT_SHADOWS_CASCADE", "_ADDITIONAL_LIGHTS", "_CLUSTER_LIGHT_LOOP", "_ADDITIONAL_LIGHT_SHADOWS", "_SHADOWS_SOFT",
                 "_LIGHT_LAYERS", "_LIGHT_COOKIES", "FOG_EXP2", "_CASTING_PUNCTUAL_LIGHT_SHADOW", "INSTANCING_ON"
             },
-            new[] { "_MAIN_LIGHT_SHADOWS_SCREEN", "_ADDITIONAL_LIGHTS_VERTEX", "FOG_LINEAR" },
+            new[] { "_MAIN_LIGHT_SHADOWS_SCREEN", "_ADDITIONAL_LIGHTS_VERTEX", "FOG_LINEAR",
+                    "_ALPHATEST_ON" },   // harbour round 2: FishGame/Toon's crown-card cutout variant (M_Toon_Foliage), every pass
             new[] { "_MAIN_LIGHT_SHADOWS", "_ADDITIONAL_LIGHTS", "_LIGHT_LAYERS", "FOG_EXP",
                     "_FG_TRIPLANAR" },   // R74 adoption: FishGame/Toon's world-triplanar mapping variant (M_Toon_Tri)
             new[] { "_GBUFFER_NORMALS_OCT", "_WRITE_RENDERING_LAYERS" },
