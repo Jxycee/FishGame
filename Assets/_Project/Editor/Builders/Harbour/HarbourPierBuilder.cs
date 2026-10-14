@@ -30,7 +30,7 @@ namespace FishGame.EditorTools
         // Everything the scene needs from disk, loaded once after NewScene (C 2.8 #14).
         sealed class ArtAssets
         {
-            public Material Toon, ToonTri, Water, Creek;
+            public Material Toon, ToonTri, Water, Creek, Foliage;
             public Mesh WaterMesh, WaterSkirt, Seabed, Beach;
             public Mesh[] VisualMeshes;   // HarbourPierLayout.Visuals order
             public Mesh Branches;   // the lake's bare winter branches (read-only reuse; LakeDockBuilder builds it earlier in the same BuildAll)
@@ -45,6 +45,7 @@ namespace FishGame.EditorTools
         public static void Build()
         {
             HarbourPierMeshes.BuildAll();   // water, seabed, beach: on disk before the scene references them
+            HarbourGroundCover.BuildMeshes();   // round 2b: the ground-cover tuft meshes
             // Pass 2: the weather vane split (head turns) and the lighthouse beam, saved in place before the scene references them.
             BuildWeatherVaneMeshes(LoadModelMesh(HarbourPierLayout.WeatherVaneModel));
             HarbourPierMeshes.Save(HarbourPierLayout.BeaconBeamMeshPath, BuildBeaconBeam());
@@ -60,6 +61,7 @@ namespace FishGame.EditorTools
             {
                 Toon = RenderMaterialLibrary.Get("M_Toon_Base"),
                 ToonTri = RenderMaterialLibrary.Get("M_Toon_Tri"),
+                Foliage = RenderMaterialLibrary.Get("M_Toon_Foliage"),
                 Water = RenderMaterialLibrary.Get("M_Water_Surface"),
                 Creek = RenderMaterialLibrary.Get("M_Water_Creek"),
                 WaterMesh = LoadMesh(HarbourPierLayout.WaterMeshPath),
@@ -378,7 +380,8 @@ namespace FishGame.EditorTools
         {
             Pcg32 rng = Rng.Stream(HarbourPierLayout.Seed, HarbourPierLayout.TreeStream, 0UL);
             Pcg32 canopyRng = Rng.Stream(HarbourPierLayout.Seed, HarbourPierLayout.CanopyStream, 0UL);
-            Dictionary<string, (Mesh mesh, HarbourPierManifest.Placement at)> codeTrees = CodeTreePlacements(art);
+            Dictionary<string, (Mesh mesh, HarbourPierManifest.Placement at)> codeTrees = CodeTreePlacements(art, false);
+            Dictionary<string, (Mesh mesh, HarbourPierManifest.Placement at)> codeCrowns = CodeTreePlacements(art, true);   // round 2b: crown cards
             int placed = 0;
             for (int attempt = 0; attempt < HarbourPierLayout.MaxAttempts && placed < HarbourPierLayout.TreeCount; attempt++)
             {
@@ -406,6 +409,8 @@ namespace FishGame.EditorTools
                     throw new System.InvalidOperationException(name + ": the manifest's code tree (" + ported + ", pine " + codeTree.at.pine + ", h " + codeTree.at.height_scale
                                                                + ") differs from the Pcg32 draw (" + x + ", " + z + ", pine " + pine + ", h " + height + "): re-port CODE_TREES in fg_harbour.py");
                 MeshRenderer visual = AddVisual(tree.transform, "TreeVisual", codeTree.mesh, art.ToonTri, Quaternion.Euler(0f, codeTree.at.yaw_deg, 0f), true);
+                if (!codeCrowns.TryGetValue(name, out var crown)) throw new System.InvalidOperationException("the manifest places no crown cards at " + name);
+                MeshRenderer crownVisual = AddVisual(tree.transform, "TreeCrowns", crown.mesh, art.Foliage, Quaternion.Euler(0f, crown.at.yaw_deg, 0f), true);
                 if (!pine)
                 {
                     MeshRenderer branches = AddVisual(tree.transform, "Branches", art.Branches, art.Toon,
@@ -413,6 +418,7 @@ namespace FishGame.EditorTools
                     tree.AddComponent<SeasonalVisibility>().Configure(new[]
                     {
                         new SeasonalVisibility.Entry(visual, SeasonalLook.MaskLeafy),
+                        new SeasonalVisibility.Entry(crownVisual, SeasonalLook.MaskLeafy),
                         new SeasonalVisibility.Entry(branches, SeasonalLook.MaskWinter),
                     });
                 }
@@ -429,14 +435,15 @@ namespace FishGame.EditorTools
             Object.DestroyImmediate(go.GetComponent<MeshFilter>());
         }
 
-        // Tree_NN -> (its code-tree mesh, its manifest placement), from the four Harbour_Core_CodeTree_* models.
-        static Dictionary<string, (Mesh, HarbourPierManifest.Placement)> CodeTreePlacements(ArtAssets art)
+        // Tree_NN -> (its code-tree mesh, its manifest placement), from the four Harbour_Core_CodeTree_*_Tri models (cards: their four
+        // Harbour_Core_CodeTree_*_Cards crown twins, round 2b).
+        static Dictionary<string, (Mesh, HarbourPierManifest.Placement)> CodeTreePlacements(ArtAssets art, bool cards)
         {
             var map = new Dictionary<string, (Mesh, HarbourPierManifest.Placement)>();
             for (int i = 0; i < HarbourPierLayout.Visuals.Length; i++)
             {
                 HarbourPierLayout.VisualModel visual = HarbourPierLayout.Visuals[i];
-                if (visual.Parent != HarbourPierLayout.RootCodeTrees) continue;
+                if (visual.Parent != HarbourPierLayout.RootCodeTrees || visual.Cards != cards) continue;
                 foreach (HarbourPierManifest.Placement p in HarbourPierManifest.Find(art.Manifest, visual.MeshName).placements)
                     map.Add(p.name, (art.VisualMeshes[i], p));
             }

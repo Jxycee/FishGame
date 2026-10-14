@@ -65,13 +65,14 @@ namespace FishGame.EditorTools
 
         // Round 1: the river ribbon (with the creek and the tide pools) draws with M_Water_Creek (no shore-foam band: it sits cm over the land).
         static Material MaterialFor(HarbourPierLayout.VisualModel visual, ArtAssets art) =>
-            visual.MeshName == "Harbour_Core_River" ? art.Creek : visual.Triplanar ? art.ToonTri : art.Toon;
+            visual.MeshName == "Harbour_Core_River" ? art.Creek : visual.Cards ? art.Foliage : visual.Triplanar ? art.ToonTri : art.Toon;
 
         // Flat ground ribbons, the river and the small low dressing cast nothing worth a shadow pass (GTX 900 budget).
         static bool CastsShadows(string meshName) =>
             meshName != "Harbour_Core_River" && meshName != "Harbour_Core_Paths" && meshName != "Harbour_Detail_Plants_A" && meshName != "Harbour_Detail_Plants_B"
             && meshName != "Harbour_Detail_Reeds" && meshName != "Harbour_Detail_TidePools_Tri" && meshName != "Harbour_Detail_Shore" && meshName != "Harbour_Detail_Lights"
-            && meshName != "Harbour_Detail_Terraces" && meshName != "Harbour_Detail_Anim_GullFly";
+            && meshName != "Harbour_Detail_Terraces" && meshName != "Harbour_Detail_Anim_GullFly" && meshName != "Harbour_Detail_StorySigns"
+            && meshName != "Harbour_Detail_Anim_Duck" && meshName != "Harbour_Detail_Anim_Crab";
 
         // World models of one parent at the origin (collision models get a MeshCollider only); returns the root.
         static GameObject AddWorldModels(ArtAssets art, string rootName, int layer)
@@ -199,6 +200,7 @@ namespace FishGame.EditorTools
         {
             GameObject root = Root(HarbourPierLayout.RootDetail, Layers.Default);
             life.Detail.Add(root);
+            HarbourGroundCover.AddTo(root.transform, art.Foliage);   // round 2b: instanced grass and flowers (hidden on Low with the root)
             HarbourPierManifest.Model boat = HarbourPierManifest.Find(art.Manifest, HarbourPierLayout.CrewBoatModel);
             Vector3 tugMin = hull.position + HarbourPierManifest.ToVector(boat.bounds_min), tugMax = hull.position + HarbourPierManifest.ToVector(boat.bounds_max);
 
@@ -250,6 +252,12 @@ namespace FishGame.EditorTools
                         case "HangingNet": life.Move(go.transform, AmbientLife.MotionKind.Sway, 3.5f, Vector3.right); break;
                         case "Bunting": life.Move(go.transform, AmbientLife.MotionKind.Sway, 7f, PrincipalAxisXZ(mesh)); break;
                         case "GullFly": life.Move(go.transform, AmbientLife.MotionKind.Circle, p.radius > 0f ? p.radius : 6f); break;
+                        // round 2: the derrick's swinging load, ducks, crabs and cats (the perched-gull look-about), the washing line
+                        case "CargoNet": life.Move(go.transform, AmbientLife.MotionKind.Sway, 3f, Vector3.right); break;
+                        case "Duck": life.Move(go.transform, AmbientLife.MotionKind.Bob, 0.03f); break;
+                        case "Crab": life.Move(go.transform, AmbientLife.MotionKind.Gull, 50f); break;
+                        case "Cat": life.Move(go.transform, AmbientLife.MotionKind.Gull, 30f); break;
+                        case "Laundry": life.Move(go.transform, AmbientLife.MotionKind.Sway, 9f, PrincipalAxisXZ(mesh)); break;
                         default: throw new System.InvalidOperationException("no motion for the local detail model " + visual.MeshName);
                     }
                 }
@@ -419,7 +427,11 @@ namespace FishGame.EditorTools
             {
                 if (model.group == null || model.items == null) continue;
                 foreach (HarbourPierManifest.Item item in model.items)
-                    if (item.light != null && item.light.Length == 3) AddLamp(root.transform, art, life, "Lamp_" + item.name, HarbourPierManifest.ToVector(item.light), 7f, 1.6f, 0.26f);
+                    if (item.light != null && item.light.Length == 3)
+                    {
+                        Light lamp = AddLamp(root.transform, art, life, "Lamp_" + item.name, HarbourPierManifest.ToVector(item.light), 7f, 1.6f, 0.26f);
+                        if (item.light_colour == "green") { lamp.color = new Color(0.45f, 1f, 0.5f); lamp.range = 9f; }   // round 2: the mole's harbour light
+                    }
             }
             foreach (HarbourPierManifest.Item item in HarbourPierManifest.Find(art.Manifest, "Harbour_Props").items)
             {

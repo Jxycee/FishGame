@@ -48,7 +48,7 @@ namespace FishGame.EditorTools
         {
             new Shot("overview_high", new Vector3(48f, 30f, 8f), new Vector3(-4f, 0f, -52f), 50f),
             new Shot("pier_from_beach", new Vector3(-7f, Eye(0.25f), -47.5f), new Vector3(1.5f, 1.6f, -10f), 55f),
-            new Shot("tug_hero", new Vector3(47f, 3.2f, -10.5f), new Vector3(36.5f, 2.4f, -22.5f), 46f),
+            new Shot("tug_hero", new Vector3(54.5f, 3.2f, -13.0f), new Vector3(40.7f, 2.4f, -19.5f), 46f),   // round 2b: follows the moved tug (+4.2 x, +3 z)
             new Shot("village_street", new Vector3(-4f, 4.6f, -56.5f), new Vector3(14f, 2.6f, -64f), 58f),
             new Shot("bait_lane_player_eye", new Vector3(-11f, Eye(1.2f), -60.6f), new Vector3(-28f, 2.6f, -63.5f), 58f),
             new Shot("breakwater_walk", new Vector3(30f, Eye(1.5f), -53.5f), new Vector3(32.5f, 2.2f, -24f), 60f),
@@ -89,6 +89,9 @@ namespace FishGame.EditorTools
             if (life == null) throw new System.InvalidOperationException("the harbour scene has no AmbientLife (run the build)");
             var detail = new List<GameObject>();
             for (int i = 0; i < life.DetailCount; i++) detail.Add(life.Detail(i));
+            // round 2b: the instanced ground cover (Detail) draws through Graphics.RenderMeshInstanced: Update does not run in the editor, so each
+            // shot submits it for the capture camera before each render, and its triangles join the High count (tris_top: D:GroundCover).
+            GroundCover cover = Object.FindAnyObjectByType<GroundCover>();
 
             var cameraGo = new GameObject("HarbourCaptureCamera");
             Camera camera = cameraGo.AddComponent<Camera>();
@@ -103,6 +106,8 @@ namespace FishGame.EditorTools
             int shadowRes = asset != null ? asset.mainLightShadowmapResolution : 0, cascades = asset != null ? asset.shadowCascadeCount : 0;
 
             var report = new StringBuilder();
+            var top = new StringBuilder();   // round 2: the largest renderers per shot (tris_top.txt), to see where the Low budget goes
+            top.Append("# shot: the 14 largest renderers the camera sees (triangles; D: = detail, hidden on Low)\n");
             report.Append("# shot | high_tris | low_tris | high_renderers | low_renderers   (renderers this camera sees; Low = detail hidden)\n");
             long worstHigh = 0, worstLow = 0;
             string worstHighShot = "", worstLowShot = "";
@@ -133,12 +138,23 @@ namespace FishGame.EditorTools
                     camera.transform.position = s.Eye;
                     camera.transform.rotation = Quaternion.LookRotation(s.Target - s.Eye, Vector3.up);
                     camera.fieldOfView = s.Fov;
-                    Count(camera, detail, out long highTris, out long lowTris, out int highR, out int lowR);
+                    var seen = new List<KeyValuePair<long, string>>();
+                    Count(camera, detail, out long highTris, out long lowTris, out int highR, out int lowR, seen);
+                    if (cover != null)
+                    {
+                        long coverTris = cover.CountTriangles(GeometryUtility.CalculateFrustumPlanes(camera));
+                        highTris += coverTris;
+                        seen.Add(new KeyValuePair<long, string>(coverTris, "D:GroundCover(instanced)"));
+                    }
+                    seen.Sort((a, b) => b.Key != a.Key ? b.Key.CompareTo(a.Key) : string.CompareOrdinal(a.Value, b.Value));
+                    top.Append(s.Name).Append(':');
+                    for (int k = 0; k < seen.Count && k < 14; k++) top.Append(' ').Append(seen[k].Value).Append('=').Append(seen[k].Key);
+                    top.Append('\n');
                     report.Append(s.Name).Append(" | ").Append(highTris).Append(" | ").Append(lowTris).Append(" | ").Append(highR).Append(" | ").Append(lowR).Append('\n');
                     if (highTris > worstHigh) { worstHigh = highTris; worstHighShot = s.Name; }
                     if (lowTris > worstLow) { worstLow = lowTris; worstLowShot = s.Name; }
                     life.ApplyDetail(!s.Low);   // after the counts: an inactive renderer has no bounds
-                    Render(camera, Path.Combine(outDir, s.Name + ".png"));
+                    Render(camera, Path.Combine(outDir, s.Name + ".png"), s.Low ? null : cover);
 
                     if (asset != null && s.Low)
                     {
@@ -162,6 +178,7 @@ namespace FishGame.EditorTools
             report.Append("worst_high ").Append(worstHigh).Append(' ').Append(worstHighShot).Append('\n');
             report.Append("worst_low ").Append(worstLow).Append(' ').Append(worstLowShot).Append('\n');
             File.WriteAllText(Path.Combine(outDir, "tris.txt"), report.ToString());
+            File.WriteAllText(Path.Combine(outDir, "tris_top.txt"), top.ToString());
             Debug.Log("FG HARBOUR CAPTURE " + Shots.Length + " shots out=" + outDir + " worst_high=" + worstHigh + " (" + worstHighShot + ") worst_low=" + worstLow + " (" + worstLowShot + ")");
         }
 
@@ -193,7 +210,8 @@ namespace FishGame.EditorTools
 
         // Triangles of the mesh renderers this camera would draw: active, enabled, on a layer in its culling mask, inside its frustum. The Low
         // count leaves out everything under the detail objects (what Low hides). Shadow-caster passes are not counted.
-        static void Count(Camera camera, List<GameObject> detail, out long high, out long low, out int highR, out int lowR)
+        static void Count(Camera camera, List<GameObject> detail, out long high, out long low, out int highR, out int lowR,
+                          List<KeyValuePair<long, string>> seen = null)
         {
             Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
             high = low = 0; highR = lowR = 0;
@@ -212,6 +230,7 @@ namespace FishGame.EditorTools
                     for (int s = 0; s < f.sharedMesh.subMeshCount; s++) tris += f.sharedMesh.GetIndexCount(s) / 3;
                     high += tris; highR++;
                     if (!inDetail) { low += tris; lowR++; }
+                    seen?.Add(new KeyValuePair<long, string>(tris, (inDetail ? "D:" : "") + (r.transform.parent != null ? r.transform.parent.name + "/" : "") + r.name));
                 }
         }
 
@@ -223,12 +242,14 @@ namespace FishGame.EditorTools
             return true;
         }
 
-        static void Render(Camera camera, string path)
+        static void Render(Camera camera, string path, GroundCover cover = null)
         {
             // Inactive detail renderers report empty bounds; render after the counts. Two frames: shadow and depth history settled.
             var rt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 4 };
             camera.targetTexture = rt;
+            cover?.Submit(camera);
             camera.Render();
+            cover?.Submit(camera);
             camera.Render();
             RenderTexture previous = RenderTexture.active;
             RenderTexture.active = rt;

@@ -311,8 +311,11 @@ namespace FishGame.EditorTools
             {
                 Phase(0f, Rgb(1.00f, 0.78f, 0.60f), 0.8f, Rgb(0.38f, 0.52f, 0.78f), Rgb(0.98f, 0.74f, 0.56f), Rgb(0.36f, 0.34f, 0.36f),
                     Rgb(0.42f, 0.40f, 0.52f), Rgb(0.70f, 0.62f, 0.66f), Rgb(0.86f, 0.74f, 0.66f), 0.010f, 0.6f, 0f),
-                Phase(0.10f, Rgb(1.00f, 0.96f, 0.88f), 1.1f, Rgb(0.33f, 0.58f, 0.92f), Rgb(0.74f, 0.86f, 0.96f), Rgb(0.40f, 0.40f, 0.36f),
-                    Rgb(0.46f, 0.50f, 0.62f), Rgb(0.80f, 0.86f, 0.92f), Rgb(0.74f, 0.84f, 0.92f), 0.0062f, 0f, 0f),   // harbour round 1: day haze -22% (the hills read)
+                // harbour round 1: day haze -22% (the hills read). Round 2b (user: "bring the dusk warmth and glow into the day"): a warmer
+                // sun (0.96, 0.88 -> 0.92, 0.80) a touch brighter (1.1 -> 1.15), a warm horizon and ambient, a thinner warm haze (0.0062 -> 0.0052)
+                // and a quarter of the dusk warm volume (0 -> 0.25). Dawn, dusk and night are untouched.
+                Phase(0.10f, Rgb(1.00f, 0.92f, 0.80f), 1.15f, Rgb(0.33f, 0.58f, 0.92f), Rgb(0.84f, 0.88f, 0.90f), Rgb(0.40f, 0.40f, 0.36f),
+                    Rgb(0.46f, 0.50f, 0.62f), Rgb(0.86f, 0.86f, 0.86f), Rgb(0.82f, 0.86f, 0.88f), 0.0052f, 0.25f, 0f),
                 Phase(0.55f, Rgb(1.00f, 0.62f, 0.40f), 0.8f, Rgb(0.30f, 0.30f, 0.58f), Rgb(0.98f, 0.56f, 0.36f), Rgb(0.30f, 0.26f, 0.30f),
                     Rgb(0.34f, 0.30f, 0.50f), Rgb(0.66f, 0.52f, 0.56f), Rgb(0.66f, 0.52f, 0.62f), 0.0085f, 1f, 0f),   // round 1: violet shade and haze against the orange sun
                 Phase(0.70f, Rgb(0.62f, 0.70f, 0.92f), 0.25f, Rgb(0.04f, 0.06f, 0.16f), Rgb(0.12f, 0.16f, 0.30f), Rgb(0.05f, 0.05f, 0.08f),
@@ -330,11 +333,13 @@ namespace FishGame.EditorTools
             };
         }
 
-        // Water look (FishGame/Water): saturated shallow teal -> deep blue over a vertical depth range; alpha is opacity (the bed shows only in the shallows).
-        internal static readonly Color WaterShallowColor = new Color(0.30f, 0.86f, 0.80f, 0.68f);
-        internal static readonly Color WaterDeepColor = new Color(0.03f, 0.36f, 0.62f, 0.97f);
-        internal const float WaterDepthRange = 1.6f;
-        internal const float WaterFoamWidth = 0.35f;
+        // Water look (FishGame/Water): shallow turquoise -> deep teal-navy over a vertical depth range; alpha is opacity (the bed shows only in the shallows).
+        // Harbour round 2 (2026-10-16, user unlock "calmer stylised toon water"): less saturated shallows (0.30, 0.86, 0.80) -> (0.36, 0.80, 0.72),
+        // a teal-navy deep (0.03, 0.36, 0.62) -> (0.03, 0.22, 0.34) over a longer ramp (1.6 -> 2.6 m), a slightly wider foam band (0.35 -> 0.4).
+        internal static readonly Color WaterShallowColor = new Color(0.36f, 0.80f, 0.72f, 0.64f);
+        internal static readonly Color WaterDeepColor = new Color(0.03f, 0.22f, 0.34f, 0.97f);
+        internal const float WaterDepthRange = 2.6f;
+        internal const float WaterFoamWidth = 0.4f;
 
         // One row per recipe in SfxRecipes.All order, mixing fields copied from the Core recipe (maxDistance 0 stays 0: the AudioBus default 30).
         internal static List<SfxCueRow> CueRows()

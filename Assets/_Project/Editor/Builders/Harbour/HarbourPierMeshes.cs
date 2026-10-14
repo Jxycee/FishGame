@@ -49,25 +49,37 @@ namespace FishGame.EditorTools
             EditorUtility.SetDirty(existing);
         }
 
-        // 160 x 160 cells of 1.5 m = 240 m, centred, y 0 (25,921 vertices, 16-bit safe). 1.5 m cells keep spec 10.4's wavelength >= 4 cells (seeds >= 6 m).
+        // 128 x 112 cells of 1.5 m (x -96..96, z -48..120), y 0 (14,577 vertices, 16-bit safe): MeshBuilder.Grid moved by WaterOffset (harbour round 2,
+        // see HarbourPierLayout). 1.5 m cells keep spec 10.4's wavelength >= 4 cells (seeds >= 6 m).
         static Mesh BuildWater()
         {
-            return MeshBuilder.Grid(HarbourPierLayout.WaterGridCells, HarbourPierLayout.WaterGridCells, HarbourPierLayout.WaterCellSize, "Harbour_Water");
+            int cx = HarbourPierLayout.WaterCellsX, cz = HarbourPierLayout.WaterCellsZ;
+            float size = HarbourPierLayout.WaterCellSize;
+            Mesh mesh = MeshBuilder.Grid(cx, cz, size, "Harbour_Water");
+            Vector3[] v = mesh.vertices;
+            for (int i = 0; i < v.Length; i++) v[i] = new Vector3(v[i].x + WaterOffsetX, 0f, v[i].z + WaterOffsetZ);
+            mesh.vertices = v;
+            mesh.bounds = new Bounds(new Vector3(WaterOffsetX, 0f, WaterOffsetZ), new Vector3(cx * size, 2f, cz * size));   // +-1 m covers the shader displacement
+            return mesh;
         }
 
-        // The sea beyond the water grid: a ring between the grid's 640-vertex border (the very same expression as MeshBuilder.Grid, so the vertices match
-        // bit for bit and leave no crack) and a square at +-SkirtOuterHalfExtent with 8 segments per side. The two loops are zipped by perimeter fraction
-        // (outer vertex k sits at k / 32 of the way round, inner vertex i at i / 640), which is the four trapezoid strips of the ring. Normals up, y 0,
-        // 16-bit safe. Not Toon (water shader): no vertex colours or uv1.
+        // The grid's centre: MeshBuilder.Grid is centred at the origin, the water rectangle at ((min + max) / 2).
+        static float WaterOffsetX => HarbourPierLayout.WaterMinX + HarbourPierLayout.WaterCellsX * HarbourPierLayout.WaterCellSize * 0.5f;
+        static float WaterOffsetZ => HarbourPierLayout.WaterMinZ + HarbourPierLayout.WaterCellsZ * HarbourPierLayout.WaterCellSize * 0.5f;
+
+        // The sea beyond the water grid: a ring between the grid's 480-vertex border (the very same expression as BuildWater, so the vertices match
+        // bit for bit and leave no crack) and a square at +-SkirtOuterHalfExtent with 8 segments per side. Round 2: the grid is a rectangle off the
+        // origin, so each of the four sides is zipped to its own outer side by fraction along that side (four trapezoid strips; the corners are
+        // shared). Normals up, y 0, 16-bit safe. Not Toon (water shader): no vertex colours or uv1.
         static Mesh BuildWaterSkirt()
         {
-            int cells = HarbourPierLayout.WaterGridCells;
+            int cx = HarbourPierLayout.WaterCellsX, cz = HarbourPierLayout.WaterCellsZ;
             float size = HarbourPierLayout.WaterCellSize;
             var inner = new List<Vector3>();   // counter-clockwise from (min, min): along z = min, along x = max, back along z = max, down x = min
-            for (int i = 0; i <= cells; i++) inner.Add(new Vector3(GridCoord(cells, size, i), 0f, GridCoord(cells, size, 0)));
-            for (int j = 1; j <= cells; j++) inner.Add(new Vector3(GridCoord(cells, size, cells), 0f, GridCoord(cells, size, j)));
-            for (int i = cells - 1; i >= 0; i--) inner.Add(new Vector3(GridCoord(cells, size, i), 0f, GridCoord(cells, size, cells)));
-            for (int j = cells - 1; j >= 1; j--) inner.Add(new Vector3(GridCoord(cells, size, 0), 0f, GridCoord(cells, size, j)));
+            for (int i = 0; i <= cx; i++) inner.Add(new Vector3(GridX(i), 0f, GridZ(0)));
+            for (int j = 1; j <= cz; j++) inner.Add(new Vector3(GridX(cx), 0f, GridZ(j)));
+            for (int i = cx - 1; i >= 0; i--) inner.Add(new Vector3(GridX(i), 0f, GridZ(cz)));
+            for (int j = cz - 1; j >= 1; j--) inner.Add(new Vector3(GridX(0), 0f, GridZ(j)));
 
             float e = HarbourPierLayout.SkirtOuterHalfExtent;
             int seg = HarbourPierLayout.SkirtOuterSegmentsPerSide;
@@ -81,19 +93,25 @@ namespace FishGame.EditorTools
             vertices.AddRange(outer);
             int ni = inner.Count, no = outer.Count;
             var triangles = new List<int>();
-            int a = 0, b = 0;
-            while (a < ni || b < no)
+            int[] innerCorner = { 0, cx, cx + cz, 2 * cx + cz, ni };
+            int[] outerCorner = { 0, seg, 2 * seg, 3 * seg, no };
+            for (int side = 0; side < 4; side++)
             {
-                int ia = a % ni, ib = ni + b % no;
-                if (b >= no || (a < ni && (long)(a + 1) * no <= (long)(b + 1) * ni))
+                int i0 = innerCorner[side], i1 = innerCorner[side + 1], o0 = outerCorner[side], o1 = outerCorner[side + 1];
+                int a = i0, b = o0;
+                while (a < i1 || b < o1)
                 {
-                    AddIndexedUp(vertices, triangles, ia, (a + 1) % ni, ib);   // advance the inner loop
-                    a++;
-                }
-                else
-                {
-                    AddIndexedUp(vertices, triangles, ib, ia, ni + (b + 1) % no);   // advance the outer loop
-                    b++;
+                    int ia = a % ni, ib = ni + b % no;
+                    if (b >= o1 || (a < i1 && (long)(a + 1 - i0) * (o1 - o0) <= (long)(b + 1 - o0) * (i1 - i0)))
+                    {
+                        AddIndexedUp(vertices, triangles, ia, (a + 1) % ni, ib);   // advance the inner side
+                        a++;
+                    }
+                    else
+                    {
+                        AddIndexedUp(vertices, triangles, ib, ia, ni + (b + 1) % no);   // advance the outer side
+                        b++;
+                    }
                 }
             }
 
@@ -114,8 +132,10 @@ namespace FishGame.EditorTools
             return mesh;
         }
 
-        // MeshBuilder.Grid's vertex coordinate along one axis, written the same way so the floats are identical.
+        // BuildWater's vertex coordinates (MeshBuilder.Grid's expression plus the offset), written the same way so the floats are identical.
         static float GridCoord(int cells, float size, int i) => -cells * size * 0.5f + i * size;
+        static float GridX(int i) => GridCoord(HarbourPierLayout.WaterCellsX, HarbourPierLayout.WaterCellSize, i) + WaterOffsetX;
+        static float GridZ(int j) => GridCoord(HarbourPierLayout.WaterCellsZ, HarbourPierLayout.WaterCellSize, j) + WaterOffsetZ;
 
         // x -400..400 (20 m columns), z -47..-9 on 2 m rows, then one row at 121: the kinks of SeabedY (z -45 and z -9) are rows, so the surface is
         // exactly the formula. Harbour round 1 (2026-10-15): past z -9 the seabed is flat at -9 m, so its 65 rows of 2 m became one 130 m band (the

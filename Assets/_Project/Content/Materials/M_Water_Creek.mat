@@ -27,29 +27,33 @@ Material:
     m_Floats:
     - _AmbientStrength: 0.35
     - _BedCover: 0.35
-    - _CausticStrength: 0.15
-    - _CrestAmount: 0.35
+    - _CalmDistance: 70
+    - _CausticStrength: 0.12
+    - _CrestAmount: 0.25
     - _CrestHeight: 0.11
     - _DepthRange: 0.16
     - _DetailFade: 60
     - _DetailScale: 1.6
     - _DetailSpeed: 0.3
-    - _DetailStrength: 0.12
+    - _DetailStrength: 0.09
+    - _FarCalm: 0.35
+    - _FoamSoft: 0.32
+    - _FoamSoftWidth: 2.4
     - _FoamWidth: 0.001
     - _FogAmount: 0.35
     - _FresnelPower: 4
     - _GlintFlatten: 0.7
     - _GlintNear: 6
-    - _GlintPower: 96
-    - _GlintRipple: 3
-    - _GlintStrength: 1
-    - _GlintThreshold: 0.5
+    - _GlintPower: 220
+    - _GlintRipple: 2.2
+    - _GlintStrength: 0.85
+    - _GlintThreshold: 0.62
     - _LightTint: 0.35
-    - _NormalBoost: 6
-    - _ReflectStrength: 0.4
+    - _NormalBoost: 4.5
+    - _ReflectStrength: 0.36
     - _ReflectZenith: 0.6
-    - _Saturation: 1.15
-    - _ShadeContrast: 0.14
+    - _Saturation: 0.95
+    - _ShadeContrast: 0.1
     - _ShadeSoft: 0.2
     m_Colors:
     - _DeepColor: {r: 0.03, g: 0.35999998, b: 0.62, a: 0.97}

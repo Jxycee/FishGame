@@ -22,6 +22,7 @@ namespace FishGame.EditorTools
             public float[] bounds_min;     // box and sphere items: the item's world AABB
             public float[] bounds_max;
             public float[] light;          // pass 2: a lamp post's light point (world)
+            public string light_colour;    // round 2: "green" for the mole's harbour light; else the warm lamp colour
         }
 
         // Pass 2: one instance of a local model (position + yaw about +y; a frame other than world is named in `frame`).

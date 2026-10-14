@@ -45,9 +45,14 @@ namespace FishGame.EditorTools
         // The land runs to x +-400 (20 m columns, the heights do not depend on x) and z -400, the sea skirt's far edge, so the land has no visible edge.
         public const float BeachMinX = -400f, BeachMaxX = 400f, BeachStep = 20f, BeachLipZ = -44.5f, BeachFlatFromZ = -55f, BeachEndZ = -400f;
         public const float BeachSandMaxY = 0.55f;
-        // Water visual: MeshBuilder.Grid(160, 160, 1.5) = 240 m, centred at the origin, y 0 (25,921 vertices, 16-bit safe).
-        public const int WaterGridCells = 160;
-        public const float WaterCellSize = 1.5f;
+        // Water visual: 128 x 112 cells of 1.5 m (x -96..96, z -48..120), y 0 (14,577 vertices, 16-bit safe). Harbour round 2 (2026-10-16, Low
+        // budget): round 1's 240 m square (x and z -120..120, 51,200 triangles) spent a third of its cells under the beach and the plateau
+        // (z < -48) and behind the headlands (|x| > 96); the rectangle keeps every visible wave cell (28,672 triangles) and the flat skirt fills
+        // the rest. 1.5 m cells still keep spec 10.4's wavelength >= 4 cells.
+        public const int WaterCellsX = 128, WaterCellsZ = 112;
+        public const float WaterCellSize = 1.5f, WaterMinX = -96f, WaterMinZ = -48f;
+        public static float WaterMaxX => WaterMinX + WaterCellsX * WaterCellSize;   // 96
+        public static float WaterMaxZ => WaterMinZ + WaterCellsZ * WaterCellSize;   // 120
         // Water volume (the only Water collider): trigger box (120, 10, 120) centred (0, -5, 0).
         public static readonly Vector3 WaterVolumeSize = new Vector3(120f, 10f, 120f), WaterVolumeCentre = new Vector3(0f, -5f, 0f);
 
@@ -160,8 +165,10 @@ namespace FishGame.EditorTools
             points.Add(new Vector4(-4.5f, 1.55f, -6.5f, 270f)); // T-head west end
             points.Add(new Vector4(4.5f, 1.55f, -6.5f, 90f));   // T-head east end
             points.Add(new Vector4(0f, 1.55f, -5.5f, 0f));      // T-head front
-            points.Add(new Vector4(30f, 1.55f, -26f, 0f));      // breakwater tip
-            points.Add(new Vector4(55.7f, JettyDeckTopY + 0.05f, -35f, 340f));      // round 1: the east jetty head
+            // round 2b: the tip stand moved 1.5 m west, 0.5 m back and faces 330 (was (30, -26) facing 0), the jetty faces 352 (was 340):
+            // the tug moved 4.2 m off the breakwater and 3 m north (its gangway lands at z -26); fg_harbour.py STAND_POINTS / STAND_POINTS_R1
+            points.Add(new Vector4(28.5f, 1.55f, -26.5f, 330f));      // breakwater tip
+            points.Add(new Vector4(55.7f, JettyDeckTopY + 0.05f, -35f, 352f));      // round 1: the east jetty head
             points.Add(new Vector4(36.4f, LookoutDeckTopY + 0.05f, -48.3f, 36f));   // round 1: the lookout tower deck
             return points.ToArray();
         }
@@ -179,6 +186,7 @@ namespace FishGame.EditorTools
         //  CodeTrees: the four local code-tree models, one under each Tree_NN (see PlaceTrees).
         //  Round 1: a local core model under Land (the windmill sails) is instanced per placement and turns; it is core, so Low keeps it.
         public const string RootLand = "Land", RootVillage = "Village", RootDetail = "Detail", RootCrewBoat = "CrewBoat", RootCodeTrees = "CodeTrees";
+        public const string CardsSuffix = "_Cards";
         public const string RootSmoke = "Smoke", RootLights = "HarbourLights", RootLife = "AmbientLife";
 
         public readonly struct VisualModel
@@ -188,6 +196,8 @@ namespace FishGame.EditorTools
             public string Path => ModelsFolder + "/" + File;
             // A "_Tri" model is drawn world-triplanar on M_Toon_Tri; everything else is uv0-mapped on M_Toon_Base.
             public bool Triplanar => File.EndsWith(HarbourModelPostprocessor.TriplanarSuffix + ".fbx", System.StringComparison.Ordinal);
+            // Round 2b: a "_Cards" model is the alpha-clipped crown cards of a tree model (M_Toon_Foliage, uv0 into T_CrownCards, both faces).
+            public bool Cards => File.EndsWith(CardsSuffix + ".fbx", System.StringComparison.Ordinal);
             public string MeshName => System.IO.Path.GetFileNameWithoutExtension(File);
         }
 
@@ -254,6 +264,26 @@ namespace FishGame.EditorTools
             new VisualModel("Harbour_Detail_Moorings.fbx", RootDetail, "MooringsVisual"),
             new VisualModel("Harbour_Detail_Terraces.fbx", RootDetail, "TerraceDressingVisual"),
             new VisualModel("Harbour_Detail_Anim_GullFly.fbx", RootDetail, "GullFly"),
+            // ---- round 2 (coast, story staging, life) ----
+            new VisualModel("Harbour_Core_Coast_Tri.fbx", RootLand, "CoastVisual"),
+            new VisualModel("Harbour_Core_Story.fbx", RootVillage, "StoryVisual"),
+            new VisualModel("Harbour_Detail_StorySigns.fbx", RootDetail, "StorySignsVisual"),
+            new VisualModel("Harbour_Detail_Hedges.fbx", RootDetail, "HedgesVisual"),
+            new VisualModel("Harbour_Detail_Anim_CargoNet.fbx", RootDetail, "CargoNet"),
+            new VisualModel("Harbour_Detail_Anim_Duck.fbx", RootDetail, "Duck"),
+            new VisualModel("Harbour_Detail_Anim_Crab.fbx", RootDetail, "Crab"),
+            new VisualModel("Harbour_Detail_Anim_Cat.fbx", RootDetail, "Cat"),
+            new VisualModel("Harbour_Detail_Anim_Laundry.fbx", RootDetail, "Laundry"),
+            // ---- round 2b ----
+            new VisualModel("Harbour_Detail_Anim_Bunting_D.fbx", RootDetail, "Bunting"),
+            new VisualModel("Harbour_Detail_Anim_Bunting_E.fbx", RootDetail, "Bunting"),
+            // painterly crown cards (core, no colliders)
+            new VisualModel("Harbour_Core_TreeCrowns_Cards.fbx", RootVillage, "TreeCrownsVisual"),
+            new VisualModel("Harbour_Core_ForestCrowns_Cards.fbx", RootLand, "ForestCrownsVisual"),
+            new VisualModel("Harbour_Core_CodeTree_PineA_Cards.fbx", RootCodeTrees, "TreeCrowns"),
+            new VisualModel("Harbour_Core_CodeTree_PineB_Cards.fbx", RootCodeTrees, "TreeCrowns"),
+            new VisualModel("Harbour_Core_CodeTree_RoundA_Cards.fbx", RootCodeTrees, "TreeCrowns"),
+            new VisualModel("Harbour_Core_CodeTree_RoundB_Cards.fbx", RootCodeTrees, "TreeCrowns"),
         };
 
         // Pass-2 collider sources: box items of these models become BoxColliders (Land: Shore; Village: Structure). Round 1: the stone wall model
@@ -261,7 +291,8 @@ namespace FishGame.EditorTools
         // overlook benches) and the jetty with the lookout tower (deck, posts, rails, stair steps) are Village boxes.
         public static readonly string[] LandBoxModels = { "Harbour_Core_Walls_Tri" };
         public static readonly string[] VillageBoxModels = { "Harbour_Core_Buildings", "Harbour_Core_Yard_A", "Harbour_Core_Yard_B", "Harbour_Core_Trees_Tri",
-                                                             "Harbour_Core_Buildings_Upper", "Harbour_Core_Jetty", "Harbour_Core_TerraceTrees_Tri" };
+                                                             "Harbour_Core_Buildings_Upper", "Harbour_Core_Jetty", "Harbour_Core_TerraceTrees_Tri",
+                                                             "Harbour_Core_Story" };   // round 2: the derrick, crates, poster post, fingerpost, breakwater parapet
         // Round 1: the windmill sails turn (AmbientLife Rotor, degrees per second); the circling gulls (AmbientLife Circle).
         public const string WindmillSailsModel = "Harbour_Core_Anim_WindmillSails";
         public const float WindmillDegreesPerSecond = 24f;

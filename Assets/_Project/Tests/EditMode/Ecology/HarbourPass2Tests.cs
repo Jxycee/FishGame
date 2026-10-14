@@ -211,5 +211,61 @@ namespace FishGame.Tests.EditMode
             Assert.That(DayNightMath.LampGlow(set - 1e-4f, rise, set, w), Is.GreaterThan(0.99f), "fully lit at the sunset flip");
             Assert.That(DayNightMath.LampGlow(float.NaN, rise, set, w), Is.EqualTo(0f));
         }
+
+        [Serializable] sealed class ScatterKind { public string name; public float[] points; }
+        [Serializable] sealed class Scatter { public string note; public ScatterKind[] kinds; }
+
+        // Harbour round 2b (ground cover). Catches: a tuft mesh that changes between builds or lacks the Toon channels (colours, uv1 slot), a
+        // scatter kind with no tuft mesh, a malformed scatter, the ground cover outside the Detail root (Low would still draw it) or with a collider.
+        [Test]
+        public void HarbourGroundCover_Deterministic_UnderDetail_NoColliders()
+        {
+            List<Mesh> a = HarbourGroundCover.BuildMeshesInMemory(), b = HarbourGroundCover.BuildMeshesInMemory();
+            try
+            {
+                Assert.That(b.Count, Is.EqualTo(a.Count));
+                for (int i = 0; i < a.Count; i++)
+                {
+                    Assert.That(b[i].name, Is.EqualTo(a[i].name));
+                    Assert.That(b[i].vertices, Is.EqualTo(a[i].vertices), a[i].name + " vertices");
+                    Assert.That(b[i].uv, Is.EqualTo(a[i].uv), a[i].name + " uv0");
+                    Assert.That(b[i].colors, Is.EqualTo(a[i].colors), a[i].name + " colours");
+                    Assert.That(b[i].triangles, Is.EqualTo(a[i].triangles), a[i].name + " triangles");
+                    var uv1 = new List<Vector4>();
+                    a[i].GetUVs(1, uv1);
+                    Assert.That(uv1.Count, Is.EqualTo(a[i].vertexCount), a[i].name + " uv1 (palette slot) on every vertex");
+                    Assert.That(a[i].HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.Color), Is.True, a[i].name + " vertex colours");
+                }
+            }
+            finally
+            {
+                foreach (Mesh m in a) UnityEngine.Object.DestroyImmediate(m);
+                foreach (Mesh m in b) UnityEngine.Object.DestroyImmediate(m);
+            }
+
+            var json = AssetDatabase.LoadAssetAtPath<TextAsset>(HarbourGroundCover.ScatterPath);
+            Assert.That(json, Is.Not.Null, HarbourGroundCover.ScatterPath);
+            Scatter scatter = JsonUtility.FromJson<Scatter>(json.text);
+            int total = 0;
+            foreach (ScatterKind kind in scatter.kinds)
+            {
+                Assert.That(AssetDatabase.LoadAssetAtPath<Mesh>(HarbourGroundCover.MeshPath(kind.name)), Is.Not.Null, "tuft mesh for " + kind.name);
+                Assert.That(kind.points.Length % 5, Is.EqualTo(0), kind.name + ": x y z yaw scale per instance");
+                total += kind.points.Length / 5;
+            }
+            Assert.That(total, Is.GreaterThan(3000), "ground cover instances");
+
+            EcologyMapTests.WithScene(AssetPaths.HarbourPierScene, scene =>
+            {
+                List<GameObject> detail = DetailObjects(Life(scene));
+                Component cover = null;
+                foreach (GameObject root in scene.GetRootGameObjects())
+                    foreach (Component c in root.GetComponentsInChildren<Component>(true))
+                        if (c != null && c.GetType().Name == "GroundCover") cover = c;
+                Assert.That(cover, Is.Not.Null, "a GroundCover component in the harbour scene");
+                Assert.That(UnderAny(cover.transform, detail), Is.True, "the ground cover is under the Detail root (hidden on Low)");
+                Assert.That(cover.GetComponentsInChildren<Collider>(true), Is.Empty, "the ground cover has no collider");
+            });
+        }
     }
 }

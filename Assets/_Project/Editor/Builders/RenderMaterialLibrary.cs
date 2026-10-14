@@ -26,28 +26,34 @@ namespace FishGame.EditorTools
         {
             new KeyValuePair<string, float>("_LightTint", 0.35f),
             new KeyValuePair<string, float>("_AmbientStrength", 0.35f),
-            new KeyValuePair<string, float>("_NormalBoost", 6f),
-            new KeyValuePair<string, float>("_ShadeContrast", 0.14f),
+            new KeyValuePair<string, float>("_NormalBoost", 4.5f),
+            new KeyValuePair<string, float>("_ShadeContrast", 0.1f),
             new KeyValuePair<string, float>("_ShadeSoft", 0.2f),
             new KeyValuePair<string, float>("_DetailScale", 1.6f),
-            new KeyValuePair<string, float>("_DetailStrength", 0.12f),
+            new KeyValuePair<string, float>("_DetailStrength", 0.09f),
             new KeyValuePair<string, float>("_DetailSpeed", 0.3f),
             new KeyValuePair<string, float>("_DetailFade", 60f),
             new KeyValuePair<string, float>("_BedCover", 0.35f),
-            new KeyValuePair<string, float>("_CausticStrength", 0.15f),
-            new KeyValuePair<string, float>("_CrestAmount", 0.35f),
+            new KeyValuePair<string, float>("_CausticStrength", 0.12f),
+            new KeyValuePair<string, float>("_CrestAmount", 0.25f),
             new KeyValuePair<string, float>("_CrestHeight", 0.11f),
-            new KeyValuePair<string, float>("_GlintPower", 96f),
-            new KeyValuePair<string, float>("_GlintThreshold", 0.5f),
-            new KeyValuePair<string, float>("_GlintStrength", 1f),
+            new KeyValuePair<string, float>("_GlintPower", 220f),
+            new KeyValuePair<string, float>("_GlintThreshold", 0.62f),
+            new KeyValuePair<string, float>("_GlintStrength", 0.85f),
             new KeyValuePair<string, float>("_GlintFlatten", 0.7f),
-            new KeyValuePair<string, float>("_GlintRipple", 3f),
+            new KeyValuePair<string, float>("_GlintRipple", 2.2f),
             new KeyValuePair<string, float>("_GlintNear", 6f),
-            new KeyValuePair<string, float>("_ReflectStrength", 0.4f),
+            new KeyValuePair<string, float>("_ReflectStrength", 0.36f),
             new KeyValuePair<string, float>("_ReflectZenith", 0.6f),
             new KeyValuePair<string, float>("_FresnelPower", 4f),
-            new KeyValuePair<string, float>("_Saturation", 1.15f),
+            new KeyValuePair<string, float>("_Saturation", 0.95f),
             new KeyValuePair<string, float>("_FogAmount", 0.35f),
+            // Harbour round 2 (2026-10-16, calmer toon water: user unlock): soft contact band and far calm (FishGame/Water header, item 10)
+            new KeyValuePair<string, float>("_FoamSoft", 0.32f),
+            new KeyValuePair<string, float>("_FoamSoftWidth", 2.4f),
+            new KeyValuePair<string, float>("_CalmDistance", 70f),
+            new KeyValuePair<string, float>("_FarCalm", 0.35f),
+            new KeyValuePair<string, float>("_SteepDeepen", 3f),   // round 2b: hulls and piles read deep, not as a turquoise sheet
         };
         static readonly int DesaturateId = Shader.PropertyToID("_Desaturate");
         static readonly int RimPowId = Shader.PropertyToID("_RimPow");
@@ -95,6 +101,11 @@ namespace FishGame.EditorTools
             // R74 adoption (shader split): the same environment look with world triplanar mapping, for meshes built with uv1.z = 1 (rocks, canopies).
             var envTriLook = new ToonLook(0.30f, 0.28f, 3.5f, 0.18f, 0.22f, 0f, 48f, env, 2f, EnvTiling, 0.7f, true, 1f);
             EnsureToon(toon, "M_Toon_Tri", true, true, Color.white, envTriLook);
+            // Harbour round 2 (2026-10-16, user unlock "painterly crown trees"): crown cards. The env look (graded, palette colour, soft ramp) with the
+            // painted card atlas clipped at 0.5 (_ALPHATEST_ON), both faces drawn; the array is off (the cards carry their own painted grey).
+            var foliageLook = new ToonLook(0.30f, 0.34f, 3.5f, 0.08f, 0.30f, 0f, 48f, null, 1f, 1f, 0f, false, 1f);
+            EnsureToon(toon, "M_Toon_Foliage", true, true, Color.white, foliageLook);
+            EnsureFoliageCards(RenderMaterialLibrary.Get("M_Toon_Foliage"), EnsureCrownCardImport());
             EnsureToon(toon, "M_Toon_Fish", false, false, Color.white, fishLook);
             EnsureToon(toon, "M_Toon_FishFallback", false, true, Color.white, fallbackLook);
             // R74 adoption: the dock bell's brass (smooth mesh, vertex colour ao), a strong toon highlight instead of the Lit M_Brass.
@@ -380,6 +391,57 @@ namespace FishGame.EditorTools
             changed |= SetKeyword(material, "_FG_TRIPLANAR", look.Triplanar);
             changed |= SetFloat(material, GradeId, look.Grade);
             if (material.GetTexture(AlbedoArrayId) != look.Array) { material.SetTexture(AlbedoArrayId, look.Array); changed = true; }
+            if (changed) EditorUtility.SetDirty(material);
+        }
+
+        // T_CrownCards.png: linear painted grey + cutout alpha, mips that keep the 0.5 coverage (the crowns do not thin out with distance),
+        // colour dilated under the transparent texels, clamped, 1024.
+        static Texture2D EnsureCrownCardImport()
+        {
+            var importer = AssetImporter.GetAtPath(AssetPaths.CrownCardAtlas) as TextureImporter;
+            if (importer == null) throw new System.InvalidOperationException("missing " + AssetPaths.CrownCardAtlas + " (run Art/Blender/fg_crowncards.py)");
+            bool dirty = importer.textureType != TextureImporterType.Default || importer.sRGBTexture || !importer.alphaIsTransparency
+                         || importer.alphaSource != TextureImporterAlphaSource.FromInput || !importer.mipmapEnabled || !importer.mipMapsPreserveCoverage
+                         || importer.alphaTestReferenceValue != 0.5f || importer.wrapMode != TextureWrapMode.Clamp || importer.maxTextureSize != 1024
+                         || importer.filterMode != FilterMode.Trilinear || importer.anisoLevel != 2;
+            if (dirty)
+            {
+                importer.textureType = TextureImporterType.Default;
+                importer.sRGBTexture = false;
+                importer.alphaSource = TextureImporterAlphaSource.FromInput;
+                importer.alphaIsTransparency = true;
+                importer.mipmapEnabled = true;
+                importer.mipMapsPreserveCoverage = true;
+                importer.alphaTestReferenceValue = 0.5f;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.maxTextureSize = 1024;
+                importer.filterMode = FilterMode.Trilinear;
+                importer.anisoLevel = 2;
+                importer.SaveAndReimport();
+            }
+            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(AssetPaths.CrownCardAtlas);
+            if (tex == null) throw new System.InvalidOperationException("could not load " + AssetPaths.CrownCardAtlas);
+            return tex;
+        }
+
+        static void EnsureFoliageCards(Material material, Texture2D cards)
+        {
+            bool changed = SetKeyword(material, "_ALPHATEST_ON", true);
+            changed |= SetFloat(material, Shader.PropertyToID("_AlphaClip"), 1f);
+            changed |= SetFloat(material, Shader.PropertyToID("_Cutoff"), 0.5f);
+            changed |= SetFloat(material, Shader.PropertyToID("_CardGain"), 2.0f);
+            changed |= SetFloat(material, Shader.PropertyToID("_Cull"), (float)UnityEngine.Rendering.CullMode.Off);
+            int baseMap = Shader.PropertyToID("_BaseMap");
+            if (material.GetTexture(baseMap) != cards) { material.SetTexture(baseMap, cards); changed = true; }
+            if (material.GetTextureScale(baseMap) != Vector2.one || material.GetTextureOffset(baseMap) != Vector2.zero)
+            {
+                material.SetTextureScale(baseMap, Vector2.one);
+                material.SetTextureOffset(baseMap, Vector2.zero);
+                changed = true;
+            }
+            if (!material.enableInstancing) { material.enableInstancing = true; changed = true; }   // the ground cover draws it instanced
+            if (material.renderQueue != (int)UnityEngine.Rendering.RenderQueue.AlphaTest) { material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest; changed = true; }
+            if (material.GetTag("RenderType", false) != "TransparentCutout") { material.SetOverrideTag("RenderType", "TransparentCutout"); changed = true; }
             if (changed) EditorUtility.SetDirty(material);
         }
 
