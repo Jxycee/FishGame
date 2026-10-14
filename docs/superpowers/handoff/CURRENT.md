@@ -85,6 +85,12 @@ Also on the board:
   - **Blockers:** scores stall on items the artist had skipped as out of bounds: water look, crown-card trees, coast/breakwater reshape, ground cover.
   - **User decision (2026-10-14):** all four unlocked, including restyling the Lake Dock water (shared material); "best creativity".
   - **How the unlocks reach the artist:** artist r2 was told by message; the script adds UNLOCK to artist prompts from r3. The controller restarts the run with resumeFromRunId after r2, so r1/r2 come back cached.
+  - **Round 2 restart (controller error):** a SendMessage to the running r2 artist cloned it. Both copies then edited the worktree, and stopping one stopped both.
+    - Recovery: their work was parked in scratchpad/r2-copy-work (patches and files). The run resumed from the cache (wf_f8fbbf2a-074), and a fresh r2 artist got the unlocks, the user's dusk note and the parked work. HEAD has the local WIP commit 5086384.
+    - Lesson saved to memory: never message workflow agents.
+  - **Perf research** (docs/superpowers/research/2026-10-14-friendslop-graphics-settings.md, user: follow the average):
+    - Low budget 500k triangles per view, plus renderer, shadow-caster and alpha-coverage audits. This is PERF3 in the script from r3; the controller restarts the run after r2 to apply it.
+    - Presets change to make after the workflow, on harbour-art2: Medium shadow tier 50 m/2048/2; Low 35 m; High 120 m/2048/3 cascades; extra lights 3/4/8; FSR on Low; LOD bias 0.7/1.0/1.5.
 - **Status (2026-10-14):** branch `harbour-art2` pushed. Commits 3bfd603 (detail pass) and dbeaf30 (fixes). Phase-1 FBX are byte-identical; the rebuild from an empty Blender is deterministic. 37 new FBX (core 149.7k tris, detail 43.2k hidden on Low) plus a `pass2` manifest block (placements, animHint, smoke/light points, ladders).
 - **Triangles (worst view):**
   - High: ~372k (22k over the old 350k aim).
