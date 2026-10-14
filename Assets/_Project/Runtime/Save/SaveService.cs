@@ -101,8 +101,26 @@ namespace FishGame.Runtime
             NotifyChanged();
         }
 
+        // Deferred-write support: a caller that changes Current often marks it dirty and flushes later (debounced), instead of paying
+        // a synchronous disk flush per change. Any Save() writes the whole of Current, so it also clears the mark.
+        public bool IsDirty { get; private set; }
+
+        public void MarkDirty()
+        {
+            IsDirty = true;
+        }
+
+        // Writes only when something was marked dirty since the last write. Returns true when it wrote (or tried to).
+        public bool FlushIfDirty()
+        {
+            if (!IsDirty) return false;
+            Save();
+            return true;
+        }
+
         public void Save()
         {
+            IsDirty = false;
             if (IsReadOnly) return;
             try
             {

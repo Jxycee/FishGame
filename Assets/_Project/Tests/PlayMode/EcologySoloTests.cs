@@ -412,7 +412,8 @@ namespace FishGame.Tests.PlayMode
             Assert.That(entry.Caught, Is.EqualTo(before[2] + caughtDelta), "Caught +" + caughtDelta);
             Assert.That(entry.SeenInSpots, Does.Contain(ContentIds.LakeDock), "seen in lake_dock");
 
-            // ... and on disk: a second SaveService on the same path holds the same Caught.
+            // ... and on disk: the recorder debounces its write, so flush the pending one, then a second SaveService on the same path holds the same Caught.
+            save.FlushIfDirty();
             var disk = new SaveService(save.FilePath);
             disk.Load();
             Assert.That(disk.Current.Journal.TryGetValue(speciesId, out JournalEntry onDisk), Is.True, "meta file on disk has the entry");

@@ -2,6 +2,7 @@
 // Every peer applies every announcement it receives; late joiners journal only what they witness (spec 12.10).
 // Sends nothing over the network (no RPCs). Toasts are published as keys (Fishing cannot reference UI) and stay local.
 using System;
+using System.Collections;
 using System.Globalization;
 using FishGame.Core;
 using FishGame.Data;
@@ -14,6 +15,7 @@ namespace FishGame.Fishing
     public sealed class JournalRecorder : MonoBehaviour
     {
         private const float ToastSeconds = 4f;
+        internal const float FlushDelaySeconds = 3f;
 
         private const string ToastNewKey = "toast.journal_new";
         private const string ToastBestKey = "toast.journal_best";
@@ -21,6 +23,8 @@ namespace FishGame.Fishing
 
         private readonly LogOnce _log = new LogOnce();
         private IDisposable _subscription;
+        private SaveService _pendingSave;
+        private Coroutine _flushRoutine;
 
         private void OnEnable()
         {
@@ -39,6 +43,36 @@ namespace FishGame.Fishing
             {
                 _subscription.Dispose();
                 _subscription = null;
+            }
+            // Leaving the scene (or quitting) must not lose a pending write; AppBootstrap also saves on quit as a second net.
+            // The pending coroutine is stopped by Unity on disable, so clear the handle and flush now.
+            _flushRoutine = null;
+            if (_pendingSave != null)
+            {
+                _pendingSave.FlushIfDirty();
+                _pendingSave = null;
+            }
+        }
+
+        // The journal write is debounced: the first change in a quiet period starts a FlushDelaySeconds timer and every change until it
+        // fires rides on the same write, so a busy session costs one disk flush per window instead of one per catch on every peer.
+        // At most FlushDelaySeconds of journal can be lost to a hard crash; scene unload and quit flush at once.
+        private void ScheduleFlush(SaveService save)
+        {
+            if (_pendingSave != null && _pendingSave != save) _pendingSave.FlushIfDirty(); // service replaced mid-window: do not strand its write
+            save.MarkDirty();
+            _pendingSave = save;
+            if (_flushRoutine == null) _flushRoutine = StartCoroutine(FlushAfterDelay());
+        }
+
+        private IEnumerator FlushAfterDelay()
+        {
+            yield return new WaitForSecondsRealtime(FlushDelaySeconds);
+            _flushRoutine = null;
+            if (_pendingSave != null)
+            {
+                _pendingSave.FlushIfDirty();
+                _pendingSave = null;
             }
         }
 
@@ -64,8 +98,8 @@ namespace FishGame.Fishing
             bool changed = Record(save.Current, def.Id, def.DisplayName, ResolveSpotId(registry), a, msg.IsLocalCatcher, out string key, out string arg);
             if (changed)
             {
-                save.NotifyChanged();
-                save.Save();
+                save.NotifyChanged();   // the UI follows immediately
+                ScheduleFlush(save);    // the disk write is deferred (see ScheduleFlush)
             }
             if (key != null && app.TryGet(out EventBus bus)) bus.Publish(new ToastRequested(key, arg, ToastSeconds));
         }

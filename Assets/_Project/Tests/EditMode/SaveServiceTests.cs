@@ -249,5 +249,40 @@ namespace FishGame.Tests.EditMode
             Assert.DoesNotThrow(() => svc.Save());
             Assert.AreEqual(1, _warnings.FindAll(w => w.Contains("FG SAVE")).Count, "the warning is logged once per service");
         }
+
+        [Test]
+        public void SaveService_MarkDirty_DefersWriteUntilFlush()
+        {
+            var svc = new SaveService(_path);
+            svc.Load();
+            Assert.IsFalse(svc.IsDirty);
+            Assert.IsFalse(svc.FlushIfDirty(), "nothing marked: no write");
+            Assert.IsFalse(File.Exists(_path));
+
+            svc.Current.Journal["bluegill"] = new JournalEntry { Seen = 7 };
+            svc.MarkDirty();
+            svc.MarkDirty();
+            Assert.IsTrue(svc.IsDirty);
+            Assert.IsFalse(File.Exists(_path), "marking does not touch the disk");
+
+            Assert.IsTrue(svc.FlushIfDirty());
+            Assert.IsFalse(svc.IsDirty);
+            Assert.IsFalse(svc.FlushIfDirty(), "already flushed: no second write");
+
+            var reloaded = new SaveService(_path);
+            reloaded.Load();
+            Assert.AreEqual(7, reloaded.Current.Journal["bluegill"].Seen);
+        }
+
+        [Test]
+        public void SaveService_Save_ClearsDirty()
+        {
+            var svc = new SaveService(_path);
+            svc.Load();
+            svc.MarkDirty();
+            svc.Save();
+            Assert.IsFalse(svc.IsDirty, "an explicit Save (e.g. on quit) already wrote the latest state");
+            Assert.IsFalse(svc.FlushIfDirty());
+        }
     }
 }
