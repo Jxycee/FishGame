@@ -39,16 +39,18 @@ namespace FishGame.EditorTools
             public HarbourPierManifest.Model[] Manifest;
             // pass 2 (HarbourPierBuilder.Pass2.cs)
             public Material Glow, GlowAll, Beam, Smoke;
-            public Mesh Sphere, BeamMesh, VaneHead, VaneBase;
+            public Mesh Sphere, BeamMesh, SearchBeamMesh, VaneHead, VaneBase;
         }
 
         public static void Build()
         {
             HarbourPierMeshes.BuildAll();   // water, seabed, beach: on disk before the scene references them
             HarbourGroundCover.BuildMeshes();   // round 2b: the ground-cover tuft meshes
+            HarbourBedMap.Build();              // round 3: T_HarbourBedMap on M_Water_Harbour (the water reads the natural bed)
             // Pass 2: the weather vane split (head turns) and the lighthouse beam, saved in place before the scene references them.
             BuildWeatherVaneMeshes(LoadModelMesh(HarbourPierLayout.WeatherVaneModel));
             HarbourPierMeshes.Save(HarbourPierLayout.BeaconBeamMeshPath, BuildBeaconBeam());
+            HarbourPierMeshes.Save(HarbourPierLayout.SearchBeamMeshPath, BuildSearchBeam());   // round 3: the hill searchlight
             HarbourPierMeshes.Save(HarbourPierLayout.GlowSphereMeshPath, BuildGlowSphere());   // round 1: 112 triangles instead of Unity's 768
             AssetDatabase.SaveAssets();
 
@@ -62,7 +64,7 @@ namespace FishGame.EditorTools
                 Toon = RenderMaterialLibrary.Get("M_Toon_Base"),
                 ToonTri = RenderMaterialLibrary.Get("M_Toon_Tri"),
                 Foliage = RenderMaterialLibrary.Get("M_Toon_Foliage"),
-                Water = RenderMaterialLibrary.Get("M_Water_Surface"),
+                Water = RenderMaterialLibrary.Get(HarbourBedMap.MaterialName),   // round 3 (was M_Water_Surface: the same look plus the bed map)
                 Creek = RenderMaterialLibrary.Get("M_Water_Creek"),
                 WaterMesh = LoadMesh(HarbourPierLayout.WaterMeshPath),
                 WaterSkirt = LoadMesh(HarbourPierLayout.WaterSkirtMeshPath),
@@ -80,6 +82,7 @@ namespace FishGame.EditorTools
                 Smoke = RenderMaterialLibrary.Get("M_Smoke"),
                 Sphere = LoadMesh(HarbourPierLayout.GlowSphereMeshPath),
                 BeamMesh = LoadMesh(HarbourPierLayout.BeaconBeamMeshPath),
+                SearchBeamMesh = LoadMesh(HarbourPierLayout.SearchBeamMeshPath),
                 VaneHead = LoadMesh(HarbourPierLayout.WeatherVaneHeadMeshPath),
                 VaneBase = LoadMesh(HarbourPierLayout.WeatherVaneBaseMeshPath),
             };

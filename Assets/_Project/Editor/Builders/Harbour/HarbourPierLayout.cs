@@ -145,20 +145,23 @@ namespace FishGame.EditorTools
             Mathf.Abs(x) <= TreeClearance || Mathf.Abs(x - 30f) <= TreeClearance || (new Vector2(x, z) - HutCentreXZ).magnitude <= TreeClearance;
 
         // ---- stand points (x, y, z, facingDeg; this order) ----
-        // 0-4 beach (x -48, -30, -12, 14, 48; z -46.5; BeachY + 0.05 = 0.23), 5-6 pier middle east/west, 7-8 T-head west/east end, 9 T-head front,
+        // 0 the creek-lagoon dock (round 3; was the beach at x -48), 1-4 beach (x -30, -12, 14, 48; z -46.5; BeachY + 0.05 = 0.23), 5-6 pier middle east/west, 7-8 T-head west/east end, 9 T-head front,
         // 10 breakwater tip. Facing is Unity yaw (0 = +z, 90 = +x).
         // Round 1 (2026-10-15): 11 the east-basin fishing jetty head (deck 0.95, facing 340: north-north-west into the basin), 12 the lookout
         // tower deck (4.4 m up by the breakwater root, facing 36: north-east over the basin): a second jetty and the first raised fishing spot.
         // The facings keep the tug 1.0-1.6 m out of both cast lanes (fg_harbour.py lane_hit; the manifest's pass2.verification lists them).
-        public const float JettyDeckTopY = 0.95f, LookoutDeckTopY = 4.4f;
+        public const float JettyDeckTopY = 0.95f, LookoutDeckTopY = 4.4f, LagoonDockTopY = 0.7f;
         public const float StandBeachZ = -46.5f, StandLift = 0.05f;
         public static readonly Vector4[] StandPoints = BuildStandPoints();
 
         static Vector4[] BuildStandPoints()
         {
             float beachY = BeachY(StandBeachZ) + StandLift;
-            float[] beachX = { -48f, -30f, -12f, 14f, 48f };
+            float[] beachX = { -30f, -12f, 14f, 48f };
             var points = new List<Vector4>();
+            // round 3 (2026-10-17): stand 0 left the open beach at x -48 for the head of the creek-lagoon dock (deck 0.7; facing 20, up the lagoon to
+            // its mouth): the West Horn now curls round that water (fg_harbour.py LAGOON_DOCK, COAST_BARS)
+            points.Add(new Vector4(-48.5f, LagoonDockTopY + 0.05f, -41.2f, 20f));
             foreach (float x in beachX) points.Add(new Vector4(x, beachY, StandBeachZ, 0f));
             points.Add(new Vector4(0f, 1.55f, -25f, 90f));      // pier middle, east
             points.Add(new Vector4(0f, 1.55f, -25f, 270f));     // pier middle, west
@@ -170,6 +173,7 @@ namespace FishGame.EditorTools
             points.Add(new Vector4(28.5f, 1.55f, -26.5f, 330f));      // breakwater tip
             points.Add(new Vector4(55.7f, JettyDeckTopY + 0.05f, -35f, 352f));      // round 1: the east jetty head
             points.Add(new Vector4(36.4f, LookoutDeckTopY + 0.05f, -48.3f, 36f));   // round 1: the lookout tower deck
+            points.Add(new Vector4(-45.6f, 1.0f, -16.8f, 32f));   // round 3: the West Horn's tip, over the open bay (y = the horn's crest + 0.05)
             return points.ToArray();
         }
 
@@ -223,6 +227,7 @@ namespace FishGame.EditorTools
             new VisualModel("Harbour_Core_Cliffs_East_Tri.fbx", RootLand, "CliffsEastVisual"),
             new VisualModel("Harbour_Core_Paths.fbx", RootLand, "PathsVisual"),
             new VisualModel("Harbour_Core_Walls_Tri.fbx", RootLand, "StoneWallVisual"),
+            new VisualModel("Harbour_Core_Walls2_Tri.fbx", RootLand, "StoneWall2Visual"),   // round 3: wall 2's faces, cheeks and steps
             new VisualModel("Harbour_Core_Road.fbx", RootLand, "RoadVisual"),
             new VisualModel("Harbour_Core_Forest_Tri.fbx", RootLand, "ForestVisual"),
             new VisualModel("Harbour_Core_HeadlandTrees_Tri.fbx", RootLand, "HeadlandTreesVisual"),
@@ -284,6 +289,14 @@ namespace FishGame.EditorTools
             new VisualModel("Harbour_Core_CodeTree_PineB_Cards.fbx", RootCodeTrees, "TreeCrowns"),
             new VisualModel("Harbour_Core_CodeTree_RoundA_Cards.fbx", RootCodeTrees, "TreeCrowns"),
             new VisualModel("Harbour_Core_CodeTree_RoundB_Cards.fbx", RootCodeTrees, "TreeCrowns"),
+            // ---- round 3 (the creek lagoon and the West Horn; the coast itself is Harbour_Core_Coast_Tri) ----
+            new VisualModel("Harbour_Core_Lagoon.fbx", RootVillage, "LagoonVisual"),
+            // round 3: the upper lane bends through a village square; the cottage row split in two models, the lane furniture in a third
+            new VisualModel("Harbour_Core_Buildings_UpperEast.fbx", RootVillage, "UpperVillageEastVisual"),
+            new VisualModel("Harbour_Core_VillageLane.fbx", RootVillage, "VillageLaneVisual"),
+            new VisualModel("Harbour_Detail_Lagoon.fbx", RootDetail, "LagoonDressingVisual"),
+            new VisualModel("Harbour_Detail_Ivy.fbx", RootDetail, "IvyVisual"),   // round 3: ivy curtains and coping pots on the terrace walls
+            new VisualModel("Harbour_Core_BreakwaterSetts_Tri.fbx", RootBreakwater, "BreakwaterSettsVisual"),   // round 3: setts over the walk (visual)
         };
 
         // Pass-2 collider sources: box items of these models become BoxColliders (Land: Shore; Village: Structure). Round 1: the stone wall model
@@ -292,7 +305,8 @@ namespace FishGame.EditorTools
         public static readonly string[] LandBoxModels = { "Harbour_Core_Walls_Tri" };
         public static readonly string[] VillageBoxModels = { "Harbour_Core_Buildings", "Harbour_Core_Yard_A", "Harbour_Core_Yard_B", "Harbour_Core_Trees_Tri",
                                                              "Harbour_Core_Buildings_Upper", "Harbour_Core_Jetty", "Harbour_Core_TerraceTrees_Tri",
-                                                             "Harbour_Core_Story" };   // round 2: the derrick, crates, poster post, fingerpost, breakwater parapet
+                                                             "Harbour_Core_Story", "Harbour_Core_Lagoon",      // round 3: the lagoon dock and the beacon
+                                                             "Harbour_Core_Buildings_UpperEast", "Harbour_Core_VillageLane" };   // round 3: cottages, fences, square   // round 2: the derrick, crates, poster post, fingerpost, breakwater parapet
         // Round 1: the windmill sails turn (AmbientLife Rotor, degrees per second); the circling gulls (AmbientLife Circle).
         public const string WindmillSailsModel = "Harbour_Core_Anim_WindmillSails";
         public const float WindmillDegreesPerSecond = 24f;
@@ -302,6 +316,7 @@ namespace FishGame.EditorTools
         public const string WeatherVaneHeadMeshPath = AssetPaths.MeshesFolder + "/Harbour_WeatherVane_Head.asset";
         public const string WeatherVaneBaseMeshPath = AssetPaths.MeshesFolder + "/Harbour_WeatherVane_Base.asset";
         public const string BeaconBeamMeshPath = AssetPaths.MeshesFolder + "/Harbour_BeaconBeam.asset";
+        public const string SearchBeamMeshPath = AssetPaths.MeshesFolder + "/Harbour_SearchBeam.asset";   // round 3: the hill searchlight
         public const string GlowSphereMeshPath = AssetPaths.MeshesFolder + "/Harbour_GlowSphere.asset";   // round 1: the lamp glow spheres' low-poly mesh
         public const float TugBobMetres = 0.03f;         // the moored tug's hull visual heave (the collision mesh never moves)
         // Phase-1 pier lamps (Harbour_Props Lamp_0 / Lamp_1): the light sits in the lamp head, as the pass-2 lamp posts' (y 4.1 for a 4.53 top).

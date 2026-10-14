@@ -192,10 +192,66 @@ namespace FishGame.EditorTools
         // Rows (z): the submerged lip -44.5, then -45 down to -55 every metre (the two kinks), then -100 (flat plateau). Each band between two rows has its
         // own vertices, so its texture layer (uv1.y) is constant over the band; the palette slot is per vertex (sand below BeachSandMaxY, grass above),
         // so the band that crosses the edge blends sand into grass.
+        // Harbour round 3 (2026-10-17, critics: "the lawn is a flat saturated lime plane"): the village lawn (the plateau inside the walls, x -60..60,
+        // z -55..-79) is a 2 m grid of its own whose vertices carry a painted variation - large soft patches of olive (Reed) and blue-green
+        // (FoliageAlt) in the grass, and darker and lighter value patches in the vertex colour (the ao channel) - from deterministic value noise
+        // (no Random). The rest of the plateau keeps its 20 m columns; every height is still exactly BeachY (flat at 1.2 here).
+        const float LawnX0 = -60f, LawnX1 = 60f, LawnZ0 = -79f, LawnStep = 2f;
+
+        static float LawnNoise(float x, float z, float scale, float seed)
+        {
+            float px = x / scale + seed * 17.13f, pz = z / scale - seed * 9.71f;
+            float ix = Mathf.Floor(px), iz = Mathf.Floor(pz), fx = px - ix, fz = pz - iz;
+            fx = fx * fx * (3f - 2f * fx); fz = fz * fz * (3f - 2f * fz);
+            float a = Hash(ix, iz), b = Hash(ix + 1f, iz), c = Hash(ix, iz + 1f), d = Hash(ix + 1f, iz + 1f);
+            return Mathf.Lerp(Mathf.Lerp(a, b, fx), Mathf.Lerp(c, d, fx), fz);
+        }
+
+        static float Hash(float x, float z)
+        {
+            float h = Mathf.Sin(x * 127.1f + z * 311.7f) * 43758.5453f;
+            return h - Mathf.Floor(h);
+        }
+
+        static void AddLawn(List<Vector3> vertices, List<Vector3> normals, List<Vector2> uv0, List<Vector4> uv1, List<Color> colors, List<int> triangles)
+        {
+            float y = HarbourPierLayout.BeachY(HarbourPierLayout.BeachFlatFromZ);
+            int nx = Mathf.RoundToInt((LawnX1 - LawnX0) / LawnStep) + 1;
+            int nz = Mathf.RoundToInt((HarbourPierLayout.BeachFlatFromZ - LawnZ0) / LawnStep) + 1;
+            int start = vertices.Count;
+            for (int iz = 0; iz < nz; iz++)
+            {
+                float z = HarbourPierLayout.BeachFlatFromZ - iz * LawnStep;
+                for (int ix = 0; ix < nx; ix++)
+                {
+                    float x = LawnX0 + ix * LawnStep;
+                    float olive = LawnNoise(x, z, 9f, 1f) * 0.7f + LawnNoise(x, z, 3.5f, 2f) * 0.3f;
+                    float cool = LawnNoise(x, z, 13f, 3f);
+                    byte slot = olive > 0.66f ? LakeDockLayout.SlotReed : (cool > 0.72f ? LakeDockLayout.SlotFoliageAlt : LakeDockLayout.SlotGrass);
+                    // the grid's border keeps the plateau's plain grass, so it meets the 20 m band without a seam
+                    if (ix == 0 || ix == nx - 1 || iz == 0 || iz == nz - 1) slot = LakeDockLayout.SlotGrass;
+                    float value = 0.84f + 0.2f * LawnNoise(x, z, 6f, 4f);
+                    vertices.Add(new Vector3(x, y, z));
+                    normals.Add(Vector3.up);
+                    uv0.Add(new Vector2(x, z));
+                    uv1.Add(new Vector4(slot, EnvTextureLayers.Grass, SmoothMeshBuilder.MappingUv, 0f));
+                    colors.Add(new Color(0.5f * value, 0.5f * value, 0.5f * value, 1f));
+                }
+            }
+            for (int iz = 0; iz + 1 < nz; iz++)
+                for (int ix = 0; ix + 1 < nx; ix++)
+                {
+                    int a = start + iz * nx + ix, b = start + (iz + 1) * nx + ix, c = start + (iz + 1) * nx + ix + 1, d = start + iz * nx + ix + 1;
+                    AddIndexedUp(vertices, triangles, a, b, c);
+                    AddIndexedUp(vertices, triangles, a, c, d);
+                }
+        }
+
         static Mesh BuildBeach()
         {
             var rows = new List<float> { HarbourPierLayout.BeachLipZ };
             for (float z = HarbourPierLayout.CoastZ; z >= HarbourPierLayout.BeachFlatFromZ - 0.001f; z -= 1f) rows.Add(z);
+            rows.Add(LawnZ0);   // round 3: the plateau band splits at the lawn grid's back edge
             rows.Add(HarbourPierLayout.BeachEndZ);
             int nx = Mathf.RoundToInt((HarbourPierLayout.BeachMaxX - HarbourPierLayout.BeachMinX) / HarbourPierLayout.BeachStep) + 1;
 
@@ -227,13 +283,17 @@ namespace FishGame.EditorTools
                         colors.Add(new Color(0.5f, 0.5f, 0.5f, 1f));
                     }
                 }
+                bool lawnBand = Mathf.Approximately(zA, HarbourPierLayout.BeachFlatFromZ) && Mathf.Approximately(zB, LawnZ0);
                 for (int ix = 0; ix + 1 < nx; ix++)
                 {
+                    float xa = HarbourPierLayout.BeachMinX + ix * HarbourPierLayout.BeachStep;
+                    if (lawnBand && xa >= LawnX0 - 0.001f && xa + HarbourPierLayout.BeachStep <= LawnX1 + 0.001f) continue;   // the lawn grid fills it
                     int a = start + ix, b = start + nx + ix, c = start + nx + ix + 1, d = start + ix + 1;
                     AddIndexedUp(vertices, triangles, a, b, c);
                     AddIndexedUp(vertices, triangles, a, c, d);
                 }
             }
+            AddLawn(vertices, normals, uv0, uv1, colors, triangles);
             return Finish("Harbour_Beach", vertices, normals, uv0, uv1, colors, triangles);
         }
 

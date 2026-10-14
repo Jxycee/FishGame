@@ -314,14 +314,18 @@ namespace FishGame.EditorTools
         }
 
         // The lighthouse beam: two long thin cones back to back along +-z from the lamp (8 sides, 70 m, 0.3 -> 5 m radius), drawn additive.
-        static Mesh BuildBeaconBeam()
+        static Mesh BuildBeaconBeam() => BuildBeam("Harbour_BeaconBeam", 70f, 0.3f, 5f, true);
+
+        // Round 3: the hill searchlight's beam - one cone along +z (8 sides, 46 m, 0.22 -> 3.2 m radius).
+        static Mesh BuildSearchBeam() => BuildBeam("Harbour_SearchBeam", 46f, 0.22f, 3.2f, false);
+
+        static Mesh BuildBeam(string name, float length, float r0, float r1, bool both)
         {
             const int sides = 8;
-            const float length = 70f, r0 = 0.3f, r1 = 5f;
             var verts = new List<Vector3>();
             var normals = new List<Vector3>();
             var tris = new List<int>();
-            foreach (float dir in new[] { 1f, -1f })
+            foreach (float dir in both ? new[] { 1f, -1f } : new[] { 1f })
             {
                 int b = verts.Count;
                 for (int i = 0; i < sides; i++)
@@ -338,7 +342,7 @@ namespace FishGame.EditorTools
                     else tris.AddRange(new[] { a0, a0 + 1, a1, a1, a0 + 1, a1 + 1 });
                 }
             }
-            var mesh = new Mesh { name = "Harbour_BeaconBeam" };
+            var mesh = new Mesh { name = name };
             mesh.SetVertices(verts);
             mesh.SetNormals(normals);
             mesh.SetTriangles(tris, 0);
@@ -458,6 +462,25 @@ namespace FishGame.EditorTools
             foreach (HarbourPierManifest.Point lp in HarbourPierManifest.LoadPass2().light_points)
             {
                 if (lp.frame == "CrewBoat local") continue;   // the mast light, above
+                if (lp.name == "Searchlight")
+                {
+                    // Round 3: the mafia sedan's searchlight on the hill track. A pivot turned toward the harbour (yaw_deg) that wanders
+                    // slowly (AmbientLife WindSock: +-amplitude degrees of yaw), a one-sided beam tipped down over the town, a small glow at
+                    // the lamp; both glow only at dusk and night (life.Glows). No point light: it is a backdrop beat, not a light source.
+                    var pivot = new GameObject("Searchlight");
+                    pivot.transform.SetParent(root.transform, false);
+                    pivot.transform.localPosition = HarbourPierManifest.ToVector(lp.position);
+                    pivot.transform.localRotation = Quaternion.Euler(0f, lp.yaw_deg, 0f);
+                    life.Move(pivot.transform, AmbientLife.MotionKind.WindSock, 26f);
+                    life.Glows.Add(AddGlowSphere(pivot.transform, art, 0.5f));
+                    var sweep = new GameObject("Beam");
+                    sweep.transform.SetParent(pivot.transform, false);
+                    sweep.transform.localRotation = Quaternion.Euler(9f, 0f, 0f);
+                    MeshRenderer sr = AddMesh(sweep, art.SearchBeamMesh, art.Beam, false);
+                    sr.receiveShadows = false;
+                    life.Glows.Add(sr);
+                    continue;
+                }
                 var go = new GameObject("Beacon_" + lp.name);
                 go.transform.SetParent(root.transform, false);
                 go.transform.localPosition = HarbourPierManifest.ToVector(lp.position);

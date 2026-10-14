@@ -49,6 +49,7 @@ namespace FishGame.EditorTools
             public float[] position;
             public string frame;
             public string animHint;
+            public float yaw_deg;   // round 3: the searchlight's resting heading
         }
 
         // Pass 2: the tug's ladders (CrewBoat local frame): the LadderVolume box is volume_min..volume_max.

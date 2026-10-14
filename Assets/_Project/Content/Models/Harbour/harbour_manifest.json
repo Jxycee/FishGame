@@ -3927,8 +3927,8 @@
    "name": "Harbour_Core_Dunes_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Dunes_Tri.fbx",
    "group": "core",
-   "triangles": 4686,
-   "vertices": 2689,
+   "triangles": 4840,
+   "vertices": 2780,
    "bounds_min": [
     -60.5,
     1.14,
@@ -3937,7 +3937,7 @@
    "bounds_max": [
     60.5,
     6.74,
-    -60.4688
+    -59.5
    ],
    "triplanar": true,
    "material": "M_Toon_Tri",
@@ -3953,29 +3953,29 @@
    "items": [],
    "max_slope_deg": 84.2,
    "groundcover_counts": {
-    "grass": 5214,
-    "grass_dry": 1208,
-    "flower_white": 283,
-    "flower_orange": 146,
-    "flower_red": 203,
-    "dune": 203
+    "grass": 5104,
+    "grass_dry": 1406,
+    "flower_white": 270,
+    "flower_orange": 172,
+    "flower_red": 190,
+    "dune": 489
    }
   },
   {
    "name": "Harbour_Dunes_Col",
    "file": "Art/Export/Harbour/Harbour_Dunes_Col.fbx",
    "group": "col",
-   "triangles": 5106,
-   "vertices": 2875,
+   "triangles": 6712,
+   "vertices": 3805,
    "bounds_min": [
-    -66.8,
+    -65.7222,
     -9.3,
     -106.5
    ],
    "bounds_max": [
-    72.2,
+    72.5476,
     6.74,
-    -1.6
+    -2.207
    ],
    "triplanar": false,
    "material": "none (collision only: MeshCollider, no renderer)",
@@ -3996,17 +3996,17 @@
    "name": "Harbour_Core_Coast_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Coast_Tri.fbx",
    "group": "core",
-   "triangles": 4566,
-   "vertices": 2663,
+   "triangles": 8950,
+   "vertices": 5105,
    "bounds_min": [
-    -66.8,
+    -65.6059,
     -9.3,
-    -49.65
+    -62.1729
    ],
    "bounds_max": [
-    72.2,
+    71.7484,
     4.8584,
-    -1.6
+    -2.0496
    ],
    "triplanar": true,
    "material": "M_Toon_Tri",
@@ -4019,6 +4019,7 @@
    ],
    "layers": [
     0,
+    1,
     5,
     6
    ],
@@ -4061,8 +4062,8 @@
    "name": "Harbour_Core_Hills_A_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Hills_A_Tri.fbx",
    "group": "core",
-   "triangles": 4246,
-   "vertices": 2275,
+   "triangles": 4168,
+   "vertices": 2249,
    "bounds_min": [
     -200.5,
     1.14,
@@ -4096,8 +4097,8 @@
    "name": "Harbour_Core_Hills_B_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Hills_B_Tri.fbx",
    "group": "core",
-   "triangles": 4708,
-   "vertices": 2482,
+   "triangles": 4574,
+   "vertices": 2427,
    "bounds_min": [
     0.0,
     1.14,
@@ -4159,17 +4160,17 @@
    "name": "Harbour_Core_Cliffs_West_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Cliffs_West_Tri.fbx",
    "group": "core",
-   "triangles": 6000,
-   "vertices": 3042,
+   "triangles": 6412,
+   "vertices": 3398,
    "bounds_min": [
-    -137.0728,
-    -2.7231,
-    -83.1362
+    -116.0176,
+    -3.3742,
+    -80.0532
    ],
    "bounds_max": [
-    -85.1858,
-    13.4544,
-    41.5731
+    -83.9018,
+    13.1692,
+    37.6134
    ],
    "triplanar": true,
    "material": "M_Toon_Tri",
@@ -4188,17 +4189,17 @@
    "name": "Harbour_Core_Cliffs_East_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Cliffs_East_Tri.fbx",
    "group": "core",
-   "triangles": 6880,
-   "vertices": 3492,
+   "triangles": 7900,
+   "vertices": 4182,
    "bounds_min": [
-    61.1022,
-    -2.6296,
-    -81.2013
+    59.6633,
+    -3.1955,
+    -80.0
    ],
    "bounds_max": [
-    124.96,
-    12.2661,
-    55.5694
+    101.9037,
+    12.0643,
+    51.037
    ],
    "triplanar": true,
    "material": "M_Toon_Tri",
@@ -4217,15 +4218,15 @@
    "name": "Harbour_Core_Paths",
    "file": "Art/Export/Harbour/Harbour_Core_Paths.fbx",
    "group": "core",
-   "triangles": 4096,
-   "vertices": 2635,
+   "triangles": 4128,
+   "vertices": 2655,
    "bounds_min": [
-    -51.9006,
+    -56.9394,
     1.16,
     -106.4
    ],
    "bounds_max": [
-    57.1401,
+    46.1684,
     6.785,
     -55.6211
    ],
@@ -4246,12 +4247,12 @@
    "name": "Harbour_Core_Walls_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Walls_Tri.fbx",
    "group": "core",
-   "triangles": 20850,
-   "vertices": 17249,
+   "triangles": 18022,
+   "vertices": 15827,
    "bounds_min": [
     -64.0,
-    0.85,
-    -101.775
+    0.95,
+    -101.7317
    ],
    "bounds_max": [
     64.0,
@@ -4265,7 +4266,6 @@
     5,
     6,
     7,
-    8,
     10
    ],
    "layers": [
@@ -5408,22 +5408,22 @@
      "name": "Buttress1_0",
      "collider": "box",
      "position": [
-      -37.313,
+      -37.317,
       2.229,
       -75.136
      ],
      "footprint": [
-      1.114,
+      1.116,
       2.258,
       0.909
      ],
      "bounds_min": [
-      -37.87,
+      -37.876,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      -36.756,
+      -36.759,
       3.358,
       -74.681
      ]
@@ -5432,22 +5432,22 @@
      "name": "Buttress1_1",
      "collider": "box",
      "position": [
-      -27.812,
+      -27.819,
       2.32,
       -75.136
      ],
      "footprint": [
-      1.09,
+      1.108,
       2.44,
       0.909
      ],
      "bounds_min": [
-      -28.357,
+      -28.373,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      -27.266,
+      -27.265,
       3.54,
       -74.681
      ]
@@ -5461,17 +5461,17 @@
       -75.136
      ],
      "footprint": [
-      1.111,
+      1.117,
       2.414,
       0.909
      ],
      "bounds_min": [
-      -18.403,
+      -18.407,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      -17.292,
+      -17.289,
       3.514,
       -74.681
      ]
@@ -5485,7 +5485,7 @@
       -75.136
      ],
      "footprint": [
-      1.118,
+      1.117,
       2.372,
       0.909
      ],
@@ -5495,7 +5495,7 @@
       -75.59
      ],
      "bounds_max": [
-      -7.583,
+      -7.584,
       3.472,
       -74.681
      ]
@@ -5504,17 +5504,17 @@
      "name": "Buttress1_4",
      "collider": "box",
      "position": [
-      10.663,
+      10.659,
       2.363,
       -75.136
      ],
      "footprint": [
-      1.11,
+      1.118,
       2.526,
       0.909
      ],
      "bounds_min": [
-      10.108,
+      10.1,
       1.1,
       -75.59
      ],
@@ -5533,17 +5533,17 @@
       -75.136
      ],
      "footprint": [
-      1.107,
+      1.116,
       2.378,
       0.909
      ],
      "bounds_min": [
-      20.468,
+      20.462,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      21.575,
+      21.579,
       3.478,
       -74.681
      ]
@@ -5552,22 +5552,22 @@
      "name": "Buttress1_6",
      "collider": "box",
      "position": [
-      37.676,
+      37.68,
       2.379,
       -75.136
      ],
      "footprint": [
-      1.092,
+      1.102,
       2.558,
       0.909
      ],
      "bounds_min": [
-      37.131,
+      37.129,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      38.222,
+      38.231,
       3.658,
       -74.681
      ]
@@ -5576,22 +5576,22 @@
      "name": "Buttress1_7",
      "collider": "box",
      "position": [
-      46.23,
+      46.236,
       2.23,
       -75.136
      ],
      "footprint": [
-      1.113,
+      1.102,
       2.26,
       0.909
      ],
      "bounds_min": [
-      45.674,
+      45.685,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      46.786,
+      46.787,
       3.36,
       -74.681
      ]
@@ -5600,17 +5600,17 @@
      "name": "Buttress1_8",
      "collider": "box",
      "position": [
-      56.097,
+      56.096,
       2.274,
       -75.136
      ],
      "footprint": [
-      1.107,
+      1.109,
       2.349,
       0.909
      ],
      "bounds_min": [
-      55.544,
+      55.542,
       1.1,
       -75.59
      ],
@@ -5624,22 +5624,22 @@
      "name": "Buttress2_0",
      "collider": "box",
      "position": [
-      -55.831,
+      -55.832,
       5.135,
       -94.535
      ],
      "footprint": [
-      1.098,
+      1.11,
       2.99,
       0.909
      ],
      "bounds_min": [
-      -56.38,
+      -56.387,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      -55.282,
+      -55.277,
       6.63,
       -94.081
      ]
@@ -5648,22 +5648,22 @@
      "name": "Buttress2_1",
      "collider": "box",
      "position": [
-      -47.325,
+      -47.329,
       5.044,
       -94.535
      ],
      "footprint": [
-      1.102,
+      1.116,
       2.807,
       0.909
      ],
      "bounds_min": [
-      -47.876,
+      -47.887,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      -46.774,
+      -46.77,
       6.447,
       -94.081
      ]
@@ -5672,22 +5672,22 @@
      "name": "Buttress2_2",
      "collider": "box",
      "position": [
-      -38.543,
+      -38.547,
       5.011,
       -94.535
      ],
      "footprint": [
-      1.104,
+      1.114,
       2.741,
       0.909
      ],
      "bounds_min": [
-      -39.095,
+      -39.104,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      -37.991,
+      -37.99,
       6.381,
       -94.081
      ]
@@ -5696,22 +5696,22 @@
      "name": "Buttress2_3",
      "collider": "box",
      "position": [
-      -29.756,
+      -29.754,
       5.14,
       -94.535
      ],
      "footprint": [
-      1.108,
+      1.115,
       3.001,
       0.909
      ],
      "bounds_min": [
-      -30.31,
+      -30.311,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      -29.202,
+      -29.196,
       6.641,
       -94.081
      ]
@@ -5720,22 +5720,22 @@
      "name": "Buttress2_4",
      "collider": "box",
      "position": [
-      -19.628,
+      -19.63,
       5.003,
       -94.535
      ],
      "footprint": [
-      1.1,
+      1.119,
       2.725,
       0.909
      ],
      "bounds_min": [
-      -20.178,
+      -20.189,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      -19.078,
+      -19.07,
       6.365,
       -94.081
      ]
@@ -5744,22 +5744,22 @@
      "name": "Buttress2_5",
      "collider": "box",
      "position": [
-      -1.539,
+      -1.547,
       5.077,
       -94.535
      ],
      "footprint": [
-      1.11,
+      1.086,
       2.873,
       0.909
      ],
      "bounds_min": [
-      -2.094,
+      -2.09,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      -0.984,
+      -1.004,
       6.513,
       -94.081
      ]
@@ -5768,24 +5768,24 @@
      "name": "Buttress2_6",
      "collider": "box",
      "position": [
-      8.343,
+      8.347,
       5.148,
-      -94.535
+      -94.532
      ],
      "footprint": [
-      1.093,
+      1.112,
       3.016,
-      0.909
+      0.915
      ],
      "bounds_min": [
-      7.796,
+      7.791,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      8.889,
+      8.903,
       6.656,
-      -94.081
+      -94.075
      ]
     },
     {
@@ -5797,17 +5797,17 @@
       -94.535
      ],
      "footprint": [
-      1.113,
+      1.112,
       2.825,
       0.909
      ],
      "bounds_min": [
-      16.262,
+      16.263,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      17.375,
+      17.374,
       6.465,
       -94.081
      ]
@@ -5816,22 +5816,22 @@
      "name": "Buttress2_8",
      "collider": "box",
      "position": [
-      35.723,
+      35.727,
       5.122,
       -94.535
      ],
      "footprint": [
-      1.096,
+      1.108,
       2.963,
       0.909
      ],
      "bounds_min": [
-      35.175,
+      35.172,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      36.27,
+      36.281,
       6.603,
       -94.081
      ]
@@ -5845,17 +5845,17 @@
       -94.535
      ],
      "footprint": [
-      1.11,
+      1.103,
       2.947,
       0.909
      ],
      "bounds_min": [
-      44.076,
+      44.08,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      45.186,
+      45.183,
       6.587,
       -94.081
      ]
@@ -5864,17 +5864,17 @@
      "name": "Buttress2_10",
      "collider": "box",
      "position": [
-      54.404,
+      54.406,
       5.015,
       -94.535
      ],
      "footprint": [
-      1.11,
+      1.107,
       2.75,
       0.909
      ],
      "bounds_min": [
-      53.85,
+      53.852,
       3.64,
       -94.99
      ],
@@ -6074,11 +6074,43 @@
    ]
   },
   {
+   "name": "Harbour_Core_Walls2_Tri",
+   "file": "Art/Export/Harbour/Harbour_Core_Walls2_Tri.fbx",
+   "group": "core",
+   "triangles": 16844,
+   "vertices": 16825,
+   "bounds_min": [
+    -64.0,
+    0.85,
+    -101.775
+   ],
+   "bounds_max": [
+    64.0,
+    7.7173,
+    -75.29
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    4,
+    5,
+    6,
+    7
+   ],
+   "layers": [
+    0,
+    6
+   ],
+   "local_space": false,
+   "items": [],
+   "note": "Round 3: retaining wall 2 (the chapel terrace) stone faces and every stair (cheeks, steps, iron handrails); wall 1 and every parapet, buttress and lamp are Harbour_Core_Walls_Tri. Visual only: the walkable shape is Harbour_Dunes_Col."
+  },
+  {
    "name": "Harbour_Core_Road",
    "file": "Art/Export/Harbour/Harbour_Core_Road.fbx",
    "group": "core",
-   "triangles": 5978,
-   "vertices": 4941,
+   "triangles": 7466,
+   "vertices": 7166,
    "bounds_min": [
     -170.1186,
     0.46,
@@ -6087,7 +6119,7 @@
    "bounds_max": [
     123.3004,
     16.9717,
-    -83.316
+    -83.1481
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -6095,10 +6127,12 @@
     3,
     4,
     5,
-    6
+    6,
+    7
    ],
    "layers": [
     0,
+    1,
     3,
     5,
     6
@@ -6493,17 +6527,17 @@
    "name": "Harbour_Core_Buildings_Upper",
    "file": "Art/Export/Harbour/Harbour_Core_Buildings_Upper.fbx",
    "group": "core",
-   "triangles": 19878,
-   "vertices": 13801,
+   "triangles": 13446,
+   "vertices": 10121,
    "bounds_min": [
-    -60.4768,
+    -60.4767,
     3.63,
     -108.15
    ],
    "bounds_max": [
-    60.4785,
+    60.4755,
     24.96,
-    -76.485
+    -77.6818
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -6531,9 +6565,9 @@
      "name": "Cottage_0",
      "collider": "box",
      "position": [
-      -40.5,
+      -54.0,
       6.315,
-      -80.5
+      -82.0
      ],
      "footprint": [
       6.124,
@@ -6541,23 +6575,23 @@
       5.359
      ],
      "bounds_min": [
-      -43.562,
+      -57.062,
       3.63,
-      -83.18
+      -84.68
      ],
      "bounds_max": [
-      -37.438,
+      -50.938,
       9.0,
-      -77.82
+      -79.32
      ]
     },
     {
      "name": "Cottage_1",
      "collider": "box",
      "position": [
-      -31.0,
+      -40.5,
       6.165,
-      -80.9
+      -81.2
      ],
      "footprint": [
       5.398,
@@ -6565,134 +6599,86 @@
       5.216
      ],
      "bounds_min": [
-      -33.699,
+      -43.199,
       3.63,
-      -83.508
+      -83.808
      ],
      "bounds_max": [
-      -28.301,
+      -37.801,
       8.7,
-      -78.292
+      -78.592
      ]
     },
     {
      "name": "Cottage_2",
      "collider": "box",
      "position": [
-      -21.5,
+      -17.5,
       6.265,
-      -80.3
+      -80.4
      ],
      "footprint": [
-      5.891,
+      5.808,
       5.27,
-      5.526
+      5.436
      ],
      "bounds_min": [
-      -24.445,
+      -20.404,
       3.63,
-      -83.063
+      -83.118
      ],
      "bounds_max": [
-      -18.555,
+      -14.596,
       8.9,
-      -77.537
+      -77.682
      ]
     },
     {
      "name": "Cottage_3",
      "collider": "box",
      "position": [
-      -5.0,
-      6.415,
-      -80.7
+      -32.0,
+      6.215,
+      -91.6
      ],
      "footprint": [
-      5.931,
-      5.57,
-      5.552
+      5.317,
+      5.17,
+      5.131
      ],
      "bounds_min": [
-      -7.965,
+      -34.659,
       3.63,
-      -83.476
+      -94.166
      ],
      "bounds_max": [
-      -2.035,
-      9.2,
-      -77.924
+      -29.342,
+      8.8,
+      -89.034
      ]
     },
     {
      "name": "Cottage_4",
      "collider": "box",
      "position": [
-      12.5,
-      6.215,
-      -80.4
+      -24.6,
+      6.415,
+      -91.4
      ],
      "footprint": [
-      5.598,
-      5.17,
-      5.226
+      5.808,
+      5.57,
+      5.436
      ],
      "bounds_min": [
-      9.701,
+      -27.504,
       3.63,
-      -83.013
+      -94.118
      ],
      "bounds_max": [
-      15.299,
-      8.8,
-      -77.787
-     ]
-    },
-    {
-     "name": "Cottage_5",
-     "collider": "box",
-     "position": [
-      21.5,
-      6.315,
-      -80.9
-     ],
-     "footprint": [
-      5.891,
-      5.37,
-      5.526
-     ],
-     "bounds_min": [
-      18.555,
-      3.63,
-      -83.663
-     ],
-     "bounds_max": [
-      24.445,
-      9.0,
-      -78.137
-     ]
-    },
-    {
-     "name": "Cottage_6",
-     "collider": "box",
-     "position": [
-      44.0,
-      6.465,
-      -80.4
-     ],
-     "footprint": [
-      6.686,
-      5.67,
-      5.525
-     ],
-     "bounds_min": [
-      40.657,
-      3.63,
-      -83.163
-     ],
-     "bounds_max": [
-      47.343,
-      9.3,
-      -77.637
+      -21.696,
+      9.2,
+      -88.682
      ]
     },
     {
@@ -6790,224 +6776,31 @@
       8.2,
       -95.32
      ]
-    },
-    {
-     "name": "LaneLamp_0",
-     "collider": "box",
-     "position": [
-      -36.0,
-      5.405,
-      -85.288
-     ],
-     "footprint": [
-      0.7,
-      3.33,
-      0.34
-     ],
-     "bounds_min": [
-      -36.35,
-      3.74,
-      -85.458
-     ],
-     "bounds_max": [
-      -35.65,
-      7.07,
-      -85.118
-     ],
-     "light": [
-      -36.0,
-      6.64,
-      -85.29
-     ]
-    },
-    {
-     "name": "LaneLamp_1",
-     "collider": "box",
-     "position": [
-      -13.0,
-      5.405,
-      -84.097
-     ],
-     "footprint": [
-      0.7,
-      3.33,
-      0.34
-     ],
-     "bounds_min": [
-      -13.35,
-      3.74,
-      -84.267
-     ],
-     "bounds_max": [
-      -12.65,
-      7.07,
-      -83.927
-     ],
-     "light": [
-      -13.0,
-      6.64,
-      -84.1
-     ]
-    },
-    {
-     "name": "LaneLamp_2",
-     "collider": "box",
-     "position": [
-      7.5,
-      5.405,
-      -83.182
-     ],
-     "footprint": [
-      0.7,
-      3.33,
-      0.34
-     ],
-     "bounds_min": [
-      7.15,
-      3.74,
-      -83.352
-     ],
-     "bounds_max": [
-      7.85,
-      7.07,
-      -83.012
-     ],
-     "light": [
-      7.5,
-      6.64,
-      -83.18
-     ]
-    },
-    {
-     "name": "LaneLamp_3",
-     "collider": "box",
-     "position": [
-      28.0,
-      5.405,
-      -82.581
-     ],
-     "footprint": [
-      0.7,
-      3.33,
-      0.34
-     ],
-     "bounds_min": [
-      27.65,
-      3.74,
-      -82.751
-     ],
-     "bounds_max": [
-      28.35,
-      7.07,
-      -82.411
-     ],
-     "light": [
-      28.0,
-      6.64,
-      -82.58
-     ]
-    },
-    {
-     "name": "LaneLamp_4",
-     "collider": "box",
-     "position": [
-      50.0,
-      5.405,
-      -82.408
-     ],
-     "footprint": [
-      0.7,
-      3.33,
-      0.34
-     ],
-     "bounds_min": [
-      49.65,
-      3.74,
-      -82.578
-     ],
-     "bounds_max": [
-      50.35,
-      7.07,
-      -82.238
-     ],
-     "light": [
-      50.0,
-      6.64,
-      -82.41
-     ]
-    },
-    {
-     "name": "GardenFence_2W",
-     "collider": "box",
-     "position": [
-      -23.35,
-      4.19,
-      -76.52
-     ],
-     "footprint": [
-      1.9,
-      0.95,
-      0.07
-     ],
-     "bounds_min": [
-      -24.3,
-      3.715,
-      -76.555
-     ],
-     "bounds_max": [
-      -22.4,
-      4.665,
-      -76.485
-     ]
-    },
-    {
-     "name": "GardenFence_2E",
-     "collider": "box",
-     "position": [
-      -19.95,
-      4.19,
-      -76.52
-     ],
-     "footprint": [
-      2.5,
-      0.95,
-      0.07
-     ],
-     "bounds_min": [
-      -21.2,
-      3.715,
-      -76.555
-     ],
-     "bounds_max": [
-      -18.7,
-      4.665,
-      -76.485
-     ]
     }
    ],
    "smoke_points": [
     {
      "name": "CottageChimney_Cottage_0",
      "position": [
-      -38.52,
+      -55.98,
       9.09,
-      -81.07
+      -81.43
      ]
     },
     {
      "name": "CottageChimney_Cottage_1",
      "position": [
-      -29.38,
+      -42.12,
       8.79,
-      -81.32
+      -80.78
      ]
     },
     {
      "name": "CottageChimney_Cottage_2",
      "position": [
-      -19.74,
+      -19.27,
       8.99,
-      -80.92
+      -79.81
      ]
     }
    ],
@@ -7023,29 +6816,39 @@
    ],
    "lamp_tops": [
     [
-     -36.0,
+     -46.6,
      6.26,
-     -85.288
+     -85.6
     ],
     [
-     -13.0,
+     -35.0,
      6.26,
-     -84.097
+     -89.8
     ],
     [
-     7.5,
+     -9.4,
      6.26,
-     -83.182
+     -84.6
     ],
     [
-     28.0,
+     3.6,
      6.26,
-     -82.581
+     -93.4
     ],
     [
-     50.0,
+     13.4,
      6.26,
-     -82.408
+     -87.8
+    ],
+    [
+     31.4,
+     6.26,
+     -86.0
+    ],
+    [
+     52.0,
+     6.26,
+     -90.4
     ]
    ],
    "level_y": {
@@ -7053,6 +6856,1156 @@
     "level1": 3.74,
     "level2": 6.74
    }
+  },
+  {
+   "name": "Harbour_Core_Buildings_UpperEast",
+   "file": "Art/Export/Harbour/Harbour_Core_Buildings_UpperEast.fbx",
+   "group": "core",
+   "triangles": 7144,
+   "vertices": 3894,
+   "bounds_min": [
+    7.6416,
+    3.63,
+    -94.3692
+   ],
+   "bounds_max": [
+    49.645,
+    9.3,
+    -77.7274
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    5,
+    6
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "Cottage_5",
+     "collider": "box",
+     "position": [
+      10.4,
+      6.215,
+      -91.8
+     ],
+     "footprint": [
+      5.517,
+      5.17,
+      5.138
+     ],
+     "bounds_min": [
+      7.642,
+      3.63,
+      -94.369
+     ],
+     "bounds_max": [
+      13.158,
+      8.8,
+      -89.231
+     ]
+    },
+    {
+     "name": "Cottage_6",
+     "collider": "box",
+     "position": [
+      17.6,
+      6.315,
+      -91.4
+     ],
+     "footprint": [
+      5.808,
+      5.37,
+      5.436
+     ],
+     "bounds_min": [
+      14.696,
+      3.63,
+      -94.118
+     ],
+     "bounds_max": [
+      20.504,
+      9.0,
+      -88.682
+     ]
+    },
+    {
+     "name": "Cottage_7",
+     "collider": "box",
+     "position": [
+      23.8,
+      6.315,
+      -80.4
+     ],
+     "footprint": [
+      5.724,
+      5.37,
+      5.345
+     ],
+     "bounds_min": [
+      20.938,
+      3.63,
+      -83.073
+     ],
+     "bounds_max": [
+      26.662,
+      9.0,
+      -77.727
+     ]
+    },
+    {
+     "name": "Cottage_8",
+     "collider": "box",
+     "position": [
+      39.0,
+      6.465,
+      -81.4
+     ],
+     "footprint": [
+      6.686,
+      5.67,
+      5.525
+     ],
+     "bounds_min": [
+      35.657,
+      3.63,
+      -84.163
+     ],
+     "bounds_max": [
+      42.343,
+      9.3,
+      -78.637
+     ]
+    },
+    {
+     "name": "Cottage_9",
+     "collider": "box",
+     "position": [
+      46.6,
+      6.315,
+      -81.8
+     ],
+     "footprint": [
+      6.09,
+      5.37,
+      5.54
+     ],
+     "bounds_min": [
+      43.555,
+      3.63,
+      -84.57
+     ],
+     "bounds_max": [
+      49.645,
+      9.0,
+      -79.03
+     ]
+    }
+   ],
+   "note": "Round 3: the east cottage row on the upper lane.",
+   "smoke_points": [
+    {
+     "name": "CottageChimney_Cottage_5",
+     "position": [
+      12.08,
+      8.89,
+      -92.36
+     ]
+    },
+    {
+     "name": "CottageChimney_Cottage_6",
+     "position": [
+      19.42,
+      9.09,
+      -91.81
+     ]
+    },
+    {
+     "name": "CottageChimney_Cottage_7",
+     "position": [
+      21.98,
+      9.09,
+      -79.96
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Harbour_Core_VillageLane",
+   "file": "Art/Export/Harbour/Harbour_Core_VillageLane.fbx",
+   "group": "core",
+   "triangles": 13492,
+   "vertices": 12696,
+   "bounds_min": [
+    -57.1797,
+    3.64,
+    -95.1405
+   ],
+   "bounds_max": [
+    52.35,
+    7.07,
+    -81.5825
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    5,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "LaneLamp_0",
+     "collider": "box",
+     "position": [
+      -46.6,
+      5.405,
+      -85.6
+     ],
+     "footprint": [
+      0.7,
+      3.33,
+      0.34
+     ],
+     "bounds_min": [
+      -46.95,
+      3.74,
+      -85.77
+     ],
+     "bounds_max": [
+      -46.25,
+      7.07,
+      -85.43
+     ],
+     "light": [
+      -46.6,
+      6.64,
+      -85.6
+     ]
+    },
+    {
+     "name": "LaneLamp_1",
+     "collider": "box",
+     "position": [
+      -35.0,
+      5.405,
+      -89.8
+     ],
+     "footprint": [
+      0.7,
+      3.33,
+      0.34
+     ],
+     "bounds_min": [
+      -35.35,
+      3.74,
+      -89.97
+     ],
+     "bounds_max": [
+      -34.65,
+      7.07,
+      -89.63
+     ],
+     "light": [
+      -35.0,
+      6.64,
+      -89.8
+     ]
+    },
+    {
+     "name": "LaneLamp_2",
+     "collider": "box",
+     "position": [
+      -9.4,
+      5.405,
+      -84.6
+     ],
+     "footprint": [
+      0.7,
+      3.33,
+      0.34
+     ],
+     "bounds_min": [
+      -9.75,
+      3.74,
+      -84.77
+     ],
+     "bounds_max": [
+      -9.05,
+      7.07,
+      -84.43
+     ],
+     "light": [
+      -9.4,
+      6.64,
+      -84.6
+     ]
+    },
+    {
+     "name": "LaneLamp_3",
+     "collider": "box",
+     "position": [
+      3.6,
+      5.405,
+      -93.4
+     ],
+     "footprint": [
+      0.7,
+      3.33,
+      0.34
+     ],
+     "bounds_min": [
+      3.25,
+      3.74,
+      -93.57
+     ],
+     "bounds_max": [
+      3.95,
+      7.07,
+      -93.23
+     ],
+     "light": [
+      3.6,
+      6.64,
+      -93.4
+     ]
+    },
+    {
+     "name": "LaneLamp_4",
+     "collider": "box",
+     "position": [
+      13.4,
+      5.405,
+      -87.8
+     ],
+     "footprint": [
+      0.7,
+      3.33,
+      0.34
+     ],
+     "bounds_min": [
+      13.05,
+      3.74,
+      -87.97
+     ],
+     "bounds_max": [
+      13.75,
+      7.07,
+      -87.63
+     ],
+     "light": [
+      13.4,
+      6.64,
+      -87.8
+     ]
+    },
+    {
+     "name": "LaneLamp_5",
+     "collider": "box",
+     "position": [
+      31.4,
+      5.405,
+      -86.0
+     ],
+     "footprint": [
+      0.7,
+      3.33,
+      0.34
+     ],
+     "bounds_min": [
+      31.05,
+      3.74,
+      -86.17
+     ],
+     "bounds_max": [
+      31.75,
+      7.07,
+      -85.83
+     ],
+     "light": [
+      31.4,
+      6.64,
+      -86.0
+     ]
+    },
+    {
+     "name": "LaneLamp_6",
+     "collider": "box",
+     "position": [
+      52.0,
+      5.405,
+      -90.4
+     ],
+     "footprint": [
+      0.7,
+      3.33,
+      0.34
+     ],
+     "bounds_min": [
+      51.65,
+      3.74,
+      -90.57
+     ],
+     "bounds_max": [
+      52.35,
+      7.07,
+      -90.23
+     ],
+     "light": [
+      52.0,
+      6.64,
+      -90.4
+     ]
+    },
+    {
+     "name": "GardenFence_0W",
+     "collider": "box",
+     "position": [
+      -51.509,
+      4.14,
+      -86.614
+     ],
+     "footprint": [
+      0.7,
+      0.9,
+      0.088
+     ],
+     "bounds_min": [
+      -51.859,
+      3.69,
+      -86.658
+     ],
+     "bounds_max": [
+      -51.159,
+      4.59,
+      -86.569
+     ]
+    },
+    {
+     "name": "GardenFence_0E",
+     "collider": "box",
+     "position": [
+      -55.107,
+      4.14,
+      -86.488
+     ],
+     "footprint": [
+      4.098,
+      0.9,
+      0.208
+     ],
+     "bounds_min": [
+      -57.156,
+      3.69,
+      -86.591
+     ],
+     "bounds_max": [
+      -53.057,
+      4.59,
+      -86.384
+     ]
+    },
+    {
+     "name": "GardenFenceSide_0W",
+     "collider": "box",
+     "position": [
+      -51.121,
+      4.14,
+      -85.558
+     ],
+     "footprint": [
+      0.124,
+      0.9,
+      2.151
+     ],
+     "bounds_min": [
+      -51.183,
+      3.69,
+      -86.634
+     ],
+     "bounds_max": [
+      -51.059,
+      4.59,
+      -84.483
+     ]
+    },
+    {
+     "name": "GardenFenceSide_0E",
+     "collider": "box",
+     "position": [
+      -57.118,
+      4.14,
+      -85.349
+     ],
+     "footprint": [
+      0.124,
+      0.9,
+      2.151
+     ],
+     "bounds_min": [
+      -57.18,
+      3.69,
+      -86.424
+     ],
+     "bounds_max": [
+      -57.056,
+      4.59,
+      -84.274
+     ]
+    },
+    {
+     "name": "GardenFence_1W",
+     "collider": "box",
+     "position": [
+      -38.699,
+      4.14,
+      -85.015
+     ],
+     "footprint": [
+      1.998,
+      0.9,
+      0.166
+     ],
+     "bounds_min": [
+      -39.698,
+      3.69,
+      -85.099
+     ],
+     "bounds_max": [
+      -37.7,
+      4.59,
+      -84.932
+     ]
+    },
+    {
+     "name": "GardenFence_1E",
+     "collider": "box",
+     "position": [
+      -41.895,
+      4.14,
+      -85.183
+     ],
+     "footprint": [
+      1.998,
+      0.9,
+      0.166
+     ],
+     "bounds_min": [
+      -42.894,
+      3.69,
+      -85.266
+     ],
+     "bounds_max": [
+      -40.896,
+      4.59,
+      -85.1
+     ]
+    },
+    {
+     "name": "GardenFenceSide_1W",
+     "collider": "box",
+     "position": [
+      -37.743,
+      4.14,
+      -84.155
+     ],
+     "footprint": [
+      0.134,
+      0.9,
+      1.63
+     ],
+     "bounds_min": [
+      -37.81,
+      3.69,
+      -84.97
+     ],
+     "bounds_max": [
+      -37.676,
+      4.59,
+      -83.34
+     ]
+    },
+    {
+     "name": "GardenFenceSide_1E",
+     "collider": "box",
+     "position": [
+      -42.936,
+      4.14,
+      -84.427
+     ],
+     "footprint": [
+      0.134,
+      0.9,
+      1.63
+     ],
+     "bounds_min": [
+      -43.003,
+      3.69,
+      -85.242
+     ],
+     "bounds_max": [
+      -42.869,
+      4.59,
+      -83.612
+     ]
+    },
+    {
+     "name": "GardenFence_2W",
+     "collider": "box",
+     "position": [
+      -15.224,
+      4.14,
+      -83.799
+     ],
+     "footprint": [
+      0.7,
+      0.9,
+      0.098
+     ],
+     "bounds_min": [
+      -15.574,
+      3.69,
+      -83.848
+     ],
+     "bounds_max": [
+      -14.873,
+      4.59,
+      -83.75
+     ]
+    },
+    {
+     "name": "GardenFence_2E",
+     "collider": "box",
+     "position": [
+      -18.619,
+      4.14,
+      -83.62
+     ],
+     "footprint": [
+      3.696,
+      0.9,
+      0.256
+     ],
+     "bounds_min": [
+      -20.467,
+      3.69,
+      -83.749
+     ],
+     "bounds_max": [
+      -16.771,
+      4.59,
+      -83.492
+     ]
+    },
+    {
+     "name": "GardenFenceSide_2W",
+     "collider": "box",
+     "position": [
+      -14.85,
+      4.14,
+      -83.374
+     ],
+     "footprint": [
+      0.096,
+      0.9,
+      0.902
+     ],
+     "bounds_min": [
+      -14.898,
+      3.69,
+      -83.824
+     ],
+     "bounds_max": [
+      -14.803,
+      4.59,
+      -82.923
+     ]
+    },
+    {
+     "name": "GardenFenceSide_2E",
+     "collider": "box",
+     "position": [
+      -20.443,
+      4.14,
+      -83.08
+     ],
+     "footprint": [
+      0.096,
+      0.9,
+      0.902
+     ],
+     "bounds_min": [
+      -20.491,
+      3.69,
+      -83.531
+     ],
+     "bounds_max": [
+      -20.395,
+      4.59,
+      -82.63
+     ]
+    },
+    {
+     "name": "GardenFence_4W",
+     "collider": "box",
+     "position": [
+      -26.867,
+      4.14,
+      -87.865
+     ],
+     "footprint": [
+      0.7,
+      0.9,
+      0.098
+     ],
+     "bounds_min": [
+      -27.217,
+      3.69,
+      -87.914
+     ],
+     "bounds_max": [
+      -26.517,
+      4.59,
+      -87.816
+     ]
+    },
+    {
+     "name": "GardenFence_4E",
+     "collider": "box",
+     "position": [
+      -23.472,
+      4.14,
+      -88.042
+     ],
+     "footprint": [
+      3.696,
+      0.9,
+      0.256
+     ],
+     "bounds_min": [
+      -25.32,
+      3.69,
+      -88.17
+     ],
+     "bounds_max": [
+      -21.624,
+      4.59,
+      -87.914
+     ]
+    },
+    {
+     "name": "GardenFenceSide_4W",
+     "collider": "box",
+     "position": [
+      -27.245,
+      4.14,
+      -88.395
+     ],
+     "footprint": [
+      0.105,
+      0.9,
+      1.085
+     ],
+     "bounds_min": [
+      -27.297,
+      3.69,
+      -88.937
+     ],
+     "bounds_max": [
+      -27.192,
+      4.59,
+      -87.852
+     ]
+    },
+    {
+     "name": "GardenFenceSide_4E",
+     "collider": "box",
+     "position": [
+      -21.652,
+      4.14,
+      -88.688
+     ],
+     "footprint": [
+      0.105,
+      0.9,
+      1.085
+     ],
+     "bounds_min": [
+      -21.705,
+      3.69,
+      -89.23
+     ],
+     "bounds_max": [
+      -21.6,
+      4.59,
+      -88.145
+     ]
+    },
+    {
+     "name": "GardenFence_6W",
+     "collider": "box",
+     "position": [
+      14.959,
+      4.14,
+      -87.84
+     ],
+     "footprint": [
+      0.7,
+      0.9,
+      0.098
+     ],
+     "bounds_min": [
+      14.609,
+      3.69,
+      -87.889
+     ],
+     "bounds_max": [
+      15.309,
+      4.59,
+      -87.791
+     ]
+    },
+    {
+     "name": "GardenFence_6E",
+     "collider": "box",
+     "position": [
+      18.354,
+      4.14,
+      -87.662
+     ],
+     "footprint": [
+      3.696,
+      0.9,
+      0.256
+     ],
+     "bounds_min": [
+      16.506,
+      3.69,
+      -87.79
+     ],
+     "bounds_max": [
+      20.202,
+      4.59,
+      -87.534
+     ]
+    },
+    {
+     "name": "GardenFenceSide_6W",
+     "collider": "box",
+     "position": [
+      14.645,
+      4.14,
+      -88.547
+     ],
+     "footprint": [
+      0.12,
+      0.9,
+      1.366
+     ],
+     "bounds_min": [
+      14.585,
+      3.69,
+      -89.23
+     ],
+     "bounds_max": [
+      14.705,
+      4.59,
+      -87.865
+     ]
+    },
+    {
+     "name": "GardenFenceSide_6E",
+     "collider": "box",
+     "position": [
+      20.237,
+      4.14,
+      -88.254
+     ],
+     "footprint": [
+      0.12,
+      0.9,
+      1.366
+     ],
+     "bounds_min": [
+      20.177,
+      3.69,
+      -88.937
+     ],
+     "bounds_max": [
+      20.297,
+      4.59,
+      -87.571
+     ]
+    },
+    {
+     "name": "GardenFence_8W",
+     "collider": "box",
+     "position": [
+      41.8,
+      4.14,
+      -87.19
+     ],
+     "footprint": [
+      0.7,
+      0.9,
+      0.084
+     ],
+     "bounds_min": [
+      41.45,
+      3.69,
+      -87.232
+     ],
+     "bounds_max": [
+      42.15,
+      4.59,
+      -87.148
+     ]
+    },
+    {
+     "name": "GardenFence_8E",
+     "collider": "box",
+     "position": [
+      37.901,
+      4.14,
+      -87.087
+     ],
+     "footprint": [
+      4.699,
+      0.9,
+      0.189
+     ],
+     "bounds_min": [
+      35.552,
+      3.69,
+      -87.182
+     ],
+     "bounds_max": [
+      40.251,
+      4.59,
+      -86.993
+     ]
+    },
+    {
+     "name": "GardenFenceSide_8W",
+     "collider": "box",
+     "position": [
+      42.192,
+      4.14,
+      -85.586
+     ],
+     "footprint": [
+      0.134,
+      0.9,
+      3.242
+     ],
+     "bounds_min": [
+      42.125,
+      3.69,
+      -87.207
+     ],
+     "bounds_max": [
+      42.259,
+      4.59,
+      -83.965
+     ]
+    },
+    {
+     "name": "GardenFenceSide_8E",
+     "collider": "box",
+     "position": [
+      35.595,
+      4.14,
+      -85.413
+     ],
+     "footprint": [
+      0.134,
+      0.9,
+      3.242
+     ],
+     "bounds_min": [
+      35.528,
+      3.69,
+      -87.034
+     ],
+     "bounds_max": [
+      35.662,
+      4.59,
+      -83.793
+     ]
+    },
+    {
+     "name": "GardenFence_9W",
+     "collider": "box",
+     "position": [
+      49.463,
+      4.14,
+      -86.209
+     ],
+     "footprint": [
+      0.7,
+      0.9,
+      0.108
+     ],
+     "bounds_min": [
+      49.113,
+      3.69,
+      -86.263
+     ],
+     "bounds_max": [
+      49.813,
+      4.59,
+      -86.155
+     ]
+    },
+    {
+     "name": "GardenFence_9E",
+     "collider": "box",
+     "position": [
+      45.971,
+      4.14,
+      -86.453
+     ],
+     "footprint": [
+      3.892,
+      0.9,
+      0.332
+     ],
+     "bounds_min": [
+      44.025,
+      3.69,
+      -86.619
+     ],
+     "bounds_max": [
+      47.917,
+      4.59,
+      -86.287
+     ]
+    },
+    {
+     "name": "GardenFenceSide_9W",
+     "collider": "box",
+     "position": [
+      49.734,
+      4.14,
+      -85.081
+     ],
+     "footprint": [
+      0.203,
+      0.9,
+      2.219
+     ],
+     "bounds_min": [
+      49.633,
+      3.69,
+      -86.191
+     ],
+     "bounds_max": [
+      49.836,
+      4.59,
+      -83.971
+     ]
+    },
+    {
+     "name": "GardenFenceSide_9E",
+     "collider": "box",
+     "position": [
+      43.949,
+      4.14,
+      -85.486
+     ],
+     "footprint": [
+      0.203,
+      0.9,
+      2.219
+     ],
+     "bounds_min": [
+      43.847,
+      3.69,
+      -86.595
+     ],
+     "bounds_max": [
+      44.05,
+      4.59,
+      -84.376
+     ]
+    },
+    {
+     "name": "SquareRingBench",
+     "collider": "box",
+     "position": [
+      -9.0,
+      3.975,
+      -91.6
+     ],
+     "footprint": [
+      2.805,
+      0.47,
+      2.805
+     ],
+     "bounds_min": [
+      -10.403,
+      3.74,
+      -93.003
+     ],
+     "bounds_max": [
+      -7.597,
+      4.21,
+      -90.197
+     ]
+    },
+    {
+     "name": "HarbourBoard",
+     "collider": "box",
+     "position": [
+      -0.4,
+      4.998,
+      -94.0
+     ],
+     "footprint": [
+      2.7,
+      2.716,
+      0.72
+     ],
+     "bounds_min": [
+      -1.75,
+      3.64,
+      -94.36
+     ],
+     "bounds_max": [
+      0.95,
+      6.356,
+      -93.64
+     ]
+    }
+   ],
+   "note": "Round 3: the upper lane furniture - lamps, picket fences round the front gardens, the village square (cobbles, ring bench, HARBOUR BOARD). Box items -> Structure colliders."
   },
   {
    "name": "Harbour_Core_Jetty",
@@ -8895,8 +9848,8 @@
    "name": "Harbour_Core_CrewBoat",
    "file": "Art/Export/Harbour/Harbour_Core_CrewBoat.fbx",
    "group": "core",
-   "triangles": 18502,
-   "vertices": 15190,
+   "triangles": 18590,
+   "vertices": 15238,
    "bounds_min": [
     -2.8801,
     -1.4865,
@@ -9603,17 +10556,17 @@
    "name": "Harbour_Core_TerraceTrees_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_TerraceTrees_Tri.fbx",
    "group": "core",
-   "triangles": 2388,
-   "vertices": 1404,
+   "triangles": 3184,
+   "vertices": 1872,
    "bounds_min": [
-    -34.314,
-    3.53,
+    -46.6503,
+    2.4369,
     -102.409
    ],
    "bounds_max": [
-    41.3129,
+    52.8159,
     10.1571,
-    -91.0272
+    -54.9205
    ],
    "triplanar": true,
    "material": "M_Toon_Tri",
@@ -9631,7 +10584,7 @@
      "name": "Tree2_10",
      "collider": "box",
      "position": [
-      -33.0,
+      -44.0,
       4.99,
       -92.6
      ],
@@ -9641,24 +10594,24 @@
       0.6
      ],
      "bounds_min": [
-      -33.3,
+      -44.3,
       3.74,
       -92.9
      ],
      "bounds_max": [
-      -32.7,
+      -43.7,
       6.24,
       -92.3
      ],
      "visual_bounds_min": [
-      -34.314,
+      -45.106,
       3.53,
-      -94.008
+      -94.052
      ],
      "visual_bounds_max": [
-      -31.611,
-      7.162,
-      -91.345
+      -42.66,
+      7.227,
+      -91.267
      ],
      "bounds_note": "bounds_min/max = the trunk collider; the canopy (visual_bounds) stays walk-under"
     },
@@ -9666,7 +10619,77 @@
      "name": "Tree2_11",
      "collider": "box",
      "position": [
-      -8.6,
+      -9.0,
+      4.99,
+      -91.6
+     ],
+     "footprint": [
+      0.6,
+      2.5,
+      0.6
+     ],
+     "bounds_min": [
+      -9.3,
+      3.74,
+      -91.9
+     ],
+     "bounds_max": [
+      -8.7,
+      6.24,
+      -91.3
+     ],
+     "visual_bounds_min": [
+      -11.106,
+      3.41,
+      -93.833
+     ],
+     "visual_bounds_max": [
+      -6.686,
+      8.892,
+      -89.582
+     ],
+     "bounds_note": "bounds_min/max = the trunk collider; the canopy (visual_bounds) stays walk-under"
+    },
+    {
+     "name": "Tree2_12",
+     "collider": "box",
+     "position": [
+      6.0,
+      4.99,
+      -93.8
+     ],
+     "footprint": [
+      0.6,
+      2.5,
+      0.6
+     ],
+     "bounds_min": [
+      5.7,
+      3.74,
+      -94.1
+     ],
+     "bounds_max": [
+      6.3,
+      6.24,
+      -93.5
+     ],
+     "visual_bounds_min": [
+      4.762,
+      3.53,
+      -95.228
+     ],
+     "visual_bounds_max": [
+      7.421,
+      7.099,
+      -92.541
+     ],
+     "bounds_note": "bounds_min/max = the trunk collider; the canopy (visual_bounds) stays walk-under"
+    },
+    {
+     "name": "Tree2_13",
+     "collider": "box",
+     "position": [
+      29.6,
       4.99,
       -92.6
      ],
@@ -9676,94 +10699,24 @@
       0.6
      ],
      "bounds_min": [
-      -8.9,
+      29.3,
       3.74,
       -92.9
      ],
      "bounds_max": [
-      -8.3,
+      29.9,
       6.24,
       -92.3
      ],
      "visual_bounds_min": [
-      -9.776,
+      28.297,
       3.53,
-      -94.01
+      -94.116
      ],
      "visual_bounds_max": [
-      -7.206,
-      7.032,
-      -91.165
-     ],
-     "bounds_note": "bounds_min/max = the trunk collider; the canopy (visual_bounds) stays walk-under"
-    },
-    {
-     "name": "Tree2_12",
-     "collider": "box",
-     "position": [
-      15.5,
-      4.99,
-      -92.5
-     ],
-     "footprint": [
-      0.6,
-      2.5,
-      0.6
-     ],
-     "bounds_min": [
-      15.2,
-      3.74,
-      -92.8
-     ],
-     "bounds_max": [
-      15.8,
-      6.24,
-      -92.2
-     ],
-     "visual_bounds_min": [
-      14.159,
-      3.53,
-      -93.906
-     ],
-     "visual_bounds_max": [
-      16.981,
-      7.093,
-      -91.285
-     ],
-     "bounds_note": "bounds_min/max = the trunk collider; the canopy (visual_bounds) stays walk-under"
-    },
-    {
-     "name": "Tree2_13",
-     "collider": "box",
-     "position": [
-      40.0,
-      4.99,
-      -92.2
-     ],
-     "footprint": [
-      0.6,
-      2.5,
-      0.6
-     ],
-     "bounds_min": [
-      39.7,
-      3.74,
-      -92.5
-     ],
-     "bounds_max": [
-      40.3,
-      6.24,
-      -91.9
-     ],
-     "visual_bounds_min": [
-      38.693,
-      3.53,
-      -93.684
-     ],
-     "visual_bounds_max": [
-      41.313,
-      7.147,
-      -91.027
+      31.064,
+      7.156,
+      -91.171
      ],
      "bounds_note": "bounds_min/max = the trunk collider; the canopy (visual_bounds) stays walk-under"
     },
@@ -9836,6 +10789,76 @@
       -99.753
      ],
      "bounds_note": "bounds_min/max = the trunk collider; the canopy (visual_bounds) stays walk-under"
+    },
+    {
+     "name": "Tree2_16",
+     "collider": "box",
+     "position": [
+      51.5,
+      4.99,
+      -92.8
+     ],
+     "footprint": [
+      0.6,
+      2.5,
+      0.6
+     ],
+     "bounds_min": [
+      51.2,
+      3.74,
+      -93.1
+     ],
+     "bounds_max": [
+      51.8,
+      6.24,
+      -92.5
+     ],
+     "visual_bounds_min": [
+      50.209,
+      3.53,
+      -94.214
+     ],
+     "visual_bounds_max": [
+      52.816,
+      7.224,
+      -91.632
+     ],
+     "bounds_note": "bounds_min/max = the trunk collider; the canopy (visual_bounds) stays walk-under"
+    },
+    {
+     "name": "Tree2_17",
+     "collider": "box",
+     "position": [
+      -45.4,
+      3.897,
+      -56.3
+     ],
+     "footprint": [
+      0.6,
+      2.5,
+      0.6
+     ],
+     "bounds_min": [
+      -45.7,
+      2.647,
+      -56.6
+     ],
+     "bounds_max": [
+      -45.1,
+      5.147,
+      -56.0
+     ],
+     "visual_bounds_min": [
+      -46.65,
+      2.437,
+      -57.752
+     ],
+     "visual_bounds_max": [
+      -43.925,
+      5.815,
+      -54.92
+     ],
+     "bounds_note": "bounds_min/max = the trunk collider; the canopy (visual_bounds) stays walk-under"
     }
    ]
   },
@@ -9843,8 +10866,8 @@
    "name": "Harbour_Core_TreeCrowns_Cards",
    "file": "Art/Export/Harbour/Harbour_Core_TreeCrowns_Cards.fbx",
    "group": "core",
-   "triangles": 930,
-   "vertices": 1532,
+   "triangles": 1052,
+   "vertices": 1768,
    "bounds_min": [
     -59.9673,
     1.8218,
@@ -9853,7 +10876,7 @@
    "bounds_max": [
     60.3044,
     11.0442,
-    -57.9843
+    -54.3539
    ],
    "triplanar": false,
    "material": "M_Toon_Foliage",
@@ -9956,16 +10979,16 @@
    "name": "Harbour_Detail_Plants_A",
    "file": "Art/Export/Harbour/Harbour_Detail_Plants_A.fbx",
    "group": "detail",
-   "triangles": 13494,
-   "vertices": 20466,
+   "triangles": 12886,
+   "vertices": 19057,
    "bounds_min": [
     -59.8367,
     1.151,
-    -101.9412
+    -102.0057
    ],
    "bounds_max": [
-    -0.2644,
-    7.3597,
+    -0.5537,
+    7.3594,
     -54.8786
    ],
    "triplanar": false,
@@ -9995,25 +11018,25 @@
     "tufts": 90,
     "flower_patches": 30,
     "bushes": 22,
-    "edge_tufts": 410,
-    "stones": 167,
-    "sticks": 16
+    "edge_tufts": 370,
+    "stones": 171,
+    "sticks": 19
    }
   },
   {
    "name": "Harbour_Detail_Plants_B",
    "file": "Art/Export/Harbour/Harbour_Detail_Plants_B.fbx",
    "group": "detail",
-   "triangles": 14116,
-   "vertices": 21578,
+   "triangles": 13478,
+   "vertices": 20290,
    "bounds_min": [
-    0.2802,
+    -0.1074,
     1.1579,
-    -105.9276
+    -105.727
    ],
    "bounds_max": [
     59.4083,
-    7.4112,
+    7.3554,
     -54.7226
    ],
    "triplanar": false,
@@ -10044,17 +11067,17 @@
    "name": "Harbour_Detail_Shore",
    "file": "Art/Export/Harbour/Harbour_Detail_Shore.fbx",
    "group": "detail",
-   "triangles": 4767,
-   "vertices": 3420,
+   "triangles": 4927,
+   "vertices": 3528,
    "bounds_min": [
-    -59.0314,
+    -57.709,
     -0.0511,
-    -54.0253
+    -53.9588
    ],
    "bounds_max": [
-    58.3725,
-    1.0977,
-    -43.7181
+    56.7758,
+    1.0985,
+    -43.7012
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -10100,78 +11123,78 @@
     },
     {
      "kind": "Seaweed",
-     "x": 4.06,
-     "z": -45.16
+     "x": -51.38,
+     "z": -44.73
     },
     {
      "kind": "Seaweed",
-     "x": -35.12,
-     "z": -44.65
+     "x": 55.61,
+     "z": -45.61
     },
     {
      "kind": "Seaweed",
-     "x": -42.56,
-     "z": -44.52
+     "x": -43.58,
+     "z": -44.84
     },
     {
      "kind": "Seaweed",
-     "x": -56.42,
-     "z": -45.72
+     "x": -51.69,
+     "z": -45.31
     },
     {
      "kind": "Seaweed",
-     "x": -58.7,
-     "z": -45.09
+     "x": -33.88,
+     "z": -45.34
     },
     {
      "kind": "Seaweed",
-     "x": -4.97,
-     "z": -44.82
+     "x": -55.5,
+     "z": -45.5
     },
     {
      "kind": "Seaweed",
-     "x": -21.96,
-     "z": -44.45
+     "x": -36.86,
+     "z": -44.6
     },
     {
      "kind": "Seaweed",
-     "x": -35.38,
-     "z": -45.06
+     "x": -4.52,
+     "z": -45.41
     },
     {
      "kind": "Seaweed",
-     "x": -39.46,
-     "z": -45.19
+     "x": 18.87,
+     "z": -44.63
     },
     {
      "kind": "Seaweed",
-     "x": -7.11,
-     "z": -45.79
+     "x": -38.04,
+     "z": -45.18
     },
     {
      "kind": "Seaweed",
-     "x": 52.67,
-     "z": -44.47
+     "x": -5.47,
+     "z": -45.54
     },
     {
      "kind": "Seaweed",
-     "x": 58.41,
-     "z": -45.58
+     "x": 3.77,
+     "z": -45.44
     },
     {
      "kind": "Seaweed",
-     "x": -6.72,
-     "z": -45.22
+     "x": -5.28,
+     "z": -44.74
     },
     {
      "kind": "Seaweed",
-     "x": 55.04,
-     "z": -44.85
+     "x": -18.4,
+     "z": -44.86
     },
     {
      "kind": "Seaweed",
-     "x": -7.6,
-     "z": -44.45
+     "x": -18.11,
+     "z": -44.75
     },
     {
      "kind": "Seaweed",
@@ -10185,28 +11208,33 @@
     },
     {
      "kind": "Seaweed",
-     "x": 19.14,
-     "z": -44.84
+     "x": -46.55,
+     "z": -45.0
     },
     {
      "kind": "Seaweed",
-     "x": -21.19,
-     "z": -44.5
-    },
-    {
-     "kind": "Seaweed",
-     "x": -5.22,
-     "z": -44.73
-    },
-    {
-     "kind": "Seaweed",
-     "x": -5.59,
-     "z": -44.36
-    },
-    {
-     "kind": "Seaweed",
-     "x": -23.3,
+     "x": 36.17,
      "z": -44.23
+    },
+    {
+     "kind": "Seaweed",
+     "x": 53.32,
+     "z": -45.23
+    },
+    {
+     "kind": "Seaweed",
+     "x": 21.07,
+     "z": -44.35
+    },
+    {
+     "kind": "Seaweed",
+     "x": -51.64,
+     "z": -45.03
+    },
+    {
+     "kind": "Seaweed",
+     "x": -6.77,
+     "z": -45.49
     },
     {
      "kind": "Seaweed",
@@ -10219,54 +11247,49 @@
      "z": -44.69
     },
     {
-     "kind": "Seaweed",
-     "x": 20.09,
-     "z": -44.45
+     "kind": "Driftwood",
+     "x": 19.75,
+     "z": -45.56
     },
     {
      "kind": "Driftwood",
-     "x": -52.55,
-     "z": -47.33
+     "x": -4.77,
+     "z": -45.22
     },
     {
      "kind": "Driftwood",
-     "x": 8.6,
-     "z": -45.62
+     "x": -43.45,
+     "z": -46.67
     },
     {
      "kind": "Driftwood",
-     "x": 7.61,
-     "z": -47.33
+     "x": -57.52,
+     "z": -46.79
     },
     {
      "kind": "Driftwood",
-     "x": -42.77,
-     "z": -46.69
+     "x": -47.42,
+     "z": -45.35
     },
     {
      "kind": "Driftwood",
-     "x": 53.45,
-     "z": -45.7
-    },
-    {
-     "kind": "Driftwood",
-     "x": -35.47,
-     "z": -46.29
-    },
-    {
-     "kind": "Driftwood",
-     "x": -43.53,
-     "z": -47.11
-    },
-    {
-     "kind": "Driftwood",
-     "x": -24.86,
+     "x": -19.9,
      "z": -46.71
     },
     {
      "kind": "Driftwood",
-     "x": 43.55,
-     "z": -47.43
+     "x": -46.81,
+     "z": -46.05
+    },
+    {
+     "kind": "Driftwood",
+     "x": -47.24,
+     "z": -45.84
+    },
+    {
+     "kind": "Driftwood",
+     "x": 9.41,
+     "z": -45.77
     }
    ]
   },
@@ -10277,14 +11300,14 @@
    "triangles": 2720,
    "vertices": 1428,
    "bounds_min": [
-    51.4246,
-    -1.8257,
-    -49.5575
+    52.1166,
+    -1.812,
+    -50.3299
    ],
    "bounds_max": [
-    66.0186,
-    0.9267,
-    -37.6275
+    66.4773,
+    1.1146,
+    -37.3307
    ],
    "triplanar": true,
    "material": "M_Toon_Tri",
@@ -10301,17 +11324,17 @@
    "name": "Harbour_Detail_Reeds",
    "file": "Art/Export/Harbour/Harbour_Detail_Reeds.fbx",
    "group": "detail",
-   "triangles": 4258,
-   "vertices": 6960,
+   "triangles": 4358,
+   "vertices": 7128,
    "bounds_min": [
     -162.2071,
-    0.2822,
+    0.1409,
     -136.9516
    ],
    "bounds_max": [
-    -55.4463,
+    -53.678,
     2.8495,
-    -46.4528
+    -46.2402
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -10920,17 +11943,17 @@
    "name": "Harbour_Detail_Anim_Bunting_D",
    "file": "Art/Export/Harbour/Harbour_Detail_Anim_Bunting_D.fbx",
    "group": "detail",
-   "triangles": 236,
-   "vertices": 409,
+   "triangles": 186,
+   "vertices": 259,
    "bounds_min": [
-    -11.5009,
-    -0.8498,
-    -0.6055
+    -5.8034,
+    -0.85,
+    -2.1094
    ],
    "bounds_max": [
-    11.5009,
-    0.01,
-    0.6055
+    5.8034,
+    0.0099,
+    2.1094
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -10950,9 +11973,9 @@
     {
      "name": "Bunting_D",
      "position": [
-      -24.5,
+      -40.8,
       6.26,
-      -84.693
+      -87.7
      ],
      "yaw_deg": 0.0,
      "animHint": "sway"
@@ -10962,14 +11985,14 @@
    "note": "A bunting string, authored around the midpoint of its two anchors (the placement). Sway about the a-b axis.",
    "anchors": [
     [
-     -36.0,
+     -46.6,
      6.26,
-     -85.288
+     -85.6
     ],
     [
-     -13.0,
+     -35.0,
      6.26,
-     -84.097
+     -89.8
     ]
    ]
   },
@@ -10977,17 +12000,17 @@
    "name": "Harbour_Detail_Anim_Bunting_E",
    "file": "Art/Export/Harbour/Harbour_Detail_Anim_Bunting_E.fbx",
    "group": "detail",
-   "triangles": 224,
-   "vertices": 373,
+   "triangles": 202,
+   "vertices": 307,
    "bounds_min": [
-    -10.251,
-    -0.8498,
-    -0.3105
+    -6.5056,
+    -0.85,
+    -4.4083
    ],
    "bounds_max": [
-    10.251,
+    6.5056,
     0.0099,
-    0.3105
+    4.4083
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -11007,9 +12030,9 @@
     {
      "name": "Bunting_E",
      "position": [
-      17.75,
+      -2.9,
       6.26,
-      -82.882
+      -89.0
      ],
      "yaw_deg": 0.0,
      "animHint": "sway"
@@ -11019,14 +12042,14 @@
    "note": "A bunting string, authored around the midpoint of its two anchors (the placement). Sway about the a-b axis.",
    "anchors": [
     [
-     7.5,
+     -9.4,
      6.26,
-     -83.182
+     -84.6
     ],
     [
-     28.0,
+     3.6,
      6.26,
-     -82.581
+     -93.4
     ]
    ]
   },
@@ -11122,17 +12145,17 @@
    "name": "Harbour_Detail_Terraces",
    "file": "Art/Export/Harbour/Harbour_Detail_Terraces.fbx",
    "group": "detail",
-   "triangles": 16930,
-   "vertices": 17655,
+   "triangles": 19358,
+   "vertices": 16701,
    "bounds_min": [
-    -58.5077,
+    -58.6762,
     3.61,
     -105.9401
    ],
    "bounds_max": [
-    58.8414,
-    7.7393,
-    -76.3478
+    57.3172,
+    7.7374,
+    -76.4578
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -11161,7 +12184,7 @@
    "items": [],
    "note": "Round 1: level 1 and 2 dressing - vegetable plots, washing lines, flower boxes, potted plants, grass and flowers. No colliders.",
    "counts": {
-    "tufts": 110,
+    "tufts": 60,
     "flower_patches": 22,
     "bushes": 40
    }
@@ -11170,17 +12193,17 @@
    "name": "Harbour_Detail_Hedges",
    "file": "Art/Export/Harbour/Harbour_Detail_Hedges.fbx",
    "group": "detail",
-   "triangles": 15200,
-   "vertices": 9120,
+   "triangles": 16100,
+   "vertices": 9660,
    "bounds_min": [
-    -58.7818,
-    3.7424,
-    -105.3022
+    -58.8347,
+    3.7323,
+    -105.3272
    ],
    "bounds_max": [
-    58.7752,
+    58.8229,
     7.5329,
-    -76.5119
+    -76.4464
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -11979,16 +13002,16 @@
    "name": "Harbour_Core_Story",
    "file": "Art/Export/Harbour/Harbour_Core_Story.fbx",
    "group": "core",
-   "triangles": 10505,
-   "vertices": 7240,
+   "triangles": 17407,
+   "vertices": 19063,
    "bounds_min": [
     -57.95,
     0.95,
     -112.6514
    ],
    "bounds_max": [
-    40.52,
-    8.8254,
+    52.05,
+    9.1762,
     -24.28
    ],
    "triplanar": false,
@@ -12600,81 +13623,81 @@
      "name": "Stall_fish",
      "collider": "box",
      "position": [
-      -0.4,
+      -7.59,
       4.222,
-      -83.25
+      -83.351
      ],
      "footprint": [
-      2.7,
+      2.924,
       0.965,
-      1.4
+      1.922
      ],
      "bounds_min": [
-      -1.75,
+      -9.051,
       3.74,
-      -83.95
+      -84.312
      ],
      "bounds_max": [
-      0.95,
+      -6.128,
       4.705,
-      -82.55
+      -82.39
      ]
     },
     {
      "name": "Stall_produce",
      "collider": "box",
      "position": [
-      -10.4,
+      -2.403,
       4.222,
-      -83.25
+      -82.75
      ],
      "footprint": [
-      2.7,
+      2.788,
       0.965,
-      1.4
+      1.582
      ],
      "bounds_min": [
-      -11.75,
+      -3.798,
       3.74,
-      -83.95
+      -83.541
      ],
      "bounds_max": [
-      -9.05,
+      -1.009,
       4.705,
-      -82.55
+      -81.959
      ]
     },
     {
      "name": "Stall_nets",
      "collider": "box",
      "position": [
-      31.2,
+      30.203,
       4.222,
-      -82.95
+      -82.55
      ],
      "footprint": [
-      2.7,
+      2.788,
       0.965,
-      1.4
+      1.582
      ],
      "bounds_min": [
-      29.85,
+      28.809,
       3.74,
-      -83.65
+      -83.341
      ],
      "bounds_max": [
-      32.55,
+      31.598,
       4.705,
-      -82.25
+      -81.759
      ]
     },
     {
      "name": "Well",
      "collider": "box",
      "position": [
-      17.2,
+      1.4,
       4.12,
-      -82.95
+      -91.6
      ],
      "footprint": [
       1.72,
@@ -12682,23 +13705,23 @@
       1.677
      ],
      "bounds_min": [
-      16.34,
+      0.54,
       3.69,
-      -83.788
+      -92.438
      ],
      "bounds_max": [
-      18.06,
+      2.26,
       4.55,
-      -82.112
+      -90.762
      ]
     },
     {
      "name": "LaundryPole_0",
      "collider": "box",
      "position": [
-      -18.9,
+      -50.2,
       4.8,
-      -84.4
+      -78.6
      ],
      "footprint": [
       0.518,
@@ -12706,38 +13729,38 @@
       0.087
      ],
      "bounds_min": [
-      -19.159,
+      -50.459,
       3.64,
-      -84.443
+      -78.643
      ],
      "bounds_max": [
-      -18.641,
+      -49.941,
       5.96,
-      -84.357
+      -78.557
      ]
     },
     {
      "name": "LaundryPole_1",
      "collider": "box",
      "position": [
-      -13.1,
+      -44.0,
       4.8,
-      -84.0
+      -78.4
      ],
      "footprint": [
-      0.517,
+      0.518,
       2.32,
       0.087
      ],
      "bounds_min": [
-      -13.359,
+      -44.259,
       3.64,
-      -84.043
+      -78.443
      ],
      "bounds_max": [
-      -12.841,
+      -43.741,
       5.96,
-      -83.957
+      -78.357
      ]
     },
     {
@@ -12826,9 +13849,46 @@
       5.13,
       -89.016
      ]
+    },
+    {
+     "name": "JettyNetRack",
+     "collider": "box",
+     "position": [
+      50.6,
+      2.082,
+      -53.6
+     ],
+     "footprint": [
+      2.9,
+      2.184,
+      0.779
+     ],
+     "bounds_min": [
+      49.15,
+      0.99,
+      -53.989
+     ],
+     "bounds_max": [
+      52.05,
+      3.174,
+      -53.211
+     ]
     }
    ],
-   "note": "Round 2: story staging (R76) - the derrick loading the tug, crate stacks and the LUCKY BREAK board by the gangway, the WANTED poster post at the pier root, the DOWNRIVER fingerpost at the creek mouth, a second black sedan on the hill track, washing-line poles. Box items -> Structure colliders; light items (collider none) -> lamps at dusk (car headlights)."
+   "note": "Round 2: story staging (R76) - the derrick loading the tug, crate stacks and the LUCKY BREAK board by the gangway, the WANTED poster post at the pier root, the DOWNRIVER fingerpost at the creek mouth, a second black sedan on the hill track, washing-line poles. Box items -> Structure colliders; light items (collider none) -> lamps at dusk (car headlights).",
+   "light_points": [
+    {
+     "name": "Searchlight",
+     "position": [
+      22.4,
+      8.94,
+      -110.2
+     ],
+     "yaw_deg": -19.0,
+     "animHint": "sweep at dusk",
+     "frame": "world"
+    }
+   ]
   },
   {
    "name": "Harbour_Detail_StorySigns",
@@ -12941,9 +14001,9 @@
     {
      "name": "Duck_0",
      "position": [
-      -57.4,
+      -50.5,
       0.03,
-      -42.4
+      -34.5
      ],
      "yaw_deg": 30.0,
      "animHint": "bob"
@@ -12951,9 +14011,9 @@
     {
      "name": "Duck_1",
      "position": [
-      -56.0,
+      -49.2,
       0.03,
-      -41.6
+      -33.6
      ],
      "yaw_deg": 200.0,
      "animHint": "bob"
@@ -12961,9 +14021,9 @@
     {
      "name": "Duck_2",
      "position": [
-      -55.1,
+      -48.4,
       0.03,
-      -42.9
+      -35.0
      ],
      "yaw_deg": 110.0,
      "animHint": "bob"
@@ -12976,6 +14036,26 @@
       -27.5
      ],
      "yaw_deg": 300.0,
+     "animHint": "bob"
+    },
+    {
+     "name": "Duck_4",
+     "position": [
+      -44.6,
+      0.03,
+      -28.4
+     ],
+     "yaw_deg": 250.0,
+     "animHint": "bob"
+    },
+    {
+     "name": "Duck_5",
+     "position": [
+      -45.6,
+      0.03,
+      -29.5
+     ],
+     "yaw_deg": 70.0,
      "animHint": "bob"
     }
    ],
@@ -13015,7 +14095,7 @@
      "name": "Crab_0",
      "position": [
       -21.0,
-      0.072,
+      0.756,
       -45.6
      ],
      "yaw_deg": 40.0,
@@ -13045,7 +14125,7 @@
      "name": "Crab_3",
      "position": [
       -38.5,
-      0.06,
+      0.378,
       -45.5
      ],
      "yaw_deg": 300.0,
@@ -13114,14 +14194,14 @@
    "triangles": 288,
    "vertices": 244,
    "bounds_min": [
-    -2.9009,
+    -3.1006,
     -1.075,
-    -0.2069
+    -0.1126
    ],
    "bounds_max": [
-    2.9009,
-    0.0079,
-    0.2069
+    3.1006,
+    0.008,
+    0.1131
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -13141,9 +14221,9 @@
     {
      "name": "Laundry",
      "position": [
-      -16.0,
+      -47.1,
       5.89,
-      -84.2
+      -78.5
      ],
      "yaw_deg": 0.0,
      "animHint": "sway"
@@ -13151,6 +14231,756 @@
    ],
    "animHint": "sway",
    "note": "Round 2: a washing line of sheets and shirts on the upper lane (origin = the line midpoint). Sways about the line."
+  },
+  {
+   "name": "Harbour_Core_Lagoon",
+   "file": "Art/Export/Harbour/Harbour_Core_Lagoon.fbx",
+   "group": "core",
+   "triangles": 4770,
+   "vertices": 4159,
+   "bounds_min": [
+    -58.5393,
+    -2.8052,
+    -50.5847
+   ],
+   "bounds_max": [
+    -36.9505,
+    4.03,
+    -21.6165
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "LagoonDockPost",
+     "collider": "box",
+     "position": [
+      -49.5,
+      -0.273,
+      -40.7
+     ],
+     "footprint": [
+      0.2,
+      1.805,
+      0.2
+     ],
+     "bounds_min": [
+      -49.6,
+      -1.175,
+      -40.8
+     ],
+     "bounds_max": [
+      -49.4,
+      0.63,
+      -40.6
+     ]
+    },
+    {
+     "name": "LagoonDockPost",
+     "collider": "box",
+     "position": [
+      -47.5,
+      -0.273,
+      -40.7
+     ],
+     "footprint": [
+      0.2,
+      1.805,
+      0.2
+     ],
+     "bounds_min": [
+      -47.6,
+      -1.175,
+      -40.8
+     ],
+     "bounds_max": [
+      -47.4,
+      0.63,
+      -40.6
+     ]
+    },
+    {
+     "name": "LagoonDockPost",
+     "collider": "box",
+     "position": [
+      -49.5,
+      0.052,
+      -43.3
+     ],
+     "footprint": [
+      0.2,
+      1.155,
+      0.2
+     ],
+     "bounds_min": [
+      -49.6,
+      -0.525,
+      -43.4
+     ],
+     "bounds_max": [
+      -49.4,
+      0.63,
+      -43.2
+     ]
+    },
+    {
+     "name": "LagoonDockPost",
+     "collider": "box",
+     "position": [
+      -47.5,
+      0.052,
+      -43.3
+     ],
+     "footprint": [
+      0.2,
+      1.155,
+      0.2
+     ],
+     "bounds_min": [
+      -47.6,
+      -0.525,
+      -43.4
+     ],
+     "bounds_max": [
+      -47.4,
+      0.63,
+      -43.2
+     ]
+    },
+    {
+     "name": "LagoonDockPost",
+     "collider": "box",
+     "position": [
+      -49.5,
+      0.319,
+      -45.9
+     ],
+     "footprint": [
+      0.2,
+      0.622,
+      0.2
+     ],
+     "bounds_min": [
+      -49.6,
+      0.008,
+      -46.0
+     ],
+     "bounds_max": [
+      -49.4,
+      0.63,
+      -45.8
+     ]
+    },
+    {
+     "name": "LagoonDockPost",
+     "collider": "box",
+     "position": [
+      -47.5,
+      0.319,
+      -45.9
+     ],
+     "footprint": [
+      0.2,
+      0.622,
+      0.2
+     ],
+     "bounds_min": [
+      -47.6,
+      0.008,
+      -46.0
+     ],
+     "bounds_max": [
+      -47.4,
+      0.63,
+      -45.8
+     ]
+    },
+    {
+     "name": "LagoonDockDeck",
+     "collider": "box",
+     "position": [
+      -48.5,
+      0.64,
+      -45.5
+     ],
+     "footprint": [
+      2.2,
+      0.12,
+      10.2
+     ],
+     "bounds_min": [
+      -49.6,
+      0.58,
+      -50.6
+     ],
+     "bounds_max": [
+      -47.4,
+      0.7,
+      -40.4
+     ]
+    },
+    {
+     "name": "LagoonLamp",
+     "collider": "box",
+     "position": [
+      -47.65,
+      2.365,
+      -40.9
+     ],
+     "footprint": [
+      0.7,
+      3.33,
+      0.34
+     ],
+     "bounds_min": [
+      -48.0,
+      0.7,
+      -41.07
+     ],
+     "bounds_max": [
+      -47.3,
+      4.03,
+      -40.73
+     ],
+     "light": [
+      -47.65,
+      3.6,
+      -40.9
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -58.229,
+      0.818,
+      -49.579
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -58.429,
+      0.75,
+      -50.329
+     ],
+     "bounds_max": [
+      -58.029,
+      0.885,
+      -48.829
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -57.886,
+      0.911,
+      -49.536
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -58.086,
+      0.844,
+      -50.286
+     ],
+     "bounds_max": [
+      -57.686,
+      0.979,
+      -48.786
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -57.543,
+      0.986,
+      -49.493
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -57.743,
+      0.919,
+      -50.243
+     ],
+     "bounds_max": [
+      -57.343,
+      1.054,
+      -48.743
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -57.2,
+      1.043,
+      -49.45
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -57.4,
+      0.975,
+      -50.2
+     ],
+     "bounds_max": [
+      -57.0,
+      1.11,
+      -48.7
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -56.857,
+      1.081,
+      -49.407
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -57.057,
+      1.013,
+      -50.157
+     ],
+     "bounds_max": [
+      -56.657,
+      1.148,
+      -48.657
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -56.514,
+      1.101,
+      -49.364
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -56.714,
+      1.033,
+      -50.114
+     ],
+     "bounds_max": [
+      -56.314,
+      1.168,
+      -48.614
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -56.171,
+      1.102,
+      -49.321
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -56.371,
+      1.035,
+      -50.071
+     ],
+     "bounds_max": [
+      -55.971,
+      1.17,
+      -48.571
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -55.829,
+      1.085,
+      -49.279
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -56.029,
+      1.018,
+      -50.029
+     ],
+     "bounds_max": [
+      -55.629,
+      1.153,
+      -48.529
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -55.486,
+      1.05,
+      -49.236
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -55.686,
+      0.982,
+      -49.986
+     ],
+     "bounds_max": [
+      -55.286,
+      1.117,
+      -48.486
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -55.143,
+      0.996,
+      -49.193
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -55.343,
+      0.929,
+      -49.943
+     ],
+     "bounds_max": [
+      -54.943,
+      1.064,
+      -48.443
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -54.8,
+      0.924,
+      -49.15
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -55.0,
+      0.857,
+      -49.9
+     ],
+     "bounds_max": [
+      -54.6,
+      0.992,
+      -48.4
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -54.457,
+      0.834,
+      -49.107
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -54.657,
+      0.766,
+      -49.857
+     ],
+     "bounds_max": [
+      -54.257,
+      0.901,
+      -48.357
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -54.114,
+      0.725,
+      -49.064
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -54.314,
+      0.658,
+      -49.814
+     ],
+     "bounds_max": [
+      -53.914,
+      0.793,
+      -48.314
+     ]
+    },
+    {
+     "name": "FootbridgePlank",
+     "collider": "box",
+     "position": [
+      -53.771,
+      0.598,
+      -49.021
+     ],
+     "footprint": [
+      0.4,
+      0.135,
+      1.5
+     ],
+     "bounds_min": [
+      -53.971,
+      0.53,
+      -49.771
+     ],
+     "bounds_max": [
+      -53.571,
+      0.665,
+      -48.271
+     ]
+    },
+    {
+     "name": "ChannelBeacon",
+     "collider": "box",
+     "position": [
+      -37.817,
+      -0.406,
+      -22.721
+     ],
+     "footprint": [
+      1.732,
+      4.799,
+      2.209
+     ],
+     "bounds_min": [
+      -38.683,
+      -2.805,
+      -23.826
+     ],
+     "bounds_max": [
+      -36.95,
+      1.994,
+      -21.616
+     ],
+     "light": [
+      -37.9,
+      1.52,
+      -22.9
+     ],
+     "light_colour": "red"
+    }
+   ],
+   "note": "Round 3: the creek-lagoon casting dock (stand point 0; Structure boxes: deck, posts) and the channel beacon on the horn tip."
+  },
+  {
+   "name": "Harbour_Detail_Lagoon",
+   "file": "Art/Export/Harbour/Harbour_Detail_Lagoon.fbx",
+   "group": "detail",
+   "triangles": 2265,
+   "vertices": 1347,
+   "bounds_min": [
+    -61.7482,
+    -3.0281,
+    -49.2713
+   ],
+   "bounds_max": [
+    -40.76,
+    1.6443,
+    -18.0667
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5
+   ],
+   "layers": [
+    0,
+    3,
+    4
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "LagoonCrate",
+     "collider": "box",
+     "position": [
+      -47.938,
+      0.983,
+      -48.952
+     ],
+     "footprint": [
+      0.639,
+      0.565,
+      0.639
+     ],
+     "bounds_min": [
+      -48.258,
+      0.7,
+      -49.271
+     ],
+     "bounds_max": [
+      -47.619,
+      1.265,
+      -48.632
+     ]
+    },
+    {
+     "name": "BeachedRowboat",
+     "position": [
+      -53.427,
+      -0.692,
+      -29.099
+     ],
+     "footprint": [
+      16.642,
+      4.672,
+      22.064
+     ],
+     "collider": "box (optional)",
+     "bounds_min": [
+      -61.748,
+      -3.028,
+      -40.13
+     ],
+     "bounds_max": [
+      -45.106,
+      1.644,
+      -18.067
+     ],
+     "heading_deg": 210.0
+    }
+   ],
+   "note": "Round 3: horn dressing - driftwood, a beached rowboat, lagoon floats (green: the lagoon), lobster pots on the dock. No colliders."
+  },
+  {
+   "name": "Harbour_Detail_Ivy",
+   "file": "Art/Export/Harbour/Harbour_Detail_Ivy.fbx",
+   "group": "detail",
+   "triangles": 16860,
+   "vertices": 10246,
+   "bounds_min": [
+    -59.9995,
+    2.0552,
+    -95.6575
+   ],
+   "bounds_max": [
+    59.8388,
+    7.9076,
+    -75.0431
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    2,
+    9,
+    10,
+    11,
+    14,
+    15
+   ],
+   "layers": [
+    0,
+    2
+   ],
+   "local_space": false,
+   "items": [],
+   "note": "Round 3: ivy curtains over the terrace walls and flower pots on the copings by the stair heads. No colliders."
+  },
+  {
+   "name": "Harbour_Core_BreakwaterSetts_Tri",
+   "file": "Art/Export/Harbour/Harbour_Core_BreakwaterSetts_Tri.fbx",
+   "group": "core",
+   "triangles": 5016,
+   "vertices": 2736,
+   "bounds_min": [
+    28.0579,
+    1.465,
+    -55.9767
+   ],
+   "bounds_max": [
+    31.9421,
+    1.525,
+    -25.0244
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    6,
+    7
+   ],
+   "layers": [
+    6
+   ],
+   "local_space": false,
+   "items": [],
+   "note": "Round 3: setts over the breakwater walk (visual; the walkable top is the phase-1 box at y 1.5)."
   }
  ],
  "total_triangles": 82812,
@@ -13165,10 +14995,10 @@
   },
   "triangles": {
    "phase1": 82812,
-   "pass2_core": 204576,
-   "pass2_detail": 104792,
-   "pass2_col_not_drawn": 6152,
-   "pass2_extra_from_instances": 13595
+   "pass2_core": 257768,
+   "pass2_detail": 126187,
+   "pass2_col_not_drawn": 7758,
+   "pass2_extra_from_instances": 13991
   },
   "notes": [
    "Placement: every pass-2 FBX object is at the origin with an identity transform. World models: place at the Unity origin. Local models (local_space true: the tug, its collision mesh, the ice chest, the Anim_* pieces): instantiate once per placement at position with yaw_deg about +y. Ice chest placements are in the CrewBoat local frame (parent them to the placed tug).",
@@ -13195,12 +15025,12 @@
    },
    {
     "name": "Float_A",
-    "min_clearance_m": 3.42,
+    "min_clearance_m": -1.33,
     "solid": false
    },
    {
     "name": "Float_B",
-    "min_clearance_m": 5.95,
+    "min_clearance_m": 2.02,
     "solid": false
    },
    {
@@ -13210,7 +15040,7 @@
    },
    {
     "name": "Float_D",
-    "min_clearance_m": 11.7,
+    "min_clearance_m": 2.88,
     "solid": false
    },
    {
@@ -13224,23 +15054,43 @@
     "solid": true
    },
    {
-    "name": "Coast WestSpit (above the water)",
-    "min_clearance_m": 1.71,
+    "name": "Coast WestHorn (above the water) vs the other lanes",
+    "min_clearance_m": 0.92,
+    "solid": true
+   },
+   {
+    "name": "Coast HornKnuckle (above the water)",
+    "min_clearance_m": 1.45,
+    "solid": true
+   },
+   {
+    "name": "Coast LagoonBar (above the water)",
+    "min_clearance_m": 0.83,
+    "solid": true
+   },
+   {
+    "name": "Coast BayPoint (above the water)",
+    "min_clearance_m": 3.4,
     "solid": true
    },
    {
     "name": "Coast EastBar (above the water)",
-    "min_clearance_m": 1.21,
+    "min_clearance_m": 0.86,
     "solid": true
    },
    {
     "name": "Coast Mole (above the water)",
-    "min_clearance_m": 0.14,
+    "min_clearance_m": 0.06,
     "solid": true
    },
    {
     "name": "Coast Shelf (above the water)",
-    "min_clearance_m": 1.96,
+    "min_clearance_m": 1.77,
+    "solid": true
+   },
+   {
+    "name": "Coast Knoll (above the water)",
+    "min_clearance_m": 7.37,
     "solid": true
    },
    {
@@ -13250,7 +15100,7 @@
    },
    {
     "name": "Seaweed and driftwood (35 clumps)",
-    "min_clearance_m": 1.51,
+    "min_clearance_m": 1.05,
     "solid": false
    }
   ],
@@ -13298,25 +15148,49 @@
    {
     "name": "CottageChimney_Cottage_0",
     "position": [
-     -38.52,
+     -55.98,
      9.09,
-     -81.07
+     -81.43
     ]
    },
    {
     "name": "CottageChimney_Cottage_1",
     "position": [
-     -29.38,
+     -42.12,
      8.79,
-     -81.32
+     -80.78
     ]
    },
    {
     "name": "CottageChimney_Cottage_2",
     "position": [
-     -19.74,
+     -19.27,
      8.99,
-     -80.92
+     -79.81
+    ]
+   },
+   {
+    "name": "CottageChimney_Cottage_5",
+    "position": [
+     12.08,
+     8.89,
+     -92.36
+    ]
+   },
+   {
+    "name": "CottageChimney_Cottage_6",
+    "position": [
+     19.42,
+     9.09,
+     -91.81
+    ]
+   },
+   {
+    "name": "CottageChimney_Cottage_7",
+    "position": [
+     21.98,
+     9.09,
+     -79.96
     ]
    },
    {
@@ -13357,6 +15231,17 @@
     ],
     "animHint": "blink",
     "frame": "CrewBoat local"
+   },
+   {
+    "name": "Searchlight",
+    "position": [
+     22.4,
+     8.94,
+     -110.2
+    ],
+    "yaw_deg": -19.0,
+    "animHint": "sweep at dusk",
+    "frame": "world"
    }
   ]
  }

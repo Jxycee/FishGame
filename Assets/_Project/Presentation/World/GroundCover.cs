@@ -5,6 +5,8 @@
 // batches (<= 1023 per draw, grouped in square spatial cells so each draw's worldBounds frustum-culls it) and every frame submits them with
 // Graphics.RenderMeshInstanced (no shadow casting, receives shadows). It lives under the harbour's Detail root, so the Low preset
 // (AmbientLife.ApplyDetail -> inactive) draws none of it. Edit-mode captures call Submit(camera) themselves (Update does not run there).
+// Harbour round 3 (perf budget, user 2026-10-17): cells farther than drawDistance (40 m) from the viewing camera (Camera.main at runtime) are
+// not submitted - grass tufts past that are a few pixels and pure alpha-test overdraw.
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -43,6 +45,7 @@ namespace FishGame.Presentation
         [SerializeField] KindMesh[] meshes = Array.Empty<KindMesh>();
         [SerializeField] Material material;
         [SerializeField] float cellSize = 16f;
+        [SerializeField] float drawDistance = 40f;   // round 3: 0 = unlimited
 
         struct Batch
         {
@@ -121,12 +124,20 @@ namespace FishGame.Presentation
 
         void Update() => Submit(null);
 
-        // Queues every batch for this frame (camera null: every camera; otherwise that camera only).
+        bool InRange(Batch b, Camera viewer)
+        {
+            if (drawDistance <= 0f || viewer == null) return true;
+            return b.Bounds.SqrDistance(viewer.transform.position) <= drawDistance * drawDistance;
+        }
+
+        // Queues every batch for this frame (camera null: every camera, ranged from Camera.main; otherwise that camera only, ranged from it).
         public void Submit(Camera camera)
         {
             if (!built) Build();
+            Camera viewer = camera != null ? camera : Camera.main;
             foreach (Batch b in batches)
             {
+                if (!InRange(b, viewer)) continue;
                 var rp = new RenderParams(material)
                 {
                     worldBounds = b.Bounds,
@@ -140,14 +151,30 @@ namespace FishGame.Presentation
         }
 
         // The triangles of the batches inside the frustum planes (null: all), for the harbour capture's budget report. Draws nothing.
-        public long CountTriangles(Plane[] planes)
+        public long CountTriangles(Plane[] planes, Camera viewer = null)
         {
             if (!built) Build();
             long tris = 0;
             foreach (Batch b in batches)
-                if (planes == null || GeometryUtility.TestPlanesAABB(planes, b.Bounds))
+                if ((planes == null || GeometryUtility.TestPlanesAABB(planes, b.Bounds)) && InRange(b, viewer))
                     tris += (long)b.Matrices.Length * (b.Mesh.GetIndexCount(0) / 3);
             return tris;
+        }
+
+        // Round 3 audit: the instances drawn for this camera (frustum and draw distance), and those within `near` metres of it.
+        public void CountInstances(Camera viewer, float near, out int drawn, out int close)
+        {
+            if (!built) Build();
+            drawn = close = 0;
+            Plane[] planes = GeometryUtility.CalculateFrustumPlanes(viewer);
+            Vector3 eye = viewer.transform.position;
+            foreach (Batch b in batches)
+            {
+                if (!GeometryUtility.TestPlanesAABB(planes, b.Bounds) || !InRange(b, viewer)) continue;
+                drawn += b.Matrices.Length;
+                foreach (Matrix4x4 m in b.Matrices)
+                    if (((Vector3)m.GetColumn(3) - eye).sqrMagnitude <= near * near) close++;
+            }
         }
     }
 }

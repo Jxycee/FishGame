@@ -153,6 +153,22 @@ namespace FishGame.EditorTools
             creekChanged |= SetColor(creek, Shader.PropertyToID("_FoamColor"), new Color(0.96f, 0.99f, 1.0f, 1.0f));
             if (creekChanged) EditorUtility.SetDirty(creek);
 
+            // Harbour round 3 (2026-10-17): the harbour's own water - M_Water_Surface's look plus the bed map (FishGame/Water item 13): colour and
+            // opacity from the natural bed (no turquoise ghosts over rocks and hulls, no crease at the floor's edge) and the creek lagoon's zone
+            // tint. HarbourPierBuilder bakes T_HarbourBedMap and sets _BedMap / _BedMapST on it. The lake keeps M_Water_Surface (bed map off).
+            Material harbour = EnsureMaterial("M_Water_Harbour", RequireShader("FishGame/Water"), out bool harbourChanged);
+            harbourChanged |= SetColor(harbour, Shader.PropertyToID("_ShallowColor"), water.ShallowColor);
+            harbourChanged |= SetColor(harbour, Shader.PropertyToID("_DeepColor"), water.DeepColor);
+            harbourChanged |= SetFloat(harbour, Shader.PropertyToID("_DepthRange"), water.DepthRange);
+            harbourChanged |= SetFloat(harbour, Shader.PropertyToID("_FoamWidth"), water.FoamWidth);
+            foreach (var p in WaterLook) harbourChanged |= SetFloat(harbour, Shader.PropertyToID(p.Key), p.Value);
+            harbourChanged |= SetColor(harbour, Shader.PropertyToID("_FoamColor"), new Color(0.96f, 0.99f, 1.0f, 1.0f));
+            harbourChanged |= SetFloat(harbour, Shader.PropertyToID("_BedMapOn"), 1f);
+            harbourChanged |= SetColor(harbour, Shader.PropertyToID("_ZoneShallow"), new Color(0.42f, 0.88f, 0.72f, 0.62f));
+            harbourChanged |= SetColor(harbour, Shader.PropertyToID("_ZoneDeep"), new Color(0.1f, 0.52f, 0.52f, 0.95f));
+            harbourChanged |= SetFloat(harbour, Shader.PropertyToID("_SolidShade"), 0.3f);
+            if (harbourChanged) EditorUtility.SetDirty(harbour);
+
             Material line = EnsureMaterial("M_Line", RequireShader("FishGame/Line"), out bool lineChanged);   // shader defaults
             if (lineChanged) EditorUtility.SetDirty(line);
             Material sky = EnsureMaterial("M_Sky", RequireShader("FishGame/GradientSky"), out bool skyChanged);   // shader defaults

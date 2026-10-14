@@ -524,9 +524,9 @@ namespace FishGame.Tests.EditMode
                 GameObject stands = Root(scene, "StandPoints");
                 Assert.That(stands, Is.Not.Null, "StandPoints root");
                 IReadOnlyList<Vector4> layout = HarbourPierLayout.StandPoints;
-                // 13 since harbour round 1 (2026-10-15): + the east jetty head and the lookout tower deck
-                Assert.That(layout.Count, Is.EqualTo(13));
-                Assert.That(stands.transform.childCount, Is.EqualTo(13), "StandPoints children");
+                // 13 since harbour round 1 (2026-10-15): + the east jetty head and the lookout tower deck; 14 since round 3: + the West Horn's tip
+                Assert.That(layout.Count, Is.EqualTo(14));
+                Assert.That(stands.transform.childCount, Is.EqualTo(14), "StandPoints children");
                 for (int i = 0; i < layout.Count; i++)
                 {
                     Transform t = stands.transform.Find("StandPoint_" + i);
@@ -589,10 +589,15 @@ namespace FishGame.Tests.EditMode
             // Structure and the walls are Default, so neither counts). Axis-aligned chamfer distance is exact: shore = z + 45.
             // Harbour round 2: the west sand spit (x -62..-55, z -44..-37) curls round the creek mouth, so the x -50.5 and -40.5 columns (their
             // nearest land is the spit tip now) became x -30.5 and -25.5; the spit itself is land.
-            Assert.That(g.IsWater(-58.2f, -38.2f), Is.False, "the west spit is land");
-            foreach (float x in new[] { -30.5f, -25.5f, -20.5f, -10.5f })
+            // Round 3: the spit grew into the West Horn (a dune hook to x -36, z -17 round the creek lagoon) and a rock point stands in the bay at
+            // x -21, so the columns moved to the bay's middle (x -10.5, -5.5, 5.5) and stop at z -24.5 (beyond it the horn or the breakwater is
+            // nearer than the beach).
+            Assert.That(g.IsWater(-58.2f, -38.2f), Is.False, "the West Horn's arm is land");
+            Assert.That(g.IsWater(-45.6f, -16.8f), Is.False, "the West Horn's tip is land");
+            Assert.That(g.IsWater(-47.5f, -32.5f), Is.True, "the creek lagoon is water");
+            foreach (float x in new[] { -10.5f, -5.5f, 5.5f })
             {
-                for (float z = -44.5f; z <= -10.5f; z += 1f)
+                for (float z = -44.5f; z <= -24.5f; z += 1f)
                 {
                     Assert.That(g.IsWater(x, z), Is.True, "water at (" + x + ", " + z + ")");
                     Assert.That(Mathf.Abs(g.ShoreM(x, z) - (z + 45f)), Is.LessThanOrEqualTo(0.05f), "shore distance at (" + x + ", " + z + "): " + g.ShoreM(x, z));

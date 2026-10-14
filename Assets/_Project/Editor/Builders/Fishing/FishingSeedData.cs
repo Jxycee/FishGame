@@ -314,8 +314,12 @@ namespace FishGame.EditorTools
                 // harbour round 1: day haze -22% (the hills read). Round 2b (user: "bring the dusk warmth and glow into the day"): a warmer
                 // sun (0.96, 0.88 -> 0.92, 0.80) a touch brighter (1.1 -> 1.15), a warm horizon and ambient, a thinner warm haze (0.0062 -> 0.0052)
                 // and a quarter of the dusk warm volume (0 -> 0.25). Dawn, dusk and night are untouched.
-                Phase(0.10f, Rgb(1.00f, 0.92f, 0.80f), 1.15f, Rgb(0.33f, 0.58f, 0.92f), Rgb(0.84f, 0.88f, 0.90f), Rgb(0.40f, 0.40f, 0.36f),
-                    Rgb(0.46f, 0.50f, 0.62f), Rgb(0.86f, 0.86f, 0.86f), Rgb(0.82f, 0.86f, 0.88f), 0.0052f, 0.25f, 0f),
+                // Harbour round 3 (user: "the dusk captures are the best so far - bring that warmth and glow into the day"): a golden afternoon
+                // sun (0.92, 0.80 -> 0.89, 0.74), a warm sand horizon (0.84, 0.88, 0.90 -> 0.93, 0.87, 0.78) and haze (-> 0.90, 0.85, 0.77), a
+                // warmer ambient (0.86 grey -> 0.90, 0.86, 0.80) and 0.4 of the dusk warm volume; the sky top and the shade stay blue, so the
+                // warm-light / cool-shade split reads. Dawn, dusk and night are untouched.
+                Phase(0.10f, Rgb(1.00f, 0.89f, 0.74f), 1.15f, Rgb(0.33f, 0.58f, 0.92f), Rgb(0.93f, 0.87f, 0.78f), Rgb(0.40f, 0.40f, 0.36f),
+                    Rgb(0.46f, 0.50f, 0.62f), Rgb(0.90f, 0.86f, 0.80f), Rgb(0.90f, 0.85f, 0.77f), 0.0052f, 0.4f, 0f),
                 Phase(0.55f, Rgb(1.00f, 0.62f, 0.40f), 0.8f, Rgb(0.30f, 0.30f, 0.58f), Rgb(0.98f, 0.56f, 0.36f), Rgb(0.30f, 0.26f, 0.30f),
                     Rgb(0.34f, 0.30f, 0.50f), Rgb(0.66f, 0.52f, 0.56f), Rgb(0.66f, 0.52f, 0.62f), 0.0085f, 1f, 0f),   // round 1: violet shade and haze against the orange sun
                 Phase(0.70f, Rgb(0.62f, 0.70f, 0.92f), 0.25f, Rgb(0.04f, 0.06f, 0.16f), Rgb(0.12f, 0.16f, 0.30f), Rgb(0.05f, 0.05f, 0.08f),

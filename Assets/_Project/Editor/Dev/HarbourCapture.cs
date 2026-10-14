@@ -68,6 +68,10 @@ namespace FishGame.EditorTools
             new Shot("walk_creek_mouth", new Vector3(-51f, Eye(0.55f), -50.5f), new Vector3(-58f, 2.5f, -72f), 60f),
             new Shot("walk_lookout_deck", new Vector3(36.6f, Eye(4.4f), -49.6f), new Vector3(52f, 0.5f, -30f), 60f),
             new Shot("walk_jetty_head", new Vector3(55.6f, Eye(0.95f), -36.2f), new Vector3(33f, 2.5f, -21f), 60f),
+            // round 3 (the creek lagoon and the West Horn)
+            new Shot("lagoon_dock_eye", new Vector3(-48.5f, Eye(0.7f), -48.5f), new Vector3(-44f, 0.6f, -22f), 62f),
+            new Shot("horn_tip_eye", new Vector3(-45.6f, Eye(1.0f), -16.8f), new Vector3(-18f, 3f, -48f), 62f),
+            new Shot("village_square", new Vector3(8.5f, Eye(3.74f), -86f), new Vector3(-6f, 4.8f, -90f), 62f),
         };
 
         public static void Capture()
@@ -108,7 +112,10 @@ namespace FishGame.EditorTools
             var report = new StringBuilder();
             var top = new StringBuilder();   // round 2: the largest renderers per shot (tris_top.txt), to see where the Low budget goes
             top.Append("# shot: the 14 largest renderers the camera sees (triangles; D: = detail, hidden on Low)\n");
-            report.Append("# shot | high_tris | low_tris | high_renderers | low_renderers   (renderers this camera sees; Low = detail hidden)\n");
+            report.Append("# shot | high_tris | low_tris | high_renderers | low_renderers | high_shadow_casters | low_shadow_casters | alpha_cover_high | alpha_cover_low | grass_drawn | grass_within_25m\n");
+            report.Append("#   (renderers this camera sees; Low = detail hidden. Round 3 audits: shadow casters = visible renderers with shadow casting on (a proxy:\n");
+            report.Append("#   the shadow pass culls by the light's frustum); alpha_cover = the summed screen fraction of the alpha-tested renderers' projected bounds\n");
+            report.Append("#   (crown cards, _ALPHATEST_ON: an overdraw proxy, 1.0 = one full screen); grass = instanced ground-cover tufts drawn (High only))\n");
             long worstHigh = 0, worstLow = 0;
             string worstHighShot = "", worstLowShot = "";
             try
@@ -139,10 +146,13 @@ namespace FishGame.EditorTools
                     camera.transform.rotation = Quaternion.LookRotation(s.Target - s.Eye, Vector3.up);
                     camera.fieldOfView = s.Fov;
                     var seen = new List<KeyValuePair<long, string>>();
-                    Count(camera, detail, out long highTris, out long lowTris, out int highR, out int lowR, seen);
+                    Count(camera, detail, out long highTris, out long lowTris, out int highR, out int lowR, seen, out int highS, out int lowS,
+                          out float alphaHigh, out float alphaLow);
+                    int grassDrawn = 0, grassNear = 0;
                     if (cover != null)
                     {
-                        long coverTris = cover.CountTriangles(GeometryUtility.CalculateFrustumPlanes(camera));
+                        cover.CountInstances(camera, 25f, out grassDrawn, out grassNear);
+                        long coverTris = cover.CountTriangles(GeometryUtility.CalculateFrustumPlanes(camera), camera);
                         highTris += coverTris;
                         seen.Add(new KeyValuePair<long, string>(coverTris, "D:GroundCover(instanced)"));
                     }
@@ -150,7 +160,11 @@ namespace FishGame.EditorTools
                     top.Append(s.Name).Append(':');
                     for (int k = 0; k < seen.Count && k < 14; k++) top.Append(' ').Append(seen[k].Value).Append('=').Append(seen[k].Key);
                     top.Append('\n');
-                    report.Append(s.Name).Append(" | ").Append(highTris).Append(" | ").Append(lowTris).Append(" | ").Append(highR).Append(" | ").Append(lowR).Append('\n');
+                    report.Append(s.Name).Append(" | ").Append(highTris).Append(" | ").Append(lowTris).Append(" | ").Append(highR).Append(" | ").Append(lowR)
+                          .Append(" | ").Append(highS).Append(" | ").Append(lowS)
+                          .Append(" | ").Append(alphaHigh.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))
+                          .Append(" | ").Append(alphaLow.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))
+                          .Append(" | ").Append(grassDrawn).Append(" | ").Append(grassNear).Append('\n');
                     if (highTris > worstHigh) { worstHigh = highTris; worstHighShot = s.Name; }
                     if (lowTris > worstLow) { worstLow = lowTris; worstLowShot = s.Name; }
                     life.ApplyDetail(!s.Low);   // after the counts: an inactive renderer has no bounds
@@ -211,10 +225,10 @@ namespace FishGame.EditorTools
         // Triangles of the mesh renderers this camera would draw: active, enabled, on a layer in its culling mask, inside its frustum. The Low
         // count leaves out everything under the detail objects (what Low hides). Shadow-caster passes are not counted.
         static void Count(Camera camera, List<GameObject> detail, out long high, out long low, out int highR, out int lowR,
-                          List<KeyValuePair<long, string>> seen = null)
+                          List<KeyValuePair<long, string>> seen, out int highS, out int lowS, out float alphaHigh, out float alphaLow)
         {
             Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
-            high = low = 0; highR = lowR = 0;
+            high = low = 0; highR = lowR = 0; highS = lowS = 0; alphaHigh = alphaLow = 0f;
             foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
                 foreach (MeshRenderer r in root.GetComponentsInChildren<MeshRenderer>(true))
                 {
@@ -230,8 +244,30 @@ namespace FishGame.EditorTools
                     for (int s = 0; s < f.sharedMesh.subMeshCount; s++) tris += f.sharedMesh.GetIndexCount(s) / 3;
                     high += tris; highR++;
                     if (!inDetail) { low += tris; lowR++; }
+                    if (r.shadowCastingMode != ShadowCastingMode.Off) { highS++; if (!inDetail) lowS++; }
+                    Material m = r.sharedMaterial;
+                    if (m != null && m.IsKeywordEnabled("_ALPHATEST_ON"))
+                    {
+                        float cover = ScreenCover(camera, r.bounds);
+                        alphaHigh += cover;
+                        if (!inDetail) alphaLow += cover;
+                    }
                     seen?.Add(new KeyValuePair<long, string>(tris, (inDetail ? "D:" : "") + (r.transform.parent != null ? r.transform.parent.name + "/" : "") + r.name));
                 }
+        }
+
+        // The screen fraction of a world box's projected rectangle, clipped to the viewport (a corner behind the camera opens it to that side).
+        static float ScreenCover(Camera camera, Bounds b)
+        {
+            float x0 = 1f, x1 = 0f, y0 = 1f, y1 = 0f;
+            for (int k = 0; k < 8; k++)
+            {
+                Vector3 c = b.center + Vector3.Scale(b.extents, new Vector3((k & 1) == 0 ? -1f : 1f, (k & 2) == 0 ? -1f : 1f, (k & 4) == 0 ? -1f : 1f));
+                Vector3 v = camera.WorldToViewportPoint(c);
+                if (v.z <= 0f) { v.x = v.x < 0.5f ? 0f : 1f; v.y = v.y < 0.5f ? 0f : 1f; }
+                x0 = Mathf.Min(x0, v.x); x1 = Mathf.Max(x1, v.x); y0 = Mathf.Min(y0, v.y); y1 = Mathf.Max(y1, v.y);
+            }
+            return Mathf.Max(0f, Mathf.Min(x1, 1f) - Mathf.Max(x0, 0f)) * Mathf.Max(0f, Mathf.Min(y1, 1f) - Mathf.Max(y0, 0f));
         }
 
         // activeInHierarchy, treating the detail objects themselves as active (the Low shot deactivates them).
