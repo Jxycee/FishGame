@@ -325,6 +325,12 @@ namespace FishGame.EditorTools
             new VisualModel("Harbour_Detail_Anim_Hen.fbx", RootDetail, "Hen"),
             new VisualModel("Harbour_Detail_Anim_Goat.fbx", RootDetail, "Goat"),
             new VisualModel("Harbour_Detail_Farm.fbx", RootDetail, "FarmLifeVisual"),   // sheep, haystacks (static)
+            // ---- quality-first round 1 (2026-10-14): the bay's destinations, the far mountains, life on the water (all visual, past every lane) ----
+            new VisualModel("Harbour_Core_Bay_Tri.fbx", RootLand, "BayLandVisual"),        // Gull Bar sandbar, the sea arch, the far crags and mainland
+            new VisualModel("Harbour_Core_BayProps.fbx", RootLand, "BayPropsVisual"),      // the stilt fishing shack, moored boats, nets, posts
+            new VisualModel("Harbour_Detail_Bay.fbx", RootDetail, "BayDressingVisual"),    // splash rings, floating weed, driftwood
+            new VisualModel("Harbour_Detail_Anim_Sailboat.fbx", RootDetail, "Sailboat"),
+            new VisualModel("Harbour_Detail_Anim_LeapFish.fbx", RootDetail, "LeapFish"),
         };
 
         // Pass-2 collider sources: box items of these models become BoxColliders (Land: Shore; Village: Structure). Round 1: the stone wall model

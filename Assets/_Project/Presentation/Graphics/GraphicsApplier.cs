@@ -7,6 +7,9 @@
 //    here calls SetDirty or saves, so Assets/Settings and ProjectSettings stay unchanged after a session.
 //  - FXAA is a per-camera setting: beginCameraRendering sets UniversalAdditionalCameraData.antialiasing on Game cameras, so a player camera
 //    that spawns later (the player prefab) is covered without registering anything.
+//  - Screen effects (quality-first round 1, 2026-10-14; GraphicsPresets.UsesScreenEffects): the URP ScreenSpaceAmbientOcclusion renderer feature
+//    of the active renderers is switched on or off IN PLACE (its original active state is captured and written back by Dispose, like the five
+//    URP values), and ScreenEffectsVisible / ScreenEffectsChanged drive the quality post volume (QualityPostVolume: bloom, vignette). Off on Low.
 //  - VSync, the frame-rate cap, resolution and window mode are skipped in the editor (Play Mode keeps its own settings) and in batch mode
 //    (headless tests run at 1000+ fps and assume it; Screen calls do nothing there and Unity warns). Nothing here logs.
 // Pure numbers live in FishGame.Core.GraphicsPresets; the stored rows are SettingsData.
@@ -63,11 +66,25 @@ namespace FishGame.Presentation
             SceneDetailChanged?.Invoke(visible);
         }
 
+        // Screen effects (quality-first round 1): false on the Low preset (GraphicsPresets.UsesScreenEffects). QualityPostVolume zeroes the
+        // quality post volume's weight while it is false. True when no applier runs (tests, the editor, captures).
+        public static bool ScreenEffectsVisible { get; private set; } = true;
+        public static event Action<bool> ScreenEffectsChanged;
+
+        private static void SetScreenEffects(bool visible)
+        {
+            if (visible == ScreenEffectsVisible) return;
+            ScreenEffectsVisible = visible;
+            ScreenEffectsChanged?.Invoke(visible);
+        }
+
         private readonly ISettings _settings;
         private readonly UniversalRenderPipelineAsset _asset;
         private readonly int _originalVSync, _originalTargetFrameRate;
         private readonly float _originalRenderScale, _originalShadowDistance;
         private readonly int _originalMsaa, _originalShadowResolution, _originalCascades;
+        private readonly ScriptableRendererFeature[] _ssao;      // the SSAO features of the asset's renderers (quality-first round 1)
+        private readonly bool[] _originalSsaoActive;
         private Snapshot _last;
         private bool _hasLast;
         private bool _touchedFrame;
@@ -89,6 +106,9 @@ namespace FishGame.Presentation
                 _originalShadowDistance = asset.shadowDistance;
                 _originalShadowResolution = asset.mainLightShadowmapResolution;
                 _originalCascades = asset.shadowCascadeCount;
+                _ssao = FindSsao(asset);
+                _originalSsaoActive = new bool[_ssao.Length];
+                for (int i = 0; i < _ssao.Length; i++) _originalSsaoActive[i] = _ssao[i].isActive;
             }
 
             s_active = this;
@@ -103,7 +123,26 @@ namespace FishGame.Presentation
             s_active = null;
             SceneDetailVisible = true;
             SceneDetailChanged = null;
+            ScreenEffectsVisible = true;
+            ScreenEffectsChanged = null;
         }
+
+        // Every ScreenSpaceAmbientOcclusion feature on the asset's renderer list (none when the renderers are not UniversalRendererData).
+        private static ScriptableRendererFeature[] FindSsao(UniversalRenderPipelineAsset asset)
+        {
+            var found = new System.Collections.Generic.List<ScriptableRendererFeature>();
+            foreach (ScriptableRendererData data in asset.rendererDataList)
+            {
+                if (data == null) continue;
+                foreach (ScriptableRendererFeature feature in data.rendererFeatures)
+                    if (feature is ScreenSpaceAmbientOcclusion && !found.Contains(feature)) found.Add(feature);
+            }
+            return found.ToArray();
+        }
+
+        // True while the asset's SSAO features are switched on by this applier's current settings (tests).
+        public bool SsaoActive => _ssao != null && _ssao.Length > 0 && _ssao[0] != null && _ssao[0].isActive;
+        public int SsaoFeatureCount => _ssao?.Length ?? 0;
 
 #if UNITY_EDITOR
         // Belt and braces for the editor: leaving Play Mode or reloading assemblies puts the URP asset back even if the app object's OnDestroy
@@ -151,6 +190,7 @@ namespace FishGame.Presentation
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 
             SetSceneDetail(true);
+            SetScreenEffects(true);
 
             if (_touchedFrame)
             {
@@ -165,6 +205,8 @@ namespace FishGame.Presentation
                 _asset.shadowDistance = _originalShadowDistance;
                 _asset.mainLightShadowmapResolution = _originalShadowResolution;
                 _asset.shadowCascadeCount = _originalCascades;
+                for (int i = 0; i < _ssao.Length; i++)
+                    if (_ssao[i] != null) _ssao[i].SetActive(_originalSsaoActive[i]);
             }
         }
 
@@ -177,6 +219,11 @@ namespace FishGame.Presentation
         private void Apply(SettingsData data)
         {
             SetSceneDetail(GraphicsPresets.ShowsSceneDetail(data.graphicsPreset, data.renderScalePercent));
+            bool effects = GraphicsPresets.UsesScreenEffects(data.graphicsPreset, data.renderScalePercent);
+            SetScreenEffects(effects);
+            if (_ssao != null)
+                for (int i = 0; i < _ssao.Length; i++)
+                    if (_ssao[i] != null && _ssao[i].isActive != (effects && _originalSsaoActive[i])) _ssao[i].SetActive(effects && _originalSsaoActive[i]);
             var now = new Snapshot(data);
             if (_hasLast && now.Equals(_last)) return;
 

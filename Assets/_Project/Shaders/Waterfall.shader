@@ -97,7 +97,7 @@ Shader "FishGame/Waterfall"
                 o.positionWS = pos.positionWS;
                 o.normalWS = (half3)TransformObjectToWorldNormal(input.normalOS);
                 o.uv = input.uv0;
-                o.fogFactor = FG_FogFactor(pos.positionCS.z);
+                o.fogFactor = FG_FogFactor(pos.positionCS.z, pos.positionWS);
                 return o;
             }
 

@@ -149,7 +149,8 @@ namespace FishGame.Tests.PlayMode
         }
 
         // Catches: a preset that does not reach the render pipeline (render scale, shadows, MSAA, FXAA), or High drifting from the project's
-        // authored asset values (the shipped asset is asserted to be the High look: scale 1, 70 m, 2048, 2 cascades, 4x MSAA).
+        // authored asset values (the shipped asset is asserted to be the High look: scale 1, 120 m, 4096, 4 cascades, 4x MSAA; quality-first
+        // round 1, 2026-10-14, was 70 m, 2048, 2 cascades), and SSAO (the screen effects) not following the preset (on High, off on Low).
         [UnityTest]
         public IEnumerator Preset_LowThenHigh_ChangesTheUrpAssetValues()
         {
@@ -158,15 +159,18 @@ namespace FishGame.Tests.PlayMode
             Assert.That(runtime, Is.Not.Null, "the test project renders with URP");
             Assert.That(GraphicsSettings.currentRenderPipeline, Is.SameAs(runtime), "the active pipeline asset carries the values (no swap)");
             Assert.That(_graphics.OriginalRenderScale, Is.EqualTo(1f).Within(1e-4f), "the shipped asset is the High look");
-            Assert.That(_graphics.OriginalShadowDistance, Is.EqualTo(70f));
+            Assert.That(_graphics.OriginalShadowDistance, Is.EqualTo(120f));
             Assert.That(_graphics.OriginalMsaa, Is.EqualTo(4));
 
             Assert.That(runtime.renderScale, Is.EqualTo(1f).Within(1e-4f), "High: full render scale");
-            Assert.That(runtime.shadowDistance, Is.EqualTo(70f), "High: the authored 70 m");
-            Assert.That(runtime.shadowCascadeCount, Is.EqualTo(2));
-            Assert.That(runtime.mainLightShadowmapResolution, Is.EqualTo(2048));
+            Assert.That(runtime.shadowDistance, Is.EqualTo(120f), "High: the authored 120 m");
+            Assert.That(runtime.shadowCascadeCount, Is.EqualTo(4));
+            Assert.That(runtime.mainLightShadowmapResolution, Is.EqualTo(4096));
             Assert.That(runtime.msaaSampleCount, Is.EqualTo(4));
             Assert.That(_graphics.FxaaSelected, Is.False);
+            Assert.That(_graphics.SsaoFeatureCount, Is.GreaterThan(0), "the PC renderer carries the SSAO feature");
+            Assert.That(_graphics.SsaoActive, Is.True, "High: SSAO on");
+            Assert.That(GraphicsApplier.ScreenEffectsVisible, Is.True, "High: the quality post volume on");
 
             OpenGraphicsTab();
             var preset = _root.Q<SliderInt>("QualityPreset");
@@ -182,6 +186,8 @@ namespace FishGame.Tests.PlayMode
             Assert.That(runtime.mainLightShadowmapResolution, Is.EqualTo(1024));
             Assert.That(runtime.msaaSampleCount, Is.EqualTo(1), "Low: no MSAA");
             Assert.That(_graphics.FxaaSelected, Is.True, "Low: FXAA instead");
+            Assert.That(_graphics.SsaoActive, Is.False, "Low: SSAO off");
+            Assert.That(GraphicsApplier.ScreenEffectsVisible, Is.False, "Low: the quality post volume off");
 
             // The rows follow the preset (SetValueWithoutNotify), and the preset still reads Low.
             Assert.That(_root.Q<SliderInt>("RenderScale").value, Is.EqualTo(GraphicsPresets.RenderScaleToIndex(75)));
@@ -193,9 +199,10 @@ namespace FishGame.Tests.PlayMode
 
             preset.value = (int)QualityPreset.High;
             Assert.That(runtime.renderScale, Is.EqualTo(1f).Within(1e-4f));
-            Assert.That(runtime.shadowDistance, Is.EqualTo(70f));
-            Assert.That(runtime.shadowCascadeCount, Is.EqualTo(2));
-            Assert.That(runtime.mainLightShadowmapResolution, Is.EqualTo(2048));
+            Assert.That(runtime.shadowDistance, Is.EqualTo(120f));
+            Assert.That(runtime.shadowCascadeCount, Is.EqualTo(4));
+            Assert.That(runtime.mainLightShadowmapResolution, Is.EqualTo(4096));
+            Assert.That(_graphics.SsaoActive, Is.True, "High again: SSAO back on");
             Assert.That(runtime.msaaSampleCount, Is.EqualTo(4));
             Assert.That(_graphics.FxaaSelected, Is.False);
         }
@@ -226,8 +233,8 @@ namespace FishGame.Tests.PlayMode
             shadows.value = (int)ShadowTier.Off;
             Assert.That(_graphics.RuntimeAsset.shadowDistance, Is.EqualTo(0f), "Off: URP skips the main-light shadow pass at distance 0");
             shadows.value = (int)ShadowTier.High;
-            Assert.That(_graphics.RuntimeAsset.shadowDistance, Is.EqualTo(70f), "back on");
-            Assert.That(_graphics.RuntimeAsset.mainLightShadowmapResolution, Is.EqualTo(2048));
+            Assert.That(_graphics.RuntimeAsset.shadowDistance, Is.EqualTo(120f), "back on");
+            Assert.That(_graphics.RuntimeAsset.mainLightShadowmapResolution, Is.EqualTo(4096));
 
             var aa = _root.Q<SliderInt>("AntiAliasing");
             aa.value = (int)AaMode.Msaa2x;
@@ -285,6 +292,8 @@ namespace FishGame.Tests.PlayMode
             int msaa = _graphics.OriginalMsaa, shadowRes = _graphics.OriginalShadowResolution, cascades = _graphics.OriginalCascades;
             Assert.That(asset.renderScale, Is.EqualTo(0.75f).Within(1e-4f), "Low is applied while the app runs");
             Assert.That(asset.msaaSampleCount, Is.EqualTo(1));
+            Assert.That(_graphics.SsaoActive, Is.False, "Low switches the SSAO feature off while the app runs");
+            System.Collections.Generic.List<ScriptableRendererFeature> ssao = SsaoFeatures(asset);
 
             // TearDown (UnityTearDown) restores the settings and destroys the app; mirror the order here to check the result.
             SettingsData d = _settings.Current;
@@ -302,7 +311,20 @@ namespace FishGame.Tests.PlayMode
             Assert.That(asset.msaaSampleCount, Is.EqualTo(msaa), "MSAA restored");
             Assert.That(asset.mainLightShadowmapResolution, Is.EqualTo(shadowRes), "shadow resolution restored");
             Assert.That(asset.shadowCascadeCount, Is.EqualTo(cascades), "cascades restored");
+            foreach (ScriptableRendererFeature f in ssao) Assert.That(f.isActive, Is.True, "the authored SSAO feature switched back on");
+            Assert.That(GraphicsApplier.ScreenEffectsVisible, Is.True, "screen effects back on with no applier");
             Assert.That(GraphicsSettings.currentRenderPipeline, Is.SameAs(asset), "no pipeline swap ever happened");
+        }
+
+        // The SSAO features of the asset's renderers (a ReadOnlySpan cannot be walked inside an iterator test).
+        static System.Collections.Generic.List<ScriptableRendererFeature> SsaoFeatures(UniversalRenderPipelineAsset asset)
+        {
+            var list = new System.Collections.Generic.List<ScriptableRendererFeature>();
+            foreach (ScriptableRendererData data in asset.rendererDataList)
+                if (data != null)
+                    foreach (ScriptableRendererFeature f in data.rendererFeatures)
+                        if (f is ScreenSpaceAmbientOcclusion) list.Add(f);
+            return list;
         }
     }
 }

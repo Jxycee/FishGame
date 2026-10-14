@@ -45,7 +45,7 @@ namespace FishGame.Presentation
         [SerializeField] KindMesh[] meshes = Array.Empty<KindMesh>();
         [SerializeField] Material material;
         [SerializeField] float cellSize = 16f;
-        [SerializeField] float drawDistance = 40f;   // round 3: 0 = unlimited
+        [SerializeField] float drawDistance = 60f;   // round 3: 0 = unlimited; quality-first round 1: 60 m (was 40)
 
         struct Batch
         {

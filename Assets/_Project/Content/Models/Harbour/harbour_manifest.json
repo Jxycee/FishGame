@@ -30,7 +30,13 @@
   "Bark": 4,
   "Sand": 5,
   "Rock": 6,
-  "Cloth": 7
+  "Cloth": 7,
+  "CliffRock": 9,
+  "StoneWall": 10,
+  "Plaster": 11,
+  "Dirt": 12,
+  "Meadow": 13,
+  "RoofTile": 14
  },
  "assets_used": [],
  "items_note": "Per FBX, items lists every placed piece: position and footprint are the world AABB (Unity axes, yaw included) of its geometry; sphere items (rocks, boulders) give the sphere centre and radius (the mesh is inside it) plus bounds_min/max. Place rock and boulder colliders from these numbers; never re-draw the rocks in C# (Python random.Random is not Pcg32).",
@@ -3943,24 +3949,24 @@
    "material": "M_Toon_Tri",
    "slots": [
     0,
-    4,
     6
    ],
    "layers": [
-    1,
-    5,
-    6
+    9,
+    13
    ],
    "local_space": false,
    "items": [],
    "max_slope_deg": 84.2,
    "groundcover_counts": {
-    "grass": 5096,
-    "grass_dry": 1450,
+    "grass": 5092,
+    "grass_dry": 1443,
     "flower_white": 270,
-    "flower_orange": 172,
-    "flower_red": 190,
-    "dune": 489
+    "flower_orange": 171,
+    "flower_red": 193,
+    "dune": 593,
+    "carpet": 19455,
+    "carpet_dry": 3210
    }
   },
   {
@@ -4021,9 +4027,9 @@
    ],
    "layers": [
     0,
-    1,
     5,
-    6
+    9,
+    13
    ],
    "local_space": false,
    "items": [
@@ -4086,9 +4092,9 @@
     15
    ],
    "layers": [
-    1,
     2,
-    6
+    9,
+    13
    ],
    "local_space": false,
    "items": []
@@ -4119,9 +4125,9 @@
     15
    ],
    "layers": [
-    1,
     2,
-    6
+    9,
+    13
    ],
    "local_space": false,
    "items": []
@@ -4177,9 +4183,8 @@
     6
    ],
    "layers": [
-    1,
-    5,
-    6
+    9,
+    13
    ],
    "local_space": false,
    "items": []
@@ -4207,9 +4212,8 @@
     6
    ],
    "layers": [
-    1,
-    5,
-    6
+    9,
+    13
    ],
    "local_space": false,
    "items": []
@@ -4238,8 +4242,8 @@
     7
    ],
    "layers": [
-    1,
-    5
+    12,
+    13
    ],
    "local_space": false,
    "items": []
@@ -4248,8 +4252,8 @@
    "name": "Harbour_Core_Walls_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Walls_Tri.fbx",
    "group": "core",
-   "triangles": 18022,
-   "vertices": 15827,
+   "triangles": 19102,
+   "vertices": 17042,
    "bounds_min": [
     -64.0,
     0.95,
@@ -4258,7 +4262,7 @@
    "bounds_max": [
     64.0,
     10.07,
-    -74.681
+    -74.6497
    ],
    "triplanar": true,
    "material": "M_Toon_Tri",
@@ -4272,9 +4276,9 @@
    "layers": [
     0,
     3,
-    5,
     6,
-    7
+    7,
+    9
    ],
    "local_space": false,
    "items": [
@@ -5410,46 +5414,46 @@
      "name": "Buttress1_0",
      "collider": "box",
      "position": [
-      -37.317,
+      -37.318,
       2.229,
-      -75.136
+      -75.126
      ],
      "footprint": [
-      1.116,
+      1.186,
       2.258,
-      0.909
+      0.927
      ],
      "bounds_min": [
-      -37.876,
+      -37.911,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      -36.759,
+      -36.725,
       3.358,
-      -74.681
+      -74.663
      ]
     },
     {
      "name": "Buttress1_1",
      "collider": "box",
      "position": [
-      -27.819,
+      -27.82,
       2.32,
       -75.136
      ],
      "footprint": [
-      1.108,
+      1.175,
       2.44,
       0.909
      ],
      "bounds_min": [
-      -28.373,
+      -28.407,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      -27.265,
+      -27.232,
       3.54,
       -74.681
      ]
@@ -5460,46 +5464,46 @@
      "position": [
       -17.848,
       2.307,
-      -75.136
+      -75.12
      ],
      "footprint": [
-      1.117,
+      1.187,
       2.414,
-      0.909
+      0.94
      ],
      "bounds_min": [
-      -18.407,
+      -18.441,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      -17.289,
+      -17.255,
       3.514,
-      -74.681
+      -74.65
      ]
     },
     {
      "name": "Buttress1_3",
      "collider": "box",
      "position": [
-      -8.142,
+      -8.143,
       2.286,
-      -75.136
+      -75.134
      ],
      "footprint": [
-      1.117,
+      1.186,
       2.372,
-      0.909
+      0.912
      ],
      "bounds_min": [
-      -8.701,
+      -8.736,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      -7.584,
+      -7.549,
       3.472,
-      -74.681
+      -74.678
      ]
     },
     {
@@ -5511,17 +5515,17 @@
       -75.136
      ],
      "footprint": [
-      1.118,
+      1.187,
       2.526,
       0.909
      ],
      "bounds_min": [
-      10.1,
+      10.065,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      11.217,
+      11.252,
       3.626,
       -74.681
      ]
@@ -5530,22 +5534,22 @@
      "name": "Buttress1_5",
      "collider": "box",
      "position": [
-      21.021,
+      21.02,
       2.289,
       -75.136
      ],
      "footprint": [
-      1.116,
+      1.185,
       2.378,
       0.909
      ],
      "bounds_min": [
-      20.462,
+      20.428,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      21.579,
+      21.613,
       3.478,
       -74.681
      ]
@@ -5554,48 +5558,48 @@
      "name": "Buttress1_6",
      "collider": "box",
      "position": [
-      37.68,
+      37.679,
       2.379,
-      -75.136
+      -75.133
      ],
      "footprint": [
-      1.102,
+      1.167,
       2.558,
-      0.909
+      0.913
      ],
      "bounds_min": [
-      37.129,
+      37.096,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      38.231,
+      38.263,
       3.658,
-      -74.681
+      -74.677
      ]
     },
     {
      "name": "Buttress1_7",
      "collider": "box",
      "position": [
-      46.236,
+      46.237,
       2.23,
-      -75.136
+      -75.132
      ],
      "footprint": [
-      1.102,
+      1.168,
       2.26,
-      0.909
+      0.916
      ],
      "bounds_min": [
-      45.685,
+      45.653,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      46.787,
+      46.821,
       3.36,
-      -74.681
+      -74.674
      ]
     },
     {
@@ -5604,22 +5608,22 @@
      "position": [
       56.096,
       2.274,
-      -75.136
+      -75.133
      ],
      "footprint": [
-      1.109,
+      1.176,
       2.349,
-      0.909
+      0.913
      ],
      "bounds_min": [
-      55.542,
+      55.508,
       1.1,
       -75.59
      ],
      "bounds_max": [
-      56.651,
+      56.684,
       3.449,
-      -74.681
+      -74.677
      ]
     },
     {
@@ -5628,68 +5632,68 @@
      "position": [
       -55.832,
       5.135,
-      -94.535
+      -94.526
      ],
      "footprint": [
-      1.11,
+      1.178,
       2.99,
-      0.909
+      0.928
      ],
      "bounds_min": [
-      -56.387,
+      -56.421,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      -55.277,
+      -55.243,
       6.63,
-      -94.081
+      -94.062
      ]
     },
     {
      "name": "Buttress2_1",
      "collider": "box",
      "position": [
-      -47.329,
+      -47.328,
       5.044,
-      -94.535
+      -94.519
      ],
      "footprint": [
-      1.116,
+      1.185,
       2.807,
-      0.909
+      0.941
      ],
      "bounds_min": [
-      -47.887,
+      -47.921,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      -46.77,
+      -46.736,
       6.447,
-      -94.081
+      -94.049
      ]
     },
     {
      "name": "Buttress2_2",
      "collider": "box",
      "position": [
-      -38.547,
+      -38.546,
       5.011,
       -94.535
      ],
      "footprint": [
-      1.114,
+      1.182,
       2.741,
       0.909
      ],
      "bounds_min": [
-      -39.104,
+      -39.137,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      -37.99,
+      -37.955,
       6.381,
       -94.081
      ]
@@ -5700,22 +5704,22 @@
      "position": [
       -29.754,
       5.14,
-      -94.535
+      -94.527
      ],
      "footprint": [
-      1.115,
+      1.184,
       3.001,
-      0.909
+      0.926
      ],
      "bounds_min": [
-      -30.311,
+      -30.346,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      -29.196,
+      -29.162,
       6.641,
-      -94.081
+      -94.064
      ]
     },
     {
@@ -5724,116 +5728,116 @@
      "position": [
       -19.63,
       5.003,
-      -94.535
+      -94.532
      ],
      "footprint": [
-      1.119,
+      1.189,
       2.725,
-      0.909
+      0.915
      ],
      "bounds_min": [
-      -20.189,
+      -20.224,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      -19.07,
+      -19.035,
       6.365,
-      -94.081
+      -94.075
      ]
     },
     {
      "name": "Buttress2_5",
      "collider": "box",
      "position": [
-      -1.547,
+      -1.548,
       5.077,
-      -94.535
+      -94.52
      ],
      "footprint": [
-      1.086,
+      1.148,
       2.873,
-      0.909
+      0.939
      ],
      "bounds_min": [
-      -2.09,
+      -2.122,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      -1.004,
+      -0.974,
       6.513,
-      -94.081
+      -94.051
      ]
     },
     {
      "name": "Buttress2_6",
      "collider": "box",
      "position": [
-      8.347,
+      8.346,
       5.148,
-      -94.532
+      -94.514
      ],
      "footprint": [
-      1.112,
+      1.18,
       3.016,
-      0.915
+      0.952
      ],
      "bounds_min": [
-      7.791,
+      7.756,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      8.903,
+      8.936,
       6.656,
-      -94.075
+      -94.038
      ]
     },
     {
      "name": "Buttress2_7",
      "collider": "box",
      "position": [
-      16.819,
+      16.818,
       5.053,
-      -94.535
+      -94.528
      ],
      "footprint": [
-      1.112,
+      1.18,
       2.825,
-      0.909
+      0.923
      ],
      "bounds_min": [
-      16.263,
+      16.228,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      17.374,
+      17.408,
       6.465,
-      -94.081
+      -94.067
      ]
     },
     {
      "name": "Buttress2_8",
      "collider": "box",
      "position": [
-      35.727,
+      35.725,
       5.122,
       -94.535
      ],
      "footprint": [
-      1.108,
+      1.175,
       2.963,
       0.909
      ],
      "bounds_min": [
-      35.172,
+      35.138,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      36.281,
+      36.313,
       6.603,
       -94.081
      ]
@@ -5842,48 +5846,48 @@
      "name": "Buttress2_9",
      "collider": "box",
      "position": [
-      44.631,
+      44.632,
       5.113,
-      -94.535
+      -94.524
      ],
      "footprint": [
-      1.103,
+      1.169,
       2.947,
-      0.909
+      0.932
      ],
      "bounds_min": [
-      44.08,
+      44.047,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      45.183,
+      45.216,
       6.587,
-      -94.081
+      -94.058
      ]
     },
     {
      "name": "Buttress2_10",
      "collider": "box",
      "position": [
-      54.406,
+      54.407,
       5.015,
-      -94.535
+      -94.524
      ],
      "footprint": [
-      1.107,
+      1.174,
       2.75,
-      0.909
+      0.931
      ],
      "bounds_min": [
-      53.852,
+      53.82,
       3.64,
       -94.99
      ],
      "bounds_max": [
-      54.959,
+      54.994,
       6.39,
-      -94.081
+      -94.059
      ]
     },
     {
@@ -6079,8 +6083,8 @@
    "name": "Harbour_Core_Walls2_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_Walls2_Tri.fbx",
    "group": "core",
-   "triangles": 16844,
-   "vertices": 16825,
+   "triangles": 17988,
+   "vertices": 18112,
    "bounds_min": [
     -64.0,
     0.85,
@@ -6101,8 +6105,8 @@
    ],
    "layers": [
     0,
-    5,
-    6
+    6,
+    9
    ],
    "local_space": false,
    "items": [],
@@ -6122,7 +6126,7 @@
    "bounds_max": [
     123.3004,
     16.9717,
-    -83.1481
+    -83.1285
    ],
    "triplanar": false,
    "material": "M_Toon_Base",
@@ -6136,10 +6140,10 @@
    ],
    "layers": [
     0,
-    1,
     3,
-    5,
-    6
+    6,
+    12,
+    13
    ],
    "local_space": false,
    "items": [],
@@ -6270,10 +6274,10 @@
     13
    ],
    "layers": [
-    1,
     2,
     4,
-    6
+    9,
+    13
    ],
    "local_space": false,
    "items": []
@@ -6391,7 +6395,8 @@
     0,
     3,
     6,
-    7
+    7,
+    14
    ],
    "local_space": false,
    "items": [
@@ -6531,8 +6536,8 @@
    "name": "Harbour_Core_Buildings_Upper",
    "file": "Art/Export/Harbour/Harbour_Core_Buildings_Upper.fbx",
    "group": "core",
-   "triangles": 13446,
-   "vertices": 10121,
+   "triangles": 19146,
+   "vertices": 13241,
    "bounds_min": [
     -60.4767,
     3.63,
@@ -6554,14 +6559,19 @@
     7,
     8,
     9,
-    10
+    10,
+    11,
+    14
    ],
    "layers": [
     0,
+    2,
     3,
-    5,
     6,
-    7
+    7,
+    10,
+    11,
+    14
    ],
    "local_space": false,
    "items": [
@@ -6643,12 +6653,12 @@
      "position": [
       -32.0,
       6.215,
-      -91.6
+      -91.473
      ],
      "footprint": [
       5.317,
       5.17,
-      5.131
+      5.385
      ],
      "bounds_min": [
       -34.659,
@@ -6658,7 +6668,7 @@
      "bounds_max": [
       -29.342,
       8.8,
-      -89.034
+      -88.781
      ]
     },
     {
@@ -6667,12 +6677,12 @@
      "position": [
       -24.6,
       6.415,
-      -91.4
+      -91.255
      ],
      "footprint": [
       5.808,
       5.57,
-      5.436
+      5.726
      ],
      "bounds_min": [
       -27.504,
@@ -6682,7 +6692,7 @@
      "bounds_max": [
       -21.696,
       9.2,
-      -88.682
+      -88.392
      ]
     },
     {
@@ -6865,8 +6875,8 @@
    "name": "Harbour_Core_Buildings_UpperEast",
    "file": "Art/Export/Harbour/Harbour_Core_Buildings_UpperEast.fbx",
    "group": "core",
-   "triangles": 7144,
-   "vertices": 3894,
+   "triangles": 12832,
+   "vertices": 7002,
    "bounds_min": [
     7.6416,
     3.63,
@@ -6888,13 +6898,17 @@
     7,
     8,
     9,
-    10
+    10,
+    11
    ],
    "layers": [
     0,
+    2,
     3,
-    5,
-    6
+    6,
+    10,
+    11,
+    14
    ],
    "local_space": false,
    "items": [
@@ -6904,12 +6918,12 @@
      "position": [
       10.4,
       6.215,
-      -91.8
+      -91.65
      ],
      "footprint": [
       5.517,
       5.17,
-      5.138
+      5.437
      ],
      "bounds_min": [
       7.642,
@@ -6919,7 +6933,7 @@
      "bounds_max": [
       13.158,
       8.8,
-      -89.231
+      -88.932
      ]
     },
     {
@@ -6976,17 +6990,17 @@
      "position": [
       39.0,
       6.465,
-      -81.4
+      -81.552
      ],
      "footprint": [
       6.686,
       5.67,
-      5.525
+      5.829
      ],
      "bounds_min": [
       35.657,
       3.63,
-      -84.163
+      -84.466
      ],
      "bounds_max": [
       42.343,
@@ -7000,17 +7014,17 @@
      "position": [
       46.6,
       6.315,
-      -81.8
+      -81.829
      ],
      "footprint": [
       6.09,
       5.37,
-      5.54
+      5.597
      ],
      "bounds_min": [
       43.555,
       3.63,
-      -84.57
+      -84.628
      ],
      "bounds_max": [
       49.645,
@@ -7079,9 +7093,9 @@
    "layers": [
     0,
     3,
-    5,
     6,
-    7
+    7,
+    12
    ],
    "local_space": false,
    "items": [
@@ -9852,8 +9866,8 @@
    "name": "Harbour_Core_CrewBoat",
    "file": "Art/Export/Harbour/Harbour_Core_CrewBoat.fbx",
    "group": "core",
-   "triangles": 18590,
-   "vertices": 15238,
+   "triangles": 19358,
+   "vertices": 15670,
    "bounds_min": [
     -2.8801,
     -1.4865,
@@ -11319,7 +11333,7 @@
     6
    ],
    "layers": [
-    6
+    9
    ],
    "local_space": false,
    "items": []
@@ -15002,12 +15016,12 @@
    "material": "M_Toon_Tri",
    "slots": [
     0,
-    4,
     6
    ],
    "layers": [
-    1,
-    5
+    5,
+    9,
+    13
    ],
    "local_space": false,
    "items": [],
@@ -15108,7 +15122,7 @@
    ],
    "layers": [
     0,
-    6
+    9
    ],
    "local_space": false,
    "items": [],
@@ -15142,7 +15156,7 @@
    ],
    "layers": [
     3,
-    6
+    9
    ],
    "local_space": false,
    "items": [],
@@ -15203,7 +15217,7 @@
    "layers": [
     0,
     3,
-    6
+    9
    ],
    "local_space": false,
    "items": [
@@ -15683,6 +15697,46 @@
      ],
      "yaw_deg": 25.0,
      "animHint": "idle"
+    },
+    {
+     "name": "Fisher_Market",
+     "position": [
+      -8.7,
+      3.74,
+      -84.7
+     ],
+     "yaw_deg": 25.0,
+     "animHint": "idle"
+    },
+    {
+     "name": "Fisher_PierRoot",
+     "position": [
+      -1.3,
+      0.72,
+      -51.0
+     ],
+     "yaw_deg": 160.0,
+     "animHint": "idle"
+    },
+    {
+     "name": "Fisher_BaitShop",
+     "position": [
+      -15.9,
+      1.2,
+      -60.9
+     ],
+     "yaw_deg": 245.0,
+     "animHint": "idle"
+    },
+    {
+     "name": "Fisher_Shack",
+     "position": [
+      35.683,
+      1.7,
+      24.78
+     ],
+     "yaw_deg": 286.0,
+     "animHint": "idle"
     }
    ],
    "animHint": "idle",
@@ -15926,6 +15980,16 @@
      ],
      "yaw_deg": 30.0,
      "animHint": "idle"
+    },
+    {
+     "name": "Kid_Market",
+     "position": [
+      -5.5,
+      3.74,
+      -84.3
+     ],
+     "yaw_deg": 340.0,
+     "animHint": "idle"
     }
    ],
    "animHint": "idle",
@@ -15981,6 +16045,36 @@
       -90.6
      ],
      "yaw_deg": 230.0,
+     "animHint": "idle"
+    },
+    {
+     "name": "Gardener_Market",
+     "position": [
+      -2.0,
+      3.74,
+      -84.4
+     ],
+     "yaw_deg": 200.0,
+     "animHint": "idle"
+    },
+    {
+     "name": "Gardener_PierRoot",
+     "position": [
+      1.7,
+      0.768,
+      -51.4
+     ],
+     "yaw_deg": 300.0,
+     "animHint": "idle"
+    },
+    {
+     "name": "Gardener_BaitShop",
+     "position": [
+      -14.6,
+      1.2,
+      -62.2
+     ],
+     "yaw_deg": 300.0,
      "animHint": "idle"
     }
    ],
@@ -16274,6 +16368,318 @@
    "local_space": false,
    "items": [],
    "note": "Round 4: the valley farm life - a flock of sheep, haystacks by the barn, a hay cart. Backdrop, no colliders."
+  },
+  {
+   "name": "Harbour_Core_Bay_Tri",
+   "file": "Art/Export/Harbour/Harbour_Core_Bay_Tri.fbx",
+   "group": "core",
+   "triangles": 7136,
+   "vertices": 3996,
+   "bounds_min": [
+    -520.0,
+    -6.0,
+    -440.2297
+   ],
+   "bounds_max": [
+    520.0,
+    131.0379,
+    308.8387
+   ],
+   "triplanar": true,
+   "material": "M_Toon_Tri",
+   "slots": [
+    2,
+    5,
+    6
+   ],
+   "layers": [
+    0,
+    5,
+    9,
+    10
+   ],
+   "local_space": false,
+   "items": [],
+   "note": "Quality-first round 1: Gull Bar (a mid-bay sandbar), the sea arch, the mainland across the sea, the far mountains and the crag with its ruined tower. Visual only, past every lane (verify_layout), no collider."
+  },
+  {
+   "name": "Harbour_Core_BayProps",
+   "file": "Art/Export/Harbour/Harbour_Core_BayProps.fbx",
+   "group": "core",
+   "triangles": 8022,
+   "vertices": 4794,
+   "bounds_min": [
+    26.9398,
+    -3.2455,
+    15.3309
+   ],
+   "bounds_max": [
+    41.9151,
+    5.9157,
+    27.5483
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "ShackRowboat",
+     "position": [
+      34.427,
+      1.335,
+      21.44
+     ],
+     "footprint": [
+      14.975,
+      9.161,
+      12.217
+     ],
+     "collider": "box (optional)",
+     "bounds_min": [
+      26.94,
+      -3.245,
+      15.331
+     ],
+     "bounds_max": [
+      41.915,
+      5.916,
+      27.548
+     ],
+     "heading_deg": 280.0
+    }
+   ],
+   "note": "Quality-first round 1: the stilt fishing shack off Gull Bar, its boardwalk and rowboat, the beached dory, driftwood, the bar marker. Visual only (reach it with the tug), no collider."
+  },
+  {
+   "name": "Harbour_Detail_Bay",
+   "file": "Art/Export/Harbour/Harbour_Detail_Bay.fbx",
+   "group": "detail",
+   "triangles": 1274,
+   "vertices": 1892,
+   "bounds_min": [
+    -47.1863,
+    0.02,
+    -34.4095
+   ],
+   "bounds_max": [
+    50.0915,
+    0.03,
+    39.756
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    2,
+    7,
+    11
+   ],
+   "layers": [
+    0,
+    2
+   ],
+   "local_space": false,
+   "items": [],
+   "note": "Quality-first round 1: splash rings and floating weed. No colliders."
+  },
+  {
+   "name": "Harbour_Detail_Anim_Sailboat",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_Sailboat.fbx",
+   "group": "detail",
+   "triangles": 1372,
+   "vertices": 739,
+   "bounds_min": [
+    -4.228,
+    -0.482,
+    -9.6
+   ],
+   "bounds_max": [
+    4.228,
+    7.7,
+    2.85
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Sailboat_Bay",
+     "position": [
+      27.0,
+      0.0,
+      36.0
+     ],
+     "yaw_deg": 0.0,
+     "animHint": "cruise",
+     "radius": 14.0
+    },
+    {
+     "name": "Sailboat_West",
+     "position": [
+      -31.0,
+      0.0,
+      38.0
+     ],
+     "yaw_deg": 0.0,
+     "animHint": "cruise",
+     "radius": 11.0
+    }
+   ],
+   "animHint": "cruise",
+   "note": "Quality-first round 1: a small gaff sailboat under way (bow +z, origin at the waterline centre) with a white bow wave and wake; it sails a slow loop round each placement (animHint cruise, radius in the placement). Visual only, no collider."
+  },
+  {
+   "name": "Harbour_Detail_Anim_LeapFish",
+   "file": "Art/Export/Harbour/Harbour_Detail_Anim_LeapFish.fbx",
+   "group": "detail",
+   "triangles": 144,
+   "vertices": 90,
+   "bounds_min": [
+    -0.1388,
+    -0.28,
+    -0.74
+   ],
+   "bounds_max": [
+    0.1388,
+    0.28,
+    0.391
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    2,
+    4,
+    6,
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "local_space": true,
+   "items": [],
+   "placements": [
+    {
+     "name": "Leap_PierEast",
+     "position": [
+      11.0,
+      0.0,
+      -27.5
+     ],
+     "yaw_deg": 60.0,
+     "animHint": "leap",
+     "radius": 1.5
+    },
+    {
+     "name": "Leap_PierWest",
+     "position": [
+      -11.5,
+      0.0,
+      -24.0
+     ],
+     "yaw_deg": 250.0,
+     "animHint": "leap",
+     "radius": 1.5
+    },
+    {
+     "name": "Leap_Beach",
+     "position": [
+      -27.0,
+      0.0,
+      -33.0
+     ],
+     "yaw_deg": 20.0,
+     "animHint": "leap",
+     "radius": 1.5
+    },
+    {
+     "name": "Leap_THead",
+     "position": [
+      19.0,
+      0.0,
+      -4.0
+     ],
+     "yaw_deg": 100.0,
+     "animHint": "leap",
+     "radius": 1.5
+    },
+    {
+     "name": "Leap_North",
+     "position": [
+      2.0,
+      0.0,
+      9.0
+     ],
+     "yaw_deg": 340.0,
+     "animHint": "leap",
+     "radius": 1.5
+    },
+    {
+     "name": "Leap_Basin",
+     "position": [
+      49.0,
+      0.0,
+      -25.0
+     ],
+     "yaw_deg": 200.0,
+     "animHint": "leap",
+     "radius": 1.5
+    },
+    {
+     "name": "Leap_Lagoon",
+     "position": [
+      -46.0,
+      0.0,
+      -32.0
+     ],
+     "yaw_deg": 150.0,
+     "animHint": "leap",
+     "radius": 1.5
+    },
+    {
+     "name": "Leap_Reef",
+     "position": [
+      -17.0,
+      0.0,
+      6.0
+     ],
+     "yaw_deg": 300.0,
+     "animHint": "leap",
+     "radius": 1.5
+    }
+   ],
+   "animHint": "leap",
+   "note": "Quality-first round 1: a silver fish (0.6 m, nose +z, origin at its middle) that jumps clear of the water in an arc every few seconds over the fishing water (animHint leap, arc length in the placement). Visual only."
   }
  ],
  "total_triangles": 82812,
@@ -16288,10 +16694,10 @@
   },
   "triangles": {
    "phase1": 82812,
-   "pass2_core": 268810,
-   "pass2_detail": 138848,
+   "pass2_core": 298348,
+   "pass2_detail": 141638,
    "pass2_col_not_drawn": 8542,
-   "pass2_extra_from_instances": 22282
+   "pass2_extra_from_instances": 30662
   },
   "notes": [
    "Placement: every pass-2 FBX object is at the origin with an identity transform. World models: place at the Unity origin. Local models (local_space true: the tug, its collision mesh, the ice chest, the Anim_* pieces): instantiate once per placement at position with yaw_deg about +y. Ice chest placements are in the CrewBoat local frame (parent them to the placed tug).",
@@ -16400,6 +16806,21 @@
     "name": "East Ledge boulders vs the other lanes",
     "min_clearance_m": 0.26,
     "solid": true
+   },
+   {
+    "name": "Gull Bar and the stilt shack",
+    "min_clearance_m": 12.0,
+    "solid": false
+   },
+   {
+    "name": "Sea arch",
+    "min_clearance_m": 12.0,
+    "solid": false
+   },
+   {
+    "name": "Sailboat loops",
+    "min_clearance_m": 9.0,
+    "solid": false
    },
    {
     "name": "Seaweed and driftwood (35 clumps)",

@@ -219,7 +219,7 @@ namespace FishGame.EditorTools
             ValidationText.ExpectLines(AssetPaths.ProjectSettingsFile, errors, "activeInputHandler: 1", "runInBackground: 1");
             ValidationText.ExpectLines(AssetPaths.PcRenderPipelineAsset, errors,
                 "m_MSAA: 4", "m_RequireDepthTexture: 1", "m_SupportsHDR: 1", "m_RequireOpaqueTexture: 0",
-                "m_SoftShadowsSupported: 1", "m_ShadowCascadeCount: 2", "m_ShadowDistance: 70");
+                "m_SoftShadowsSupported: 1", "m_ShadowCascadeCount: 4", "m_ShadowDistance: 120", "m_MainLightShadowmapResolution: 4096");   // quality-first round 1 (was 2 cascades, 70 m, 2048)
             ValidationText.ExpectLines(AssetPaths.PcRenderer, errors, "m_RenderingMode: 2", "m_CopyDepthMode: 0");
             string pcRp = ValidationText.Read(AssetPaths.PcRenderPipelineAsset);
             if (pcRp != null && pcRp.Contains(DeletedSampleSceneProfileGuid))

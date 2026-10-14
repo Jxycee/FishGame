@@ -67,7 +67,8 @@ namespace FishGame.EditorTools
             Physics.IgnoreLayerCollision(Layers.Ragdoll, Layers.Fish, true);
         }
 
-        // Spec 4.2 #5: MSAA 4x, HDR on, soft shadows, 2 cascades, shadow distance 70 m, opaque texture off. The depth texture flag
+        // Spec 4.2 #5: MSAA 4x, HDR on, soft shadows, opaque texture off. Shadows follow GraphicsPresets.ShadowFor(High) (quality-first round 1,
+        // 2026-10-14: 4 cascades, 120 m, 4096; was 2 cascades, 70 m). The depth texture flag
         // (m_RequireDepthTexture) is owned by RenderingSetupBuilder (PC and Mobile), not set here.
         static void ApplyUrp()
         {
@@ -76,8 +77,10 @@ namespace FishGame.EditorTools
             asset.msaaSampleCount = 4;
             asset.supportsHDR = true;
             asset.supportsCameraOpaqueTexture = false;
-            asset.shadowCascadeCount = 2;
-            asset.shadowDistance = 70f;
+            FishGame.Core.ShadowParams high = FishGame.Core.GraphicsPresets.ShadowFor((int)FishGame.Core.ShadowTier.High);
+            asset.shadowCascadeCount = high.Cascades;
+            asset.shadowDistance = high.Distance;
+            asset.mainLightShadowmapResolution = high.Resolution;
             var serialized = new SerializedObject(asset); // supportsSoftShadows has an internal setter in URP 17.6
             SerializedProperty soft = serialized.FindProperty("m_SoftShadowsSupported");
             if (soft == null) throw new System.InvalidOperationException("m_SoftShadowsSupported not found on " + AssetPaths.PcRenderPipelineAsset);

@@ -36,6 +36,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 1
+    - _AlphaToMask: 1
     - _CardGain: 2
     - _Cull: 0
     - _Cutoff: 0.5

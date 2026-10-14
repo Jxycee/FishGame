@@ -3,8 +3,9 @@
 // imports correctly before any builder runs. Layer 0 of every array is neutral (detail 0.5 / albedo white): FishGame/Toon reads the layer from uv1.y,
 // and a mesh with no uv1.y is untouched.
 //   T_EnvDetailArray.png  4 x 4, linear (detail centred on 0.5; the material gain is 2). Layers: 0 neutral, 1 grass, 2 foliage, 3 wood (grain
-//                         along u), 4 bark (ridges along v), 5 sand, 6 rock, 7 cloth, 8..15 neutral (reserved). Generator: Art/Blender/
-//                         fishgame_lookdev.blend, text block fg_textures.py.
+//                         along u), 4 bark (ridges along v), 5 sand, 6 rock, 7 cloth, 8 the player face, 9 cliff rock, 10 stone wall,
+//                         11 plaster, 12 dirt, 13 meadow, 14 roof tile, 15 neutral (reserved). Generators: layers 0-8 Art/Blender/
+//                         fishgame_lookdev.blend, text block fg_textures.py; layers 9-14 Art/Blender/fg_envtextures.py (quality-first round 1).
 //   T_FishSkinArray.png   4 x 8 (2048 x 4096 px, 32 layers; imported at max size 4096 so the tiles stay 512 x 512), sRGB albedo. Layers: 0 white,
 //                         1 bluegill, 2 perch, 3 carp, 4 trout, 5 catfish, 6..25 the 20 M3 species in batch order (6-10 mirror_minnow, bucketmouth_bass,
 //                         silver_mullet, lake_pike, frost_char; 11-14 glimmer_eel, sleepy_sturgeon, gilded_carp, old_barnacle; 15-20 pier_sardine,

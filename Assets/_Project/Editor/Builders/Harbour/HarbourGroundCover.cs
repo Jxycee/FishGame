@@ -17,7 +17,7 @@ namespace FishGame.EditorTools
         public const float CellSize = 16f;
 
         // palette slots (ArtPalette order; fg_harbour.py S / S2)
-        const int Grass = 0, Foliage = 1, Reed = 7, Roof = 9, Accent = 10, Snow = 11;
+        const int Grass = 0, Foliage = 1, Reed = 7, Roof = 9, Accent = 10, Snow = 11, FoliageAlt = 15;
 
         // atlas cells (u0, v0, u1, v1): fg_crowncards.py CARD_UV
         static readonly Vector4 GrassCell = new Vector4(0.5f, 0f, 0.75f, 0.5f);
@@ -43,6 +43,9 @@ namespace FishGame.EditorTools
             ("flower_orange", new[] { new Part(GrassCell, Grass, 2, 0.3f, 0.34f), new Part(FlowerCell, Accent, 2, 0.32f, 0.46f, 45f) }),
             ("flower_red", new[] { new Part(GrassCell, Grass, 2, 0.3f, 0.34f), new Part(FlowerCell, Roof, 2, 0.32f, 0.46f, 45f) }),
             ("dune", new[] { new Part(GrassCell, Reed, 3, 0.4f, 0.72f), new Part(GrassCell, Reed, 2, 0.3f, 0.5f, 30f) }),
+            // quality-first round 1: the short lawn carpet (wide, low crossed cards) and its dry variant
+            ("carpet", new[] { new Part(GrassCell, Grass, 3, 0.52f, 0.2f), new Part(GrassCell, FoliageAlt, 2, 0.42f, 0.15f, 30f) }),
+            ("carpet_dry", new[] { new Part(GrassCell, Reed, 3, 0.5f, 0.2f), new Part(GrassCell, Grass, 2, 0.4f, 0.15f, 30f) }),
         };
 
         public static string MeshPath(string kind) => AssetPaths.MeshesFolder + "/Harbour_GC_" + kind + ".asset";

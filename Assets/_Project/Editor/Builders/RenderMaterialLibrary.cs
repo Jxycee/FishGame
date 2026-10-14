@@ -425,8 +425,8 @@ namespace FishGame.EditorTools
             if (importer == null) throw new System.InvalidOperationException("missing " + AssetPaths.CrownCardAtlas + " (run Art/Blender/fg_crowncards.py)");
             bool dirty = importer.textureType != TextureImporterType.Default || importer.sRGBTexture || !importer.alphaIsTransparency
                          || importer.alphaSource != TextureImporterAlphaSource.FromInput || !importer.mipmapEnabled || !importer.mipMapsPreserveCoverage
-                         || importer.alphaTestReferenceValue != 0.5f || importer.wrapMode != TextureWrapMode.Clamp || importer.maxTextureSize != 1024
-                         || importer.filterMode != FilterMode.Trilinear || importer.anisoLevel != 2;
+                         || importer.alphaTestReferenceValue != 0.5f || importer.wrapMode != TextureWrapMode.Clamp || importer.maxTextureSize != 2048
+                         || importer.filterMode != FilterMode.Trilinear || importer.anisoLevel != 4;
             if (dirty)
             {
                 importer.textureType = TextureImporterType.Default;
@@ -437,9 +437,9 @@ namespace FishGame.EditorTools
                 importer.mipMapsPreserveCoverage = true;
                 importer.alphaTestReferenceValue = 0.5f;
                 importer.wrapMode = TextureWrapMode.Clamp;
-                importer.maxTextureSize = 1024;
+                importer.maxTextureSize = 2048;   // quality-first round 1 (was 1024)
                 importer.filterMode = FilterMode.Trilinear;
-                importer.anisoLevel = 2;
+                importer.anisoLevel = 4;
                 importer.SaveAndReimport();
             }
             Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(AssetPaths.CrownCardAtlas);
@@ -454,6 +454,7 @@ namespace FishGame.EditorTools
             changed |= SetFloat(material, Shader.PropertyToID("_Cutoff"), 0.5f);
             changed |= SetFloat(material, Shader.PropertyToID("_CardGain"), 2.0f);
             changed |= SetFloat(material, Shader.PropertyToID("_Cull"), (float)UnityEngine.Rendering.CullMode.Off);
+            changed |= SetFloat(material, Shader.PropertyToID("_AlphaToMask"), 1f);   // quality-first round 1: alpha-to-coverage edges under MSAA
             int baseMap = Shader.PropertyToID("_BaseMap");
             if (material.GetTexture(baseMap) != cards) { material.SetTexture(baseMap, cards); changed = true; }
             if (material.GetTextureScale(baseMap) != Vector2.one || material.GetTextureOffset(baseMap) != Vector2.zero)

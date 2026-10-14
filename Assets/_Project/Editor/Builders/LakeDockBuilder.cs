@@ -93,6 +93,7 @@ namespace FishGame.EditorTools
             RenderingSetupBuilder.ApplySceneLighting(); // RenderSettings are per scene: skybox M_Sky, ExponentialSquared fog 0.008, flat ambient
             AddVolume("WarmVolume", art.WarmProfile);
             AddVolume("CoolVolume", art.CoolProfile);
+            AddQualityVolume();                             // quality-first round 1: bloom + vignette on Medium/High (QualityPostVolume)
             FishingSceneObjects.AddTo(scene);
             PresentationSceneObjects.AddTo(scene);
             WorldSceneObjects.AddTo(scene, ContentIds.LakeDock);                      // T16 (C 6.3): World root, in-scene NetworkObject
@@ -390,6 +391,20 @@ namespace FishGame.EditorTools
         }
 
         // C 6.2 / 6.4: global volume, weight 0 (a later milestone drives it), priority 0, profile built by RenderingSetupBuilder.
+        // The quality post volume (VP_QualityPost: bloom + vignette), global, weight 1, priority 1; QualityPostVolume zeroes it on Low.
+        static void AddQualityVolume()
+        {
+            var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(AssetPaths.QualityPostProfile);
+            if (profile == null) throw new System.IO.FileNotFoundException("Missing " + AssetPaths.QualityPostProfile + " (run RenderingSetupBuilder)");
+            GameObject go = Root("QualityPostVolume", Layers.Default);
+            var volume = go.AddComponent<Volume>();
+            volume.isGlobal = true;
+            volume.weight = 1f;
+            volume.priority = 1f;
+            volume.sharedProfile = profile;
+            go.AddComponent<FishGame.Presentation.QualityPostVolume>();
+        }
+
         static void AddVolume(string name, VolumeProfile profile)
         {
             GameObject go = Root(name, Layers.Default);

@@ -60,7 +60,7 @@ namespace FishGame.Core
 
         // Low is the GTX 900 class target (GTX 960/970 at 1080p, 60 fps): 75 percent render scale (about 56 percent of the pixels), low shadows
         // (a third of the shadow distance, a quarter of the shadow map texels, one cascade), no MSAA, FXAA instead.
-        // High is the project's authored look: full resolution, 70 m shadows at 2048 with 2 cascades, 4x MSAA.
+        // High is the project's authored look: full resolution, 120 m shadows at 4096 with 4 cascades, 4x MSAA (quality first, user 2026-10-14).
         private static readonly GraphicsPresetValues[] Table =
         {
             new GraphicsPresetValues(75, (int)ShadowTier.Low, (int)AaMode.Fxaa),
@@ -68,12 +68,13 @@ namespace FishGame.Core
             new GraphicsPresetValues(100, (int)ShadowTier.High, (int)AaMode.Msaa4x),
         };
 
-        // Shadow distance, ShadowResolution value, cascades. High matches the checked-in PC_RPAsset (70 m, 2048, 2 cascades).
+        // Shadow distance, ShadowResolution value, cascades. High matches the checked-in PC_RPAsset (120 m, 4096, 4 cascades; RenderingSetupBuilder
+        // writes it). Quality first (user, 2026-10-14): High was 70 m / 2048 / 2 cascades while the GTX 900 class capped the look.
         private static readonly ShadowParams[] Shadows =
         {
             new ShadowParams(0f, 512, 1),       // Off: distance 0 makes URP skip the main-light shadow pass; the rest is unused
             new ShadowParams(25f, 1024, 1),     // Low
-            new ShadowParams(70f, 2048, 2),     // High
+            new ShadowParams(120f, 4096, 4),    // High
         };
 
         // False for Custom or any out-of-range preset (the caller keeps the rows as they are).
@@ -97,6 +98,14 @@ namespace FishGame.Core
             if (preset == (int)QualityPreset.Low) return false;
             if (preset == (int)QualityPreset.Custom) return renderScalePercent > Table[(int)QualityPreset.Low].RenderScalePercent;
             return true;
+        }
+
+        // Screen-space effects (quality-first round 1, 2026-10-14): URP SSAO (sampled by FishGame/Toon) and the quality post volume (bloom,
+        // vignette) follow the same rule as the scene detail: on for Medium and High, off for the Low fallback, and on for a Custom set above Low's
+        // render scale. Not a settings row (no save-data change): derived from the preset like ShowsSceneDetail.
+        public static bool UsesScreenEffects(int preset, int renderScalePercent)
+        {
+            return ShowsSceneDetail(preset, renderScalePercent);
         }
 
         // The preset whose three rows equal these values, or Custom.

@@ -30,6 +30,8 @@ namespace FishGame.Presentation
             Circle = 9,     // round 1: a gliding gull circling its base position (Amplitude = radius, metres), banked into the turn
             Idle = 10,      // round 4: a standing villager: a slow weight shift and a look about (Amplitude = look, degrees)
             Walk = 11,      // round 4: a villager or the dog strolling back and forth along its base facing (Amplitude = path length, metres)
+            Cruise = 12,    // quality-first round 1: a sailboat under way on a slow loop round its base position (Amplitude = radius, m), heeled
+            Leap = 13,      // quality-first round 1: a fish jumping clear of the water in an arc, then gone under (Amplitude = arc length, m)
         }
 
         [Serializable]
@@ -91,7 +93,8 @@ namespace FishGame.Presentation
             for (int i = 0; i < smoke.Length; i++) smokeColor[i] = smoke[i].main.startColor.color;
         }
 
-        private const float WalkSpeed = 0.85f, WalkTurn = 1.4f;   // round 4: a stroll (m/s) and the turn at each end (s)
+        private const float WalkSpeed = 0.85f, WalkTurn = 1.4f;
+        private const float LeapPeriod = 3.4f, LeapAir = 0.42f;   // quality-first round 1: a jump every 3.4 s, 42 % of it in the air   // round 4: a stroll (m/s) and the turn at each end (s)
 
         private void OnEnable()
         {
@@ -251,6 +254,39 @@ namespace FishGame.Presentation
                     Vector3 forward = m.BaseRotation * Vector3.forward;
                     tr.localPosition = m.BasePosition + forward * (s * a) + new Vector3(0f, bounce, 0f);
                     tr.localRotation = m.BaseRotation * Quaternion.Euler(0f, yaw, moving ? 3f * Mathf.Sin(stride) : 0f);
+                    break;
+                }
+                case MotionKind.Cruise:
+                {
+                    // Counter-clockwise seen from above at ~2.2 m/s along the loop (a lap takes minutes on a big radius), heeled 7 degrees away
+                    // from the turn with a slow pitch and heave on the swell; the hull faces along the path (its local +z is the bow).
+                    float r = Mathf.Max(2f, a);
+                    float ang = t * (2.2f / r) + p;
+                    tr.localPosition = m.BasePosition + new Vector3(r * Mathf.Cos(ang), 0.06f * Mathf.Sin(t * 0.9f + p), r * Mathf.Sin(ang));
+                    var heading = new Vector3(-Mathf.Sin(ang), 0f, Mathf.Cos(ang));
+                    tr.localRotation = Quaternion.LookRotation(heading, Vector3.up)
+                                       * Quaternion.Euler(1.5f * Mathf.Sin(t * 0.7f + p * 1.3f), 0f, -7f + 1.5f * Mathf.Sin(t * 0.55f + p));
+                    break;
+                }
+                case MotionKind.Leap:
+                {
+                    // One jump per LeapPeriod: out of the water along the base facing in an arc over Amplitude metres, nose up then
+                    // down (pitch follows the arc, 1.2 m high), a flick of the tail; the rest of the period it waits 2 m under the surface (hidden by the water).
+                    float u = Mathf.Repeat(t / LeapPeriod + p / (2f * Mathf.PI), 1f);
+                    if (u < LeapAir)
+                    {
+                        float s = u / LeapAir;                                   // 0..1 along the arc
+                        float len = Mathf.Max(0.4f, a);
+                        float y = 1.2f * Mathf.Sin(Mathf.PI * s) - 0.2f;
+                        float dy = 1.2f * Mathf.PI * Mathf.Cos(Mathf.PI * s) / len;  // slope of the arc
+                        tr.localPosition = m.BasePosition + m.BaseRotation * new Vector3(0f, y, (s - 0.5f) * len);
+                        tr.localRotation = m.BaseRotation * Quaternion.Euler(-Mathf.Atan(dy) * Mathf.Rad2Deg, 18f * Mathf.Sin(s * 25f), 0f);
+                    }
+                    else
+                    {
+                        tr.localPosition = m.BasePosition + new Vector3(0f, -2f, 0f);
+                        tr.localRotation = m.BaseRotation;
+                    }
                     break;
                 }
                 case MotionKind.Circle:

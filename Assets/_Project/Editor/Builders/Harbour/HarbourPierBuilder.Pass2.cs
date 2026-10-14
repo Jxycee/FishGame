@@ -266,6 +266,9 @@ namespace FishGame.EditorTools
                         case "Dog": life.Move(go.transform, AmbientLife.MotionKind.Walk, p.radius > 0f ? p.radius : 3f); break;
                         case "Hen": life.Move(go.transform, AmbientLife.MotionKind.Gull, 45f); break;
                         case "Goat": life.Move(go.transform, AmbientLife.MotionKind.Gull, 25f); break;
+                        // quality-first round 1: sailboats under way in the bay, jumping fish over the fishing water
+                        case "Sailboat": life.Move(go.transform, AmbientLife.MotionKind.Cruise, p.radius > 0f ? p.radius : 12f); break;
+                        case "LeapFish": life.Move(go.transform, AmbientLife.MotionKind.Leap, p.radius > 0f ? p.radius : 1.4f); break;
                         default: throw new System.InvalidOperationException("no motion for the local detail model " + visual.MeshName);
                     }
                 }

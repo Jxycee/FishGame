@@ -7,6 +7,8 @@ namespace FishGame.Runtime
     {
         public const byte None = 0, Grass = 1, Foliage = 2, Wood = 3, Bark = 4, Sand = 5, Rock = 6, Cloth = 7;
         public const byte Face = 8;    // the player's dot eyes and smile, one tile on the head's +Z cube face (not a tiling texture)
-        public const int Count = 16;   // 4 x 4 tiles; 9..15 reserved (neutral)
+        // Quality-first round 1 (Art/Blender/fg_envtextures.py): painted surface layers for the harbour generator (fg_harbour.py L).
+        public const byte CliffRock = 9, StoneWall = 10, Plaster = 11, Dirt = 12, Meadow = 13, RoofTile = 14;
+        public const int Count = 16;   // 4 x 4 tiles; 15 reserved (neutral)
     }
 }

@@ -214,8 +214,9 @@ namespace FishGame.Tests.EditMode
                 for (int i = 0; i < uv1.Count; i++)
                 {
                     Vector4 v = uv1[i];
-                    if (v.y < 0f || v.y > EnvTextureLayers.Face || v.y != Mathf.Round(v.y))
-                        Assert.Fail(path + ": uv1.y (texture layer) " + v.y + " at vertex " + i + " is not a defined layer 0-" + EnvTextureLayers.Face);
+                    // quality-first round 1: layers 9-14 are the painted surfaces (EnvTextureLayers.CliffRock..RoofTile); 15 stays reserved
+                    if (v.y < 0f || v.y > EnvTextureLayers.RoofTile || v.y != Mathf.Round(v.y))
+                        Assert.Fail(path + ": uv1.y (texture layer) " + v.y + " at vertex " + i + " is not a defined layer 0-" + EnvTextureLayers.RoofTile);
                     if (v.x < 0f || v.x > 15f || v.x != Mathf.Round(v.x))
                         Assert.Fail(path + ": uv1.x (palette slot) " + v.x + " at vertex " + i);
                     if (v.z != expectedMapping)

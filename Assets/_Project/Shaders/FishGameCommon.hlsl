@@ -89,6 +89,32 @@ half3 FG_HueRotate(half3 c, half turns)
 
 // One fog path for every FishGame shader (URP built-in fog, spec 10.3).
 half FG_FogFactor(float clipZ) { return ComputeFogFactor(clipZ); }
+
+// Height-aware fog (quality-first round 1, 2026-10-14: the critics' "uniform haze flattens the overview"). The world shaders (Toon, Water,
+// Waterfall) scale URP's exp/exp2 fog factor by the mean fog density along the camera-to-point ray, for a density that is full below
+// FG_FOG_BASE_Y (sea level to the village rooftops) and falls off as exp(-(y - base) / FG_FOG_FALLOFF) above it. Eye-level views along the
+// harbour keep the authored haze (the dusk glow); views from or onto high ground (the overviews, the hills) see through more of it. Exp and
+// exp2 fog only (the scenes' mode): a linear-fog factor is an intensity, not a density, and would not scale this way.
+#define FG_FOG_BASE_Y 6.0
+#define FG_FOG_FALLOFF 30.0
+float FG_FogHeightMean(float yCam, float yPoint)
+{
+    float a = max(yCam - FG_FOG_BASE_Y, 0.0) / FG_FOG_FALLOFF;
+    float b = max(yPoint - FG_FOG_BASE_Y, 0.0) / FG_FOG_FALLOFF;
+    float d = b - a;
+    // mean of exp(-t) over [a, b]; the limit exp(-a) when the ray is level
+    return abs(d) < 1e-3 ? exp(-a) : (exp(-a) - exp(-b)) / d;
+}
+// The height relief fades out between FG_FOG_FAR0 and FG_FOG_FAR1 metres of view depth, so the far ridges and the mainland across the sea keep
+// their full aerial perspective (lighter, hazier layers) however high they stand.
+#define FG_FOG_FAR0 140.0
+#define FG_FOG_FAR1 320.0
+half FG_FogFactor(float clipZ, float3 positionWS)
+{
+    float depth = UNITY_Z_0_FAR_FROM_CLIPSPACE(clipZ);
+    float relief = lerp(FG_FogHeightMean(_WorldSpaceCameraPos.y, positionWS.y), 1.0, saturate((depth - FG_FOG_FAR0) / (FG_FOG_FAR1 - FG_FOG_FAR0)));
+    return ComputeFogFactor(clipZ) * relief;
+}
 half3 FG_ApplyFog(half3 color, half fogFactor) { return MixFog(color, fogFactor); }
 
 #endif

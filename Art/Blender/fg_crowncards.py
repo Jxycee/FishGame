@@ -2,7 +2,7 @@
 # _ALPHATEST_ON path (M_Toon_Foliage). Made by us, procedurally: no downloaded or third-party image is used.
 #
 # Run:  blender -b --factory-startup --python Art/Blender/fg_crowncards.py
-# Writes Assets/_Project/Content/Textures/T_CrownCards.png (1024 x 1024 RGBA, 8 bit). Deterministic: every draw comes from random.Random(seed)
+# Writes Assets/_Project/Content/Textures/T_CrownCards.png (2048 x 2048 RGBA, 8 bit). Deterministic: every draw comes from random.Random(seed)
 # on a named stream (crc32); numpy only rasterises.
 #
 # Atlas (UV space, v up; the cards in fg_harbour.py use these rectangles: CARD_UV there):
@@ -16,7 +16,7 @@ import numpy as np
 
 ROOT = os.environ.get('FG_ROOT') or os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))   # repo root, wherever the branch is checked out
 OUT = os.path.join(ROOT, 'Assets', '_Project', 'Content', 'Textures', 'T_CrownCards.png')
-SIZE = 1024
+SIZE = 2048   # quality-first round 1 (was 1024): crisper card edges up close; imported at 2048 (RenderMaterialLibrary)
 SEED = 0xC40C0C5
 
 def rng(stream):

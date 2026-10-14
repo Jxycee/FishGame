@@ -214,25 +214,33 @@ namespace FishGame.Tests.EditMode
             Assert.That(water, Does.Not.Contain("+ floor(_WaterTime * 1.5)"), "the unwrapped foam hash time is back");
         }
 
-        // Catches: SSAO coming back (it is not in the spec and Toon never samples AO) and the Toon variant keyword that only existed for it.
+        // Quality-first round 1 (user 2026-10-14, spec Graphics tab note): SSAO is part of the Medium/High look. Catches: Toon losing its SSAO
+        // variant or never sampling the AO, the DepthNormals pass (SSAO's prepass and the water's depth) going missing, the PC renderer's SSAO
+        // feature switched off or turned into an after-opaque overlay (that would darken the water and the sky too), or its tuning drifting.
         [Test]
-        public void RenderingSetup_NoSsao_ToonHasNoOcclusionKeyword()
+        public void RenderingSetup_Ssao_OnAndSampledByToon()
         {
             string toon = StripLineComments(ReadProjectFile(AssetPaths.ShadersFolder + "/Toon.shader"));
-            Assert.That(toon, Does.Not.Contain("_SCREEN_SPACE_OCCLUSION"), "Toon must not compile an SSAO variant");
-            Assert.That(toon, Does.Contain("LightMode\" = \"DepthNormals\""), "the DepthNormals pass stays (depth prepass for the water depth fade)");
+            Assert.That(toon, Does.Contain("multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION"), "Toon compiles an SSAO variant");
+            Assert.That(toon, Does.Contain("GetScreenSpaceAmbientOcclusion"), "Toon samples the AO");
+            Assert.That(toon, Does.Contain("LightMode\" = \"DepthNormals\""), "the DepthNormals pass stays (SSAO's prepass, the water depth)");
 
             var renderer = new SerializedObject(AssetDatabase.LoadMainAssetAtPath(AssetPaths.PcRenderer));
             SerializedProperty features = renderer.FindProperty("m_RendererFeatures");
             Assert.That(features, Is.Not.Null, "m_RendererFeatures");
+            int found = 0;
             for (int i = 0; i < features.arraySize; i++)
             {
                 Object feature = features.GetArrayElementAtIndex(i).objectReferenceValue;
                 if (feature == null || feature.GetType().Name != "ScreenSpaceAmbientOcclusion") continue;
-                SerializedProperty active = new SerializedObject(feature).FindProperty("m_Active");
-                Assert.That(active, Is.Not.Null, "m_Active on the SSAO feature");
-                Assert.That(active.boolValue, Is.False, "PC_Renderer SSAO feature must be disabled");
+                found++;
+                var so = new SerializedObject(feature);
+                Assert.That(so.FindProperty("m_Active").boolValue, Is.True, "PC_Renderer SSAO feature is on (GraphicsApplier turns it off on Low)");
+                Assert.That(so.FindProperty("m_Settings.AfterOpaque").boolValue, Is.False, "Toon samples the AO; no after-opaque overlay");
+                Assert.That(so.FindProperty("m_Settings.Intensity").floatValue, Is.EqualTo(RenderingSetupBuilder.SsaoIntensity).Within(1e-4f));
+                Assert.That(so.FindProperty("m_Settings.Radius").floatValue, Is.EqualTo(RenderingSetupBuilder.SsaoRadius).Within(1e-4f));
             }
+            Assert.That(found, Is.EqualTo(1), "one SSAO feature on PC_Renderer");
         }
 
         // Catches: a pipeline asset without the camera depth texture (FishGame/Water's SampleSceneDepth depth fade and foam read the CopyDepth result;

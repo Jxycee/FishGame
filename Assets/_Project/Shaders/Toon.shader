@@ -20,7 +20,10 @@
 //    highlight (_SpecStrength, _SpecPower) on the lit side only.
 //  - No normal maps: the look gets its surface relief from the analytic smooth normals of SmoothMeshBuilder and the albedo/detail array
 //    (the _NORMALMAP path and its tangent interpolator were removed in the review fixes).
-//  - Ambient occlusion is baked into the vertex colour by the builders and the fish bake (no SSAO: it would force a DepthNormals prepass).
+//  - Ambient occlusion is baked into the vertex colour by the builders and the fish bake. Quality-first round 1 (user 2026-10-14, spec Graphics tab
+//    note): URP SSAO is sampled on top when the renderer feature runs (_SCREEN_SPACE_OCCLUSION; Medium/High, off on Low): the shade colour, the
+//    ambient and the sky fill take the indirect factor, the lit side of the band the direct factor (DirectLightingStrength), so contact
+//    shadows ground houses, props and wall feet without flattening the toon ramp.
 //
 // Colour grade (asset study 2026-10-14, PEAK/RV "grey masks, colour from parameters"), on the materials with _FGGrade > 0 (M_Toon_Base, M_Toon_Tri;
 // the fish, body, skin and brass keep 0 and render as before). Values come from the palette's per-season ToonGrade (FishGameCommon globals).
@@ -35,6 +38,9 @@
 // greyscale card centred on 0.5, colour from the palette slot as everywhere else). The ShadowCaster, DepthOnly and DepthNormals passes clip
 // the same way through URP's own pass includes (SurfaceInput's _BaseMap / _Cutoff). _Cull (CullMode, default Back) is per material: the cards
 // draw both sides (Off). Every new property is in UnityPerMaterial (SRP Batcher) and defaults to off.
+// Quality-first round 1: _AlphaToMask (AlphaToMask on the forward pass, M_Toon_Foliage) turns the card cut-out into alpha-to-coverage under MSAA:
+// the fragment returns a screen-space sharpened alpha ((a - cutoff) / fwidth(a) + 0.5), so card edges are anti-aliased instead of stair-stepped;
+// without MSAA it behaves like the plain clip at the cutoff. Fragments far below the cutoff are still clipped (no depth writes for empty texels).
 Shader "FishGame/Toon"
 {
     Properties
@@ -62,6 +68,7 @@ Shader "FishGame/Toon"
         _Cutoff("Alpha Cutoff", Range(0, 1)) = 0.5
         _CardGain("Card Gain", Range(0, 4)) = 2
         [Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull", Float) = 2
+        [ToggleUI] _AlphaToMask("Alpha To Coverage (cards, MSAA)", Float) = 0
     }
 
     SubShader
@@ -93,6 +100,7 @@ Shader "FishGame/Toon"
             half _CardGain;
             half _AlphaClip;
             half _Cull;
+            half _AlphaToMask;
         CBUFFER_END
         ENDHLSL
 
@@ -102,6 +110,7 @@ Shader "FishGame/Toon"
             Tags { "LightMode" = "UniversalForward" }
             Cull [_Cull]
             ZWrite On
+            AlphaToMask [_AlphaToMask]
 
             HLSLPROGRAM
             #pragma target 3.5
@@ -120,6 +129,7 @@ Shader "FishGame/Toon"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile_fragment _ _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fragment _ _SCREEN_SPACE_IRRADIANCE
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
             #pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
             #pragma multi_compile_fragment _ _LIGHT_COOKIES
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Fog.hlsl"
@@ -226,16 +236,25 @@ Shader "FishGame/Toon"
                 albedo = FG_HueRotate(albedo, FG_ObjectHueNoise() * (_FGGradeParams.y * _FGGrade));
                 half grey = dot(albedo, half3(0.2126h, 0.7152h, 0.0722h));   // Rec.709 luma (the colours here are linear, not gamma-encoded)
                 output.albedo = lerp(albedo, grey.xxx, _Desaturate);
-                output.fogFactor = FG_FogFactor(pos.positionCS.z);
+                output.fogFactor = FG_FogFactor(pos.positionCS.z, pos.positionWS);
                 return output;
             }
 
             half4 ToonFrag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
+                half outAlpha = 1.0h;
             #if defined(_ALPHATEST_ON)
                 half4 card = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uvCard);
-                clip(card.a - _Cutoff);
+                [branch] if (_AlphaToMask > 0.5h)
+                {
+                    outAlpha = saturate((card.a - _Cutoff) / max(fwidth(card.a), 1e-4h) + 0.5h);
+                    clip(card.a - _Cutoff * 0.6h);
+                }
+                else
+                {
+                    clip(card.a - _Cutoff);
+                }
             #endif
                 half3 n = normalize(input.normalWS);
                 half3 texFactor = FG_TextureFactor(input.uvLayer, input.positionWS, n);
@@ -261,11 +280,17 @@ Shader "FishGame/Toon"
                 half bottomMask = _FGBottomTint.w * _FGGrade * lerp(_FGGradeParams.z, 1.0h, saturate(-n.y));
                 half3 shade = _ToonShade.rgb * lerp(half3(1.0h, 1.0h, 1.0h), _FGBottomTint.rgb, bottomMask);
 
+                half aoIndirect = 1.0h, aoDirect = 1.0h;
+            #if defined(_SCREEN_SPACE_OCCLUSION)
+                AmbientOcclusionFactor ao = GetScreenSpaceAmbientOcclusion(inputData.normalizedScreenSpaceUV);
+                aoIndirect = ao.indirectAmbientOcclusion;
+                aoDirect = ao.directAmbientOcclusion;
+            #endif
                 half band = FG_ToonBand(saturate(dot(n, mainLight.direction)), mainLight.shadowAttenuation);
-                half3 tint = lerp(shade, mainLight.color, band);
-                half3 lit = albedo * tint + albedo * _ToonAmbient.rgb * 0.15h;
+                half3 tint = lerp(shade * aoIndirect, mainLight.color * aoDirect, band);
+                half3 lit = albedo * tint + albedo * _ToonAmbient.rgb * (0.15h * aoIndirect);
                 // Sky fill: a soft hemisphere term so shaded sides pick up sky colour from above and ground bounce from below.
-                lit += albedo * lerp(_SkyGround.rgb, _SkyTop.rgb, saturate(n.y * 0.5h + 0.5h)) * _SkyFill;
+                lit += albedo * lerp(_SkyGround.rgb, _SkyTop.rgb, saturate(n.y * 0.5h + 0.5h)) * (_SkyFill * aoIndirect);
                 half rim = pow(1.0h - saturate(dot(n, inputData.viewDirectionWS)), _RimPow) * _RimStrength;
                 lit += (albedo * 0.5h + 0.5h) * lerp(_SkyHorizon.rgb, mainLight.color, band) * rim;
                 // Soft toon highlight: a smoothstepped Blinn-Phong lobe, lit side only.
@@ -300,7 +325,7 @@ Shader "FishGame/Toon"
                 LIGHT_LOOP_END
             #endif
 
-                return half4(FG_ApplyFog(lit, inputData.fogCoord), 1.0h);
+                return half4(FG_ApplyFog(lit, inputData.fogCoord), outAlpha);
             }
             ENDHLSL
         }
@@ -345,10 +370,8 @@ Shader "FishGame/Toon"
             ENDHLSL
         }
 
-        // Kept although SSAO is off (spec: none; RenderingSetupBuilder disables it). With SSAO off, the depth FishGame/Water samples (depth fade, foam)
-        // comes from URP's CopyDepth after the opaques (m_CopyDepthMode 0), which copies the opaque depth Toon rendered. When the platform cannot
-        // CopyDepth (!CanCopyDepth) URP runs a depth prepass instead, and that prepass uses Toon's DepthOnly pass above. This DepthNormals pass is
-        // kept for future requests for normals (SSAO or any renderer feature that asks for them), which would draw Toon geometry through it.
+        // SSAO's prepass (quality-first round 1: on for Medium/High) draws Toon geometry through this pass: depth and normals for the AO, and the
+        // depth FishGame/Water samples (depth fade, foam). With SSAO off (Low) the depth comes from URP's CopyDepth after the opaques as before.
         Pass
         {
             Name "DepthNormals"

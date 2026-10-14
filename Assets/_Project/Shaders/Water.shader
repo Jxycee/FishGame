@@ -205,7 +205,7 @@ Shader "FishGame/Water"
                 o.positionWS = positionWS;
                 o.positionCS = TransformWorldToHClip(positionWS);
                 o.eyeDepth = -TransformWorldToView(positionWS).z;
-                o.fogFactor = FG_FogFactor(o.positionCS.z);
+                o.fogFactor = FG_FogFactor(o.positionCS.z, positionWS);
                 o.waveHeight = h;
                 return o;
             }

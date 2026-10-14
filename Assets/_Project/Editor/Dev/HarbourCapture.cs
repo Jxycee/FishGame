@@ -78,6 +78,12 @@ namespace FishGame.EditorTools
             new Shot("reef_from_thead", new Vector3(-4.5f, Eye(1.5f), -6.5f), new Vector3(-26f, 1.6f, 11f), 58f),
             new Shot("east_ledge_eye", new Vector3(60f, Eye(1.03f), -37.6f), new Vector3(50f, 0.8f, -17f), 62f),
             new Shot("ledge_from_beach", new Vector3(47f, Eye(0.25f), -47.5f), new Vector3(60f, 1.4f, -38f), 60f),
+            // quality-first round 1 (the bay: Gull Bar, the stilt shack, the sea arch; the crag behind the village)
+            new Shot("gull_bar_from_thead", new Vector3(4.5f, Eye(1.5f), -6.5f), new Vector3(30f, 1.2f, 19f), 58f),
+            new Shot("shack_deck_eye", new Vector3(36.4f, Eye(1.7f), 23.6f), new Vector3(0f, 4f, -62f), 62f),
+            new Shot("sea_arch_from_thead", new Vector3(-1.5f, Eye(1.5f), -5.5f), new Vector3(-8f, 4.5f, 46f), 55f),
+            new Shot("dusk_bay", new Vector3(-6f, Eye(0.25f), -46.8f), new Vector3(24f, 2.5f, 12f), 58f, dusk: true),
+            new Shot("crag_from_lane", new Vector3(26f, Eye(3.74f), -84.5f), new Vector3(44f, 18f, -150f), 58f),
         };
 
         public static void Capture()
@@ -114,6 +120,14 @@ namespace FishGame.EditorTools
             var asset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
             float shadowDistance = asset != null ? asset.shadowDistance : 0f;
             int shadowRes = asset != null ? asset.mainLightShadowmapResolution : 0, cascades = asset != null ? asset.shadowCascadeCount : 0;
+            // Quality-first round 1: the Low shot also drops the screen effects (SSAO feature, quality post volume), as GraphicsApplier does on Low.
+            var ssao = new List<ScriptableRendererFeature>();
+            if (asset != null)
+                foreach (ScriptableRendererData data in asset.rendererDataList)
+                    if (data != null)
+                        foreach (ScriptableRendererFeature f in data.rendererFeatures)
+                            if (f is ScreenSpaceAmbientOcclusion && f.isActive && !ssao.Contains(f)) ssao.Add(f);
+            QualityPostVolume post = Object.FindAnyObjectByType<QualityPostVolume>();
 
             var report = new StringBuilder();
             var top = new StringBuilder();   // round 2: the largest renderers per shot (tris_top.txt), to see where the Low budget goes
@@ -145,6 +159,8 @@ namespace FishGame.EditorTools
                         asset.mainLightShadowmapResolution = low.Resolution;
                         asset.shadowCascadeCount = low.Cascades;
                     }
+                    foreach (ScriptableRendererFeature f in ssao) f.SetActive(!s.Low);
+                    post?.Apply(!s.Low);
                     life.Pose(PoseTime, glow, tint);
                     WarmSmoke();
 
@@ -187,6 +203,8 @@ namespace FishGame.EditorTools
             finally
             {
                 life.ApplyDetail(true);
+                foreach (ScriptableRendererFeature f in ssao) f.SetActive(true);
+                post?.Apply(true);
                 if (asset != null)
                 {
                     asset.shadowDistance = shadowDistance;

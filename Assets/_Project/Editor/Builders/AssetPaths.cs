@@ -67,6 +67,7 @@ namespace FishGame.EditorTools
         public const string RenderingFolder = "Assets/_Project/Content/Rendering";
         public const string WarmVolumeProfile = RenderingFolder + "/VP_WarmSunset.asset";
         public const string CoolVolumeProfile = RenderingFolder + "/VP_CoolNight.asset";
+        public const string QualityPostProfile = RenderingFolder + "/VP_QualityPost.asset";   // quality-first round 1: bloom + vignette (Medium/High)
 
         // R74 look-dev additions (painted texture arrays; PNG sources are Git LFS, imported as Texture2DArray by TextureArrayPostprocessor).
         public const string TexturesFolder = "Assets/_Project/Content/Textures";

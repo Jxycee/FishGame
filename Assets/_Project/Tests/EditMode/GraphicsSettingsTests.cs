@@ -92,7 +92,8 @@ namespace FishGame.Tests.EditMode
             Assert.IsFalse(GraphicsPresets.UsesFxaa(high.Aa));
         }
 
-        // Catches: High drifting from the authored project look (PC_RPAsset: 70 m, 2048, 2 cascades) and Off not disabling shadows.
+        // Catches: High drifting from the authored project look (PC_RPAsset: 120 m, 4096, 4 cascades since the quality-first round, user
+        // 2026-10-14) and Off not disabling shadows.
         [Test]
         public void ShadowFor_MapsTiersToUrpValues()
         {
@@ -103,11 +104,22 @@ namespace FishGame.Tests.EditMode
             Assert.AreEqual(25f, low.Distance);
             Assert.AreEqual(1024, low.Resolution);
             Assert.AreEqual(1, low.Cascades);
-            Assert.AreEqual(70f, high.Distance);
-            Assert.AreEqual(2048, high.Resolution);
-            Assert.AreEqual(2, high.Cascades);
+            Assert.AreEqual(120f, high.Distance);
+            Assert.AreEqual(4096, high.Resolution);
+            Assert.AreEqual(4, high.Cascades);
             Assert.AreEqual(high.Distance, GraphicsPresets.ShadowFor(99).Distance, "out of range clamps to the top tier");
             Assert.AreEqual(off.Distance, GraphicsPresets.ShadowFor(-5).Distance, "out of range clamps to the bottom tier");
+        }
+
+        // Catches: SSAO and the post volume running on the Low fallback, or missing from Medium/High (quality first, user 2026-10-14).
+        [Test]
+        public void ScreenEffects_OffOnLowOnlyAndOnACustomLowScale()
+        {
+            Assert.IsFalse(GraphicsPresets.UsesScreenEffects((int)QualityPreset.Low, 75));
+            Assert.IsTrue(GraphicsPresets.UsesScreenEffects((int)QualityPreset.Medium, 100));
+            Assert.IsTrue(GraphicsPresets.UsesScreenEffects((int)QualityPreset.High, 100));
+            Assert.IsFalse(GraphicsPresets.UsesScreenEffects((int)QualityPreset.Custom, 75));
+            Assert.IsTrue(GraphicsPresets.UsesScreenEffects((int)QualityPreset.Custom, 90));
         }
 
         [Test]
