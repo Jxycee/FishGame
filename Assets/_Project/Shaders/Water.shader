@@ -68,7 +68,7 @@ Shader "FishGame/Water"
         _FoamSoftWidth("Soft Contact Band Width (x Foam Width)", Range(1, 8)) = 2.4
         _CalmDistance("Far Calm Distance (m)", Float) = 70
         _FarCalm("Far Shade And Crest Strength", Range(0, 1)) = 0.35
-        _SteepDeepen("Steep Bed Extra Depth (m)", Range(0, 8)) = 3
+        _SteepDeepen("Steep Bed Extra Depth (m)", Range(0, 8)) = 0
     }
 
     SubShader

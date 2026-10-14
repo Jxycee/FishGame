@@ -53,7 +53,7 @@ namespace FishGame.EditorTools
             new KeyValuePair<string, float>("_FoamSoftWidth", 2.4f),
             new KeyValuePair<string, float>("_CalmDistance", 70f),
             new KeyValuePair<string, float>("_FarCalm", 0.35f),
-            new KeyValuePair<string, float>("_SteepDeepen", 3f),   // round 2b: hulls and piles read deep, not as a turquoise sheet
+            new KeyValuePair<string, float>("_SteepDeepen", 0f),   // round 2b: off - its 2x2-pixel derivatives stair-step pile and rock edges (a per-pixel bed normal would fix it)
         };
         static readonly int DesaturateId = Shader.PropertyToID("_Desaturate");
         static readonly int RimPowId = Shader.PropertyToID("_RimPow");
