@@ -142,9 +142,9 @@ namespace FishGame.EditorTools
         // ---- stand points (x, y, z, facingDeg; this order) ----
         // 0-4 beach (x -48, -30, -12, 14, 48; z -46.5; BeachY + 0.05 = 0.23), 5-6 pier middle east/west, 7-8 T-head west/east end, 9 T-head front,
         // 10 breakwater tip. Facing is Unity yaw (0 = +z, 90 = +x).
-        // Round 1 (2026-10-15): 11 the east-basin fishing jetty head (deck 0.95, facing north-west into the basin), 12 the lookout tower deck
-        // (4.4 m up by the breakwater root, facing north-east over the basin): a second jetty and the first raised fishing spot. Both lanes clear
-        // the tug, the moored boats and the other lanes (fg_harbour.py lane_hit / verify_layout).
+        // Round 1 (2026-10-15): 11 the east-basin fishing jetty head (deck 0.95, facing 340: north-north-west into the basin), 12 the lookout
+        // tower deck (4.4 m up by the breakwater root, facing 36: north-east over the basin): a second jetty and the first raised fishing spot.
+        // The facings keep the tug 1.0-1.6 m out of both cast lanes (fg_harbour.py lane_hit; the manifest's pass2.verification lists them).
         public const float JettyDeckTopY = 0.95f, LookoutDeckTopY = 4.4f;
         public const float StandBeachZ = -46.5f, StandLift = 0.05f;
         public static readonly Vector4[] StandPoints = BuildStandPoints();
@@ -161,8 +161,8 @@ namespace FishGame.EditorTools
             points.Add(new Vector4(4.5f, 1.55f, -6.5f, 90f));   // T-head east end
             points.Add(new Vector4(0f, 1.55f, -5.5f, 0f));      // T-head front
             points.Add(new Vector4(30f, 1.55f, -26f, 0f));      // breakwater tip
-            points.Add(new Vector4(55.7f, JettyDeckTopY + 0.05f, -35f, 330f));      // round 1: the east jetty head
-            points.Add(new Vector4(36.4f, LookoutDeckTopY + 0.05f, -48.3f, 30f));   // round 1: the lookout tower deck
+            points.Add(new Vector4(55.7f, JettyDeckTopY + 0.05f, -35f, 340f));      // round 1: the east jetty head
+            points.Add(new Vector4(36.4f, LookoutDeckTopY + 0.05f, -48.3f, 36f));   // round 1: the lookout tower deck
             return points.ToArray();
         }
 

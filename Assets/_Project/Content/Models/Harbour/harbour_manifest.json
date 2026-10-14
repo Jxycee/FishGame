@@ -9275,10 +9275,10 @@
    "name": "Harbour_Detail_Shore",
    "file": "Art/Export/Harbour/Harbour_Detail_Shore.fbx",
    "group": "detail",
-   "triangles": 4927,
-   "vertices": 3528,
+   "triangles": 4767,
+   "vertices": 3420,
    "bounds_min": [
-    -56.4233,
+    -59.0314,
     -0.0511,
     -54.0253
    ],
@@ -9346,18 +9346,18 @@
     },
     {
      "kind": "Seaweed",
-     "x": 43.85,
-     "z": -44.9
+     "x": -56.42,
+     "z": -45.72
     },
     {
      "kind": "Seaweed",
-     "x": -55.03,
-     "z": -45.18
+     "x": -58.7,
+     "z": -45.09
     },
     {
      "kind": "Seaweed",
-     "x": -24.93,
-     "z": -45.22
+     "x": -4.97,
+     "z": -44.82
     },
     {
      "kind": "Seaweed",
@@ -9486,8 +9486,8 @@
     },
     {
      "kind": "Driftwood",
-     "x": 40.57,
-     "z": -46.49
+     "x": -43.53,
+     "z": -47.11
     },
     {
      "kind": "Driftwood",
@@ -10732,7 +10732,18 @@
    ],
    "local_space": true,
    "items": [],
-   "placements": [],
+   "placements": [
+    {
+     "name": "WindmillSails",
+     "position": [
+      -24.0,
+      23.74,
+      -135.85
+     ],
+     "yaw_deg": 0.0,
+     "animHint": "rotor"
+    }
+   ],
    "animHint": "rotor",
    "note": "Round 1: the windmill sails, around the hub at the origin; they turn about local +z (animHint rotor). Core: visible on Low."
   }
@@ -10750,7 +10761,7 @@
   "triangles": {
    "phase1": 82812,
    "pass2_core": 191664,
-   "pass2_detail": 79364,
+   "pass2_detail": 79204,
    "pass2_col_not_drawn": 4716,
    "pass2_extra_from_instances": 25112
   },
@@ -10769,7 +10780,7 @@
   "verification": [
    {
     "name": "CrewBoat (tug hull + fenders)",
-    "min_clearance_m": -0.55,
+    "min_clearance_m": 0.38,
     "solid": true
    },
    {
@@ -10798,8 +10809,18 @@
     "solid": false
    },
    {
+    "name": "Jetty (deck and posts) vs the other lanes",
+    "min_clearance_m": 0.49,
+    "solid": true
+   },
+   {
+    "name": "Lookout tower and stair vs the other lanes",
+    "min_clearance_m": 5.57,
+    "solid": true
+   },
+   {
     "name": "Seaweed and driftwood (35 clumps)",
-    "min_clearance_m": 1.0,
+    "min_clearance_m": 1.51,
     "solid": false
    }
   ],

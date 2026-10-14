@@ -4757,7 +4757,7 @@ YARDS += [(-57.5, -66.0, 1.6, 9.5)]
 
 # round-1 fishing spots (HarbourPierLayout.StandPoints 11 and 12): the jetty head and the lookout deck
 # (a separate list: phase 1's rock draw reads STAND_POINTS and must not change)
-STAND_POINTS_R1 = [(55.7, JETTY[4] + 0.05, -35.0, 330), (36.4, LOOKOUT[4] + 0.05, -48.3, 30)]
+STAND_POINTS_R1 = [(55.7, JETTY[4] + 0.05, -35.0, 340), (36.4, LOOKOUT[4] + 0.05, -48.3, 36)]   # facings keep the tug 1.0-1.6 m out of both lanes
 
 def pbox(g, lo, hi, slot, layer, ao=0.5, rot=None, r=0.03):
     c = Vector(((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2))
@@ -5093,7 +5093,6 @@ def build_moorings():
 def build_windmill_sails():
     g = G2('Harbour_Core_Anim_WindmillSails', 'core', local=True, rays=8, anim='rotor',
            note='Round 1: the windmill sails, around the hub at the origin; they turn about local +z (animHint rotor). Core: visible on Low.')
-    hub = Vector((0, 0, 0))
     add_lathe(g, (0, 0, -0.2), [(0.0, 0.35), (0.5, 0.3), (0.62, 0.12), (0.7, 0.0)], S['WoodDark'], L['Wood'], 0.5, sides=10, rot=rx(90))
     for k in range(4):
         rot = rz(45 + 90 * k)
@@ -5101,7 +5100,13 @@ def build_windmill_sails():
         g.add(xform(rbox((1.25, 4.6, 0.04), 0.015, 1), Vector((0, 0, 0.3)) + rot @ Vector((0.7, 3.6, 0)), rot), S['Sand'], L['Cloth'], 0.6)
         for j in range(4):
             g.add(xform(rbox((1.35, 0.05, 0.05), 0.012, 1), Vector((0, 0, 0.34)) + rot @ Vector((0.68, 1.6 + 1.3 * j, 0)), rot), S['WoodDark'], L['Wood'], 0.5)
+    g.place('WindmillSails', tuple(windmill_hub()), 0.0)      # one instance at the hub, facing +z (the harbour)
     return g
+
+def windmill_hub():
+    # the sails' hub: on the cap's front (+z, the door side, toward the harbour)
+    x, z = WINDMILL
+    return Vector((x, land_y(x, z) - 0.3 + 9.3, z + 2.15))
 
 def windmill_body(g):
     x, z = WINDMILL
@@ -5113,7 +5118,7 @@ def windmill_body(g):
     g.add(xform(rbox((1.1, 1.9, 0.2), 0.04, 1), (x, y0 + 1.0, z + 2.75)), S['Dock'], L['Wood'], 0.5)
     for h in (2.8, 5.6):
         g.add(xform(rbox((0.6, 0.75, 0.18), 0.03, 1), (x, y0 + h, z + 2.55 - 0.08 * h)), S['Rock'], L['none'], 0.5, tint=0.5)
-    hub = Vector((x, y0 + 9.3, z + 2.15))
+    hub = windmill_hub()
     g.extra['windmill_hub'] = [round(hub.x, 3), round(hub.y, 3), round(hub.z, 3)]
     return hub
 
@@ -5449,6 +5454,18 @@ def verify_layout(groups):
             if g.name.endswith('Buoy'):
                 x, _, z = p['position']
                 rep.append(dict(name=p['name'], min_clearance_m=round(lane_clearance(x, z) - 0.3, 2), solid=False))
+    # round 1: the jetty and the lookout tower (solid, Structure) against every lane, and the new lanes against the breakwater walk
+    def area(x0, x1, z0, z1):
+        return [(x, z) for x in frange(x0, x1, 0.5) for z in frange(z0, z1, 0.5)]
+    for name, pts in (('Jetty (deck and posts)', area(JETTY[0], JETTY[1], JETTY[2], JETTY[3])),
+                      ('Lookout tower and stair', area(LOOKOUT[0], LOOKOUT[1], LOOKOUT_STAIR[2], LOOKOUT[3]))):
+        own = [sp for sp in STAND_POINTS_R1 if (JETTY[0] - 0.1 <= sp[0] <= JETTY[1] + 0.1) == name.startswith('Jetty')]
+        rest = [sp for sp in STAND_POINTS_R1 if sp not in own]
+        saved = STAND_POINTS_R1[:]
+        STAND_POINTS_R1[:] = rest
+        c = min(lane_clearance(x, z) for x, z in pts)
+        STAND_POINTS_R1[:] = saved
+        rep.append(dict(name=name + ' vs the other lanes', min_clearance_m=round(c, 2), solid=True))
     shore = [g for g in groups if g.name == 'Harbour_Detail_Shore'][0]
     worst = min((lane_clearance(it['x'], it['z']) for it in shore.extra['shore_items']), default=99)
     rep.append(dict(name='Seaweed and driftwood (%d clumps)' % len(shore.extra['shore_items']), min_clearance_m=round(worst, 2), solid=False))
