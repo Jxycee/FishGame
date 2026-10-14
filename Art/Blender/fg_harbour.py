@@ -8253,9 +8253,9 @@ def build_reef():
     return [g, d]
 
 # ---- the East Ledge (critics, third round running): boulders on the ledge's flanks (Structure boxes) and the ledge's stand ----
-LEDGE_STAND = (60.0, -37.6, 352.0)          # x, z, facing: north over the east basin, past the jetty head (3 m clear of the jetty)
+LEDGE_STAND = (59.4, -37.6, 356.0)          # x, z, facing: north over the east basin, past the jetty head (the east wall's inner face is x 60.0)
 LEDGE_BOULDERS = [(57.4, -45.2, 1.05), (57.2, -43.0, 1.2), (57.3, -40.8, 0.95), (57.4, -39.0, 1.05), (62.2, -38.2, 1.3), (62.3, -41.6, 1.15),
-                  (62.0, -45.0, 1.2), (62.2, -34.8, 1.5), (64.0, -30.6, 1.7)]
+                  (62.0, -45.0, 1.2), (63.2, -33.6, 2.2), (64.8, -28.4, 2.7)]   # the last two: sea stacks off the ledge's tip, seen past the jetty
 LEDGE_FLOATS = [(64.4, -26.0), (65.0, -21.5)]
 
 def ledge_stand_y():
@@ -8269,8 +8269,9 @@ def build_east_ledge():
     for k, (bx, bz, rad) in enumerate(LEDGE_BOULDERS):
         g.mark()
         top = coast_y(bx, bz) or 0.0
-        geo = cliff_rock(rad, r, (1.15, 0.85, 1.0), 2, r.uniform(0, 360))
-        V, N, F, UV = xform(geo, (bx, max(top, 0.0) - rad * 0.25, bz))
+        stack = rad > 2.0
+        geo = cliff_rock(rad, r, (0.9, 1.35, 0.85) if stack else (1.15, 0.85, 1.0), 3 if stack else 2, r.uniform(0, 360))
+        V, N, F, UV = xform(geo, (bx, (rad * 0.55 if stack else max(top, 0.0) - rad * 0.25), bz))
         g.add((V, N, F, UV), S['Rock'], L['Rock'], AO_ROCK, None, r.uniform(0.85, 1.0), stack_paint(V, N, False))
         g.solid('LedgeBoulder_%d' % k)
     sx, sz, _ = LEDGE_STAND

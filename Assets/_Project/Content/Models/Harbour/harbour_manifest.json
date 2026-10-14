@@ -15181,17 +15181,17 @@
    "name": "Harbour_Core_EastLedge_Tri",
    "file": "Art/Export/Harbour/Harbour_Core_EastLedge_Tri.fbx",
    "group": "core",
-   "triangles": 1286,
-   "vertices": 738,
+   "triangles": 1766,
+   "vertices": 978,
    "bounds_min": [
     56.0903,
-    -1.3197,
+    -0.9621,
     -46.0719
    ],
    "bounds_max": [
-    65.3966,
-    3.8745,
-    -28.9104
+    66.6232,
+    4.2334,
+    -26.322
    ],
    "triplanar": true,
    "material": "M_Toon_Tri",
@@ -15379,56 +15379,56 @@
      "name": "LedgeBoulder_7",
      "collider": "box",
      "position": [
-      62.206,
-      -0.394,
-      -34.73
+      63.191,
+      1.168,
+      -33.547
      ],
      "footprint": [
-      2.352,
-      1.474,
-      2.558
+      3.203,
+      3.341,
+      3.1
      ],
      "bounds_min": [
-      61.03,
-      -1.131,
-      -36.009
+      61.589,
+      -0.503,
+      -35.097
      ],
      "bounds_max": [
-      63.383,
-      0.343,
-      -33.451
+      64.793,
+      2.838,
+      -31.997
      ]
     },
     {
      "name": "LedgeBoulder_8",
      "collider": "box",
      "position": [
-      63.999,
-      -0.452,
-      -30.495
+      64.676,
+      1.416,
+      -28.299
      ],
      "footprint": [
-      2.795,
-      1.735,
-      3.17
+      3.894,
+      4.273,
+      3.955
      ],
      "bounds_min": [
-      62.601,
-      -1.32,
-      -32.081
+      62.729,
+      -0.72,
+      -30.277
      ],
      "bounds_max": [
-      65.397,
-      0.416,
-      -28.91
+      66.623,
+      3.553,
+      -26.322
      ]
     },
     {
      "name": "LedgeBollard",
      "collider": "box",
      "position": [
-      61.1,
-      1.219,
+      60.5,
+      1.213,
       -39.0
      ],
      "footprint": [
@@ -15437,13 +15437,13 @@
       0.247
      ],
      "bounds_min": [
-      60.97,
-      0.879,
+      60.37,
+      0.873,
       -39.124
      ],
      "bounds_max": [
-      61.23,
-      1.559,
+      60.63,
+      1.553,
       -38.876
      ]
     },
@@ -15451,8 +15451,8 @@
      "name": "LedgeLamp",
      "collider": "box",
      "position": [
-      61.2,
-      2.209,
+      60.6,
+      2.568,
       -41.2
      ],
      "footprint": [
@@ -15461,18 +15461,18 @@
       0.34
      ],
      "bounds_min": [
-      60.85,
-      0.544,
+      60.25,
+      0.903,
       -41.37
      ],
      "bounds_max": [
-      61.55,
-      3.874,
+      60.95,
+      4.233,
       -41.03
      ],
      "light": [
-      61.2,
-      3.44,
+      60.6,
+      3.8,
       -41.2
      ]
     }
@@ -15486,13 +15486,13 @@
    "triangles": 1290,
    "vertices": 860,
    "bounds_min": [
-    58.2911,
+    57.6911,
     0.02,
     -40.0558
    ],
    "bounds_max": [
-    61.7708,
-    1.2994,
+    61.1708,
+    1.2934,
     -33.3867
    ],
    "triplanar": false,
@@ -15513,8 +15513,8 @@
     {
      "name": "LedgeRope",
      "position": [
-      61.513,
-      1.025,
+      60.913,
+      1.019,
       -39.808
      ],
      "footprint": [
@@ -15524,13 +15524,13 @@
      ],
      "collider": "none (low, walkable)",
      "bounds_min": [
-      61.254,
-      0.979,
+      60.654,
+      0.973,
       -40.056
      ],
      "bounds_max": [
-      61.771,
-      1.071,
+      61.171,
+      1.065,
       -39.561
      ]
     }
@@ -16288,7 +16288,7 @@
   },
   "triangles": {
    "phase1": 82812,
-   "pass2_core": 268330,
+   "pass2_core": 268810,
    "pass2_detail": 138848,
    "pass2_col_not_drawn": 8542,
    "pass2_extra_from_instances": 22282
@@ -16338,7 +16338,7 @@
    },
    {
     "name": "Jetty (deck and posts) vs the other lanes",
-    "min_clearance_m": 0.0,
+    "min_clearance_m": -0.6,
     "solid": true
    },
    {

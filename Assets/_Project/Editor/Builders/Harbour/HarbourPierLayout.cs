@@ -175,8 +175,9 @@ namespace FishGame.EditorTools
             points.Add(new Vector4(36.4f, LookoutDeckTopY + 0.05f, -48.3f, 36f));   // round 1: the lookout tower deck
             points.Add(new Vector4(-45.6f, 1.0f, -16.8f, 32f));   // round 3: the West Horn's tip, over the open bay (y = the horn's crest + 0.05)
             // round 4 (2026-10-18): the East Ledge, a boulder shelf at the east cliff's foot (the coast bar "Shelf", walkable from the east beach),
-            // over the east basin past the jetty head (y = the ledge's top + 0.05; 3 m clear of the jetty; fg_harbour.py LEDGE_STAND)
-            points.Add(new Vector4(60.0f, 1.03f, -37.6f, 352f));
+            // over the east basin past the jetty head (y = the ledge's top + 0.05; x 59.4: a capsule clears the east wall's inner face at x 60;
+            // fg_harbour.py LEDGE_STAND)
+            points.Add(new Vector4(59.4f, 1.02f, -37.6f, 356f));
             return points.ToArray();
         }
 
