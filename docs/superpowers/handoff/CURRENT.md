@@ -81,6 +81,14 @@ Then write the M4 handoff: the R76 river run, starfish god camp, boat ride, mafi
     - Free Pack - Rocks Stylized (316250, URP): coast and breakwater rocks.
     - Free Stylized Nature Environment (96371, 39 reviews, built-in RP, so its materials need converting to URP).
     - Skipped Free Toon Water (387614): the page didn't clearly show it as free.
+  - Round 3: 5 free character packs for reference (Synty Sidekick 336970, ithappy Creative Characters 304841, OlyPoly Party Game Characters 342650, Supercyan 79870, Kevin Iglesias Human Basic Motions 154271).
+- **Planned: in-house toon water (user, 2026-10-14). Build this instead of buying Stylized Water 3.** That asset is $50, and the extensions we'd need cost extra: Dynamic Effects $20 (ripples/wakes) and Underwater $25. Asset page for comparison: https://assetstore.unity.com/packages/package/287769 (Staggart Creations, v3.3.2, Unity 6000.0.68, URP, 315 files). It's a feature reference only; don't copy its code. Scope for a short design session before any code:
+  1. URP Shader Graph water: depth-based shallow/deep colour, intersection foam (from scene depth), scrolling normals, fresnel, cheap fake reflection or sky probe, and a projected caustics texture.
+  2. Rivers: a flowmap or spline-UV flow direction, so the 7 river maps can share one material with a speed per section.
+  3. Waves: Gerstner waves on the GPU with the same function in pure C# (Core assembly, EditMode-tested), so buoyancy for bobbers, the tug and props matches the visual surface on host and clients.
+  4. Dynamic ripples: a render texture stamped by casts, bobbers, fish strikes and boats (the extension's job). Skip underwater rendering unless the design needs it.
+  5. Shoreline foam and blending against the coast, shingle and jetty edges (the critics' surfaces ask). Lake Dock shares the material.
+  - The forest is handled separately and free: Blender-baked LOD meshes and billboard cards, and thinner crown cards on Low (the critics' forest asks). Flat Kit (143368, $39.90) was the only one-pack option that touched both water and forest, but it doesn't help forest performance.
 
 ## 7. Open questions for the user
 Also on the board:
