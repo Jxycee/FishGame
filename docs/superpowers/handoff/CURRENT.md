@@ -71,6 +71,10 @@ Then write the M4 handoff: the R76 river run, starfish god camp, boat ride, mafi
 - **Unity MCP** (CoplayDev MCP for Unity, MIT): the package `com.coplaydev.unity-mcp` is pinned to `#v10.3.0` in `Packages/manifest.json`, and the server `unity` is in `.mcp.json` (`uvx mcpforunityserver==10.3.0`, stdio, `DISABLE_TELEMETRY=true`). It only works while the editor is open. An open editor holds `Temp/UnityLockfile`, so batchmode compile and test runs need the editor closed. Use the MCP for scene, GameObject and console work in the live editor, and batchmode for `check`. On the first editor open, run `Window > MCP for Unity`, check that telemetry shows as disabled, and do not let it rewrite the client config.
 - **Blender:** the server is `blender` (`uvx blender-mcp`, ahujasid). User-scope skills are in `~/.claude/skills`, taken from RobLe3/cc-blender-skill (MIT): `text-to-blender` (the router), `blender-modeling`, `-materials`, `-uv-texturing`, `-lighting`, `-rendering`, `-cameras`, `-animation`, `-export`, `-pro-workflow` and `reference-to-3d`. The other 19 skills in that pack were skipped (niche reconstruction loops) to save listing tokens.
 - **game-developer** skill (Jeffallan/claude-skills v0.4.18, MIT, user scope): generic Unity patterns. Its "60+ FPS on all platforms" rule is overridden by the spec's quality-first performance target.
+- **Asset Store (free; Standard Unity Asset Store EULA, Extension Asset)**: these were added to the user's account on 2026-10-14 to target the critics' weakest category, surfaces (5.5). They are not imported yet. Import them through Package Manager > My Assets, under `Assets/ThirdParty/<pack>/`, and use them as painting and blending references or bases behind the look-dev, not as drop-in replacements.
+  - 25+ Free Stylized Textures - Grass, Ground, Floors, Walls & More, by Game Buffs (241895)
+  - FREE Stylized Textures - RPG Environment, by Blink (204187)
+  - Free Stylized Textures, by LowlyPoly (204742)
 
 ## 7. Open questions for the user
 Also on the board:
