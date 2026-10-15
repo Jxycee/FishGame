@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "unity": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "mcpforunityserver==10.3.0",
+        "mcp-for-unity",
+        "--transport",
+        "stdio"
+      ],
+      "env": {
+        "DISABLE_TELEMETRY": "true"
+      }
+    }
+  }
+}
