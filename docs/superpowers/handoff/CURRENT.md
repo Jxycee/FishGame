@@ -5,7 +5,7 @@
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
 _Last updated: 2026-10-15._
-- **Story and run loop redesigned (draft, awaiting the user's review):** `docs/superpowers/specs/2026-10-15-story-and-run-loop-design.md`. A tug journey upriver; each stretch is an extraction job with a fish gate; modular river pieces; no quota, money or shop. It replaces the old M4 quota/economy plans once approved, so don't plan M4 from the main spec's section 14 until then. Trusted free asset/sound sites (e.g. the Poly Haven API) are now allowed (CLAUDE.md).
+- **Story and run loop: still in design with the user (not approved).** Agreed so far: the story premise (stolen tug, starfish god, upriver from Harbour Pier, mafia in cutscenes only), a hybrid journey + extraction direction, and modular river stretches. Don't plan M4 from the main spec's section 14 until the loop is approved. Trusted free asset/sound sites (e.g. the Poly Haven API) are now allowed (CLAUDE.md).
 - **Map identity review accepted** (user, spec R79): maps are built out from the water.
   - The harbour town is frozen as backdrop.
   - The south boundary moves back to the foot of the terrace stairs.
