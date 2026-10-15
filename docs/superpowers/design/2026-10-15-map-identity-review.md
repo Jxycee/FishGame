@@ -1,6 +1,6 @@
 # Map identity review: Harbour Pier and Lake Dock (2026-10-15)
 
-_Status: a proposal for the user; nothing here is decided until they say so. It re-checks the two built maps against the game's identity, because the harbour polish rounds drifted toward an exploration map. Sources: spec section 2 (pillars, variety rule), 2.1 (loops), 13.2 (beat cadence), R74, R76, R78; `docs/superpowers/design/2026-10-14-m4-design-inputs.md`; CURRENT.md section 10; `HarbourPierLayout.cs`; `LakeDockLayout.cs`; harbour-art3 bbf16d1._
+_Status: **accepted by the user 2026-10-15** ("make the needed adjustments"), with boundary option (a); recorded as spec R79. Per-zone fish tables and the harbour finale's identity stay proposals for the M4 design session. It re-checks the two built maps against the game's identity, because the harbour polish rounds drifted toward an exploration map. Sources: spec section 2 (pillars, variety rule), 2.1 (loops), 13.2 (beat cadence), R74, R76, R78; `docs/superpowers/design/2026-10-14-m4-design-inputs.md`; CURRENT.md section 10; `HarbourPierLayout.cs`; `LakeDockLayout.cs`; harbour-art3 bbf16d1._
 
 ## 1. The identity test: what a player does on a map
 
@@ -83,9 +83,15 @@ _Status: a proposal for the user; nothing here is decided until they say so. It 
    - a camp spot on the beach near the tug (M4: night camp on each map's shore; the harbour hosts camps in Infinite mode);
    - a stretch of open sea in view of the T-head for the day-7 climax (`leviathan_tide`, spec 14.5).
 
-**Decision for the user: the boundary.**
-- **(a) Recommended:** pull the south wall back toward z -75.5. The town becomes view only, and only paths that join stands stay walkable. There is less to polish, test and render, and players read at once that the game is at the water.
-- **(b)** Keep the town walkable but frozen.
+**Decided (user, 2026-10-15): the boundary moves back (option a).** The town becomes view only. There is less to polish, test and render, and players read at once that the game is at the water.
+- **Where the wall goes:** not the old z -75.5 line, which would stop players halfway up the terrace stairs.
+  - The manifest puts three stair flights at x about -47, 4.4 and 33. Each rises from the plateau (y 1.2, about z -72) to the level-1 parapets at z -78.9.
+  - So `HarbourPierLayout.WallSouthZ` goes from -106.5 to just north of the stair feet (about z -72; read the exact feet from `fg_harbour.py`).
+  - Each stair foot gets a visible blocker (a closed gate, or a rope and a sign) so nobody walks into an invisible wall.
+- **Checks in the Unity step:**
+  - Walk the plateau for any other way up (the dunes collision mesh).
+  - Confirm that no stand, spawn or path a stand needs lies south of the new wall. All stands are at z >= -48.3 and the spawns at z -55.
+  - The castable grid starts at z -60, so the bake does not change.
 
 **Note for the M4 design session: the finale.** As the stage-7 finale the harbour should be the craziest map, but it has been art-directed as a cozy working village. The wildness should live on the water and the horizon: the mafia boats closing in, the leviathan tide, signs of the monster. That is design-session work, not tonight's.
 
@@ -131,10 +137,14 @@ The direction is liked: realistic toon, greyscale painted layers with palette co
 1. The stand kit (new, reusable).
 2. Tug fixes plus the four ice-chest variants.
 3. Harbour ring-1 dressing with the kit, and stand 14.
+4. The stair-foot blockers for the boundary (section 4).
 
 **Next (needs Unity or a design pass):**
-4. **Unity integration** of the above.
-5. **harbour-art3 r1:** keep it as the base, fix its two review findings, run `check`, merge. Alpha-to-coverage swells the crown cards on Low; the far mountains sit past the fog and the 400 m far clip yet still cast shadows.
+5. **The Unity step, on harbour-art3:**
+   - Fix r1's two review findings: alpha-to-coverage swells the crown cards on Low; the far mountains sit past the fog and the 400 m far clip yet still cast shadows.
+   - Move the boundary and place the blockers.
+   - Place the kit and the tug fixes.
+   - Run `check` with `-dev-profile fgtest`, get a Sonnet review, then merge harbour-art3 into main.
 6. **Short design pass:** per-zone fish tables, plus the Lake Dock river, berth and camp.
 7. **The in-house toon water.**
 8. **The Lake Dock Blender pass.**

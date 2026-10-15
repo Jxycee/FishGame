@@ -29,7 +29,7 @@ Funny small details (REPO's eyes) multiply all of these. Character beats cost li
 **Journey: the river (R76).**
 - 7 river stages in a fixed order. Each stage draws a variant, so the map changes and the route has forks: "take the rapids (fast, dangerous) or the backwater (slow, safe, odd fish)".
 - The boat ride between maps is itself a short event: a snag, a mafia boat on the horizon, a floating crate to grab.
-- Each map is big enough to explore. The best spots are hidden or risky: across the rapids, under the waterfall, inside the wreck.
+- Each map is big enough to explore. The best spots are hidden or risky: across the rapids, under the waterfall, inside the wreck. _(Superseded: medium maps with one main area (M4 inputs, 2026-10-14) and spec R79 (2026-10-15): maps are built out from the water; risky spots belong on the water, not in walkable land.)_
 
 **Swingy fortune: loot spikes.**
 - Rare "jackpot" fish, and schools that boil up briefly (a frenzy).

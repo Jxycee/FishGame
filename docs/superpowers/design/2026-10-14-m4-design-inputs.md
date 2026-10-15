@@ -44,3 +44,11 @@ Collected before the M4 design session. These are the user's decisions; the desi
 ## Decision (user, 2026-10-14): day-time mafia pressure deferred
 - Not in M4. The user could not see a version that doesn't feel cheesy, scripted or clunky. The mafia in M4 = atmosphere (posters, horizon boats, escalation) + live night-camp events + the finale cutscene.
 - Revisit after M4 playtests. Options and research: `docs/superpowers/research/2026-10-14-friendslop-threat-counterplay.md` (the "hook the goon" idea is the best fit if it comes back).
+
+## Decision (user, 2026-10-15): maps are built out from the water (spec R79)
+- The user: players get one day on a map, so they won't spend it walking around a town, however nice. A map is its fishing water, its stands, the tug berth and the camp spot; everything else is view. Rules and plans: `docs/superpowers/design/2026-10-15-map-identity-review.md`.
+- **For the design session:**
+  - **The harbour as the finale.** It was art-directed as a cozy working village, but stage 7 should be the wildest map. Put the wildness on the water and the horizon: the mafia boats closing in, the leviathan tide (spec 14.5), signs of the monster.
+  - **Per-zone fish tables** (harbour: reef, ledge, lagoon, creek marsh): they give the far stands a fishing reason. A 12.5 delta if accepted.
+  - **Every map's river stop:** water in and out for the tug, the berth, and the camp spot, decided per stage. Lake Dock is a closed bowl today.
+  - **One stand kit and one recoloured rock/tree/prop set reused across stages**, so 7 stages with variants don't each need new meshes.
