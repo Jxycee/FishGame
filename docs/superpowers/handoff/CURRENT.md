@@ -75,6 +75,12 @@ Then write the M4 handoff: the R76 river run, starfish god camp, boat ride, mafi
   - 25+ Free Stylized Textures - Grass, Ground, Floors, Walls & More, by Game Buffs (241895)
   - FREE Stylized Textures - RPG Environment, by Blink (204187)
   - Free Stylized Textures, by LowlyPoly (204742)
+  - Round 2, the same day (targets the critics' asks on crown-card trees, forest LODs, coast rock and splash VFX):
+    - Cartoon FX Remaster Free, by Jean Moreno (109565, 460 reviews, URP): splashes and hit pops.
+    - Fantasy Worlds: Forest FREE (282610, URP): stylised trees, possibly with LODs; check them.
+    - Free Pack - Rocks Stylized (316250, URP): coast and breakwater rocks.
+    - Free Stylized Nature Environment (96371, 39 reviews, built-in RP, so its materials need converting to URP).
+    - Skipped Free Toon Water (387614): the page didn't clearly show it as free.
 
 ## 7. Open questions for the user
 Also on the board:
