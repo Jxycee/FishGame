@@ -7,13 +7,16 @@
 # Authoring axes: Blender Z up, the character faces -Y, feet on z = 0, metres. The FBX export
 # (-Z forward, Y up, bake_space_transform) turns that into Unity's Y up, facing +Z.
 #
-# Look (user 2026-10-17, references checked: PEAK's scouts, RV There Yet's dads, REPO's side-eye):
-# - PEAK: a big round head straight on a short body, colourful skin (the skin is the player's colour pick),
-#   a flat painted face (cream eye ovals, big navy pupils, blush, a small line mouth), noodle arms with
-#   mitten hands, shorts, tall socks and chunky boots.
-# - RV There Yet: stubby, a dad belly, dad-fisher clothes (fishing vest with lure pins, bucket hat).
-# - REPO: only the behaviour. The pupils are separate flat discs on the head sphere; the rig turns them
-#   about the head centre so they slide over the eye whites (side-eye / look-at).
+# Look (user 2026-10-17): the PEAK-style build the user liked best, given a grown-up goofy tone
+# ("goofy, but not childish; Schedule 1 is a good example"), so it is ours, not a PEAK copy:
+# - Kept: a big round head straight on a stubby dad body (RV There Yet belly), the flat painted face
+#   technique, cargo shorts with tall socks and boots.
+# - Grown-up goofy: big white eyes with tiny dot pupils (Schedule I / Rick and Morty), heavy brows, a big
+#   sunburnt nose, a stubble shadow and a lopsided smirk; yellow rubber fishing gloves; belt and buckle.
+#   No blush stickers, no cute smile.
+# - REPO's side-eye: the pupils are separate decals that the rig turns about the head centre, so they
+#   slide over the eye whites.
+# - Natural skin tones; the player's slot colour goes on the vest and hat (spec 7.4 slot palette).
 #
 # The head is a true sphere (HEAD_C, HEAD_R) so face decals (eyes, pupils, blush, mouth, and every
 # swappable face part in fg_fisher_parts.py) map onto it exactly with sphere_point(). Body shapes are
@@ -29,25 +32,32 @@ SURF = 0.575  # metaball surface radius / element radius at stiffness 2, thresho
 
 # ---------------------------------------------------------------- palette (preview colours)
 COL = {
-    'skin':   (0.98, 0.52, 0.18),   # PEAK-style bright skin; the player's colour pick in game
-    'blush':  (0.90, 0.30, 0.16),
+    'skin':   (0.93, 0.70, 0.56),
+    'stubble': (0.86, 0.65, 0.53),  # a shade under the skin, painted round the jaw
+    'nose':   (0.96, 0.60, 0.50),   # sunburnt
+    'hair':   (0.25, 0.17, 0.11),
+    'gloves': (1.00, 0.72, 0.10),   # yellow rubber fishing gloves
     'shirt':  (0.92, 0.88, 0.74),   # cream short-sleeve shirt
-    'vest':   (0.52, 0.50, 0.33),   # khaki-olive fishing vest
+    'vest':   (0.22, 0.45, 0.85),   # slot 0 (host) blue; Unity tints per slot
     'shorts': (0.70, 0.58, 0.40),   # cargo shorts
     'socks':  (0.95, 0.94, 0.90),
     'stripe': (0.20, 0.45, 0.70),
     'boots':  (0.42, 0.24, 0.13),   # brown leather
     'sole':   (0.20, 0.15, 0.12),
-    'hat':    (0.62, 0.58, 0.40),
-    'strap':  (0.33, 0.24, 0.16),
-    'eye':    (0.99, 0.96, 0.86),   # cream eye white
-    'pupil':  (0.04, 0.05, 0.16),   # navy
-    'mouth':  (0.16, 0.05, 0.08),
+    'hat':    (0.30, 0.55, 0.92),
+    'strap':  (0.12, 0.22, 0.42),
+    'belt':   (0.28, 0.17, 0.10),
+    'buckle': (0.85, 0.68, 0.25),
+    'eye':    (1.00, 1.00, 0.97),
+    'pupil':  (0.03, 0.03, 0.04),
+    'mouth':  (0.25, 0.08, 0.08),
     'lure_r': (0.85, 0.12, 0.10),
     'lure_w': (0.97, 0.97, 0.95),
     'metal':  (0.75, 0.75, 0.72),
 }
-SKINS = [(0.98, 0.52, 0.18), (0.30, 0.75, 0.30), (0.45, 0.40, 0.90), (0.25, 0.70, 0.80)]  # lineup render
+# Lineup render: (slot colour, skin tone). Slot colours from spec 7.4: blue, white, light green, dark red.
+LINEUP = [((0.22, 0.45, 0.85), (0.93, 0.70, 0.56)), ((0.92, 0.92, 0.90), (0.62, 0.42, 0.30)),
+          ((0.50, 0.85, 0.45), (0.98, 0.80, 0.66)), ((0.55, 0.10, 0.10), (0.38, 0.24, 0.16))]
 
 # ---------------------------------------------------------------- key heights (z, metres): stubby, ~1.6 m to the head top
 HEAD_C = (0.0, 0.0, 1.37)
@@ -66,10 +76,12 @@ H = dict(
 )
 # Face layout in metres along the head surface from the face centre (u right, v up), for sphere_point().
 FACE = dict(
-    eye_u=0.092, eye_v=-0.030, eye_w=0.086, eye_h=0.100,
-    pupil_w=0.050, pupil_h=0.060,
-    blush_u=0.150, blush_v=-0.088, blush_w=0.075, blush_h=0.042,
-    mouth_v=-0.112, mouth_w=0.064, mouth_curve=0.016, mouth_thick=0.010,
+    eye_u=0.078, eye_v=-0.038, eye_w=0.110, eye_h=0.118,     # big white eyes, nearly touching
+    pupil_r=0.0145, pupil_dv=-0.006,                          # tiny dot pupils
+    brow_v=0.036, brow_w=0.100, brow_thick=0.020,
+    nose_v=-0.098, nose_r=0.052,
+    stubble_v=-0.165, stubble_w=0.300, stubble_h=0.165,
+    mouth_v=-0.166, mouth_w=0.085, mouth_curve=0.010, mouth_tilt=0.010, mouth_thick=0.011,
 )
 
 
@@ -281,13 +293,28 @@ def stroke(points, thick):
 
 
 def build_face(M):
+    """Big white eyes with tiny pupils, heavy brows, a big sunburnt nose, stubble and a lopsided smirk."""
     F = FACE
+    decal('Stubble', ellipse(0, F['stubble_v'], F['stubble_w'], F['stubble_h'], n=40, squash_top=0.35),
+          M['stubble'], lift=0.0008, rings=5)
     for side, sx in (('L', 1), ('R', -1)):
         u = sx * F['eye_u']
         decal('EyeWhite_' + side, ellipse(u, F['eye_v'], F['eye_w'], F['eye_h']), M['eye'], lift=0.0015)
-        decal('Pupil_' + side, ellipse(u, F['eye_v'] - 0.004, F['pupil_w'], F['pupil_h']), M['pupil'], lift=0.0030)
-        decal('Blush_' + side, ellipse(sx * F['blush_u'], F['blush_v'], F['blush_w'], F['blush_h']), M['blush'], lift=0.0010)
-    pts = [(t * F['mouth_w'] / 2, F['mouth_v'] + F['mouth_curve'] * t * t) for t in [i / 8 * 2 - 1 for i in range(9)]]
+        decal('Pupil_' + side, ellipse(u - sx * 0.004, F['eye_v'] + F['pupil_dv'], F['pupil_r'] * 2, F['pupil_r'] * 2.1, n=16),
+              M['pupil'], lift=0.0030, rings=2)
+        # Brow: thick, straight-ish, the outer end dropping a little (a weary dad look).
+        bpts = [(u + sx * t * F['brow_w'] / 2, F['brow_v'] + 0.006 * (1 - t * t) - 0.012 * max(0.0, t))
+                for t in [i / 6 * 2 - 1 for i in range(7)]]
+        decal('Brow_' + side, stroke(bpts, F['brow_thick']), M['hair'], lift=0.0025, rings=2)
+    # Nose: a big soft bulb sitting low between the eyes.
+    p = sphere_point(0, F['nose_v'])
+    d = (p - Vector(HEAD_C)).normalized()
+    blob('Nose', [ball(p + d * F['nose_r'] * 0.35, F['nose_r'], (1.08, 0.9, 0.95)),
+                  ball(p + d * F['nose_r'] * 0.1 + Vector((0, 0, 0.035)), F['nose_r'] * 0.5, (0.8, 0.9, 1.3))],
+         M['nose'], voxel=0.004, faces=1500, smooth_iter=2)
+    # Mouth: a lopsided smirk, higher on the left.
+    pts = [(t * F['mouth_w'] / 2, F['mouth_v'] + F['mouth_curve'] * t * t + F['mouth_tilt'] * t)
+           for t in [i / 10 * 2 - 1 for i in range(11)]]
     decal('Mouth', stroke(pts, F['mouth_thick']), M['mouth'], lift=0.0015, rings=2)
 
 
@@ -313,21 +340,27 @@ def build():
     blob('Shirt', mirror_x([
         ball((0, 0.0, ch), 0.215, (1.0, 0.78, 0.82)),
         ball((0, -0.035, be), 0.215, (1.0, 0.92, 0.85)),                  # the belly
-        ball((0, 0.0, hip + 0.10), 0.20, (1.02, 0.8, 0.6)),
+        ball((0, 0.0, hip + 0.12), 0.20, (1.02, 0.8, 0.45)),
         ball((0.17, 0.0, sh - 0.02), 0.085, (1.0, 1.0, 0.9)),
         capsule((0.20, 0.0, sh - 0.03), (0.29, -0.005, sh - 0.15), 0.083),  # sleeve
     ]), M['shirt'], voxel=0.010, faces=4000, smooth_iter=3)
 
-    # Arms: thick noodles, no visible elbow, big mitten hands with a thumb (PEAK).
+    # Arms: thick noodles, no visible elbow, ending in big yellow rubber fishing gloves.
     blob('Arms', mirror_x([
-        capsule((0.27, -0.005, sh - 0.12), (0.335, -0.02, sh - 0.36), 0.064),
-        ball((0.35, -0.025, sh - 0.43), 0.080, (0.9, 0.7, 1.12)),
-        ball((0.325, -0.075, sh - 0.40), 0.034, (0.9, 0.9, 1.25), (25, 0, 0)),
-    ]), M['skin'], voxel=0.008, faces=2500, smooth_iter=3)
+        capsule((0.27, -0.005, sh - 0.12), (0.335, -0.02, sh - 0.34), 0.060),
+    ]), M['skin'], voxel=0.008, faces=2000, smooth_iter=3)
+    hx, hy, hz = 0.352, -0.03, sh - 0.45
+    gl = [capsule((0.336, -0.022, sh - 0.33), (0.342, -0.025, sh - 0.37), 0.068),         # flared cuff
+          ball((hx, hy, hz), 0.072, (0.72, 0.95, 1.0))]                                  # palm
+    for ox in (-0.03, 0.0, 0.03):
+        gl.append(capsule((hx + ox * 0.3, hy - 0.035 + abs(ox) * 0.3, hz - 0.04),
+                          (hx + ox * 0.45, hy - 0.045 + abs(ox) * 0.3, hz - 0.11 + abs(ox) * 0.5), 0.024))
+    gl.append(capsule((hx - 0.03, hy - 0.05, hz + 0.01), (hx - 0.045, hy - 0.085, hz - 0.03), 0.022))  # thumb
+    blob('Gloves', mirror_x(gl), M['gloves'], voxel=0.005, faces=3000, smooth_iter=2)
 
     # Legs: short; cargo shorts over the hips, bare skin, tall socks, chunky boots.
     blob('Shorts', mirror_x([
-        ball((0, 0.0, hip + 0.04), 0.19, (1.04, 0.8, 0.5)),
+        ball((0, 0.0, hip + 0.05), 0.198, (1.04, 0.82, 0.55)),
         capsule((0.10, 0.0, hip), (0.11, -0.005, H['shorts_hem'] + 0.03), 0.112),
     ]), M['shorts'], voxel=0.010, faces=3000, smooth_iter=3)
     blob('Legs', mirror_x([
@@ -346,6 +379,18 @@ def build():
     blob('Soles', mirror_x([
         ball((0.105, -0.045, 0.022), 0.10, (1.05, 1.6, 0.25)),
     ]), M['sole'], voxel=0.008, faces=1000, smooth_iter=2)
+
+    # Belt with a big buckle where the shirt tucks into the shorts.
+    blob('Belt', [ball((0, -0.014, hip + 0.085), 0.212, (1.05, 0.84, 0.13))], M['belt'], voxel=0.007, faces=1500, smooth_iter=1)
+    hit, loc, nrm, _ = bpy.data.objects['Belt'].ray_cast(Vector((0, -1, hip + 0.085)), Vector((0, 1, 0)))
+    bmb = bmesh.new()
+    bmesh.ops.create_cube(bmb, size=1.0, matrix=Matrix.Translation(loc + Vector((0, -0.006, 0))) @ Matrix.Diagonal((0.07, 0.016, 0.05, 1)))
+    me = bpy.data.meshes.new('Buckle'); bmb.to_mesh(me); bmb.free()
+    bk = bpy.data.objects.new('Buckle', me); bpy.context.scene.collection.objects.link(bk)
+    ctx_select(bk)
+    bv = bk.modifiers.new('bev', 'BEVEL'); bv.width = 0.008; bv.segments = 3
+    bpy.ops.object.modifier_apply(modifier=bv.name)
+    bk.data.materials.append(M['buckle'])
 
     build_vest(M)
     build_hat(M)
@@ -557,16 +602,19 @@ def preview(outdir):
     sc.render.filepath = os.path.join(outdir, 'fisher_face.png')
     bpy.ops.render.render(write_still=True)
 
-    # Skin-colour lineup: the same fisher in four PEAK-style skins, three-quarter view.
+    # Lineup: the four slot colours (vest and hat) on four skin tones, three-quarter view.
     pivot.rotation_euler = (0, 0, math.radians(-25))
     cam.data.ortho_scale = 1.95
     cam.location = (0, -6, 0.88)
     sc.render.resolution_x, sc.render.resolution_y = 520, 900
-    skin = bpy.data.materials['M_Skin'].node_tree.nodes['Principled BSDF'].inputs['Base Color']
-    blush = bpy.data.materials['M_Blush'].node_tree.nodes['Principled BSDF'].inputs['Base Color']
-    for i, rgb in enumerate(SKINS):
-        skin.default_value = (*rgb, 1)
-        blush.default_value = (rgb[0] * 0.85 + 0.08, rgb[1] * 0.6, rgb[2] * 0.6, 1)
+    inp = lambda n: bpy.data.materials[n].node_tree.nodes['Principled BSDF'].inputs['Base Color']
+    for i, (slot, skin) in enumerate(LINEUP):
+        inp('M_Vest').default_value = (*slot, 1)
+        inp('M_Hat').default_value = (*[min(1, c * 1.12 + 0.04) for c in slot], 1)
+        inp('M_Strap').default_value = (*[c * 0.55 for c in slot], 1)
+        inp('M_Skin').default_value = (*skin, 1)
+        inp('M_Stubble').default_value = (*[c * 0.92 for c in skin], 1)
+        inp('M_Nose').default_value = (min(1, skin[0] * 1.04), skin[1] * 0.86, skin[2] * 0.9, 1)
         sc.render.filepath = os.path.join(outdir, 'fisher_skin%d.png' % i)
         bpy.ops.render.render(write_still=True)
     print('PREVIEW', outdir)
