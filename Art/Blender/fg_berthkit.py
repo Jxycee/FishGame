@@ -41,6 +41,8 @@ SCRIPT_PATH = os.path.join(ROOT, 'Art', 'Blender', 'fg_berthkit.py')
 S, L = H.S, H.L
 ry, rx, rz = H.ry, H.rx, H.rz
 V3 = Vector
+SLOT_PINK = 48           # NEW palette slot (berth-kit range 48-55): FlamingoPink, sRGB (0.95, 0.42, 0.58), the same all year
+PINK_RGB = (0.95, 0.42, 0.58)
 WHITE = 11               # fg_harbour palette slot 11 (0.95, 0.96, 0.98): plastic, enamel, paint
 DATUM_TUG = H.TUG_DECK   # 1.25: the berth deck level that matches the tug's gangway
 TILE_T = 0.16            # deck tile thickness below the walking surface
@@ -605,7 +607,7 @@ def XY(g, poly, depth, c, slot, layer=L['Wood'], ao=0.5, rot=None, r=0.0):
 
 def b_decor_flamingo():
     g = new('Decor_Flamingo')
-    P = S['Roof']
+    P = SLOT_PINK
     LA(g, (0, 0.82, 0), [(-0.4, 0.0), (-0.32, 0.03), (-0.16, 0.1), (0.04, 0.14), (0.2, 0.11), (0.29, 0.06), (0.31, 0.0)], P, L['none'], 0.5, sides=10,
        rot=rx(90) @ rx(8), scale=(1.0, 0.85, 1.0))
     TT(g, [V3((0, 0.9, 0.22)), V3((0, 1.02, 0.34)), V3((0, 1.16, 0.34)), V3((0, 1.3, 0.26)), V3((0, 1.43, 0.3)), V3((0, 1.52, 0.36))],
@@ -828,7 +830,7 @@ def b_decor_bathtub():
     r = rng(g.name)
     for x, rad, sl in ((-0.38, 0.22, S['Foliage']), (0.1, 0.27, S['FoliageDark']), (0.46, 0.2, S['Foliage'])):
         A(g, H.blob(rad, r, (1.0, 0.85, 1.0), subdiv=1, rough=0.25), (x, 0.62 + rad * 0.4, r.uniform(-0.05, 0.05)), None, sl, L['Foliage'], 0.6)
-    for x, z, c in ((-0.2, 0.12, S['Roof']), (0.28, -0.1, S['Accent']), (0.0, -0.17, WHITE), (-0.5, -0.1, S['Accent'])):
+    for x, z, c in ((-0.2, 0.12, SLOT_PINK), (0.28, -0.1, S['Accent']), (0.0, -0.17, WHITE), (-0.5, -0.1, S['Accent'])):
         TB(g, [V3((x, 0.64, z)), V3((x + 0.02, 0.8, z))], 0.006, S['Foliage'], L['none'], 0.5, 4)
         LA(g, (x + 0.02, 0.8, z), [(0.0, 0.0), (0.0, 0.05), (0.012, 0.055), (0.02, 0.0)], c, L['none'], 0.7, sides=6)
     BX(g, (0.78, 0.7, 0.0), (0.05, 0.05, 0.05), 0.012, S['Rock'], L['none'], 0.4)
@@ -1113,14 +1115,23 @@ def scene_hide_site(hide=True):
             o.hide_render = hide
             o.hide_viewport = hide
 
+def preview_mat64():
+    # preview only: fg_harbour's preview palette has 16 colours (the Blender ramp holds 32 stops), so the preview shows slot 48 (FlamingoPink)
+    # through the unused slot 15; show_pv remaps the composed preview group's slot 48 to 15
+    m = H.preview_material()
+    ramp = next(n for n in m.node_tree.nodes if n.type == 'VALTORGB')
+    ramp.color_ramp.elements[15].color = H.srgb_to_lin(PINK_RGB) + (1.0,)
+    return m
+
 def show_pv(g, bake='kit', emissive=False):
+    g.SL = [(15 if sl == SLOT_PINK else sl, ly) for sl, ly in g.SL]
     ob = H.make_object(g)
     if bake == 'kit':
         raw = bake_kit([g], rays=24)[0]
     else:
         raw = H.bake_ao([g], rays=24)[0]
     H.write_ao(ob, g, raw)
-    ob.data.materials.append(H.preview_material())
+    ob.data.materials.append(preview_mat64())
     return ob
 
 def glow_object(g, pos=(0, 0, 0)):
@@ -1327,7 +1338,7 @@ NOTES = {
     'Berth_TyreFender': 'Pivot is the cell\'s +z edge midpoint at the datum; the tyre hangs 0.45 m down and 0.12 m proud of the edge.',
     'Berth_Pontoon_2x2': 'Heavy pontoon section: deck at the datum, floats from -0.2 to -1.7 (waterline is at y -1.25 for datum 1.25). The mooring line is six of these.',
     'Berth_Wall_1m': 'Shed wall on the cell\'s -z edge, 2.4 m high. Wall decor pivots at the wall face: place it at z = cell_z - 0.40, at the wanted height.',
-    'Decor_Flamingo': 'Plastic lawn flamingo with sunglasses (coral palette slot Roof). Wants a PINK palette slot: see the report.',
+    'Decor_Flamingo': 'Plastic lawn flamingo with sunglasses (palette slot 48 FlamingoPink). Pink is NEW palette slot 48 (FlamingoPink).',
     'Decor_BassPlaque': 'Wall piece (pivot back-bottom-centre). The singing mechanic is up to Unity: the red button is at local (0.2, 0.17, 0.08).',
     'Decor_InflatableShark': 'Sits on the ground/deck; 1.7 m long, faces +z. Could be pushed around by physics.',
     'Decor_TikiTorch': 'Light point at the cup; Decor_TikiTorch_Flame is the emissive flame (animate scale/flicker).',
@@ -1417,10 +1428,11 @@ def main(export=True, previews=True, only=None):
         axes='Unity metres, authored in Unity axes (Blender = (-x, -z, y)); FBX settings and encoding as fg_harbour.py. Each FBX object is at the origin with an identity transform.',
         encoding=dict(uv0='UVMap: metres', uv1='Layer: (palette slot, texture layer)', colour='Col = 0.5 x baked AO (per vertex, floor 0.22-0.62 per part)',
                       normals='smooth / analytic', materials='none exported; M_Toon_Base for every model (no _Tri models in this kit)'),
-        slots=S, layers=L,
+        slots=dict(S, FlamingoPink=SLOT_PINK), layers=L,
+        new_palette_slots=[dict(slot=SLOT_PINK, name='FlamingoPink', srgb=list(PINK_RGB), seasonal=False, used_by=['Decor_Flamingo', 'Decor_BathtubPlanter (one flower)'],
+                                note='berth-kit range 48-55; Unity must add it to the palette (_FGPalette array grows past 16: see the orchestrator palette plan)')],
         palette_note='Palette slots (FishingSeedData.PaletteSeasons): only 0 Grass, 1 Foliage, 2 FoliageDark, 7 Reed, 14 Blossom and 15 FoliageAlt change with the season. '
-                     'Slot 11 ("Snow", 0.95/0.96/0.98) is white all year: plastic, enamel, sign paint, teeth, eyes. Slot 9 Roof (brick red) stands in for flamingo pink '
-                     '(no pink slot exists; Blossom is pink only in spring); slot 10 Accent (orange) is the neon, the bait bucket and the hammock stripes. '
+                     'Slot 11 ("Snow", 0.95/0.96/0.98) is white all year: plastic, enamel, sign paint, teeth, eyes. NEW slot 48 FlamingoPink (see new_palette_slots) is the flamingo and one planter flower; slot 10 Accent (orange) is the neon, the bait bucket and the hammock stripes. '
                      'Reed (7, bamboo) and Foliage (1, bass and shrubs) follow the season on purpose.',
         grid=dict(
             cell_m=1.0,

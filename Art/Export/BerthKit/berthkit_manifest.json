@@ -22,7 +22,8 @@
   "Reed": 7,
   "Dock": 8,
   "Roof": 9,
-  "Accent": 10
+  "Accent": 10,
+  "FlamingoPink": 48
  },
  "layers": {
   "none": 0,
@@ -40,7 +41,24 @@
   "Meadow": 13,
   "RoofTile": 14
  },
- "palette_note": "Palette slots (FishingSeedData.PaletteSeasons): only 0 Grass, 1 Foliage, 2 FoliageDark, 7 Reed, 14 Blossom and 15 FoliageAlt change with the season. Slot 11 (\"Snow\", 0.95/0.96/0.98) is white all year: plastic, enamel, sign paint, teeth, eyes. Slot 9 Roof (brick red) stands in for flamingo pink (no pink slot exists; Blossom is pink only in spring); slot 10 Accent (orange) is the neon, the bait bucket and the hammock stripes. Reed (7, bamboo) and Foliage (1, bass and shrubs) follow the season on purpose.",
+ "new_palette_slots": [
+  {
+   "slot": 48,
+   "name": "FlamingoPink",
+   "srgb": [
+    0.95,
+    0.42,
+    0.58
+   ],
+   "seasonal": false,
+   "used_by": [
+    "Decor_Flamingo",
+    "Decor_BathtubPlanter (one flower)"
+   ],
+   "note": "berth-kit range 48-55; Unity must add it to the palette (_FGPalette array grows past 16: see the orchestrator palette plan)"
+  }
+ ],
+ "palette_note": "Palette slots (FishingSeedData.PaletteSeasons): only 0 Grass, 1 Foliage, 2 FoliageDark, 7 Reed, 14 Blossom and 15 FoliageAlt change with the season. Slot 11 (\"Snow\", 0.95/0.96/0.98) is white all year: plastic, enamel, sign paint, teeth, eyes. NEW slot 48 FlamingoPink (see new_palette_slots) is the flamingo and one planter flower; slot 10 Accent (orange) is the neon, the bait bucket and the hammock stripes. Reed (7, bamboo) and Foliage (1, bass and shrubs) follow the season on purpose.",
  "grid": {
   "cell_m": 1.0,
   "origin": "cell corners on integer Unity x, z; a 1 x 1 piece pivots on (n + 0.5, m + 0.5); a 1 x 2 / 2 x 1 piece pivots on the middle of its two cells",
@@ -2039,13 +2057,13 @@
    "slots": [
     5,
     6,
-    9
+    48
    ],
    "layers": [
     0
    ],
    "pivot": "base centre",
-   "notes": "Plastic lawn flamingo with sunglasses (coral palette slot Roof). Wants a PINK palette slot: see the report."
+   "notes": "Plastic lawn flamingo with sunglasses (palette slot 48 FlamingoPink). Pink is NEW palette slot 48 (FlamingoPink)."
   },
   {
    "name": "Decor_BassPlaque",
@@ -2432,9 +2450,9 @@
     2,
     4,
     6,
-    9,
     10,
-    11
+    11,
+    48
    ],
    "layers": [
     0,
