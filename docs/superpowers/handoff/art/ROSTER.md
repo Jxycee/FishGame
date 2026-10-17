@@ -16,3 +16,13 @@ Orchestrator: session_01H1ZV7xiNZCUURUzwXrnHEZ (branch design/open-world-pivot).
 **Not reachable from the cloud:** the Unity Asset Store packs (they are on the user's PC and not imported). The workers note where a pack would fit.
 **Free sources used:** Poly Haven API and ambientCG (both CC0), recorded per area in `Art/Textures/<Area>/SOURCES.md`.
 **Unity integration** (PC, after harbour-art3 merges): each worker's report lists its steps. The village-states branch cancels nothing in Unity: the R79 boundary move is cancelled separately (design 5.5).
+
+## Palette slots (coordination, 2026-10-17)
+- **Existing:** fg_harbour.py uses slots 0-15.
+- **harbour-props:** owns 16-31: Brass 16, Bronze 17, Steel 18, Iron 19, GlassGreen 20, GlassBrown 21, GlassBlue 22, GlassClear 23, Gold 24, Paper 25, ShellPink 26, ShellCream 27, Ice 28, Khaki 29, White 30, Navy 31 (`fg_props.py:41`).
+- **New slots by range:** village-states 32-39, village-buildings 40-47, berth-kit 48-55, tug-upgrades 56-63, waterlife 64-71, villagers 72-79.
+- **On the PC:** the Unity palette texture and lookup must be extended to cover every slot in use.
+
+## Status
+- **fish-genome:** done, 5a24fa0.
+- **harbour-props:** done, 8e2a59c; a small redo of 4 weak models was requested.
