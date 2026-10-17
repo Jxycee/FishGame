@@ -61,7 +61,6 @@ MATERIALS = {
     'hat':     dict(tex='hat',     tint=(0.55, 0.50, 0.33), rough=0.85),
     'cargo':   dict(tex='cargo',   tint=(0.42, 0.36, 0.26), rough=0.85),
     'sock':    dict(tex='sock',    tint=(0.92, 0.91, 0.88), rough=0.9),
-    'stripe':  dict(tex='sock',    tint=(0.80, 0.18, 0.15), rough=0.9),
     'leather': dict(tex='leather', tint=(0.30, 0.17, 0.09), rough=0.6),
     'sole':    dict(tex='leather', tint=(0.10, 0.08, 0.07), rough=0.7),
     'webbing': dict(tex='webbing', tint=(0.30, 0.22, 0.15), rough=0.9),
@@ -221,7 +220,7 @@ def fetch(srcdir):
 # ================================================================ Blender stages
 PART_MATERIAL = {
     'Head': 'skin', 'Ears': 'skin', 'Arms': 'skin', 'Legs': 'skin', 'Shirt': 'shirt', 'Pants': 'cargo', 'Shorts': 'cargo',
-    'Socks': 'sock', 'SockStripes': 'stripe', 'Boots': 'leather', 'Soles': 'sole', 'Vest': 'vest', 'VestPockets': 'vest',
+    'Socks': 'sock', 'Boots': 'leather', 'Soles': 'sole', 'Vest': 'vest', 'VestPockets': 'vest',
     'Hat': 'hat', 'HatBand': 'webbing',
 }
 
@@ -362,8 +361,8 @@ def make_pick(ob):
         torso = vert(0, cy, 0.2)
         sleeve = {s: vert(s * hi.x * 0.8, cy, 0.07) for s in (1, -1)}
         return lambda c, n: sleeve[1 if c.x > 0 else -1] if abs(c.x) > hi.x * 0.62 else torso
-    if name in ('Arms', 'Legs', 'Pants', 'Shorts', 'Socks', 'SockStripes', 'Boots', 'Soles'):
-        r = {'Arms': 0.06, 'Legs': 0.07, 'Pants': 0.09, 'Shorts': 0.11, 'Socks': 0.075, 'SockStripes': 0.08, 'Boots': 0.085,
+    if name in ('Arms', 'Legs', 'Pants', 'Shorts', 'Socks', 'Boots', 'Soles'):
+        r = {'Arms': 0.06, 'Legs': 0.07, 'Pants': 0.09, 'Shorts': 0.11, 'Socks': 0.075, 'Boots': 0.085,
              'Soles': 0.09}[name]
         side = {s: vert(s * mean_x(ob, s), cy, r) for s in (1, -1)}
         return lambda c, n: side[1 if c.x >= 0 else -1]
