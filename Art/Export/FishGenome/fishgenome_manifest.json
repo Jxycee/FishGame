@@ -1,0 +1,940 @@
+{
+ "area": "FishGenome",
+ "branch": "fish-genome",
+ "models": [
+  {
+   "name": "Bluegill",
+   "file": "Fish_Bluegill.fbx",
+   "tris": 3876,
+   "material": "M_Toon_Fish",
+   "skinLayer": 1,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.2456,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "Bluegill_Morph1",
+     "recipe": "Ember",
+     "file": "Skins/Bluegill_Morph1.png",
+     "morphLayer": 0
+    },
+    {
+     "name": "Bluegill_Morph2",
+     "recipe": "Pearl",
+     "file": "Skins/Bluegill_Morph2.png",
+     "morphLayer": 1
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "Perch",
+   "file": "Fish_Perch.fbx",
+   "tris": 3976,
+   "material": "M_Toon_Fish",
+   "skinLayer": 2,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.2715,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "Perch_Morph1",
+     "recipe": "Cobalt",
+     "file": "Skins/Perch_Morph1.png",
+     "morphLayer": 2
+    },
+    {
+     "name": "Perch_Morph2",
+     "recipe": "Dusk",
+     "file": "Skins/Perch_Morph2.png",
+     "morphLayer": 3
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "Carp",
+   "file": "Fish_Carp.fbx",
+   "tris": 4344,
+   "material": "M_Toon_Fish",
+   "skinLayer": 3,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.2885,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "Carp_Morph1",
+     "recipe": "Crimson",
+     "file": "Skins/Carp_Morph1.png",
+     "morphLayer": 4
+    },
+    {
+     "name": "Carp_Morph2",
+     "recipe": "Ink",
+     "file": "Skins/Carp_Morph2.png",
+     "morphLayer": 5
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "Trout",
+   "file": "Fish_Trout.fbx",
+   "tris": 3856,
+   "material": "M_Toon_Fish",
+   "skinLayer": 4,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3091,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "Trout_Morph1",
+     "recipe": "Violet",
+     "file": "Skins/Trout_Morph1.png",
+     "morphLayer": 6
+    },
+    {
+     "name": "Trout_Morph2",
+     "recipe": "Koi",
+     "file": "Skins/Trout_Morph2.png",
+     "morphLayer": 7
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "Catfish",
+   "file": "Fish_Catfish.fbx",
+   "tris": 4724,
+   "material": "M_Toon_Fish",
+   "skinLayer": 5,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3265,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "Catfish_Morph1",
+     "recipe": "Ember",
+     "file": "Skins/Catfish_Morph1.png",
+     "morphLayer": 8
+    },
+    {
+     "name": "Catfish_Morph2",
+     "recipe": "Candy",
+     "file": "Skins/Catfish_Morph2.png",
+     "morphLayer": 9
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "MirrorMinnow",
+   "file": "Fish_MirrorMinnow.fbx",
+   "tris": 3796,
+   "material": "M_Toon_Fish",
+   "skinLayer": 6,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.2576,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "MirrorMinnow_Morph1",
+     "recipe": "Crimson",
+     "file": "Skins/MirrorMinnow_Morph1.png",
+     "morphLayer": 10
+    },
+    {
+     "name": "MirrorMinnow_Morph2",
+     "recipe": "Pearl",
+     "file": "Skins/MirrorMinnow_Morph2.png",
+     "morphLayer": 11
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "BucketmouthBass",
+   "file": "Fish_BucketmouthBass.fbx",
+   "tris": 4588,
+   "material": "M_Toon_Fish",
+   "skinLayer": 7,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3055,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "BucketmouthBass_Morph1",
+     "recipe": "Teal",
+     "file": "Skins/BucketmouthBass_Morph1.png",
+     "morphLayer": 12
+    },
+    {
+     "name": "BucketmouthBass_Morph2",
+     "recipe": "Dusk",
+     "file": "Skins/BucketmouthBass_Morph2.png",
+     "morphLayer": 13
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "SilverMullet",
+   "file": "Fish_SilverMullet.fbx",
+   "tris": 4676,
+   "material": "M_Toon_Fish",
+   "skinLayer": 8,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.2919,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "SilverMullet_Morph1",
+     "recipe": "Ember",
+     "file": "Skins/SilverMullet_Morph1.png",
+     "morphLayer": 14
+    },
+    {
+     "name": "SilverMullet_Morph2",
+     "recipe": "Ink",
+     "file": "Skins/SilverMullet_Morph2.png",
+     "morphLayer": 15
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "LakePike",
+   "file": "Fish_LakePike.fbx",
+   "tris": 4220,
+   "material": "M_Toon_Fish",
+   "skinLayer": 9,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3477,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "LakePike_Morph1",
+     "recipe": "Cobalt",
+     "file": "Skins/LakePike_Morph1.png",
+     "morphLayer": 16
+    },
+    {
+     "name": "LakePike_Morph2",
+     "recipe": "Koi",
+     "file": "Skins/LakePike_Morph2.png",
+     "morphLayer": 17
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "FrostChar",
+   "file": "Fish_FrostChar.fbx",
+   "tris": 3856,
+   "material": "M_Toon_Fish",
+   "skinLayer": 10,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3091,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "FrostChar_Morph1",
+     "recipe": "Ember",
+     "file": "Skins/FrostChar_Morph1.png",
+     "morphLayer": 18
+    },
+    {
+     "name": "FrostChar_Morph2",
+     "recipe": "Candy",
+     "file": "Skins/FrostChar_Morph2.png",
+     "morphLayer": 19
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "GlimmerEel",
+   "file": "Fish_GlimmerEel.fbx",
+   "tris": 4184,
+   "material": "M_Toon_Fish",
+   "skinLayer": 11,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.4033,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "GlimmerEel_Morph1",
+     "recipe": "Violet",
+     "file": "Skins/GlimmerEel_Morph1.png",
+     "morphLayer": 20
+    },
+    {
+     "name": "GlimmerEel_Morph2",
+     "recipe": "Pearl",
+     "file": "Skins/GlimmerEel_Morph2.png",
+     "morphLayer": 21
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "SleepySturgeon",
+   "file": "Fish_SleepySturgeon.fbx",
+   "tris": 4776,
+   "material": "M_Toon_Fish",
+   "skinLayer": 12,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3858,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "SleepySturgeon_Morph1",
+     "recipe": "Ember",
+     "file": "Skins/SleepySturgeon_Morph1.png",
+     "morphLayer": 22
+    },
+    {
+     "name": "SleepySturgeon_Morph2",
+     "recipe": "Dusk",
+     "file": "Skins/SleepySturgeon_Morph2.png",
+     "morphLayer": 23
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "GildedCarp",
+   "file": "Fish_GildedCarp.fbx",
+   "tris": 4536,
+   "material": "M_Toon_Fish",
+   "skinLayer": 13,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3055,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "GildedCarp_Morph1",
+     "recipe": "Crimson",
+     "file": "Skins/GildedCarp_Morph1.png",
+     "morphLayer": 24
+    },
+    {
+     "name": "GildedCarp_Morph2",
+     "recipe": "Ink",
+     "file": "Skins/GildedCarp_Morph2.png",
+     "morphLayer": 25
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "OldBarnacle",
+   "file": "Fish_OldBarnacle.fbx",
+   "tris": 4890,
+   "material": "M_Toon_Fish",
+   "skinLayer": 14,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3394,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "OldBarnacle_Morph1",
+     "recipe": "Teal",
+     "file": "Skins/OldBarnacle_Morph1.png",
+     "morphLayer": 26
+    },
+    {
+     "name": "OldBarnacle_Morph2",
+     "recipe": "Koi",
+     "file": "Skins/OldBarnacle_Morph2.png",
+     "morphLayer": 27
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "PierSardine",
+   "file": "Fish_PierSardine.fbx",
+   "tris": 3972,
+   "material": "M_Toon_Fish",
+   "skinLayer": 15,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.2576,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "PierSardine_Morph1",
+     "recipe": "Ember",
+     "file": "Skins/PierSardine_Morph1.png",
+     "morphLayer": 28
+    },
+    {
+     "name": "PierSardine_Morph2",
+     "recipe": "Candy",
+     "file": "Skins/PierSardine_Morph2.png",
+     "morphLayer": 29
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "IceHerring",
+   "file": "Fish_IceHerring.fbx",
+   "tris": 3844,
+   "material": "M_Toon_Fish",
+   "skinLayer": 16,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.2747,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "IceHerring_Morph1",
+     "recipe": "Cobalt",
+     "file": "Skins/IceHerring_Morph1.png",
+     "morphLayer": 30
+    },
+    {
+     "name": "IceHerring_Morph2",
+     "recipe": "Pearl",
+     "file": "Skins/IceHerring_Morph2.png",
+     "morphLayer": 31
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "GrumbleMackerel",
+   "file": "Fish_GrumbleMackerel.fbx",
+   "tris": 4196,
+   "material": "M_Toon_Fish",
+   "skinLayer": 17,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3091,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "GrumbleMackerel_Morph1",
+     "recipe": "Ember",
+     "file": "Skins/GrumbleMackerel_Morph1.png",
+     "morphLayer": 32
+    },
+    {
+     "name": "GrumbleMackerel_Morph2",
+     "recipe": "Dusk",
+     "file": "Skins/GrumbleMackerel_Morph2.png",
+     "morphLayer": 33
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "GawpingGurnard",
+   "file": "Fish_GawpingGurnard.fbx",
+   "tris": 4532,
+   "material": "M_Toon_Fish",
+   "skinLayer": 18,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3091,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "GawpingGurnard_Morph1",
+     "recipe": "Violet",
+     "file": "Skins/GawpingGurnard_Morph1.png",
+     "morphLayer": 34
+    },
+    {
+     "name": "GawpingGurnard_Morph2",
+     "recipe": "Ink",
+     "file": "Skins/GawpingGurnard_Morph2.png",
+     "morphLayer": 35
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "RedSnapper",
+   "file": "Fish_RedSnapper.fbx",
+   "tris": 4088,
+   "material": "M_Toon_Fish",
+   "skinLayer": 19,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3224,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "RedSnapper_Morph1",
+     "recipe": "Lime",
+     "file": "Skins/RedSnapper_Morph1.png",
+     "morphLayer": 36
+    },
+    {
+     "name": "RedSnapper_Morph2",
+     "recipe": "Koi",
+     "file": "Skins/RedSnapper_Morph2.png",
+     "morphLayer": 37
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "GrumpyPuffer",
+   "file": "Fish_GrumpyPuffer.fbx",
+   "tris": 4380,
+   "material": "M_Toon_Fish",
+   "skinLayer": 20,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.2516,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "GrumpyPuffer_Morph1",
+     "recipe": "Crimson",
+     "file": "Skins/GrumpyPuffer_Morph1.png",
+     "morphLayer": 38
+    },
+    {
+     "name": "GrumpyPuffer_Morph2",
+     "recipe": "Candy",
+     "file": "Skins/GrumpyPuffer_Morph2.png",
+     "morphLayer": 39
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "MoonSquid",
+   "file": "Fish_MoonSquid.fbx",
+   "tris": 4664,
+   "material": "M_Toon_Fish",
+   "skinLayer": 21,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3754,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "MoonSquid_Morph1",
+     "recipe": "Teal",
+     "file": "Skins/MoonSquid_Morph1.png",
+     "morphLayer": 40
+    },
+    {
+     "name": "MoonSquid_Morph2",
+     "recipe": "Pearl",
+     "file": "Skins/MoonSquid_Morph2.png",
+     "morphLayer": 41
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "SneakyFlounder",
+   "file": "Fish_SneakyFlounder.fbx",
+   "tris": 4296,
+   "material": "M_Toon_Fish",
+   "skinLayer": 22,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3394,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "SneakyFlounder_Morph1",
+     "recipe": "Ember",
+     "file": "Skins/SneakyFlounder_Morph1.png",
+     "morphLayer": 42
+    },
+    {
+     "name": "SneakyFlounder_Morph2",
+     "recipe": "Dusk",
+     "file": "Skins/SneakyFlounder_Morph2.png",
+     "morphLayer": 43
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "BruiserTuna",
+   "file": "Fish_BruiserTuna.fbx",
+   "tris": 4316,
+   "material": "M_Toon_Fish",
+   "skinLayer": 23,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3734,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "BruiserTuna_Morph1",
+     "recipe": "Cobalt",
+     "file": "Skins/BruiserTuna_Morph1.png",
+     "morphLayer": 44
+    },
+    {
+     "name": "BruiserTuna_Morph2",
+     "recipe": "Ink",
+     "file": "Skins/BruiserTuna_Morph2.png",
+     "morphLayer": 45
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "StormRay",
+   "file": "Fish_StormRay.fbx",
+   "tris": 4246,
+   "material": "M_Toon_Fish",
+   "skinLayer": 24,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.3154,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "StormRay_Morph1",
+     "recipe": "Ember",
+     "file": "Skins/StormRay_Morph1.png",
+     "morphLayer": 46
+    },
+    {
+     "name": "StormRay_Morph2",
+     "recipe": "Koi",
+     "file": "Skins/StormRay_Morph2.png",
+     "morphLayer": 47
+    }
+   ],
+   "placement": null
+  },
+  {
+   "name": "Lanternfish",
+   "file": "Fish_Lanternfish.fbx",
+   "tris": 3976,
+   "material": "M_Toon_Fish",
+   "skinLayer": 25,
+   "shapeKeys": [
+    "Fat",
+    "Long",
+    "BigFin",
+    "Stubby"
+   ],
+   "uvSets": [
+    "UVMap",
+    "Layer",
+    "Pat"
+   ],
+   "bodyLengthM": 0.2747,
+   "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+   "morphs": [
+    {
+     "name": "Lanternfish_Morph1",
+     "recipe": "Violet",
+     "file": "Skins/Lanternfish_Morph1.png",
+     "morphLayer": 48
+    },
+    {
+     "name": "Lanternfish_Morph2",
+     "recipe": "Candy",
+     "file": "Skins/Lanternfish_Morph2.png",
+     "morphLayer": 49
+    }
+   ],
+   "placement": null
+  }
+ ],
+ "patternMasks": {
+  "atlas": "Art/Textures/FishGenome/T_FishPatternArray.png",
+  "columns": 4,
+  "rows": 2,
+  "tile": 512,
+  "linear": true,
+  "channel": "R (greyscale)",
+  "layers": [
+   {
+    "layer": 0,
+    "name": "Stripes",
+    "file": "Art/Textures/FishGenome/PatternMask_0_Stripes.png"
+   },
+   {
+    "layer": 1,
+    "name": "Bars",
+    "file": "Art/Textures/FishGenome/PatternMask_1_Bars.png"
+   },
+   {
+    "layer": 2,
+    "name": "Spots",
+    "file": "Art/Textures/FishGenome/PatternMask_2_Spots.png"
+   },
+   {
+    "layer": 3,
+    "name": "Rosettes",
+    "file": "Art/Textures/FishGenome/PatternMask_3_Rosettes.png"
+   },
+   {
+    "layer": 4,
+    "name": "Marbled",
+    "file": "Art/Textures/FishGenome/PatternMask_4_Marbled.png"
+   },
+   {
+    "layer": 5,
+    "name": "Mottled",
+    "file": "Art/Textures/FishGenome/PatternMask_5_Mottled.png"
+   },
+   {
+    "layer": 6,
+    "name": "Saddles",
+    "file": "Art/Textures/FishGenome/PatternMask_6_Saddles.png"
+   },
+   {
+    "layer": 7,
+    "name": "TwoTone",
+    "file": "Art/Textures/FishGenome/PatternMask_7_TwoTone.png"
+   }
+  ]
+ },
+ "morphSheet": {
+  "file": "Art/Export/FishGenome/T_FishMorphArray.png",
+  "columns": 4,
+  "rows": 13,
+  "tile": 512,
+  "srgb": true,
+  "layerFormula": "(skinLayer - 1) * 2 + (morph - 1)"
+ },
+ "shapeKeyWeights": "Unity blend shape weights 0..100 (Blender 0..1)"
+}
