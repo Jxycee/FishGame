@@ -1,0 +1,1660 @@
+{
+ "generator": "Art/Blender/fg_harbour.py with FG_STATE=rundown (the VILLAGE STATES section)",
+ "branch": "harbour-village-states",
+ "axes": "Unity metres. Authored in Unity axes; Blender = (-x, -z, y); each FBX object is at the origin with an identity transform.",
+ "encoding": "the harbour's: UV0 UVMap metres, UV1 Layer = (palette slot, texture layer), vertex colour Col = 0.5 x baked AO, smooth normals, no materials; all models are M_Toon_Base (no _Tri); no new palette slot or texture layer",
+ "states": {
+  "restored": "today's meshes, unchanged (Harbour_Core_Buildings, Harbour_Core_Yard_B, Harbour_Core_Buildings_Upper)",
+  "rundown": "show Harbour_Village_<Landmark>_Rundown ON TOP of the restored mesh (nothing is hidden)",
+  "being_restored": "show Harbour_Village_Scaffold_<Landmark> (+ the cement mixer) on the restored mesh"
+ },
+ "tug_fit": {
+  "tug_half_beam": 2.88,
+  "tug_beam": 5.76,
+  "tug_length": 16.212,
+  "tug_keel_y": -1.487,
+  "tug_top_y": 8.67,
+  "lock_clear_half_width": 4.288,
+  "lock_clear_width": 8.576,
+  "clearance_each_side": 1.408,
+  "chamber_length": 24.0,
+  "floor_y": -2.3,
+  "keel_clearance": 0.813,
+  "overhead": "none (the only structures above the water are the walls at |x| >= 4.29)",
+  "fits": true
+ },
+ "preview_files": [
+  "Village_BaitShop_Rundown_vs_Restored.png",
+  "Village_Boatyard_Rundown_vs_Restored.png",
+  "Village_Chapel_Rundown_vs_Restored.png",
+  "Village_DockOffice_Rundown_vs_Restored.png",
+  "Village_LockKeeperHut.png",
+  "Village_Lock_Broken.png",
+  "Village_Lock_Broken_vs_Repaired.png",
+  "Village_Lock_Repaired.png",
+  "Village_Lock_TugFit.png",
+  "Village_NetShed_Rundown_vs_Restored.png",
+  "Village_Scaffold_Chapel.png",
+  "Village_Scaffold_East.png",
+  "Village_Scaffold_West.png",
+  "Village_Smokehouse_Rundown_vs_Restored.png"
+ ],
+ "export_status": {
+  "Harbour_Village_DockOffice_Rundown": "kept",
+  "Harbour_Village_BaitShop_Rundown": "kept",
+  "Harbour_Village_NetShed_Rundown": "kept",
+  "Harbour_Village_Smokehouse_Rundown": "kept",
+  "Harbour_Village_Boatyard_Rundown": "kept",
+  "Harbour_Village_Chapel_Rundown": "kept",
+  "Harbour_Village_Scaffold_DockOffice": "kept",
+  "Harbour_Village_Scaffold_BaitShop": "kept",
+  "Harbour_Village_Scaffold_NetShed": "kept",
+  "Harbour_Village_Scaffold_Smokehouse": "kept",
+  "Harbour_Village_Scaffold_Boatyard": "kept",
+  "Harbour_Village_Scaffold_Chapel": "kept",
+  "Harbour_Village_Prop_CementMixer": "kept",
+  "Harbour_Village_Lock_Broken": "kept",
+  "Harbour_Village_Lock_Repaired": "kept",
+  "Harbour_Village_Lock_Repaired_Frame": "kept",
+  "Harbour_Village_Lock_GateLeaf": "kept",
+  "Harbour_Village_LockKeeperHut": "kept"
+ },
+ "total_triangles": 78716,
+ "fbx": [
+  {
+   "name": "Harbour_Village_DockOffice_Rundown",
+   "file": "Art/Export/Village/Harbour_Village_DockOffice_Rundown.fbx",
+   "group": "core",
+   "triangles": 3024,
+   "vertices": 6051,
+   "bounds_min": [
+    8.5856,
+    1.1141,
+    -63.5302
+   ],
+   "bounds_max": [
+    12.52,
+    4.6967,
+    -60.8601
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "Overlay",
+     "collider": "none",
+     "position": [
+      10.553,
+      2.905,
+      -62.195
+     ],
+     "footprint": [
+      3.934,
+      3.583,
+      2.67
+     ],
+     "bounds_min": [
+      8.586,
+      1.114,
+      -63.53
+     ],
+     "bounds_max": [
+      12.52,
+      4.697,
+      -60.86
+     ]
+    }
+   ],
+   "note": "Run-down overlay for the harbour office (DOCK_OFFICE). Additive: sits on Harbour_Core_Buildings. The CLOSED board covers the HARBOUR OFFICE name board (2.8 x 0.5 m over 2.6 x 0.42): nothing in the restored mesh needs hiding.",
+   "kind": "rundown_overlay",
+   "landmark": "DockOffice",
+   "state": "rundown",
+   "world_model": true,
+   "placement_note": "place at the Unity origin, identity transform (world coordinates)",
+   "hide_in_restored_mesh": [],
+   "show_when": "the landmark is RUN-DOWN: show it ON TOP of the restored mesh (nothing is hidden); hide it once restored",
+   "covers_original_signs": true
+  },
+  {
+   "name": "Harbour_Village_BaitShop_Rundown",
+   "file": "Art/Export/Village/Harbour_Village_BaitShop_Rundown.fbx",
+   "group": "core",
+   "triangles": 3766,
+   "vertices": 6941,
+   "bounds_min": [
+    -21.4766,
+    1.1141,
+    -63.9126
+   ],
+   "bounds_max": [
+    -16.1725,
+    5.0227,
+    -59.4601
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "Overlay",
+     "collider": "none",
+     "position": [
+      -18.825,
+      3.068,
+      -61.686
+     ],
+     "footprint": [
+      5.304,
+      3.909,
+      4.453
+     ],
+     "bounds_min": [
+      -21.477,
+      1.114,
+      -63.913
+     ],
+     "bounds_max": [
+      -16.173,
+      5.023,
+      -59.46
+     ]
+    }
+   ],
+   "note": "Run-down overlay for the bait shop (BAIT_SHOP). Additive: sits on Harbour_Core_Buildings. The CLOSED board covers the BAIT & TACKLE name board; DEAD covers LIVE on the A-frame chalkboard. Nothing in the restored mesh needs hiding.",
+   "kind": "rundown_overlay",
+   "landmark": "BaitShop",
+   "state": "rundown",
+   "world_model": true,
+   "placement_note": "place at the Unity origin, identity transform (world coordinates)",
+   "hide_in_restored_mesh": [],
+   "show_when": "the landmark is RUN-DOWN: show it ON TOP of the restored mesh (nothing is hidden); hide it once restored",
+   "covers_original_signs": true
+  },
+  {
+   "name": "Harbour_Village_NetShed_Rundown",
+   "file": "Art/Export/Village/Harbour_Village_NetShed_Rundown.fbx",
+   "group": "core",
+   "triangles": 2510,
+   "vertices": 4440,
+   "bounds_min": [
+    -32.8705,
+    1.2,
+    -64.3633
+   ],
+   "bounds_max": [
+    -27.6638,
+    4.4492,
+    -60.7836
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "NetShedBarricade",
+     "collider": "box",
+     "position": [
+      -30.5,
+      2.617,
+      -61.27
+     ],
+     "footprint": [
+      3.975,
+      2.691,
+      0.15
+     ],
+     "bounds_min": [
+      -32.487,
+      1.271,
+      -61.345
+     ],
+     "bounds_max": [
+      -28.513,
+      3.963,
+      -61.195
+     ],
+     "note": "front barricade, ~0.35 m deep: thin BoxCollider so the shed cannot be walked into"
+    },
+    {
+     "name": "Overlay",
+     "collider": "none",
+     "position": [
+      -30.267,
+      2.825,
+      -62.573
+     ],
+     "footprint": [
+      5.207,
+      3.249,
+      3.58
+     ],
+     "bounds_min": [
+      -32.87,
+      1.2,
+      -64.363
+     ],
+     "bounds_max": [
+      -27.664,
+      4.449,
+      -60.784
+     ]
+    }
+   ],
+   "note": "Run-down overlay for the net shed (NET_SHED). Additive: sits on Harbour_Core_Buildings. The shed is open-fronted today; this model BARRICADES the front (item NetShedBarricade: add a thin BoxCollider from its bounds, the restored NetShed collider covers only the back half). Nothing in the restored mesh needs hiding.",
+   "kind": "rundown_overlay",
+   "landmark": "NetShed",
+   "state": "rundown",
+   "world_model": true,
+   "placement_note": "place at the Unity origin, identity transform (world coordinates)",
+   "hide_in_restored_mesh": [],
+   "show_when": "the landmark is RUN-DOWN: show it ON TOP of the restored mesh (nothing is hidden); hide it once restored",
+   "covers_original_signs": true
+  },
+  {
+   "name": "Harbour_Village_Smokehouse_Rundown",
+   "file": "Art/Export/Village/Harbour_Village_Smokehouse_Rundown.fbx",
+   "group": "core",
+   "triangles": 2960,
+   "vertices": 6003,
+   "bounds_min": [
+    -40.3502,
+    1.2,
+    -67.64
+   ],
+   "bounds_max": [
+    -36.1642,
+    5.2883,
+    -64.3495
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "Overlay",
+     "collider": "none",
+     "position": [
+      -38.257,
+      3.244,
+      -65.995
+     ],
+     "footprint": [
+      4.186,
+      4.088,
+      3.29
+     ],
+     "bounds_min": [
+      -40.35,
+      1.2,
+      -67.64
+     ],
+     "bounds_max": [
+      -36.164,
+      5.288,
+      -64.35
+     ]
+    }
+   ],
+   "note": "Run-down overlay for the smokehouse (SMOKEHOUSE). Additive: sits on Harbour_Core_Buildings. The CLOSED board covers the SMOKED FISH board (which is painted over); soot marks are overlay geometry. Nothing in the restored mesh needs hiding. The chimney is still a smoke point in the restored manifest: do NOT emit smoke in this state.",
+   "kind": "rundown_overlay",
+   "landmark": "Smokehouse",
+   "state": "rundown",
+   "world_model": true,
+   "placement_note": "place at the Unity origin, identity transform (world coordinates)",
+   "hide_in_restored_mesh": [],
+   "show_when": "the landmark is RUN-DOWN: show it ON TOP of the restored mesh (nothing is hidden); hide it once restored",
+   "covers_original_signs": true
+  },
+  {
+   "name": "Harbour_Village_Boatyard_Rundown",
+   "file": "Art/Export/Village/Harbour_Village_Boatyard_Rundown.fbx",
+   "group": "core",
+   "triangles": 3122,
+   "vertices": 6886,
+   "bounds_min": [
+    16.8993,
+    1.1,
+    -68.0189
+   ],
+   "bounds_max": [
+    23.0585,
+    3.2868,
+    -63.7238
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "Overlay",
+     "collider": "none",
+     "position": [
+      19.979,
+      2.193,
+      -65.871
+     ],
+     "footprint": [
+      6.159,
+      2.187,
+      4.295
+     ],
+     "bounds_min": [
+      16.899,
+      1.1,
+      -68.019
+     ],
+     "bounds_max": [
+      23.058,
+      3.287,
+      -63.724
+     ]
+    }
+   ],
+   "note": "Run-down overlay for the boatyard (YARDS[0], SAWHORSE_BOAT in Harbour_Core_Yard_B). Additive: sits on Harbour_Core_Yard_B. The tarp covers the half-painted boat; the CLOSED board stands beside it on two posts. Nothing in the restored mesh needs hiding.",
+   "kind": "rundown_overlay",
+   "landmark": "Boatyard",
+   "state": "rundown",
+   "world_model": true,
+   "placement_note": "place at the Unity origin, identity transform (world coordinates)",
+   "hide_in_restored_mesh": [],
+   "show_when": "the landmark is RUN-DOWN: show it ON TOP of the restored mesh (nothing is hidden); hide it once restored",
+   "covers_original_signs": true
+  },
+  {
+   "name": "Harbour_Village_Chapel_Rundown",
+   "file": "Art/Export/Village/Harbour_Village_Chapel_Rundown.fbx",
+   "group": "core",
+   "triangles": 5062,
+   "vertices": 8382,
+   "bounds_min": [
+    0.6329,
+    6.74,
+    -106.478
+   ],
+   "bounds_max": [
+    7.4071,
+    12.9988,
+    -95.622
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "Overlay",
+     "collider": "none",
+     "position": [
+      4.02,
+      9.869,
+      -101.05
+     ],
+     "footprint": [
+      6.774,
+      6.259,
+      10.856
+     ],
+     "bounds_min": [
+      0.633,
+      6.74,
+      -106.478
+     ],
+     "bounds_max": [
+      7.407,
+      12.999,
+      -95.622
+     ]
+    }
+   ],
+   "note": "Run-down overlay for the chapel (CHAPEL tower + nave in Harbour_Core_Buildings_Upper). Additive: sits on that model. The door is chained shut, the six nave windows boarded, the nave roof tarped. Nothing in the restored mesh needs hiding. Do NOT ring the bell (the bell tower item stays a collider).",
+   "kind": "rundown_overlay",
+   "landmark": "Chapel",
+   "state": "rundown",
+   "world_model": true,
+   "placement_note": "place at the Unity origin, identity transform (world coordinates)",
+   "hide_in_restored_mesh": [],
+   "show_when": "the landmark is RUN-DOWN: show it ON TOP of the restored mesh (nothing is hidden); hide it once restored",
+   "covers_original_signs": true
+  },
+  {
+   "name": "Harbour_Village_Scaffold_DockOffice",
+   "file": "Art/Export/Village/Harbour_Village_Scaffold_DockOffice.fbx",
+   "group": "core",
+   "triangles": 3888,
+   "vertices": 2566,
+   "bounds_min": [
+    7.4752,
+    1.1935,
+    -65.2488
+   ],
+   "bounds_max": [
+    16.0117,
+    5.47,
+    -59.8478
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    6,
+    8,
+    10
+   ],
+   "layers": [
+    3,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "Scaffold",
+     "collider": "none",
+     "position": [
+      11.743,
+      3.332,
+      -62.548
+     ],
+     "footprint": [
+      8.537,
+      4.276,
+      5.401
+     ],
+     "bounds_min": [
+      7.475,
+      1.194,
+      -65.249
+     ],
+     "bounds_max": [
+      16.012,
+      5.47,
+      -59.848
+     ]
+    }
+   ],
+   "note": "Scaffolding kit for the harbour office (DOCK_OFFICE): front and both sides, two lifts, ladder, sheets, planks.",
+   "lifts_y": [
+    2.2,
+    4.2
+   ],
+   "mixer_placement": {
+    "position": [
+     15.15,
+     1.2,
+     -60.35
+    ],
+    "yaw_deg": -30.0
+   },
+   "kind": "scaffold",
+   "landmark": "DockOffice",
+   "state": "being_restored",
+   "world_model": true,
+   "placement_note": "place at the Unity origin, identity transform (world coordinates)",
+   "hide_in_restored_mesh": [],
+   "show_when": "the landmark is being restored: show it ON TOP of the restored mesh (or the run-down overlay)"
+  },
+  {
+   "name": "Harbour_Village_Scaffold_BaitShop",
+   "file": "Art/Export/Village/Harbour_Village_Scaffold_BaitShop.fbx",
+   "group": "core",
+   "triangles": 4440,
+   "vertices": 2962,
+   "bounds_min": [
+    -22.3449,
+    1.1935,
+    -65.3626
+   ],
+   "bounds_max": [
+    -12.1103,
+    5.47,
+    -59.1478
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    6,
+    8,
+    10
+   ],
+   "layers": [
+    3,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "Scaffold",
+     "collider": "none",
+     "position": [
+      -17.228,
+      3.332,
+      -62.255
+     ],
+     "footprint": [
+      10.235,
+      4.276,
+      6.215
+     ],
+     "bounds_min": [
+      -22.345,
+      1.194,
+      -65.363
+     ],
+     "bounds_max": [
+      -12.11,
+      5.47,
+      -59.148
+     ]
+    }
+   ],
+   "note": "Scaffolding kit for the bait shop (BAIT_SHOP): front and both sides, two lifts, ladder, sheets, planks.",
+   "lifts_y": [
+    2.2,
+    4.2
+   ],
+   "mixer_placement": {
+    "position": [
+     -13.05,
+     1.2,
+     -59.65
+    ],
+    "yaw_deg": -30.0
+   },
+   "kind": "scaffold",
+   "landmark": "BaitShop",
+   "state": "being_restored",
+   "world_model": true,
+   "placement_note": "place at the Unity origin, identity transform (world coordinates)",
+   "hide_in_restored_mesh": [],
+   "show_when": "the landmark is being restored: show it ON TOP of the restored mesh (or the run-down overlay)"
+  },
+  {
+   "name": "Harbour_Village_Scaffold_NetShed",
+   "file": "Art/Export/Village/Harbour_Village_Scaffold_NetShed.fbx",
+   "group": "core",
+   "triangles": 2772,
+   "vertices": 1856,
+   "bounds_min": [
+    -34.0255,
+    1.15,
+    -64.9809
+   ],
+   "bounds_max": [
+    -24.4811,
+    3.47,
+    -59.8477
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    6,
+    8,
+    10
+   ],
+   "layers": [
+    3,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "Scaffold",
+     "collider": "none",
+     "position": [
+      -29.253,
+      2.31,
+      -62.414
+     ],
+     "footprint": [
+      9.544,
+      2.32,
+      5.133
+     ],
+     "bounds_min": [
+      -34.026,
+      1.15,
+      -64.981
+     ],
+     "bounds_max": [
+      -24.481,
+      3.47,
+      -59.848
+     ]
+    }
+   ],
+   "note": "Scaffolding kit for the net shed (NET_SHED): front and both sides, two lifts, ladder, sheets, planks.",
+   "lifts_y": [
+    2.2
+   ],
+   "mixer_placement": {
+    "position": [
+     -25.35,
+     1.2,
+     -59.85
+    ],
+    "yaw_deg": -30.0
+   },
+   "kind": "scaffold",
+   "landmark": "NetShed",
+   "state": "being_restored",
+   "world_model": true,
+   "placement_note": "place at the Unity origin, identity transform (world coordinates)",
+   "hide_in_restored_mesh": [],
+   "show_when": "the landmark is being restored: show it ON TOP of the restored mesh (or the run-down overlay)"
+  },
+  {
+   "name": "Harbour_Village_Scaffold_Smokehouse",
+   "file": "Art/Export/Village/Harbour_Village_Scaffold_Smokehouse.fbx",
+   "group": "core",
+   "triangles": 2144,
+   "vertices": 1444,
+   "bounds_min": [
+    -40.0423,
+    2.1,
+    -68.5984
+   ],
+   "bounds_max": [
+    -32.3275,
+    4.42,
+    -63.9477
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    6,
+    8,
+    10
+   ],
+   "layers": [
+    3,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "Scaffold",
+     "collider": "none",
+     "position": [
+      -36.185,
+      3.26,
+      -66.273
+     ],
+     "footprint": [
+      7.715,
+      2.32,
+      4.651
+     ],
+     "bounds_min": [
+      -40.042,
+      2.1,
+      -68.598
+     ],
+     "bounds_max": [
+      -32.328,
+      4.42,
+      -63.948
+     ]
+    }
+   ],
+   "note": "Scaffolding kit for the smokehouse (SMOKEHOUSE): standing on the house floor level (stone base 0.95 m): front and both sides, two lifts, ladder, sheets, planks.",
+   "lifts_y": [
+    3.15
+   ],
+   "mixer_placement": {
+    "position": [
+     -33.25,
+     2.15,
+     -63.95
+    ],
+    "yaw_deg": -30.0
+   },
+   "kind": "scaffold",
+   "landmark": "Smokehouse",
+   "state": "being_restored",
+   "world_model": true,
+   "placement_note": "place at the Unity origin, identity transform (world coordinates)",
+   "hide_in_restored_mesh": [],
+   "show_when": "the landmark is being restored: show it ON TOP of the restored mesh (or the run-down overlay)"
+  },
+  {
+   "name": "Harbour_Village_Scaffold_Boatyard",
+   "file": "Art/Export/Village/Harbour_Village_Scaffold_Boatyard.fbx",
+   "group": "core",
+   "triangles": 1424,
+   "vertices": 972,
+   "bounds_min": [
+    18.098,
+    1.1805,
+    -65.9959
+   ],
+   "bounds_max": [
+    25.9767,
+    3.47,
+    -63.0195
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    6,
+    8,
+    10
+   ],
+   "layers": [
+    3,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "Scaffold",
+     "collider": "none",
+     "position": [
+      22.037,
+      2.325,
+      -64.508
+     ],
+     "footprint": [
+      7.879,
+      2.29,
+      2.976
+     ],
+     "bounds_min": [
+      18.098,
+      1.18,
+      -65.996
+     ],
+     "bounds_max": [
+      25.977,
+      3.47,
+      -63.02
+     ]
+    }
+   ],
+   "note": "Scaffolding kit for the boatyard: a staging along the seaward side of the boat on sawhorses (SAWHORSE_BOAT), ladder, sheet, planks.",
+   "mixer_placement": {
+    "position": [
+     24.14,
+     1.2,
+     -61.54
+    ],
+    "yaw_deg": 188.0
+   },
+   "lifts_y": [
+    2.2
+   ],
+   "kind": "scaffold",
+   "landmark": "Boatyard",
+   "state": "being_restored",
+   "world_model": true,
+   "placement_note": "place at the Unity origin, identity transform (world coordinates)",
+   "hide_in_restored_mesh": [],
+   "show_when": "the landmark is being restored: show it ON TOP of the restored mesh (or the run-down overlay)"
+  },
+  {
+   "name": "Harbour_Village_Scaffold_Chapel",
+   "file": "Art/Export/Village/Harbour_Village_Scaffold_Chapel.fbx",
+   "group": "core",
+   "triangles": 7344,
+   "vertices": 4776,
+   "bounds_min": [
+    1.2391,
+    6.7318,
+    -100.4527
+   ],
+   "bounds_max": [
+    9.4207,
+    17.01,
+    -92.7732
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    6,
+    8,
+    10
+   ],
+   "layers": [
+    3,
+    6,
+    7
+   ],
+   "local_space": false,
+   "items": [
+    {
+     "name": "Scaffold",
+     "collider": "none",
+     "position": [
+      5.33,
+      11.871,
+      -96.613
+     ],
+     "footprint": [
+      8.182,
+      10.278,
+      7.679
+     ],
+     "bounds_min": [
+      1.239,
+      6.732,
+      -100.453
+     ],
+     "bounds_max": [
+      9.421,
+      17.01,
+      -92.773
+     ]
+    }
+   ],
+   "note": "Scaffolding kit for the chapel: the bell tower (front and both sides, five lifts to y +9), ladder, sheets, planks. The nave is not scaffolded (its roof is repaired from the tower staging).",
+   "lifts_y": [
+    7.74,
+    9.74,
+    11.74,
+    13.74,
+    15.74
+   ],
+   "mixer_placement": {
+    "position": [
+     8.5,
+     6.74,
+     -95.5
+    ],
+    "yaw_deg": -20.0
+   },
+   "kind": "scaffold",
+   "landmark": "Chapel",
+   "state": "being_restored",
+   "world_model": true,
+   "placement_note": "place at the Unity origin, identity transform (world coordinates)",
+   "hide_in_restored_mesh": [],
+   "show_when": "the landmark is being restored: show it ON TOP of the restored mesh (or the run-down overlay)"
+  },
+  {
+   "name": "Harbour_Village_Prop_CementMixer",
+   "file": "Art/Export/Village/Harbour_Village_Prop_CementMixer.fbx",
+   "group": "core",
+   "triangles": 1276,
+   "vertices": 922,
+   "bounds_min": [
+    -1.508,
+    -0.0105,
+    -0.876
+   ],
+   "bounds_max": [
+    1.3542,
+    2.027,
+    1.3271
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    6,
+    7
+   ],
+   "local_space": true,
+   "items": [
+    {
+     "name": "CementMixer",
+     "collider": "box",
+     "position": [
+      -0.077,
+      1.008,
+      0.226
+     ],
+     "footprint": [
+      2.862,
+      2.038,
+      2.203
+     ],
+     "bounds_min": [
+      -1.508,
+      -0.01,
+      -0.876
+     ],
+     "bounds_max": [
+      1.354,
+      2.027,
+      1.327
+     ]
+    }
+   ],
+   "placements": [
+    {
+     "name": "CementMixer_DockOffice",
+     "position": [
+      15.15,
+      1.2,
+      -60.35
+     ],
+     "yaw_deg": -30.0
+    },
+    {
+     "name": "CementMixer_BaitShop",
+     "position": [
+      -13.05,
+      1.2,
+      -59.65
+     ],
+     "yaw_deg": -30.0
+    },
+    {
+     "name": "CementMixer_NetShed",
+     "position": [
+      -25.35,
+      1.2,
+      -59.85
+     ],
+     "yaw_deg": -30.0
+    },
+    {
+     "name": "CementMixer_Smokehouse",
+     "position": [
+      -33.25,
+      2.15,
+      -63.95
+     ],
+     "yaw_deg": -30.0
+    },
+    {
+     "name": "CementMixer_Boatyard",
+     "position": [
+      24.14,
+      1.2,
+      -61.54
+     ],
+     "yaw_deg": 188.0
+    },
+    {
+     "name": "CementMixer_Chapel",
+     "position": [
+      8.5,
+      6.74,
+      -95.5
+     ],
+     "yaw_deg": -20.0
+    }
+   ],
+   "note": "A towable cement mixer on two wheels, drum tilted toward +z, a shovel, a bucket and two sacks. Origin on the ground between the wheels. Local model: one placement per scaffold (see the scaffold models' mixer_placement).",
+   "kind": "prop",
+   "world_model": false,
+   "placement_note": "local model: instantiate per placement (position, yaw_deg about +y)",
+   "hide_in_restored_mesh": []
+  },
+  {
+   "name": "Harbour_Village_Lock_Broken",
+   "file": "Art/Export/Village/Harbour_Village_Lock_Broken.fbx",
+   "group": "core",
+   "triangles": 12602,
+   "vertices": 14684,
+   "bounds_min": [
+    -8.1375,
+    -2.8279,
+    -24.5154
+   ],
+   "bounds_max": [
+    8.1375,
+    4.4483,
+    24.5154
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    7,
+    10
+   ],
+   "local_space": true,
+   "items": [
+    {
+     "name": "LockMachinery",
+     "collider": "none",
+     "position": [
+      0.516,
+      3.377,
+      0.533
+     ],
+     "footprint": [
+      14.619,
+      2.143,
+      35.023
+     ],
+     "bounds_min": [
+      -6.793,
+      2.305,
+      -16.979
+     ],
+     "bounds_max": [
+      7.826,
+      4.448,
+      18.044
+     ]
+    }
+   ],
+   "placements": [
+    {
+     "name": "Lock",
+     "position": [
+      -80.2,
+      0.0,
+      -50.0
+     ],
+     "yaw_deg": 0.0
+    }
+   ],
+   "note": "The river lock, out of order since 2015. DOWNSTREAM gate (z +12): the west leaf hangs open off one hinge, drooping 50 deg into the passage; the east leaf is shut. UPSTREAM gate (z -12): both leaves shut, rotten, chained. No crank on either winch. NOT passable: the east downstream leaf and both upstream leaves block the chamber.",
+   "kind": "lock",
+   "state": "broken",
+   "world_model": false,
+   "placement_note": "local model: instantiate per placement (position, yaw_deg about +y)",
+   "hide_in_restored_mesh": [],
+   "passable": false,
+   "lock": {
+    "local_origin": "chamber centre on the water line; +z downstream (toward the harbour); y 0 = water surface (put the origin on the water plane)",
+    "suggested_world": {
+     "position": [
+      -80.2,
+      0.0,
+      -50.0
+     ],
+     "yaw_deg": 0.0,
+     "note": "on the river axis where it meets the bay: RIVER x -80.0 at z -45, CHANNEL_MARKERS G (-72.5, -36.5) / R (-87.5, -34.5) sit just outside the walls (outer faces at x -86.9 / -73.5); downstream gate at z -38, upstream gate at z -62, guide walls to z -30.2 / -69.8. Phase B (west wall to x -100) may move it: only the position changes."
+    },
+    "dims": {
+     "clear_width": 9.0,
+     "clear_between_fenders": 8.68,
+     "chamber_length_between_gates": 24.0,
+     "wall_top_y": 2.2,
+     "floor_y": -2.3,
+     "wall_outer_x": 6.7,
+     "total_length": 49.2,
+     "gate_leaf_length": 5.2
+    },
+    "hinges": [
+     {
+      "name": "GateDown_West",
+      "position": [
+       -4.95,
+       0.0,
+       12.0
+      ],
+      "open_yaw_deg": -90.0,
+      "closed_yaw_deg": 18.0
+     },
+     {
+      "name": "GateDown_East",
+      "position": [
+       4.95,
+       0.0,
+       12.0
+      ],
+      "open_yaw_deg": -90.0,
+      "closed_yaw_deg": 162.0
+     },
+     {
+      "name": "GateUp_West",
+      "position": [
+       -4.95,
+       0.0,
+       -12.0
+      ],
+      "open_yaw_deg": 90.0,
+      "closed_yaw_deg": 18.0
+     },
+     {
+      "name": "GateUp_East",
+      "position": [
+       4.95,
+       0.0,
+       -12.0
+      ],
+      "open_yaw_deg": 90.0,
+      "closed_yaw_deg": 162.0
+     }
+    ],
+    "tug_fit": {
+     "tug_half_beam": 2.88,
+     "tug_beam": 5.76,
+     "tug_length": 16.212,
+     "tug_keel_y": -1.487,
+     "tug_top_y": 8.67,
+     "lock_clear_half_width": 4.288,
+     "lock_clear_width": 8.576,
+     "clearance_each_side": 1.408,
+     "chamber_length": 24.0,
+     "floor_y": -2.3,
+     "keel_clearance": 0.813,
+     "overhead": "none (the only structures above the water are the walls at |x| >= 4.29)",
+     "fits": true
+    }
+   }
+  },
+  {
+   "name": "Harbour_Village_Lock_Repaired",
+   "file": "Art/Export/Village/Harbour_Village_Lock_Repaired.fbx",
+   "group": "core",
+   "triangles": 9146,
+   "vertices": 7544,
+   "bounds_min": [
+    -8.1375,
+    -2.75,
+    -24.5154
+   ],
+   "bounds_max": [
+    8.1375,
+    4.4,
+    24.5154
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    6,
+    10
+   ],
+   "local_space": true,
+   "items": [
+    {
+     "name": "LockMachinery",
+     "collider": "none",
+     "position": [
+      1.013,
+      3.355,
+      2.681
+     ],
+     "footprint": [
+      13.575,
+      2.09,
+      27.713
+     ],
+     "bounds_min": [
+      -5.775,
+      2.31,
+      -11.175
+     ],
+     "bounds_max": [
+      7.8,
+      4.4,
+      16.538
+     ]
+    }
+   ],
+   "placements": [
+    {
+     "name": "Lock",
+     "position": [
+      -80.2,
+      0.0,
+      -50.0
+     ],
+     "yaw_deg": 0.0
+    }
+   ],
+   "note": "The repaired river lock, all four gate leaves swung open into their wall recesses, new winches. Passable: clear width 8.68 m between the fender timbers, nothing overhead, floor at y -2.3.",
+   "kind": "lock",
+   "state": "repaired",
+   "world_model": false,
+   "placement_note": "local model: instantiate per placement (position, yaw_deg about +y)",
+   "hide_in_restored_mesh": [],
+   "passable": true,
+   "lock": {
+    "local_origin": "chamber centre on the water line; +z downstream (toward the harbour); y 0 = water surface (put the origin on the water plane)",
+    "suggested_world": {
+     "position": [
+      -80.2,
+      0.0,
+      -50.0
+     ],
+     "yaw_deg": 0.0,
+     "note": "on the river axis where it meets the bay: RIVER x -80.0 at z -45, CHANNEL_MARKERS G (-72.5, -36.5) / R (-87.5, -34.5) sit just outside the walls (outer faces at x -86.9 / -73.5); downstream gate at z -38, upstream gate at z -62, guide walls to z -30.2 / -69.8. Phase B (west wall to x -100) may move it: only the position changes."
+    },
+    "dims": {
+     "clear_width": 9.0,
+     "clear_between_fenders": 8.68,
+     "chamber_length_between_gates": 24.0,
+     "wall_top_y": 2.2,
+     "floor_y": -2.3,
+     "wall_outer_x": 6.7,
+     "total_length": 49.2,
+     "gate_leaf_length": 5.2
+    },
+    "hinges": [
+     {
+      "name": "GateDown_West",
+      "position": [
+       -4.95,
+       0.0,
+       12.0
+      ],
+      "open_yaw_deg": -90.0,
+      "closed_yaw_deg": 18.0
+     },
+     {
+      "name": "GateDown_East",
+      "position": [
+       4.95,
+       0.0,
+       12.0
+      ],
+      "open_yaw_deg": -90.0,
+      "closed_yaw_deg": 162.0
+     },
+     {
+      "name": "GateUp_West",
+      "position": [
+       -4.95,
+       0.0,
+       -12.0
+      ],
+      "open_yaw_deg": 90.0,
+      "closed_yaw_deg": 18.0
+     },
+     {
+      "name": "GateUp_East",
+      "position": [
+       4.95,
+       0.0,
+       -12.0
+      ],
+      "open_yaw_deg": 90.0,
+      "closed_yaw_deg": 162.0
+     }
+    ],
+    "tug_fit": {
+     "tug_half_beam": 2.88,
+     "tug_beam": 5.76,
+     "tug_length": 16.212,
+     "tug_keel_y": -1.487,
+     "tug_top_y": 8.67,
+     "lock_clear_half_width": 4.288,
+     "lock_clear_width": 8.576,
+     "clearance_each_side": 1.408,
+     "chamber_length": 24.0,
+     "floor_y": -2.3,
+     "keel_clearance": 0.813,
+     "overhead": "none (the only structures above the water are the walls at |x| >= 4.29)",
+     "fits": true
+    }
+   }
+  },
+  {
+   "name": "Harbour_Village_Lock_Repaired_Frame",
+   "file": "Art/Export/Village/Harbour_Village_Lock_Repaired_Frame.fbx",
+   "group": "core",
+   "triangles": 5626,
+   "vertices": 5624,
+   "bounds_min": [
+    -8.1375,
+    -2.75,
+    -24.5154
+   ],
+   "bounds_max": [
+    8.1375,
+    4.4,
+    24.5154
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    6,
+    10
+   ],
+   "local_space": true,
+   "items": [
+    {
+     "name": "LockMachinery",
+     "collider": "none",
+     "position": [
+      1.013,
+      3.355,
+      2.681
+     ],
+     "footprint": [
+      13.575,
+      2.09,
+      27.713
+     ],
+     "bounds_min": [
+      -5.775,
+      2.31,
+      -11.175
+     ],
+     "bounds_max": [
+      7.8,
+      4.4,
+      16.538
+     ]
+    }
+   ],
+   "placements": [
+    {
+     "name": "Lock",
+     "position": [
+      -80.2,
+      0.0,
+      -50.0
+     ],
+     "yaw_deg": 0.0
+    }
+   ],
+   "note": "The repaired lock WITHOUT gate leaves (same walls, winches and sign): use it with four Harbour_Village_Lock_GateLeaf instances if the gates should open and close.",
+   "kind": "lock",
+   "state": "repaired_frame",
+   "world_model": false,
+   "placement_note": "local model: instantiate per placement (position, yaw_deg about +y)",
+   "hide_in_restored_mesh": [],
+   "passable": true,
+   "optional": true,
+   "use_with": "4 x Harbour_Village_Lock_GateLeaf at lock.hinges (open_yaw_deg / closed_yaw_deg)"
+  },
+  {
+   "name": "Harbour_Village_Lock_GateLeaf",
+   "file": "Art/Export/Village/Harbour_Village_Lock_GateLeaf.fbx",
+   "group": "core",
+   "triangles": 880,
+   "vertices": 480,
+   "bounds_min": [
+    -0.11,
+    -2.25,
+    -0.32
+   ],
+   "bounds_max": [
+    5.29,
+    1.65,
+    0.37
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    5,
+    6,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    3
+   ],
+   "local_space": true,
+   "items": [
+    {
+     "name": "GateLeaf",
+     "collider": "none",
+     "position": [
+      2.59,
+      -0.3,
+      0.025
+     ],
+     "footprint": [
+      5.4,
+      3.9,
+      0.69
+     ],
+     "bounds_min": [
+      -0.11,
+      -2.25,
+      -0.32
+     ],
+     "bounds_max": [
+      5.29,
+      1.65,
+      0.37
+     ]
+    }
+   ],
+   "placements": [],
+   "note": "One repaired gate leaf for animating the gates: hinge post at the origin, the leaf runs along +x (5.2 m), y -2.2..1.5, planked on its +z face. Rotate about +y at the hinge. The lock's hinge points are in the manifest (hinges).",
+   "kind": "lock_part",
+   "state": "repaired",
+   "world_model": false,
+   "placement_note": "local model: instantiate per placement (position, yaw_deg about +y)",
+   "hide_in_restored_mesh": [],
+   "optional": true
+  },
+  {
+   "name": "Harbour_Village_LockKeeperHut",
+   "file": "Art/Export/Village/Harbour_Village_LockKeeperHut.fbx",
+   "group": "core",
+   "triangles": 6730,
+   "vertices": 7489,
+   "bounds_min": [
+    -2.15,
+    0.0,
+    -1.8863
+   ],
+   "bounds_max": [
+    2.15,
+    4.2,
+    3.0951
+   ],
+   "triplanar": false,
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    6,
+    7,
+    14
+   ],
+   "local_space": true,
+   "items": [
+    {
+     "name": "LockKeeperHut",
+     "collider": "box",
+     "position": [
+      0.0,
+      2.1,
+      0.604
+     ],
+     "footprint": [
+      4.3,
+      4.2,
+      4.981
+     ],
+     "bounds_min": [
+      -2.15,
+      0.0,
+      -1.886
+     ],
+     "bounds_max": [
+      2.15,
+      4.2,
+      3.095
+     ]
+    }
+   ],
+   "placements": [
+    {
+     "name": "LockKeeperHut",
+     "position": [
+      -69.0,
+      0.2,
+      -47.5
+     ],
+     "yaw_deg": -90.0
+    }
+   ],
+   "note": "The lock-keeper's hut: 3.8 x 3.0 m, door and porch toward +z, a wind-up armchair and a grandfather clock on the porch, 26 clocks, none agreeing. Origin at the base centre. Local model: place beside the lock (HUT_WORLD).",
+   "clocks": 26,
+   "kind": "building",
+   "world_model": false,
+   "placement_note": "local model: instantiate per placement (position, yaw_deg about +y)",
+   "hide_in_restored_mesh": []
+  }
+ ]
+}

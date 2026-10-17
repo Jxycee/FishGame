@@ -9087,6 +9087,1212 @@ def build_quality1():
     build_bay_dressing(dress, r)
     return [land, props, dress, build_sailboat_model(), build_leapfish_model()]
 
+# =======================================================================================================================================
+# VILLAGE STATES (2026-10-17, branch harbour-village-states; design 2026-10-17-open-world-pivot sections 3.2 and 5.3).
+# The fixed landmarks of the village get three looks: RESTORED (today's meshes, untouched), RUN-DOWN (this section: additive overlay models
+# that sit on the restored mesh) and BEING RESTORED (a scaffolding kit sized to each landmark). The river lock where the river meets the
+# harbour gets a broken and a repaired model, plus the lock-keeper's hut.
+#
+# STATE (env FG_STATE, default 'restored'):
+#   restored  main() exactly as before; nothing below runs, so every existing FBX/JSON is produced as before (export_if_changed keeps them).
+#   rundown   village_main() only: builds the overlay / scaffold / lock / hut models into Art/Export/Village (+ village_manifest.json)
+#             and renders the previews into Art/Previews/Village. It does not run main(), so Art/Export/Harbour is not touched.
+#   both      main() then village_main().
+# Overlays are world models (placed at the Unity origin, identity transform, like Harbour_Core_Buildings); the lock, the hut and the cement
+# mixer are local models (origin at their base, placed with the manifest's placements). No overlay deletes restored geometry: signs and
+# doors are covered by bigger boards, so the Unity builder only has to show/hide the overlay model per village state.
+# =======================================================================================================================================
+STATE = os.environ.get('FG_STATE', 'restored')
+VILLAGE_DIR = os.path.join(ROOT, 'Art', 'Export', 'Village')
+VILLAGE_MANIFEST = os.path.join(VILLAGE_DIR, 'village_manifest.json')
+VILLAGE_PREVIEW_DIR = os.path.join(ROOT, 'Art', 'Previews', 'Village')
+
+def vrng(name):
+    return rng('harbour_village.' + name)
+
+def vg(name, local=False, rays=16, ao_dist=0.9, note=None):
+    return G2(name, 'core', local=local, rays=rays, ao_dist=ao_dist, note=note)
+
+def vP(origin, rot=None):
+    # (x, y, z) in a model's own frame -> Unity world (origin + rot @ v); rot defaults to the identity (yaw 0)
+    o = Vector(origin)
+    rr = rot or Matrix.Identity(3)
+    return lambda x, y, z: o + rr @ Vector((x, y, z))
+
+# ---- small parts shared by the overlays, the scaffolds, the lock and the hut ----
+
+def vbox(g, c, size, slot, layer=None, ao=0.5, rot=None, r=0.02, segs=1):
+    g.add(xform(rbox(size, min(r, 0.45 * min(size)), segs), c, rot), slot, L['Wood'] if layer is None else layer, ao)
+
+def vpole(g, a, b, radius, slot, layer=None, ao=0.5, sides=6):
+    g.add(tube([Vector(a), Vector(b)], radius, sides, caps=True), slot, L['Rock'] if layer is None else layer, ao)
+
+def vplank(g, c, length, width, thick, slot, rot, ao=0.5):
+    # a board with its long axis along local x of rot
+    g.add(xform(rbox((length, width, thick), min(0.012, 0.45 * thick), 1), c, rot), slot, L['Wood'], ao)
+
+def flat_quad(g, c, rot, w, h, slot, layer=None, ao=0.7):
+    # a two-sided flat quad in the local xy plane (clock hands, paper, paint flakes)
+    hw, hh = w / 2, h / 2
+    V = [Vector(c) + rot @ Vector(p) for p in ((-hw, -hh, 0), (hw, -hh, 0), (hw, hh, 0), (-hw, hh, 0))]
+    nz = rot @ Vector((0, 0, 1))
+    uv = [(0, 0), (1, 0), (1, 1), (0, 1)]
+    g.add((V, [nz] * 4, [[0, 1, 2, 3]], [uv]), slot, L['none'] if layer is None else layer, ao)
+    g.add(([v - nz * 0.003 for v in V], [-nz] * 4, [[3, 2, 1, 0]], [list(reversed(uv))]), slot, L['none'] if layer is None else layer, ao)
+
+def weed_tuft(g, c, r, h=0.5, blades=7, slots=None):
+    # a clump of crossed grass blades (curved, two-sided triangles-and-quads); ~6 tris a blade
+    slots = slots or (S['Grass'], S['Foliage'], S['Reed'])
+    c = Vector(c)
+    for k in range(blades):
+        a = r.uniform(0, 2 * math.pi)
+        d = Vector((math.cos(a), 0, math.sin(a)))
+        s = Vector((-d.z, 0, d.x))
+        hh = h * r.uniform(0.55, 1.15)
+        lean = r.uniform(0.15, 0.4) * hh
+        w = r.uniform(0.022, 0.04)
+        base = c + d * r.uniform(0.0, 0.07)
+        p1 = base + d * (lean * 0.35) + Vector((0, hh * 0.5, 0))
+        p2 = base + d * lean + Vector((0, hh, 0))
+        V = [base - s * w, base + s * w, p1 - s * w * 0.7, p1 + s * w * 0.7, p2]
+        nrm = (d * -1.0 + Vector((0, 0.6, 0))).normalized()
+        slot = slots[k % len(slots)]
+        for side in (1, -1):
+            N = [(nrm * side + Vector((0, 0.7, 0))).normalized()] * 5
+            F = [[0, 1, 3, 2], [2, 3, 4]] if side > 0 else [[2, 3, 1, 0], [4, 3, 2]]
+            g.add((list(V), N, F, [[(V[i].x, V[i].y) for i in f] for f in F]), slot, L['none'], 0.75)
+
+def flakes(g, c, spread, r, n, slots, y=0.0):
+    # curled paint flakes / litter on the ground around c
+    c = Vector(c)
+    for _ in range(n):
+        p = c + Vector((r.uniform(-spread[0], spread[0]), y + 0.012, r.uniform(-spread[1], spread[1])))
+        rr = ry(r.uniform(0, 360)) @ rx(r.uniform(-12, 12))
+        flat_quad(g, p, rr @ rx(90), r.uniform(0.05, 0.13), r.uniform(0.04, 0.09), r.choice(slots), ao=0.8)
+
+def moss_patch(g, c, r, size, slot=None, rot=None):
+    slot = S['FoliageDark'] if slot is None else slot
+    g.add(xform(blob(max(size), r, (size[0] / max(size), size[1] / max(size), size[2] / max(size)), subdiv=1, rough=0.1, flat=-2),
+                c, rot), slot, L['none'], 0.8)
+
+def padlock(g, c, rot, slot=S['Accent']):
+    c = Vector(c)
+    g.add(xform(rbox((0.1, 0.12, 0.05), 0.02, 1), c, rot), slot, L['none'], 0.6)
+    sh = [c + rot @ Vector((-0.032, 0.05, 0)), c + rot @ Vector((-0.032, 0.095, 0)), c + rot @ Vector((0, 0.115, 0)),
+          c + rot @ Vector((0.032, 0.095, 0)), c + rot @ Vector((0.032, 0.05, 0))]
+    g.add(tube(sh, 0.011, 4, caps=False), S['Rock'], L['none'], 0.6)
+
+def chain_line(g, a, b, sag=0.08, n=8):
+    g.add(tube(rope_line(a, b, sag, n=n), 0.012, 4, caps=False), S['Rock'], L['none'], 0.6)
+
+def board_sign(g, c, rot, w, h, text, size, board_slot=S['Dock'], text_slot=S['Sand'], thick=0.05):
+    # a board whose face normal is rot @ +z, with raised lettering on it (the lettering rule of sign_text)
+    g.add(xform(rbox((w, h, thick), 0.02, 1), c, rot), board_slot, L['Wood'], 0.5)
+    sign_text(g, text, size, Vector(c) + rot @ Vector((0, 0, thick / 2 + 0.006)), rot, text_slot)
+
+def boards_over(g, P, x, y, z, w, h, r, n=4, gap_at=None, off=0.105):
+    # planks nailed across an opening (centre x, y, z on the wall plane; w x h): a missing one shows the dark glass behind
+    ph = (h + 0.3) / n
+    for k in range(n):
+        if k == gap_at:
+            continue
+        yy = y - h / 2 - 0.15 + ph * (k + 0.5) + r.uniform(-0.015, 0.015)
+        wid = w + 0.34 + r.uniform(-0.08, 0.1)
+        vplank(g, P(x + r.uniform(-0.06, 0.06), yy, z + off), wid, ph * 0.86, 0.045,
+               (S['Wood'], S['Dock'], S['WoodDark'])[k % 3], rz(r.uniform(-5.5, 5.5)))
+
+def door_lockup(g, P, x, z, r, w=0.9, h=1.85, yc=None):
+    # an X of planks across a door (centre height yc), a chain through the handle and a padlock
+    yc = h / 2 + 0.02 if yc is None else yc
+    ang = math.degrees(math.atan2(w, h))
+    ln = math.hypot(w, h) * 1.08
+    for sgn, slot in ((1, S['Wood']), (-1, S['WoodDark'])):
+        vplank(g, P(x, yc, z + 0.135 + 0.012 * sgn), ln, 0.17, 0.04, slot, rz(90 + sgn * ang))
+    vplank(g, P(x, yc - 0.17, z + 0.175), w + 0.3, 0.14, 0.04, S['Dock'], rz(r.uniform(-3, 3)))
+    chain_line(g, P(x - w / 2 + 0.05, yc - 0.07, z + 0.215), P(x + w / 2 - 0.05, yc - 0.22, z + 0.215), 0.07)
+    padlock(g, P(x + 0.05, yc - 0.33, z + 0.235), Matrix.Identity(3))
+
+def roof_tarp(g, P, D, eave, ridge, xc, wlen, s0, s1, side, r, slot=S['Reed'], lift=0.15):
+    # A tarp over a hole in a gable roof, tied down with bricks. s0..s1 = distance of its upper / lower edge from the ridge line (z).
+    ang = math.degrees(math.atan2(ridge - eave, D / 2))
+    tn = (ridge - eave) / (D / 2)
+    sm = (s0 + s1) / 2
+    ym = ridge - tn * sm + 0.07 + lift
+    ln = (s1 - s0) / math.cos(math.radians(ang))
+    rr = rx(ang * side)
+    g.add(xform(rbox((wlen, 0.03, ln), 0.012, 1), P(xc, ym, side * sm), rr), slot, L['Cloth'], 0.6)
+    # a lifted flapping corner
+    g.add(xform(rbox((wlen * 0.32, 0.025, ln * 0.3), 0.01, 1), P(xc + wlen * 0.34, ym + 0.13, side * (s1 - 0.12)), rr @ rx(-side * 22) @ rz(8)),
+          slot, L['Cloth'], 0.6)
+    for k in range(3):
+        sx = xc - wlen * 0.38 + k * wlen * 0.38
+        ss = s1 - 0.06
+        g.add(xform(rbox((0.2, 0.09, 0.1), 0.02, 1), P(sx, ridge - tn * ss + 0.07 + lift + 0.08, side * ss), rr @ ry(r.uniform(-25, 25))), S['Roof'], L['Rock'], 0.5)
+    for sx in (-0.45, 0.45):          # a rope over the upper edge
+        g.add(tube(rope_line(P(xc + sx * wlen, ym + 0.02, side * (s0 + 0.04)), P(xc + sx * wlen * 1.05, ym - 0.02, side * (s1 - 0.04)), 0.0, n=3),
+                   0.014, 4, caps=False), S['WoodDark'], L['none'], 0.6)
+
+def roof_growth(g, P, D, eave, ridge, spots, side, r):
+    # moss and weeds on the slope: spots = [(x, s), ...]
+    tn = (ridge - eave) / (D / 2)
+    ang = math.degrees(math.atan2(ridge - eave, D / 2))
+    for x, s in spots:
+        y = ridge - tn * s + 0.07 + 0.12
+        moss_patch(g, P(x, y, side * s), r, (r.uniform(0.35, 0.6), 0.07, r.uniform(0.25, 0.4)), rot=rx(ang * side))
+        for _ in range(2):
+            weed_tuft(g, P(x + r.uniform(-0.2, 0.2), y + 0.03, side * (s + r.uniform(-0.15, 0.15))), r, h=0.25, blades=4)
+
+def mail_pile(g, c, r):
+    for k in range(6):
+        p = Vector(c) + Vector((r.uniform(-0.18, 0.18), 0.006 + 0.012 * k, r.uniform(-0.1, 0.1)))
+        flat_quad(g, p, ry(r.uniform(-35, 35)) @ rx(90), r.uniform(0.14, 0.2), r.uniform(0.1, 0.14), (S['Sand'], S['Roof'], S['Reed'])[k % 3], ao=0.8)
+
+def hanging_board(g, P, x, y, z, w, h, text, size, r, tilt=-9.0, board_slot=S['Dock'], text_slot=S['Sand']):
+    # A sign hanging from one corner nail (the other chain snapped): a tilted board and the one remaining chain.
+    rot = rz(tilt)
+    board_sign(g, P(x, y, z), rot, w, h, text, size, board_slot, text_slot)
+    nail = P(x - w / 2 * math.cos(math.radians(abs(tilt))) - 0.02, y + h / 2 + 0.28, z - 0.02)
+    corner = P(x - w / 2 + 0.08, y + h / 2 - 0.02, z + 0.03)
+    chain_line(g, nail, corner, 0.02, n=4)
+    g.add(xform(rbox((0.07, 0.07, 0.05), 0.02, 1), nail), S['Rock'], L['none'], 0.6)
+
+# ---- the run-down overlays (one per landmark) ------------------------------------------------------------------------------------------
+# Each builder reads the landmark's own layout constant and its builder's geometry (door / window positions), so a change to the restored
+# building moves the overlay with it. Every overlay is additive: nothing under it is removed.
+
+VILLAGE_LANDMARKS = ('DockOffice', 'BaitShop', 'NetShed', 'Smokehouse', 'Boatyard', 'Chapel')
+
+def ro_dock_office():
+    g = vg('Harbour_Village_DockOffice_Rundown', rays=14,
+           note='Run-down overlay for the harbour office (DOCK_OFFICE). Additive: sits on Harbour_Core_Buildings. The CLOSED board covers the '
+                'HARBOUR OFFICE name board (2.8 x 0.5 m over 2.6 x 0.42): nothing in the restored mesh needs hiding.')
+    r = vrng('rundown.office')
+    cx, cz, W, D = DOCK_OFFICE
+    fz = D / 2
+    P = vP((cx, PLATEAU_Y, cz))
+    g.mark()
+    boards_over(g, P, 0.75, 1.5, fz, 0.8, 0.65, r, n=4, gap_at=2)
+    # the shutter that gave up: hanging from its top hinge, peeling
+    g.add(xform(rbox((0.4, 0.71, 0.04), 0.015, 1), P(1.43, 1.45, fz + 0.1), rz(-24) @ ry(18)), S['Accent'], L['Wood'], 0.5)
+    for k in range(4):
+        flat_quad(g, P(1.0 + 0.2 * k, 2.0 - 0.45 * k, fz + 0.12), rz(r.uniform(-30, 30)), 0.09, 0.06, S['Accent'], L['none'])
+    door_lockup(g, P, -0.9, fz, r)
+    mail_pile(g, P(-0.9, 0.04, fz + 0.5), r)
+    hanging_board(g, P, 0.0, 2.75, fz + 0.14, 2.8, 0.5, 'CLOSED - GONE FISHING\n(PERMANENTLY)', 0.115, r, tilt=-3.5)
+    roof_tarp(g, P, D, 2.3, 3.4, -0.6, 1.5, 0.25, 1.3, 1, r)
+    roof_growth(g, P, D, 2.3, 3.4, [(1.0, 0.5), (1.1, 1.0), (-1.4, 1.2)], 1, r)
+    for k in range(9):
+        weed_tuft(g, P(-1.55 + 0.4 * k + r.uniform(-0.12, 0.12), 0.0, fz + r.uniform(0.02, 0.2)), r, h=r.uniform(0.35, 0.8))
+    weed_tuft(g, P(1.8, 0.0, 0.0), r, h=0.9, blades=9)
+    flakes(g, P(0.2, 0.0, fz + 0.6), (1.6, 0.4), r, 14, (S['Accent'], S['Sand']))
+    g.solid('Overlay', collider='none')
+    return g
+
+def ro_bait_shop():
+    g = vg('Harbour_Village_BaitShop_Rundown', rays=14,
+           note='Run-down overlay for the bait shop (BAIT_SHOP). Additive: sits on Harbour_Core_Buildings. The CLOSED board covers the BAIT & '
+                'TACKLE name board; DEAD covers LIVE on the A-frame chalkboard. Nothing in the restored mesh needs hiding.')
+    r = vrng('rundown.bait')
+    cx, cz, W, D = BAIT_SHOP
+    fz = D / 2
+    P = vP((cx, PLATEAU_Y, cz))
+    g.mark()
+    boards_over(g, P, 1.55, 1.55, fz, 0.7, 0.6, r, n=4, gap_at=None)
+    # the serving hatch boarded flat (the counter and the awning stay)
+    boards_over(g, P, -0.1, 1.45, fz, 1.7, 0.95, r, n=6, gap_at=None, off=0.11)
+    door_lockup(g, P, -1.7, fz, r)
+    mail_pile(g, P(-1.7, 0.04, fz + 0.5), r)
+    hanging_board(g, P, -0.4, 3.05, fz + 0.2, 3.4, 0.7, 'CLOSED\nTHE WORMS HAVE UNIONISED', 0.14, r, tilt=2.5, board_slot=S['Roof'])
+    # the awning has torn: a canvas strip hanging off the lower edge, and the fish sign has fallen off one chain
+    for k, (xs, ln) in enumerate(((0.35, 0.8), (0.55, 0.55), (0.0, 0.4))):
+        g.add(xform(rbox((0.2, ln, 0.02), 0.008, 1), P(-1.15 + 0.32 * 3 + xs, 2.45 - ln / 2 + 0.05, fz + 1.02), rx(-8) @ rz(r.uniform(-8, 8))),
+              (S['Roof'], S['Sand'], S['Roof'])[k], L['Cloth'], 0.6)
+    # LIVE WORMS -> DEAD WORMS on the A-frame board
+    ab = P(1.6, 0.0, fz + 1.5)
+    board_sign(g, ab + Vector((0, 0.7, 0.21)), rx(10) @ rz(-2), 0.46, 0.15, 'DEAD', 0.115, S['Sand'], S['Roof'], thick=0.02)
+    roof_tarp(g, P, D, 2.4, 3.55, 1.1, 1.6, 0.3, 1.5, 1, r, slot=S['Reed'])
+    roof_growth(g, P, D, 2.4, 3.55, [(-1.5, 0.8), (-1.2, 1.5), (0.1, 0.35)], 1, r)
+    for k in range(11):
+        weed_tuft(g, P(-2.2 + 0.42 * k + r.uniform(-0.1, 0.1), 0.0, fz + r.uniform(0.02, 0.18)), r, h=r.uniform(0.35, 0.85))
+    for k in range(4):
+        weed_tuft(g, P(-W / 2 - 0.1 - r.uniform(0, 0.2), 0.0, r.uniform(-1.4, 1.4)), r, h=r.uniform(0.4, 0.9))
+    flakes(g, P(0.0, 0.0, fz + 0.9), (2.0, 0.5), r, 16, (S['Accent'], S['Sand'], S['Roof']))
+    g.solid('Overlay', collider='none')
+    return g
+
+def ro_net_shed():
+    g = vg('Harbour_Village_NetShed_Rundown', rays=14,
+           note='Run-down overlay for the net shed (NET_SHED). Additive: sits on Harbour_Core_Buildings. The shed is open-fronted today; this '
+                'model BARRICADES the front (item NetShedBarricade: add a thin BoxCollider from its bounds, the restored NetShed collider covers '
+                'only the back half). Nothing in the restored mesh needs hiding.')
+    r = vrng('rundown.netshed')
+    cx, cz, W, D = NET_SHED
+    P = vP((cx, PLATEAU_Y, cz))
+    g.mark()
+    fz = D / 2 - 0.05
+    # barricade between the front posts: horizontal planks with a padlocked board door
+    for k in range(9):
+        y = 0.22 + 0.3 * k
+        if k in (3, 4):
+            continue                         # the gap for the door
+        vplank(g, P(0.0, y + r.uniform(-0.02, 0.02), fz + 0.13), W - 0.5 + r.uniform(-0.1, 0.1), 0.24, 0.05, (S['Wood'], S['Dock'], S['WoodDark'])[k % 3], rz(r.uniform(-1.5, 1.5)))
+    g.add(xform(rbox((1.0, 1.3, 0.05), 0.02, 1), P(0.6, 1.1, fz + 0.14), ry(0)), S['Dock'], L['Wood'], 0.5)
+    for dx in (-0.4, 0.4):
+        vplank(g, P(0.6 + dx * 0.5, 1.1, fz + 0.18), 1.4, 0.12, 0.03, S['WoodDark'], rz(90 + dx * 80))
+    chain_line(g, P(0.2, 1.15, fz + 0.2), P(1.1, 1.1, fz + 0.2), 0.05)
+    padlock(g, P(0.72, 1.02, fz + 0.23), Matrix.Identity(3))
+    g.solid('NetShedBarricade', collider='box', note='front barricade, ~0.35 m deep: thin BoxCollider so the shed cannot be walked into')
+    board_sign(g, P(-0.2, 2.62, fz + 0.2), rz(-1.5), 2.9, 0.62, 'CLOSED\nNETS: SEE HOLES', 0.15, S['Dock'], S['Sand'])
+    # the torn net hanging from the front beam, the workbench sagged (a plank missing is the net's fault)
+    for k in range(5):
+        x = -1.5 + 0.7 * k + r.uniform(-0.1, 0.1)
+        ln = r.uniform(0.5, 1.1)
+        g.add(tube(rope_line(P(x, 2.82, fz + 0.28), P(x + r.uniform(-0.15, 0.15), 2.82 - ln, fz + 0.3), 0.0, n=3), 0.016, 4, caps=False), S['Sand'], L['Cloth'], 0.6)
+    # hole in the tin roof (tarp) and the lean-to's slope
+    ang = math.degrees(math.atan2(0.3, D))
+    tn = math.tan(math.radians(ang))
+    for xs, zs, wl, ln, ro in ((0.9, -0.2, 1.7, 1.4, 6), (-1.4, 0.7, 0.9, 0.8, -4)):
+        yy = 2.98 + (zs - 0.1) * tn + 0.1
+        g.add(xform(rbox((wl, 0.03, ln), 0.012, 1), P(xs, yy, zs), rx(-ang) @ ry(ro)), S['Reed'], L['Cloth'], 0.6)
+    for k in range(3):
+        zs = 0.35
+        g.add(xform(rbox((0.2, 0.09, 0.1), 0.02, 1), P(0.35 + 0.55 * k, 2.98 + (zs - 0.1) * tn + 0.17, zs), rx(-ang) @ ry(r.uniform(-25, 25))), S['Roof'], L['Rock'], 0.5)
+    roof_moss = [(-1.9, 1.0), (1.9, -0.9), (-0.2, -1.1)]
+    for x, zz in roof_moss:
+        moss_patch(g, P(x, 2.98 + (zz - 0.1) * tn + 0.1, zz), r, (0.5, 0.07, 0.35), rot=rx(-ang))
+    for k in range(10):
+        weed_tuft(g, P(-W / 2 + 0.25 + (W - 0.5) * k / 9 + r.uniform(-0.1, 0.1), 0.0, fz + r.uniform(0.15, 0.5)), r, h=r.uniform(0.4, 0.9))
+    weed_tuft(g, P(W / 2 + 0.3, 0.0, -0.5), r, h=1.0, blades=9)
+    g.solid('Overlay', collider='none')
+    return g
+
+def ro_smokehouse():
+    g = vg('Harbour_Village_Smokehouse_Rundown', rays=14,
+           note='Run-down overlay for the smokehouse (SMOKEHOUSE). Additive: sits on Harbour_Core_Buildings. The CLOSED board covers the SMOKED '
+                'FISH board (which is painted over); soot marks are overlay geometry. Nothing in the restored mesh needs hiding. The chimney is '
+                'still a smoke point in the restored manifest: do NOT emit smoke in this state.')
+    r = vrng('rundown.smokehouse')
+    cx, cz, W, D = SMOKEHOUSE
+    P = vP((cx, PLATEAU_Y + 0.95, cz))
+    fz = D / 2
+    g.mark()
+    door_lockup(g, P, 0.4, fz, r, w=0.8, h=1.6)
+    # the SMOKED FISH board (1.9 x 0.4 under the eave) painted over, soot above the door and the chimney side, a CLOSED board hung in front
+    g.add(xform(rbox((1.98, 0.44, 0.03), 0.012, 1), P(0.3, 1.9, fz + 0.135)), S['WoodDark'], L['Wood'], 0.5)
+    for x, y, w, h, tl in ((0.15, 1.5, 0.2, 0.75, 2), (0.7, 1.45, 0.25, 0.85, -4), (-0.95, 1.0, 0.22, 0.8, -5)):
+        g.add(xform(blob(max(w, h) / 2, r, (w / max(w, h), h / max(w, h), 0.05), subdiv=1, rough=0.1, flat=-2), P(x, y, fz + 0.09), rz(tl)),
+              S['WoodDark'], L['none'], 0.7, tint=0.6)
+    hanging_board(g, P, -0.15, 1.45, fz + 0.38, 2.15, 0.52, 'CLOSED - FIRE INSPECTOR\nWAS RIGHT', 0.105, r, tilt=4.0)
+    roof_tarp(g, P, D, 1.9, 3.1, 0.4, 1.3, 0.2, 1.0, 1, r)
+    roof_growth(g, P, D, 1.9, 3.1, [(-0.6, 0.9), (0.9, 0.5)], 1, r)
+    # a scorch smear and a cap lying beside the chimney foot
+    g.add(xform(rbox((1.0, 0.1, 1.0), 0.04, 1), (cx - W / 2 - 0.35, PLATEAU_Y + 0.05, cz - 0.3)), S['WoodDark'], L['Rock'], 0.6, tint=0.5)
+    for k in range(8):
+        weed_tuft(g, P(-W / 2 + 0.2 + (W - 0.3) * k / 7 + r.uniform(-0.1, 0.1), -0.95, fz + r.uniform(0.05, 0.25)), r, h=r.uniform(0.35, 0.8))
+    for k in range(4):
+        weed_tuft(g, (cx - W / 2 - 0.9 - r.uniform(0, 0.4), PLATEAU_Y, cz - 0.3 + r.uniform(-0.8, 0.8)), r, h=r.uniform(0.5, 1.0))
+    flakes(g, P(0.0, -0.95, fz + 0.7), (1.4, 0.4), r, 10, (S['WoodDark'], S['Sand']))
+    g.solid('Overlay', collider='none')
+    return g
+
+def ro_boatyard():
+    g = vg('Harbour_Village_Boatyard_Rundown', rays=14,
+           note='Run-down overlay for the boatyard (YARDS[0], SAWHORSE_BOAT in Harbour_Core_Yard_B). Additive: sits on Harbour_Core_Yard_B. '
+                'The tarp covers the half-painted boat; the CLOSED board stands beside it on two posts. Nothing in the restored mesh needs hiding.')
+    r = vrng('rundown.boatyard')
+    bx, bz, byaw = SAWHORSE_BOAT
+    by = land_y(bx, bz)
+    rot = ry(byaw)
+    P = vP((bx, by, bz), rot)
+    g.mark()
+    # tarp draped over the hull: a lumpy dome with folds, tied under the keel with a rope and a chain and padlock
+    dome = blob(1.9, r, (0.44, 0.24, 1.0), subdiv=2, rough=0.06, flat=-2)
+    g.add(xform(dome, P(0.0, 1.17 + 0.42, 0.0), rot), S['Reed'], L['Cloth'], 0.6)
+    for k in range(5):
+        z = -1.1 + 0.55 * k
+        kz = math.sqrt(max(0.0, 1 - (z / 1.9) ** 2))
+        g.add(tube([P(0.835 * kz * math.cos(t), 1.59 + 0.46 * kz * math.sin(t) + 0.02, z) for t in (0.0, 0.5, 1.0, 1.57, 2.14, 2.64, 3.14)], 0.017, 4, caps=False),
+              S['WoodDark'], L['none'], 0.6)
+    chain_line(g, P(-0.78, 1.0, -0.2), P(0.78, 1.0, -0.2), 0.12)
+    padlock(g, P(0.0, 0.84, -0.2), rot, S['Accent'])
+    # the half-open end of the tarp, flapping
+    g.add(xform(rbox((0.7, 0.02, 0.6), 0.008, 1), P(0.7, 1.17 + 0.5, -1.6), rot @ rz(-18) @ rx(12)), S['Reed'], L['Cloth'], 0.6)
+    # the sign: two posts, a board, "BACK IN 5 MINUTES" with a date on it
+    sx = P(0.4, 0.0, -3.2)
+    sr = ry(8.0)
+    sP = vP(sx, sr)
+    for dx in (-1.05, 1.05):
+        add_lathe(g, sP(dx, -0.05, 0), [(0, 0.075), (1.9, 0.07), (1.94, 0.0)], S['WoodDark'], L['Wood'], 0.5, sides=7)
+    board_sign(g, sP(0.0, 1.55, 0.0), sr @ rz(-2.5), 2.5, 0.8, 'BOATYARD CLOSED\nBACK IN 5 MINUTES (2011)', 0.14, S['Dock'], S['Sand'])
+    vplank(g, sP(0.0, 0.85, 0.02), 2.3, 0.12, 0.04, S['Wood'], sr @ rz(3))
+    # sawhorse legs and ground: weeds, a fern through the hull cradle, a kicked-over paint tin spilling
+    for zl in (-0.9, 0.9):
+        for k in range(5):
+            weed_tuft(g, P(r.uniform(-0.55, 0.55), 0.0, zl + r.uniform(-0.3, 0.3)), r, h=r.uniform(0.5, 1.1))
+    for k in range(7):
+        weed_tuft(g, P(r.uniform(-1.4, 1.4), 0.0, r.uniform(-2.2, 2.2)), r, h=r.uniform(0.3, 0.7), blades=5)
+    add_lathe(g, P(-1.4, 0.0, 1.4), [(0, 0.1), (0.2, 0.1), (0.205, 0.0)], S['Rock'], L['none'], 0.6, sides=10, rot=rz(90))
+    g.add(xform(blob(0.35, r, (1.0, 0.04, 0.8), subdiv=1, rough=0.1, flat=-2), P(-1.75, 0.025, 1.4)), S['Accent'], L['none'], 0.8)
+    flakes(g, P(0.0, 0.0, 0.0), (1.3, 2.0), r, 16, (S['Accent'], S['Sand']))
+    g.solid('Overlay', collider='none')
+    return g
+
+def ro_chapel():
+    g = vg('Harbour_Village_Chapel_Rundown', rays=14, ao_dist=1.0,
+           note='Run-down overlay for the chapel (CHAPEL tower + nave in Harbour_Core_Buildings_Upper). Additive: sits on that model. The door '
+                'is chained shut, the six nave windows boarded, the nave roof tarped. Nothing in the restored mesh needs hiding. Do NOT ring the '
+                'bell (the bell tower item stays a collider).')
+    r = vrng('rundown.chapel')
+    x, z = CHAPEL
+    y = LEVEL2_Y
+    tw, th = 2.9, 9.4
+    nz, nW, nD = z - 0.9 - 3.4, 5.4, 6.8
+    T = vP((x, y, z))
+    N = vP((x, y, nz))
+    g.mark()
+    # tower door (1.2 x 2.3 at T(0, 1.45, tw/2)): double chained, a plank across, the padlock
+    fz = tw / 2
+    door_lockup(g, T, 0.0, fz + 0.0, r, w=1.2, h=2.3, yc=1.45)
+    for dx in (-0.5, 0.5):
+        vplank(g, T(dx, 1.45, fz + 0.14), 2.5, 0.16, 0.04, S['WoodDark'], rz(r.uniform(-4, 4)) @ rz(90))
+    # nave windows: boards on both sides (six windows, 0.78 wide and 1.9 tall, centred 0.35+2.2 above the nave floor)
+    for sx in (-1, 1):
+        for k in range(3):
+            rot_w = ry(sx * 90)
+            for pk in range(5):
+                if sx == 1 and k == 1 and pk == 3:
+                    continue
+                yy = 1.55 + 0.5 * pk + r.uniform(-0.02, 0.02)
+                vplank(g, N(sx * (nW / 2 + 0.11), yy, -2.2 + 2.2 * k + r.uniform(-0.05, 0.05)), 0.98 + r.uniform(-0.05, 0.12), 0.38, 0.05,
+                       (S['Wood'], S['Dock'], S['WoodDark'])[pk % 3], rot_w @ rz(r.uniform(-5, 5)))
+    # the freestanding notice: two posts, a board
+    sP = vP((x, y, z + tw / 2 + 1.25))
+    for dx in (-1.25, 1.25):
+        add_lathe(g, sP(dx, 0.0, 0), [(0, 0.08), (1.7, 0.075), (1.74, 0.0)], S['WoodDark'], L['Wood'], 0.5, sides=7)
+    board_sign(g, sP(0.0, 1.25, 0.0), rz(1.8), 2.8, 0.78, 'CHAPEL CLOSED\nTHE ROOF IS NOT AN ACT OF GOD', 0.118, S['Dock'], S['Sand'])
+    vplank(g, sP(0.0, 0.62, 0.02), 2.6, 0.14, 0.04, S['Wood'], rz(-2))
+    # the nave roof (rise 2.4 over half-width 2.7): a tarp over the hole, bricks; roof moss
+    ang = math.degrees(math.atan2(2.4, nW / 2))
+    tn = 2.4 / (nW / 2)
+    for sgn, zc, sa, sb, wl in ((1, 0.8, 0.5, 2.0, 2.1), (-1, -1.6, 0.9, 2.3, 1.5)):
+        s = (sa + sb) / 2
+        yy = 0.35 + 6.1 - tn * s + 0.08 + 0.1 + 0.07
+        ln = (sb - sa) / math.cos(math.radians(ang))
+        g.add(xform(rbox((ln, 0.03, wl), 0.012, 1), N(sgn * s, yy, zc), rz(-sgn * ang)), S['Reed'], L['Cloth'], 0.6)
+        for k in range(3):
+            g.add(xform(rbox((0.1, 0.09, 0.2), 0.02, 1), N(sgn * (sb - 0.05), 0.35 + 6.1 - tn * (sb - 0.05) + 0.08 + 0.2, zc - wl * 0.35 + wl * 0.35 * k),
+                        rz(-sgn * ang) @ ry(r.uniform(-25, 25))), S['Roof'], L['Rock'], 0.5)
+    for sgn, s, zc in ((1, 1.6, -2.4), (-1, 2.2, 2.2), (-1, 1.0, -0.4)):
+        moss_patch(g, N(sgn * s, 0.35 + 6.1 - tn * s + 0.08 + 0.15, zc), r, (0.5, 0.08, 0.4), rot=rz(-sgn * ang))
+    # weeds round the tower and the nave, flakes
+    for k in range(10):
+        weed_tuft(g, T(-tw / 2 - 0.1 + (tw + 0.2) * k / 9, 0.0, fz + r.uniform(0.02, 0.35)), r, h=r.uniform(0.4, 0.9))
+    for sx in (-1, 1):
+        for k in range(8):
+            weed_tuft(g, N(sx * (nW / 2 + r.uniform(0.2, 0.55)), 0.35, -nD / 2 + nD * k / 7 + r.uniform(-0.2, 0.2)), r, h=r.uniform(0.4, 1.0))
+    flakes(g, T(0.0, 0.0, fz + 0.8), (1.5, 0.4), r, 12, (S['WoodDark'], S['Sand']))
+    g.solid('Overlay', collider='none')
+    return g
+
+# ---- the "being restored" scaffolding kit ----------------------------------------------------------------------------------------------
+# One model per landmark (world coordinates, sized from the landmark's own constants): galvanised standards, ledgers and transoms, four
+# scaffold boards a lift, toe boards, braces, a leaning ladder, a hanging orange safety sheet, a stack of planks. Lifts are 2 m apart from a
+# first deck at 1 m. The scaffold stands 1.05 m off the wall (a 0.9 m deck and 0.15 m of clearance). Shared prop: Harbour_Village_Prop_CementMixer.
+
+def scaffold_ladder(g, base, top, side, width=0.42, rung=0.3):
+    base, top = Vector(base), Vector(top)
+    s = Vector(side).normalized() * (width / 2)
+    for sg in (-1, 1):
+        g.add(tube([base + s * sg, top + s * sg], 0.028, 4, caps=False), S['Wood'], L['Wood'], 0.5)
+    n = max(2, int((top - base).length / rung))
+    for k in range(1, n):
+        p = base.lerp(top, k / n)
+        g.add(tube([p - s, p + s], 0.02, 4, caps=False), S['Dock'], L['Wood'], 0.5)
+
+def scaffold_run(g, org, yaw, length, top, r, skip_first=False, skip_last=False, deck=0.9, gap=1.05, yoff=0.0):
+    # A run of scaffold along local +x from org (the standing line z = 0; the wall is at local z = -gap). Returns (lifts, pole height).
+    rot = ry(yaw)
+    Q = vP(org, rot)
+    nb = max(1, int(math.ceil(length / 2.2)))
+    xs = [length * i / nb for i in range(nb + 1)]
+    n_l = max(1, int(math.ceil((top - 1.2) / 2.0)))
+    lifts = [1.0 + 2.0 * k for k in range(n_l)]
+    hp = lifts[-1] + 1.25
+    for i, x in enumerate(xs):
+        if (skip_first and i == 0) or (skip_last and i == len(xs) - 1):
+            continue
+        for zz in (0.0, -deck):
+            add_lathe(g, Q(x, 0.0, zz), [(0, 0.04), (hp, 0.04), (hp + 0.02, 0.0)], S['Rock'], L['Rock'], 0.5, sides=6)
+            g.add(xform(rbox((0.16, 0.025, 0.16), 0.01, 1), Q(x, 0.012, zz), rot), S['Rock'], L['Rock'], 0.5)
+    for yl in lifts:
+        for zz, dy in ((0.0, 0.0), (0.0, 0.55), (0.0, 1.05), (-deck, 0.0)):
+            vpole(g, Q(-0.05, yl + dy, zz), Q(length + 0.05, yl + dy, zz), 0.032, S['Rock'], sides=5)
+        for i, x in enumerate(xs):
+            if (skip_first and i == 0) or (skip_last and i == len(xs) - 1):
+                continue
+            vpole(g, Q(x, yl - 0.07, 0.0), Q(x, yl - 0.07, -gap), 0.03, S['Rock'], sides=5)
+        nbd = 4
+        bw = deck / nbd
+        for b in range(nbd):
+            zc = -0.07 - bw * (b + 0.5)
+            ln = length + 0.35 + r.uniform(-0.08, 0.12)
+            g.add(xform(rbox((ln, 0.04, bw * 0.94), 0.01, 1), Q(length / 2 + r.uniform(-0.08, 0.08), yl + 0.03 + yoff, zc), rot),
+                  (S['Wood'], S['Dock'], S['WoodDark'], S['Wood'])[b], L['Wood'], 0.5)
+        g.add(xform(rbox((length + 0.2, 0.15, 0.03), 0.01, 1), Q(length / 2, yl + 0.12 + yoff, 0.0), rot), S['Dock'], L['Wood'], 0.5)
+    for i in range(nb):
+        a, b = (xs[i], 0.0) if i % 2 == 0 else (xs[i + 1], 0.0)
+        c_ = xs[i + 1] if i % 2 == 0 else xs[i]
+        vpole(g, Q(a, 0.1, 0.0), Q(c_, hp - 0.3, 0.0), 0.028, S['Rock'], sides=5)
+    return lifts, hp
+
+def scaffold_sheet(g, org, yaw, x0, w, y_top, hgt, r, phase=0.0):
+    rot = ry(yaw)
+    V, N, F, UV = cloth_panel(w, hgt, 9, 3, 0.05, phase)
+    g.add(xform((V, N, F, UV), vP(org, rot)(x0, y_top, 0.07)), S['Accent'], L['Cloth'], 0.6)
+
+def plank_stack(g, c, yaw, r, n=5, length=2.4):
+    rot = ry(yaw)
+    Q = vP(c, rot)
+    for dx in (-0.8, 0.8):
+        g.add(xform(rbox((0.1, 0.08, 0.3), 0.02, 1), Q(dx, 0.04, 0.0), rot), S['WoodDark'], L['Wood'], 0.5)
+    for k in range(n):
+        g.add(xform(rbox((length + r.uniform(-0.2, 0.1), 0.045, 0.22), 0.01, 1), Q(r.uniform(-0.05, 0.05), 0.1 + 0.05 * k, (k % 2) * 0.01 - 0.1 + 0.11 * (k % 3)), rot @ ry(r.uniform(-2, 2))),
+              (S['Wood'], S['Dock'], S['WoodDark'])[k % 3], L['Wood'], 0.5)
+
+def sc_building(name, cx, cy, cz, W, D, top, note, mixer_yaw=-30.0, west=True):
+    g = vg('Harbour_Village_Scaffold_' + name, rays=12, note=note)
+    r = vrng('scaffold.' + name)
+    fzl = cz + D / 2 + 1.05
+    ex, wx = cx + W / 2 + 1.05, cx - W / 2 - 1.05
+    g.mark()
+    lifts, hp = scaffold_run(g, (wx, cy, fzl), 0.0, W + 2.1, top, r)
+    scaffold_run(g, (ex, cy, fzl), 90.0, D + 1.35, top, r, skip_first=True, yoff=0.012)
+    if west:
+        scaffold_run(g, (wx, cy, cz - D / 2 - 0.3), -90.0, D + 1.35, top, r, skip_last=True, yoff=0.012)
+    scaffold_ladder(g, (cx - W * 0.1, cy, fzl + (lifts[-1] + 0.9) / 4.0), (cx - W * 0.1, cy + lifts[-1] + 0.9, fzl + 0.05), (1, 0, 0))
+    scaffold_sheet(g, (wx, cy, fzl), 0.0, 0.05, (W + 2.1) * 0.55, lifts[-1] + 1.05, 2.1, r)
+    scaffold_sheet(g, (wx, cy, fzl), 0.0, (W + 2.1) * 0.62, (W + 2.1) * 0.3, lifts[0] + 1.05, 1.9, r, phase=1.4)
+    plank_stack(g, (ex + 1.6, cy, fzl - 0.6), 10.0, r)
+    g.solid('Scaffold', collider='none')
+    g.extra['lifts_y'] = [round(cy + y, 2) for y in lifts]
+    g.extra['mixer_placement'] = dict(position=[round(ex + 1.9, 2), round(cy, 2), round(fzl + 0.5, 2)], yaw_deg=mixer_yaw)
+    return g
+
+def sc_boatyard():
+    bx, bz, byaw = SAWHORSE_BOAT
+    by = land_y(bx, bz)
+    g = vg('Harbour_Village_Scaffold_Boatyard', rays=12,
+           note='Scaffolding kit for the boatyard: a staging along the seaward side of the boat on sawhorses (SAWHORSE_BOAT), ladder, sheet, planks.')
+    r = vrng('scaffold.Boatyard')
+    axis = ry(byaw) @ Vector((0, 0, 1))
+    yaw = math.degrees(math.atan2(-axis.z, axis.x))        # ry(yaw) maps local x onto the boat's axis; its local z should point to the sea
+    rot = ry(yaw)
+    zdir = rot @ Vector((0, 0, 1))
+    if zdir.z < 0:
+        yaw += 180.0
+        rot = ry(yaw)
+        zdir = rot @ Vector((0, 0, 1))
+    L_ = 5.0
+    org = Vector((bx, by, bz)) - rot @ Vector((L_ / 2, 0, 0)) + zdir * 1.55
+    g.mark()
+    lifts, hp = scaffold_run(g, org, yaw, L_, 3.0, r, gap=0.9 + 0.05)
+    scaffold_ladder(g, org + rot @ Vector((0.3, 0, 1.9)), org + rot @ Vector((0.3, lifts[-1] + 0.9, 0.05)), rot @ Vector((1, 0, 0)))
+    scaffold_sheet(g, org, yaw, 0.2, 2.8, lifts[-1] + 1.05, 1.6, r)
+    plank_stack(g, org + rot @ Vector((L_ + 1.4, 0, -0.2)), yaw + 8.0, r)
+    g.solid('Scaffold', collider='none')
+    mp = org + rot @ Vector((L_ + 1.3, 0, 2.2))
+    g.extra['mixer_placement'] = dict(position=[round(mp.x, 2), round(mp.y, 2), round(mp.z, 2)], yaw_deg=round(yaw + 200.0, 1))
+    g.extra['lifts_y'] = [round(by + y, 2) for y in lifts]
+    return g
+
+def sc_chapel():
+    x, z = CHAPEL
+    y = LEVEL2_Y
+    tw, th = 2.9, 9.4
+    g = vg('Harbour_Village_Scaffold_Chapel', rays=12,
+           note='Scaffolding kit for the chapel: the bell tower (front and both sides, five lifts to y +9), ladder, sheets, planks. The nave is not '
+                'scaffolded (its roof is repaired from the tower staging).')
+    r = vrng('scaffold.Chapel')
+    fzl = z + tw / 2 + 1.05
+    ex, wx = x + tw / 2 + 1.05, x - tw / 2 - 1.05
+    g.mark()
+    lifts, hp = scaffold_run(g, (wx, y, fzl), 0.0, tw + 2.1, 9.7, r)
+    scaffold_run(g, (ex, y, fzl), 90.0, tw + 1.35, 9.7, r, skip_first=True, yoff=0.012)
+    scaffold_run(g, (wx, y, z - tw / 2 - 0.3), -90.0, tw + 1.35, 9.7, r, skip_last=True, yoff=0.012)
+    scaffold_ladder(g, (x + 0.2, y, fzl + 3.1), (x + 0.2, y + lifts[-1] + 0.9, fzl + 0.05), (1, 0, 0))
+    scaffold_sheet(g, (wx, y, fzl), 0.0, 0.05, 2.4, lifts[-1] + 1.05, 2.1, r)
+    scaffold_sheet(g, (wx, y, fzl), 0.0, 2.55, 1.6, lifts[-2] + 1.05, 2.1, r, phase=1.4)
+    scaffold_sheet(g, (wx, y, fzl), 0.0, 0.3, 2.2, lifts[1] + 1.05, 1.9, r, phase=2.2)
+    plank_stack(g, (ex + 1.7, y, fzl - 0.4), 10.0, r)
+    g.solid('Scaffold', collider='none')
+    g.extra['lifts_y'] = [round(y + v, 2) for v in lifts]
+    g.extra['mixer_placement'] = dict(position=[round(ex + 2.0, 2), round(y, 2), round(fzl + 0.4, 2)], yaw_deg=-20.0)
+    return g
+
+def build_cement_mixer():
+    g = vg('Harbour_Village_Prop_CementMixer', local=True, rays=10,
+           note='A towable cement mixer on two wheels, drum tilted toward +z, a shovel, a bucket and two sacks. Origin on the ground between the '
+                'wheels. Local model: one placement per scaffold (see the scaffold models\' mixer_placement).')
+    r = vrng('mixer')
+    for sx in (-1, 1):
+        add_lathe(g, (sx * 0.5, 0.26, 0.0), [(-0.06, 0.0), (-0.06, 0.26), (0.06, 0.26), (0.06, 0.0)], S['WoodDark'], L['none'], 0.5, sides=14, rot=rz(90))
+        add_lathe(g, (sx * 0.5, 0.26, 0.0), [(0.05, 0.0), (0.05, 0.11), (0.09, 0.11), (0.09, 0.0)], S['Rock'], L['none'], 0.5, sides=10, rot=rz(90))
+    vpole(g, (-0.5, 0.26, 0.0), (0.5, 0.26, 0.0), 0.03, S['Rock'], sides=6)
+    for sx in (-1, 1):                                              # the A-frame up to the drum pivot, and the tow bar
+        vpole(g, (sx * 0.46, 0.26, 0.0), (0.0, 1.0, 0.05), 0.03, S['Rock'], sides=6)
+        vpole(g, (sx * 0.46, 0.26, 0.0), (sx * 0.3, 0.1, -0.85), 0.03, S['Rock'], sides=6)
+    vpole(g, (-0.3, 0.1, -0.85), (0.3, 0.1, -0.85), 0.03, S['Rock'], sides=6)
+    vpole(g, (-0.3, 0.1, -0.85), (-0.3, 0.0, -0.85), 0.03, S['Rock'], sides=6)
+    geo, fs = lathe([(0.0, 0.17), (0.04, 0.3), (0.3, 0.46), (0.52, 0.46), (0.78, 0.34), (0.92, 0.24), (1.0, 0.22)], 14, cap0=True)
+    tilt = rx(34)
+    g.add(xform(geo, (0.0, 1.02, 0.05), tilt), S['Accent'], L['none'], 0.5)
+    add_lathe(g, Vector((0.0, 1.02, 0.05)) + tilt @ Vector((0, 0.34, 0)), [(0.0, 0.47), (0.05, 0.48), (0.1, 0.47)], S['Rock'], L['none'], 0.5, sides=14, rot=tilt)
+    add_lathe(g, Vector((0.0, 1.02, 0.05)) + tilt @ Vector((0, 0.98, 0)), [(0.0, 0.22), (0.05, 0.255), (0.09, 0.22)], S['Rock'], L['none'], 0.5, sides=14, rot=tilt)
+    g.add(xform(blob(0.2, r, (1.0, 0.3, 1.0), subdiv=1, rough=0.06, flat=-2), Vector((0.0, 1.02, 0.05)) + tilt @ Vector((0, 0.94, 0))), S['Rock'], L['Rock'], 0.8)
+    vbox(g, (0.0, 0.5, -0.5), (0.5, 0.34, 0.4), S['Roof'], L['none'], 0.5, r=0.05)          # the motor and its plate
+    add_lathe(g, (0.0, 0.34, -0.5), [(0, 0.11), (0.1, 0.11), (0.11, 0.0)], S['Rock'], L['none'], 0.5, sides=8, rot=rz(90))
+    add_lathe(g, (0.56, 0.95, 0.05), [(0.0, 0.0), (0.02, 0.17), (0.05, 0.19), (0.07, 0.0)], S['Rock'], L['none'], 0.5, sides=10, rot=rz(-90))
+    for a in (0, 90):
+        g.add(xform(rbox((0.02, 0.32, 0.03), 0.008, 1), (0.6, 0.95, 0.05), rx(a)), S['Rock'], L['none'], 0.5)
+    g.add(xform(blob(0.5, r, (1.0, 0.07, 0.85), subdiv=2, rough=0.1, flat=-2), (0.0, 0.03, 0.9)), S['Rock'], L['Rock'], 0.9)   # spilled cement
+    add_lathe(g, (0.95, 0.0, 0.45), [(0, 0.17), (0.3, 0.2), (0.31, 0.0)], S['Rock'], L['none'], 0.5, sides=10)             # bucket
+    vpole(g, (0.95, 0.31, 0.45), (1.35, 0.3, 0.45), 0.012, S['Rock'], sides=4)
+    vpole(g, (-0.95, 0.04, 0.3), (-0.62, 0.95, 0.4), 0.022, S['Wood'], sides=5)                                          # shovel
+    g.add(xform(rbox((0.2, 0.26, 0.015), 0.006, 1), (-0.99, 0.13, 0.28), rx(-10)), S['Rock'], L['none'], 0.5)
+    for k, (x, z) in enumerate(((-1.0, -0.5), (-1.25, -0.2))):
+        g.add(xform(rbox((0.5, 0.2, 0.3), 0.07, 2), (x, 0.1 + 0.2 * k, z), ry(r.uniform(-20, 20))), S['Sand'], L['Cloth'], 0.6)
+    g.solid('CementMixer', collider='box')
+    return g
+
+# ---- the river lock (design 5.3) ---------------------------------------------------------------------------------------------------------
+# Local frame: origin at the middle of the chamber on the water line (y 0 = water surface), z along the river, +z DOWNSTREAM (toward the
+# harbour / sea), x across. The chamber is 9.0 m clear (4.5 m either side), 24 m between the gates; the gates are mitre pairs that open
+# OUTWARD into recesses in the walls, so with the leaves open nothing narrows the chamber but the 0.16 m fender timbers (8.68 m clear),
+# and nothing is overhead. The crew tug (Harbour_Core_CrewBoat: 16.2 m long, 5.76 m wide with its tyres, keel 1.5 m down, 8.7 m high)
+# passes with 1.4 m to spare each side and 0.8 m under the keel (floor at y -2.3).
+LOCK_HW, LOCK_WALL_T = 4.5, 2.2
+LOCK_GZ, LOCK_POCKET, LOCK_END = 12.0, 5.8, 19.8
+LOCK_FLOOR, LOCK_BOT, LOCK_TOP = -2.3, -2.6, 2.2
+LOCK_HINGE_X, LOCK_LEAF, LOCK_MITRE = 4.95, 5.2, 18.0
+LOCK_FENDER = 0.16
+LOCK_WORLD = dict(position=(-80.2, 0.0, -50.0), yaw=0.0)   # the downstream gate at z -38, the upstream gate at z -62, guide walls to z -30.2 / -69.8
+HUT_WORLD = dict(position=(-69.0, 0.2, -47.5), yaw=-90.0)   # on the landward (east) bank beside the lock, door toward the lock
+
+def yaw_of(dx, dz):
+    return math.degrees(math.atan2(-dz, dx))
+
+def lock_leaf(g, hinge, ang, state, r, droop=0.0, roll=0.0, missing=(), snap=False, tip_chain=False):
+    # One gate leaf. Local frame: hinge post at the origin, the leaf runs along +x (5.2 m), y -2.2..1.5, planked on its +z face.
+    # ang = Unity yaw of the leaf direction (see yaw_of). droop = tip drop in degrees, roll = tilt about the leaf's own axis.
+    rot = ry(ang) @ rz(-droop) @ rx(roll)
+    Q = vP(hinge, rot)
+    new = state == 'repaired'
+    beam = S['Sand'] if new else S['WoodDark']
+    post = S['WoodDark'] if not new else S['Dock']
+    skin = (S['Dock'], S['Wood']) if new else (S['Wood'], S['WoodDark'])
+    iron = S['Accent'] if new else S['Roof']
+    Lg = LOCK_LEAF
+    g.add(xform(rbox((0.42, 3.9, 0.52), 0.05, 1), Q(0.1, -0.3, 0.0), rot), post, L['Wood'], 0.45)            # heel post
+    g.add(xform(rbox((0.28, 3.7, 0.44), 0.05, 1), Q(Lg - 0.05, -0.35, 0.0), rot), post, L['Wood'], 0.45)      # mitre post
+    top_len = Lg * 0.62 if snap else Lg
+    g.add(xform(rbox((top_len, 0.3, 0.5), 0.05, 1), Q(top_len / 2, 1.38, 0.0), rot), beam, L['Wood'], 0.45)  # top beam (the walkway)
+    g.add(xform(rbox((Lg, 0.34, 0.5), 0.05, 1), Q(Lg / 2, -2.0, 0.0), rot), post, L['Wood'], 0.45)           # bottom beam
+    for y in (-1.0, 0.1):
+        g.add(xform(rbox((Lg - 0.3, 0.22, 0.46), 0.04, 1), Q(Lg / 2, y, 0.0), rot), post, L['Wood'], 0.45)
+    for k in range(9):                                                                                          # planking on the +z face
+        if k in missing:
+            continue
+        x = 0.55 + 0.5 * k
+        g.add(xform(rbox((0.46, 3.3, 0.09), 0.015, 1), Q(x, -0.35, 0.25), rot), skin[k % 2], L['Wood'], 0.5)
+    ln = math.hypot(Lg - 0.6, 3.1)
+    g.add(xform(rbox((0.2, ln, 0.1), 0.03, 1), Q(Lg / 2, -0.3, -0.27), rot @ rz(-math.degrees(math.atan2(Lg - 0.6, 3.1)))), post, L['Wood'], 0.45)
+    for y in (-1.8, -0.3, 1.1):                                                                                 # iron hinge straps
+        g.add(xform(rbox((1.1, 0.12, 0.6), 0.03, 1), Q(0.55, y, 0.0), rot), iron, L['none'], 0.5)
+    g.add(xform(rbox((0.6, 0.7, 0.1), 0.03, 1), Q(2.6, -1.35, 0.32), rot), S['Rock'] if new else S['WoodDark'], L['none'], 0.5)     # the sluice paddle
+    if not new:
+        for k in range(3):                                                                                      # rust runs
+            g.add(xform(rbox((0.07, r.uniform(0.7, 1.4), 0.02), 0.01, 1), Q(0.2 + 0.4 * k, -1.2 + 0.3 * k, 0.33), rot), S['Roof'], L['none'], 0.6)
+        moss_patch(g, Q(r.uniform(1.0, 4.0), -1.9, 0.3), r, (0.7, 0.18, 0.2), rot=rot)
+    if snap:                                                                                                    # the splintered end of the beam
+        for k in range(4):
+            g.add(xform(rbox((0.5, 0.06, 0.1), 0.015, 1), Q(top_len + 0.2, 1.3 + 0.07 * k, -0.15 + 0.1 * k), rot @ rz(r.uniform(-25, 25)) @ ry(r.uniform(-20, 20))),
+                  S['Wood'], L['Wood'], 0.5)
+    if tip_chain:
+        g.add(tube(rope_line(Q(Lg - 0.1, 1.55, 0.0), Q(Lg - 0.1, 1.55, 0.0) + rot @ Vector((-1.4, 0.0, 0.0)), 0.5, n=8), 0.02, 4, caps=False), S['Rock'], L['none'], 0.6)
+
+def lock_crank(g, pos, side, present, new, r, tag=False):
+    # The gate winch on the coping: a plinth, a post, a gear box, a ratchet wheel and (when present) the crank arm. Absent = the sheared stub.
+    c = Vector(pos)
+    rot = ry(0)
+    vbox(g, c + Vector((0, 0.1, 0)), (0.75, 0.2, 0.75), S['Rock'], L['StoneWall'], 0.5, r=0.05)
+    add_lathe(g, c + Vector((0, 0.2, 0)), [(0, 0.13), (0.8, 0.11), (0.86, 0.0)], S['Accent'] if new else S['Roof'], L['none'], 0.5, sides=8)
+    vbox(g, c + Vector((0, 1.05, 0)), (0.44, 0.3, 0.44), S['Rock'] if new else S['Roof'], L['none'], 0.5, r=0.05)
+    ax = Vector((-side, 0, 0))                     # the axle runs toward the chamber
+    stub = c + Vector((0, 1.05, 0)) + ax * 0.22
+    if present:
+        add_lathe(g, stub, [(0, 0.045), (0.5, 0.045), (0.52, 0.0)], S['Rock'], L['none'], 0.5, sides=6, rot=rz(-side * 90))
+        add_lathe(g, stub + ax * 0.12, [(-0.04, 0.0), (-0.04, 0.3), (0.04, 0.3), (0.04, 0.0)], S['Rock'], L['none'], 0.5, sides=12, rot=rz(-side * 90))
+        hand = stub + ax * 0.5 + Vector((0, 0.0, 0.0))
+        vpole(g, hand, hand + Vector((0, 0.5, 0.0)), 0.03, S['Accent'], sides=6)
+        vpole(g, hand + Vector((0, 0.5, 0.0)), hand + Vector((side * 0.3 * -1, 0.5, 0.0)), 0.035, S['WoodDark'], sides=6)
+    else:
+        add_lathe(g, stub, [(0, 0.05), (0.06, 0.05), (0.07, 0.0)], S['Rock'], L['none'], 0.5, sides=6, rot=rz(-side * 90))
+        for dz in (-0.14, 0.14):                  # two bolts sheared off
+            add_lathe(g, c + Vector((0, 0.2, dz * 2)), [(0, 0.03), (0.05, 0.03), (0.06, 0.0)], S['Roof'], L['none'], 0.5, sides=6)
+        g.add(tube(rope_line(c + Vector((0, 1.3, 0.2)), c + Vector((-side * 0.3, 0.5, 0.55)), 0.2, n=6), 0.016, 4, caps=False), S['Sand'], L['Cloth'], 0.6)
+        if tag:
+            board_sign(g, c + Vector((-side * 0.28, 0.36, 0.58)), ry(-side * 90) @ rz(8), 0.7, 0.24, 'CRANK BORROWED\n- DAVE', 0.066, S['Sand'], S['WoodDark'], thick=0.02)
+
+def lock_walls(g, state, r):
+    new = state != 'broken'
+    wall = S['Rock']
+    lay = L['StoneWall']
+    H = LOCK_TOP - LOCK_BOT
+    yc = (LOCK_TOP + LOCK_BOT) / 2
+    z_end = LOCK_END
+    for s in (-1, 1):
+        vbox(g, (s * 6.1, yc, 0.0), (1.2, H, 2 * z_end), wall, lay, 0.5, r=0.06)                              # outer block
+        vbox(g, (s * 5.0, yc, 0.0), (1.0, H, 2 * LOCK_GZ), wall, lay, 0.5, r=0.06)                            # chamber wall (full thickness with the outer block)
+        for sz in (-1, 1):
+            vbox(g, (s * 5.0, yc, sz * (z_end - 1.0)), (1.0, H, 2.0), wall, lay, 0.5, r=0.06)                  # end blocks (the recesses lie between)
+            # splayed wing wall
+            d = Vector((s * math.sin(math.radians(24)), 0, sz * math.cos(math.radians(24))))
+            c = Vector((s * 5.5, yc, sz * z_end)) + d * 2.4
+            g.add(xform(rbox((1.3, H, 4.8), 0.06, 1), c, ry(math.degrees(math.atan2(d.x, d.z)))), wall, lay, 0.5)
+            g.add(xform(rbox((1.5, 0.22, 4.9), 0.05, 1), c + Vector((0, LOCK_TOP - yc, 0)), ry(math.degrees(math.atan2(d.x, d.z)))), S['Sand'], lay, 0.5)
+        # coping
+        vbox(g, (s * 5.625, LOCK_TOP, 0.0), (2.35, 0.22, 2 * LOCK_GZ + 0.2), S['Sand'], L['StoneWall'], 0.5, r=0.05)
+        for sz in (-1, 1):
+            vbox(g, (s * 6.125, LOCK_TOP, sz * (LOCK_GZ + LOCK_POCKET / 2)), (1.35, 0.22, LOCK_POCKET + 0.1), S['Sand'], L['StoneWall'], 0.5, r=0.05)
+            vbox(g, (s * 5.625, LOCK_TOP, sz * (z_end - 1.0)), (2.35, 0.22, 2.1), S['Sand'], L['StoneWall'], 0.5, r=0.05)
+        # coursing: three ledges on the chamber face
+        for y in (-1.5, -0.4, 0.8):
+            vbox(g, (s * (LOCK_HW - 0.02), y, 0.0), (0.06, 0.07, 2 * LOCK_GZ), S['Sand'] if new else S['Reed'], lay, 0.5, r=0.02)
+            for sz in (-1, 1):
+                vbox(g, (s * (LOCK_HW - 0.02), y, sz * (z_end - 1.0)), (0.06, 0.07, 2.0), S['Sand'] if new else S['Reed'], lay, 0.5, r=0.02)
+        # fenders
+        for zc in (-10.5, -7.5, -4.5, -1.5, 1.5, 4.5, 7.5, 10.5):
+            vbox(g, (s * (LOCK_HW - LOCK_FENDER / 2), -0.1, zc), (LOCK_FENDER, 3.0, 0.28), S['Wood'] if new else S['WoodDark'], L['Wood'], 0.5, r=0.03)
+        # iron ladder steps in the chamber face
+        for zc in (-8.0, 8.0):
+            for k in range(8):
+                y = -2.0 + 0.58 * k
+                g.add(tube([Vector((s * (LOCK_HW - LOCK_FENDER - 0.03), y, zc - 0.2)), Vector((s * (LOCK_HW - LOCK_FENDER - 0.03), y, zc + 0.2))], 0.022, 4, caps=False),
+                      S['Rock'] if new else S['Roof'], L['none'], 0.6)
+        # bollards on the coping
+        for zc in (-15.5, -5.0, 5.0, 15.5):
+            add_lathe(g, (s * 5.9, LOCK_TOP + 0.11, zc), [(0, 0.16), (0.1, 0.16), (0.15, 0.12), (0.35, 0.12), (0.4, 0.19), (0.46, 0.18), (0.5, 0.0)],
+                      S['Rock'] if new else S['WoodDark'], L['none'], 0.5, sides=8)
+        # a waterline band (algae on the old lock)
+        if not new:
+            for zc in range(-10, 12, 5):
+                moss_patch(g, (s * (LOCK_HW - 0.1), r.uniform(-0.5, -0.2), zc + r.uniform(-0.5, 0.5)), r, (0.12, 0.45, 1.3), rot=Matrix.Identity(3))
+    vbox(g, (0.0, (LOCK_FLOOR + LOCK_BOT) / 2 - 0.05, 0.0), (2 * 6.7 + 0.4, 0.5, 2 * (z_end + 4.5)), S['Rock'], L['StoneWall'], 0.55, r=0.05)   # floor slab
+    for sz in (-1, 1):                                                                                          # the mitre sills
+        for s in (-1, 1):
+            d = Vector((-s * math.cos(math.radians(LOCK_MITRE)), 0, -math.sin(math.radians(LOCK_MITRE))))     # toward the centre, upstream
+            c = Vector((s * LOCK_HINGE_X, LOCK_FLOOR + 0.1, sz * LOCK_GZ)) + d * (LOCK_LEAF / 2)
+            g.add(xform(rbox((LOCK_LEAF, 0.3, 0.45), 0.05, 1), c, ry(yaw_of(d.x, d.z))), S['Sand'], L['StoneWall'], 0.5)
+
+def lock_sign_and_clutter(g, state, r):
+    new = state == 'repaired'
+    sx, sz0 = 6.15, LOCK_GZ + 3.0
+    for dz in (-1.45, 1.45):
+        add_lathe(g, (sx, LOCK_TOP + 0.11, sz0 + dz), [(0, 0.09), (2.0, 0.08), (2.04, 0.0)], S['WoodDark'], L['Wood'], 0.5, sides=7, rot=rz(0 if new else r.uniform(-4, 4)))
+    if new:
+        board_sign(g, (sx, LOCK_TOP + 1.65, sz0), ry(0), 3.3, 1.1, 'LOCK OPEN\n(FOR NOW)', 0.26, S['Sand'], S['WoodDark'])
+    else:
+        board_sign(g, (sx, LOCK_TOP + 1.6, sz0), rz(-3.5) @ ry(4), 3.3, 1.1, 'LOCK OUT OF ORDER\nSINCE 2015', 0.2, S['Sand'], S['Roof'])
+        # a second, smaller notice cable-tied below it, and a traffic cone that has seen things
+        board_sign(g, (sx, LOCK_TOP + 0.75, sz0 - 0.2), rz(5), 1.2, 0.34, 'NO, REALLY', 0.11, S['Sand'], S['WoodDark'], thick=0.025)
+        add_lathe(g, (-5.9, LOCK_TOP + 0.11, 4.0), [(0, 0.17), (0.04, 0.17), (0.05, 0.1), (0.62, 0.02), (0.66, 0.0)], S['Accent'], L['none'], 0.6, sides=8)
+        g.add(xform(rbox((0.38, 0.05, 0.38), 0.01, 1), (-5.9, LOCK_TOP + 0.13, 4.0), rz(0)), S['Accent'], L['none'], 0.6)
+        for k in range(12):                                                                                     # weeds along the coping
+            s = (-1, 1)[k % 2]
+            weed_tuft(g, (s * r.uniform(4.65, 6.6), LOCK_TOP + 0.11, r.uniform(-19.0, 19.0)), r, h=r.uniform(0.35, 0.9))
+
+def build_lock(state, leaves=True):
+    names = {'broken': 'Harbour_Village_Lock_Broken', 'repaired': 'Harbour_Village_Lock_Repaired', 'frame': 'Harbour_Village_Lock_Repaired_Frame'}
+    notes = {
+        'broken': 'The river lock, out of order since 2015. DOWNSTREAM gate (z +12): the west leaf hangs open off one hinge, drooping 50 deg '
+                  'into the passage; the east leaf is shut. UPSTREAM gate (z -12): both leaves shut, rotten, chained. No crank on either winch. '
+                  'NOT passable: the east downstream leaf and both upstream leaves block the chamber.',
+        'repaired': 'The repaired river lock, all four gate leaves swung open into their wall recesses, new winches. Passable: clear width '
+                    '8.68 m between the fender timbers, nothing overhead, floor at y -2.3.',
+        'frame': 'The repaired lock WITHOUT gate leaves (same walls, winches and sign): use it with four Harbour_Village_Lock_GateLeaf '
+                 'instances if the gates should open and close.'}
+    g = vg(names[state], local=True, rays=10, ao_dist=1.2, note=notes[state])
+    r = vrng('lock.' + state)
+    st = 'broken' if state == 'broken' else 'repaired'
+    lock_walls(g, st, r)
+    g.mark()
+    lock_sign_and_clutter(g, st, r)
+    new = st == 'repaired'
+    lock_crank(g, (5.4, LOCK_TOP + 0.11, LOCK_GZ - 1.2), 1, new, new, r, tag=True)      # one tag is enough
+    lock_crank(g, (-5.4, LOCK_TOP + 0.11, LOCK_GZ - 1.2), -1, new, new, r)
+    lock_crank(g, (5.4, LOCK_TOP + 0.11, -LOCK_GZ + 1.2), 1, new, new, r)
+    lock_crank(g, (-5.4, LOCK_TOP + 0.11, -LOCK_GZ + 1.2), -1, new, new, r)
+    g.solid('LockMachinery', collider='none')
+    cm = math.cos(math.radians(LOCK_MITRE))
+    sm = math.sin(math.radians(LOCK_MITRE))
+    if leaves and new:
+        for sz in (-1, 1):
+            for s in (-1, 1):
+                lock_leaf(g, (s * LOCK_HINGE_X, 0.0, sz * LOCK_GZ), yaw_of(0.0, sz), 'repaired', r)           # open: lying along the wall, away from the chamber
+    elif leaves:
+        # downstream (z +12): west leaf hanging open, east leaf shut; upstream (z -12): both shut
+        lock_leaf(g, (-LOCK_HINGE_X, 0.0, LOCK_GZ), yaw_of(math.sin(math.radians(50)), math.cos(math.radians(50))), 'broken', r,
+                  droop=7.0, roll=6.0, missing=(2, 3, 6), snap=True)
+        lock_leaf(g, (LOCK_HINGE_X, 0.0, LOCK_GZ), yaw_of(-cm, -sm), 'broken', r, droop=1.5, missing=(4,), tip_chain=True)
+        for s in (-1, 1):
+            lock_leaf(g, (s * LOCK_HINGE_X, 0.0, -LOCK_GZ), yaw_of(-s * cm, -sm), 'broken', r, droop=1.0 + 0.8 * (s > 0), missing=(1,) if s < 0 else (7,))
+        chain_line(g, (-0.4, 1.6, -LOCK_GZ - 1.5), (0.4, 1.6, -LOCK_GZ - 1.5), 0.05)
+        padlock(g, (0.0, 1.5, -LOCK_GZ - 1.45), ry(0), S['Accent'])
+    return g
+
+def build_gate_leaf():
+    g = vg('Harbour_Village_Lock_GateLeaf', local=True, rays=10, ao_dist=0.8,
+           note='One repaired gate leaf for animating the gates: hinge post at the origin, the leaf runs along +x (5.2 m), y -2.2..1.5, planked on '
+                'its +z face. Rotate about +y at the hinge. The lock\'s hinge points are in the manifest (hinges).')
+    lock_leaf(g, (0.0, 0.0, 0.0), 0.0, 'repaired', vrng('leaf'))
+    g.solid('GateLeaf', collider='none')
+    return g
+
+# ---- the lock-keeper's hut: a wind-up chair and too many clocks ---------------------------------------------------------------------------
+def clock(g, c, rot, R, hh, mm, rim, face, sides=12):
+    # A clock whose front faces rot @ +z at c. hh / mm = hand angles in degrees from 12 o'clock.
+    c = Vector(c)
+    g.extra['clocks'] = g.extra.get('clocks', 0) + 1
+    add_lathe(g, c, [(0.0, 0.0), (0.01, 0.95 * R), (0.06, R), (0.09, 0.0)], face, L['none'], 0.6, sides=sides, rot=rot @ rx(90),
+              ring_slots=[rim, rim, face])
+    n = rot @ Vector((0, 0, 1))
+    for ln, w, ang in ((0.5 * R, 0.1 * R, hh), (0.78 * R, 0.07 * R, mm)):
+        hr = rot @ rz(-ang)
+        flat_quad(g, c + n * 0.097 + hr @ Vector((0, ln / 2, 0)), hr, w, ln, S['WoodDark'], L['none'], 0.7)
+
+def build_keeper_hut():
+    g = vg('Harbour_Village_LockKeeperHut', local=True, rays=14, ao_dist=1.0,
+           note='The lock-keeper\'s hut: 3.8 x 3.0 m, door and porch toward +z, a wind-up armchair and a grandfather clock on the porch, 31 clocks, '
+                'none agreeing. Origin at the base centre. Local model: place beside the lock (HUT_WORLD).')
+    r = vrng('hut')
+    W, D = 3.8, 3.0
+    g.mark()
+    vbox(g, (0, 0.15, 0), (W + 0.2, 0.3, D + 0.2), S['Rock'], L['Rock'], 0.55, r=0.05)
+    P = gable_house(g, (0, 0.3, 0), W, D, 2.2, 3.3, S['Dock'], S['Roof'], trim_slot=S['Sand'], overhang=0.35)
+    fz = D / 2
+    door(g, P, ry(0), -0.9, fz, slot=S['Accent'], knob=S['Sand'])
+    window(g, P, ry(0), 1.15, 1.45, fz, 0.7, 0.6, frame=S['Sand'], shutters=S['WoodDark'])
+    # a stove pipe, and the porch
+    add_lathe(g, P(1.2, 3.0, -0.5), [(0, 0.07), (0.75, 0.07), (0.78, 0.11), (0.86, 0.11), (0.9, 0.0)], S['Rock'], L['none'], 0.5, sides=10)
+    pz = fz + 0.8
+    vbox(g, P(0, 0.0, pz), (W - 0.4, 0.14, 1.5), S['Wood'], L['Wood'], 0.5, r=0.02)
+    for sx in (-1, 1):
+        vpole(g, P(sx * (W / 2 - 0.35), 0.07, fz + 1.4), P(sx * (W / 2 - 0.35), 2.35, fz + 1.4), 0.07, S['WoodDark'], L['Wood'], sides=6)
+    g.add(xform(rbox((W + 0.1, 0.07, 1.8), 0.02, 1), P(0, 2.42, pz - 0.1), rx(7)), S['Roof'], L['Wood'], 0.5)
+    # the wind-up chair
+    cp = P(1.0, 0.14, pz + 0.05)
+    cr = ry(-12)
+    CQ = vP(cp, cr)
+    for lx in (-0.26, 0.26):
+        for lz in (-0.24, 0.24):
+            g.add(xform(rbox((0.07, 0.5, 0.07), 0.02, 1), CQ(lx, 0.25, lz), cr), S['WoodDark'], L['Wood'], 0.5)
+    g.add(xform(rbox((0.66, 0.08, 0.62), 0.02, 1), CQ(0, 0.52, 0), cr), S['Wood'], L['Wood'], 0.5)
+    g.add(xform(blob(0.3, r, (1.0, 0.35, 0.95), subdiv=1, rough=0.03, flat=-2), CQ(0, 0.62, 0.0), cr), S['Roof'], L['Cloth'], 0.6)
+    g.add(xform(rbox((0.66, 0.75, 0.1), 0.03, 1), CQ(0, 0.95, -0.28), cr @ rx(-8)), S['Wood'], L['Wood'], 0.5)
+    for sx in (-1, 1):
+        g.add(xform(rbox((0.08, 0.08, 0.6), 0.02, 1), CQ(sx * 0.37, 0.78, 0.0), cr), S['WoodDark'], L['Wood'], 0.5)
+        vpole(g, CQ(sx * 0.37, 0.52, 0.2), CQ(sx * 0.37, 0.78, 0.2), 0.03, S['WoodDark'], L['Wood'], sides=5)
+    vpole(g, CQ(0, 1.05, -0.34), CQ(0, 1.05, -0.62), 0.028, S['Rock'], sides=6)                                   # the big winding key in the back
+    for sx in (-1, 1):
+        g.add(xform(rbox((0.2, 0.09, 0.03), 0.01, 1), CQ(sx * 0.12, 1.05, -0.64), cr), S['Accent'], L['none'], 0.5)
+    hel = [CQ(0.12 * math.cos(t * 0.9), 0.36 + 0.12 * math.sin(t * 0.9), -0.2 + 0.03 * t) for t in range(0, 26)]     # a coil spring under the seat
+    g.add(tube(hel, 0.014, 4, caps=False), S['Rock'], L['none'], 0.6)
+    add_lathe(g, CQ(-0.42, 0.78, 0.15), [(-0.03, 0.0), (-0.03, 0.1), (0.03, 0.1), (0.03, 0.0)], S['Rock'], L['none'], 0.6, sides=10, rot=cr @ rz(90))
+    for k in range(8):
+        a = math.radians(45 * k)
+        g.add(xform(rbox((0.04, 0.05, 0.05), 0.01, 1), CQ(-0.45, 0.78 + 0.12 * math.cos(a), 0.15 + 0.12 * math.sin(a)), cr @ rx(math.degrees(a))), S['Rock'], L['none'], 0.6)
+    board_sign(g, CQ(0, 0.95, -0.2), cr @ rx(-8), 0.36, 0.14, 'WIND ME', 0.055, S['Sand'], S['Roof'], thick=0.02)
+    # the grandfather clock
+    gp = vP(P(-1.5, 0.14, pz - 0.1))
+    g.add(xform(rbox((0.5, 2.0, 0.34), 0.04, 1), gp(0, 1.0, 0), rz(2)), S['WoodDark'], L['Wood'], 0.5)
+    g.add(xform(rbox((0.58, 0.5, 0.4), 0.05, 1), gp(0, 2.05, 0), rz(2)), S['Wood'], L['Wood'], 0.5)
+    clock(g, gp(0.0, 2.06, 0.21), ry(0), 0.2, 160, 40, S['Wood'], S['Sand'])
+    g.add(xform(rbox((0.22, 0.6, 0.02), 0.01, 1), gp(0, 1.15, 0.176), ry(0)), S['Rock'], L['none'], 0.5, tint=0.5)
+    g.add(xform(blob(0.07, r, (1, 1, 0.3), subdiv=1, rough=0.0, flat=-2), gp(0.03, 0.95, 0.19)), S['Accent'], L['none'], 0.6)
+    # the wall of clocks
+    clock(g, P(W / 2 + 0.02, 2.55, 0.0), ry(90), 0.46, 200, 35, S['Accent'], S['Sand'], sides=16)      # the big station clock on the east gable
+    board_sign(g, P(-0.9, 1.97, fz + 0.08), rz(1.5), 1.35, 0.24, 'THE TIME IS\nPROBABLY', 0.07, S['Dock'], S['WoodDark'], thick=0.04)
+    front = [(-1.6, 1.0, 0.28), (-1.65, 1.85, 0.2), (0.35, 0.85, 0.34), (0.55, 1.95, 0.22), (1.75, 0.7, 0.3), (1.75, 1.55, 0.18), (0.0, 1.45, 0.16), (-0.25, 1.9, 0.14)]
+    for x, y, d in front:
+        clock(g, P(x, y, fz + 0.02), ry(0), d / 2, r.uniform(0, 360), r.uniform(0, 360), r.choice((S['WoodDark'], S['Accent'], S['Rock'])), S['Sand'], sides=10)
+    for sx in (-1, 1):
+        for z, y, d in ((-1.0, 1.9, 0.3), (-0.4, 1.15, 0.22), (0.2, 1.7, 0.42), (0.9, 0.95, 0.26), (0.8, 1.95, 0.18), (-0.1, 0.6, 0.2)):
+            clock(g, P(sx * (W / 2 + 0.02), y, z), ry(sx * 90), d / 2, r.uniform(0, 360), r.uniform(0, 360), r.choice((S['WoodDark'], S['Accent'], S['Rock'])), S['Sand'], sides=10)
+    for sx in (-1, 1):
+        clock(g, P(sx * (W / 2 - 0.35), 1.8, fz + 1.4 + 0.08), ry(0), 0.14, r.uniform(0, 360), r.uniform(0, 360), S['Accent'], S['Sand'], sides=10)
+        clock(g, P(sx * (W / 2 - 0.35), 1.2, fz + 1.4 + 0.08), ry(0), 0.1, r.uniform(0, 360), r.uniform(0, 360), S['WoodDark'], S['Sand'], sides=8)
+    # alarm clocks on the roof (front slope), a cuckoo clock in the gable, a sundial on the ridge
+    ang = math.degrees(math.atan2(3.3 - 2.2, D / 2))
+    tn = (3.3 - 2.2) / (D / 2)
+    for x, s in ((-1.2, 0.5), (0.2, 0.9), (1.4, 0.4)):
+        yy = 3.3 - tn * s + 0.07 + 0.17
+        ar = rx(ang)
+        add_lathe(g, P(x, yy, s), [(0.0, 0.0), (0.02, 0.15), (0.12, 0.17), (0.17, 0.0)], S['Accent'], L['none'], 0.6, sides=10, rot=ar)
+        for sd in (-1, 1):
+            g.add(xform(blob(0.05, r, (1, 0.7, 1), subdiv=1, rough=0.0, flat=-2), P(x + sd * 0.1, yy + 0.2, s + 0.05)), S['Rock'], L['none'], 0.6)
+    cp2 = P(-W / 2 - 0.08, 2.35, 0.2)                                    # the cuckoo clock on the west gable
+    cr2 = ry(-90)
+    CK = vP(cp2, cr2)
+    g.add(xform(rbox((0.3, 0.34, 0.14), 0.02, 1), CK(0, 0, 0), cr2), S['Wood'], L['Wood'], 0.5)
+    g.add(xform(rbox((0.38, 0.05, 0.2), 0.01, 1), CK(0, 0.2, 0), cr2), S['Roof'], L['Wood'], 0.5)
+    g.add(xform(blob(0.045, r, (1, 1, 1), subdiv=1, rough=0.0, flat=-2), CK(0.02, -0.1, 0.1)), S['Accent'], L['none'], 0.6)
+    for dx in (-0.08, 0.08):
+        g.add(tube([CK(dx, -0.17, 0.0), CK(dx, -0.5, 0.02)], 0.008, 4, caps=False), S['Rock'], L['none'], 0.6)
+        g.add(xform(blob(0.045, r, (0.8, 1.2, 0.8), subdiv=1, rough=0.02, flat=-2), CK(dx, -0.55, 0.02)), S['Wood'], L['none'], 0.6)
+    g.solid('LockKeeperHut', collider='box')
+    g.note = g.note.replace('31 clocks', '%d clocks' % g.extra['clocks'])
+    return g
+
+# ---- build, bake, export, manifest, previews --------------------------------------------------------------------------------------------
+import copy
+
+def crop_group(g, name, x0, x1, z0, z1, dx=0.0):
+    # A copy of the faces of g whose centroid lies in the rectangle (preview only), shifted by dx in Unity x.
+    c = G2(name, 'core', rays=0)
+    c.lmap = None
+    remap = {}
+    off = Vector((dx, 0.0, 0.0))
+    for fi, f in enumerate(g.F):
+        cx = sum(g.V[k].x for k in f) / len(f)
+        cz = sum(g.V[k].z for k in f) / len(f)
+        if not (x0 <= cx <= x1 and z0 <= cz <= z1):
+            continue
+        nf = []
+        for k in f:
+            if k not in remap:
+                remap[k] = len(c.V)
+                c.V.append(Vector(g.V[k]) + off)
+                c.N.append(Vector(g.N[k]))
+            nf.append(remap[k])
+        c.F.append(tuple(nf)); c.UV.append(list(g.UV[fi])); c.SL.append(g.SL[fi]); c.AO.append(g.AO[fi])
+        c.TINT.append(g.TINT[fi] if g.TINT else 1.0)
+    return c
+
+def shifted(g, name, dx=0.0, dz=0.0):
+    c = copy.copy(g)
+    off = Vector((dx, 0.0, dz))
+    c.V = [Vector(v) + off for v in g.V]
+    c.name = name
+    c.items, c.placements, c.extra = [], [], {}
+    return c
+
+def tug_fit_check(lock):
+    # Real numbers: the crew tug's visual bounds against the repaired lock's clear water (|x| < min wall face, -1.55 < y < 9.5).
+    tug = build_crew_boat()
+    xs = [v.x for v in tug.V]; ys = [v.y for v in tug.V]; zs = [v.z for v in tug.V]
+    half_beam = max(abs(min(xs)), abs(max(xs)))
+    nav = [v for v in lock.V if -1.55 < v.y < 9.5]
+    clear = min(abs(v.x) for v in nav) if nav else 99.0
+    return dict(tug_half_beam=round(half_beam, 3), tug_beam=round(2 * half_beam, 3), tug_length=round(max(zs) - min(zs), 3),
+                tug_keel_y=round(min(ys), 3), tug_top_y=round(max(ys), 3), lock_clear_half_width=round(clear, 3), lock_clear_width=round(2 * clear, 3),
+                clearance_each_side=round(clear - half_beam, 3), chamber_length=2 * LOCK_GZ, floor_y=LOCK_FLOOR,
+                keel_clearance=round(min(ys) - LOCK_FLOOR, 3), overhead='none (the only structures above the water are the walls at |x| >= %.2f)' % clear,
+                fits=bool(clear - half_beam > 0.5 and (min(ys) - LOCK_FLOOR) > 0.3 and 2 * LOCK_GZ > (max(zs) - min(zs)) + 2.0)), tug
+
+def vill_ground(x0, x1, z0, z1, y, step=2.0):
+    xs = frange(x0, x1, step); zs = frange(z0, z1, step)
+    verts = [(x, y, z) for z in zs for x in xs]
+    nx = len(xs)
+    polys = [(j * nx + i, j * nx + i + nx, j * nx + i + nx + 1, j * nx + i + 1) for j in range(len(zs) - 1) for i in range(nx - 1)]
+    return verts, polys
+
+def v_entry(g, ob_file, kind, landmark=None, state=None, **extra):
+    d = p2_group_entry(g, ob_file)
+    d['file'] = 'Art/Export/Village/' + g.name + '.fbx'
+    d['kind'] = kind
+    if landmark:
+        d['landmark'] = landmark
+    if state:
+        d['state'] = state
+    d['world_model'] = not g.local
+    d['placement_note'] = ('place at the Unity origin, identity transform (world coordinates)' if not g.local
+                           else 'local model: instantiate per placement (position, yaw_deg about +y)')
+    d['hide_in_restored_mesh'] = []
+    d.update(extra)
+    return d
+
+LANDMARK_RECT = {   # preview crop of the restored mesh around each landmark: x0, x1, z0, z1
+    'DockOffice': (DOCK_OFFICE[0] - DOCK_OFFICE[2] / 2 - 2.0, DOCK_OFFICE[0] + DOCK_OFFICE[2] / 2 + 2.0, DOCK_OFFICE[1] - DOCK_OFFICE[3] / 2 - 1.5, DOCK_OFFICE[1] + DOCK_OFFICE[3] / 2 + 1.5),
+    'BaitShop': (BAIT_SHOP[0] - BAIT_SHOP[2] / 2 - 2.0, BAIT_SHOP[0] + BAIT_SHOP[2] / 2 + 2.0, BAIT_SHOP[1] - BAIT_SHOP[3] / 2 - 1.5, BAIT_SHOP[1] + BAIT_SHOP[3] / 2 + 2.5),
+    'NetShed': (NET_SHED[0] - NET_SHED[2] / 2 - 1.0, NET_SHED[0] + NET_SHED[2] / 2 + 1.0, NET_SHED[1] - NET_SHED[3] / 2 - 1.0, NET_SHED[1] + NET_SHED[3] / 2 + 1.0),
+    'Smokehouse': (SMOKEHOUSE[0] - SMOKEHOUSE[2] / 2 - 2.0, SMOKEHOUSE[0] + SMOKEHOUSE[2] / 2 + 1.5, SMOKEHOUSE[1] - SMOKEHOUSE[3] / 2 - 1.5, SMOKEHOUSE[1] + SMOKEHOUSE[3] / 2 + 1.5),
+    'Boatyard': (SAWHORSE_BOAT[0] - 3.0, SAWHORSE_BOAT[0] + 3.0, SAWHORSE_BOAT[1] - 3.0, SAWHORSE_BOAT[1] + 3.0),
+    'Chapel': (CHAPEL[0] - 4.5, CHAPEL[0] + 4.5, CHAPEL[1] - 12.0, CHAPEL[1] + 2.2),
+}
+LANDMARK_SOURCE = {'DockOffice': 'buildings', 'BaitShop': 'buildings', 'NetShed': 'buildings', 'Smokehouse': 'buildings', 'Boatyard': 'yardB', 'Chapel': 'upper'}
+LANDMARK_BASE_Y = {'DockOffice': PLATEAU_Y, 'BaitShop': PLATEAU_Y, 'NetShed': PLATEAU_Y, 'Smokehouse': PLATEAU_Y, 'Chapel': None, 'Boatyard': None}
+LANDMARK_FRAMES = {   # camera: (eye offset from the landmark centre, target height, lens)
+    'DockOffice': ((0.0, 3.4, 15.0), 1.7), 'BaitShop': ((0.0, 3.4, 16.0), 1.8), 'NetShed': ((0.0, 3.0, 14.5), 1.5),
+    'Smokehouse': ((0.0, 3.4, 15.0), 2.0), 'Boatyard': ((0.0, 3.5, 15.5), 1.0), 'Chapel': ((-12.0, 6.0, 40.0), 5.5)}
+LANDMARK_CENTRE = {'DockOffice': (DOCK_OFFICE[0], DOCK_OFFICE[1]), 'BaitShop': (BAIT_SHOP[0], BAIT_SHOP[1] + 1.0), 'NetShed': (NET_SHED[0], NET_SHED[1]),
+                   'Smokehouse': (SMOKEHOUSE[0] - 0.4, SMOKEHOUSE[1]), 'Boatyard': (SAWHORSE_BOAT[0], SAWHORSE_BOAT[1]), 'Chapel': (CHAPEL[0], CHAPEL[1] - 4.0)}
+LANDMARK_SEP = {'DockOffice': 8.5, 'BaitShop': 10.0, 'NetShed': 8.5, 'Smokehouse': 7.5, 'Boatyard': 8.0, 'Chapel': 12.5}
+
+def hide_world_preview(ids):
+    for o in bpy.data.objects:
+        if o.name.startswith('FG_Preview_Terrain') or o.name == 'FG_Preview_Water':
+            o.hide_render = ids == 'hide'
+            o.hide_viewport = ids == 'hide'
+
+def preview_plane(name, y, x0, x1, z0, z1):
+    old = bpy.data.objects.get(name)
+    if old:
+        bpy.data.objects.remove(old, do_unlink=True)
+    pts = [(x0, y - 0.04, z0), (x1, y - 0.04, z0), (x1, y - 0.04, z1), (x0, y - 0.04, z1)]
+    me = bpy.data.meshes.new(name)
+    me.from_pydata([tuple(to_blender(p)) for p in pts], [], [(0, 1, 2, 3)])
+    me.update()
+    ob = bpy.data.objects.new(name, me)
+    collection('Preview').objects.link(ob)
+    if ob.data.polygons[0].normal.z < 0:
+        me.flip_normals()
+    me.materials.append(toon_ground_material())
+    return ob
+
+def village_previews(pv):
+    # pv: dict of the built groups and their raw AO. Renders into Art/Previews/Village (Eevee, 1280 x 720, the toon preview look).
+    os.makedirs(VILLAGE_PREVIEW_DIR, exist_ok=True)
+    made = []
+    live = []
+    def mk(gr, raw, nm=None):
+        ob = make_object2(gr)
+        write_ao2(ob, gr, raw)
+        ob.data.materials.append(preview_material())
+        live.append(ob)
+        return ob
+    def clear():
+        for ob in live:
+            me = ob.data
+            bpy.data.objects.remove(ob, do_unlink=True)
+            if me and me.users == 0:
+                bpy.data.meshes.remove(me)
+        live.clear()
+    preview_scene2()
+    toon_preview()
+    try:
+        bpy.context.scene.eevee.use_raytracing = False      # the water's glossy reflections cost minutes a frame in software GL
+    except Exception:
+        pass
+    sources = pv['restored']
+    for key in VILLAGE_LANDMARKS:
+        src = sources[LANDMARK_SOURCE[key]]
+        rect = LANDMARK_RECT[key]
+        ov = pv['overlay'][key]
+        cx, cz = LANDMARK_CENTRE[key]
+        sep = LANDMARK_SEP[key]
+        by = LANDMARK_BASE_Y[key]
+        if by is None:
+            by = LEVEL2_Y if key == 'Chapel' else land_y(cx, cz)
+        rest = crop_group(src, 'pv_rest_' + key, *rect)
+        run_ = crop_group(src, 'pv_runrest_' + key, *rect, dx=sep)
+        ovs = shifted(ov, 'pv_overlay_' + key, dx=sep)
+        mk(rest, [1.0] * len(rest.V)); mk(run_, [1.0] * len(run_.V)); mk(ovs, pv['raw'][ov.name])
+        hide_world_preview('hide')
+        preview_plane('FG_Preview_Terrain_v', by, cx - 40, cx + 40, cz - 40, cz + 30)
+        ex, ey, ez = LANDMARK_FRAMES[key][0]
+        mid = cx + sep / 2
+        render_view2(os.path.join(VILLAGE_PREVIEW_DIR, 'Village_%s_Rundown_vs_Restored.png' % key), (mid, by + ey, cz + ez), (mid, by + LANDMARK_FRAMES[key][1], cz),
+                     lens=26 if key != 'Chapel' else 30)
+        made.append('Village_%s_Rundown_vs_Restored.png' % key)
+        clear()
+    # scaffold kits: the building + its scaffold in place (three shots)
+    shots = [('West', ['BaitShop', 'NetShed', 'Smokehouse'], (-42.0, PLATEAU_Y + 7.5, -42.0), (-28.0, PLATEAU_Y + 1.5, -64.0), 36),
+             ('East', ['DockOffice', 'Boatyard'], (28.0, PLATEAU_Y + 7.5, -43.0), (16.0, PLATEAU_Y + 1.0, -65.0), 36),
+             ('Chapel', ['Chapel'], (CHAPEL[0] - 13.0, LEVEL2_Y + 7.0, CHAPEL[1] + 26.0), (CHAPEL[0], LEVEL2_Y + 4.5, CHAPEL[1] - 1.0), 40)]
+    for name, keys, eye, tgt, lens in shots:
+        for key in keys:
+            src = sources[LANDMARK_SOURCE[key]]
+            c = crop_group(src, 'pv_sc_rest_' + key, *LANDMARK_RECT[key])
+            mk(c, [1.0] * len(c.V))
+            sc = pv['scaffold'][key]
+            mk(shifted(sc, 'pv_sc_' + key), pv['raw'][sc.name])
+            mp = sc.extra.get('mixer_placement')
+            if mp:
+                mix = shifted(pv['mixer'], 'pv_mixer_' + key)
+                o = Vector(mp['position'])
+                rr = ry(mp['yaw_deg'])
+                mix.V = [o + rr @ Vector(v) for v in pv['mixer'].V]
+                mk(mix, pv['raw'][pv['mixer'].name])
+        by = PLATEAU_Y if name != 'Chapel' else LEVEL2_Y
+        hide_world_preview('hide')
+        preview_plane('FG_Preview_Terrain_v', by, tgt[0] - 60, tgt[0] + 60, tgt[2] - 40, tgt[2] + 40)
+        render_view2(os.path.join(VILLAGE_PREVIEW_DIR, 'Village_Scaffold_%s.png' % name), eye, tgt, lens=lens)
+        made.append('Village_Scaffold_%s.png' % name)
+        clear()
+    # the lock in both states, then the tug passing through the repaired one, then the keeper's hut
+    hide_world_preview('show')
+    for o in bpy.data.objects:
+        if o.name.startswith('FG_Preview_Terrain_v'):
+            bpy.data.objects.remove(o, do_unlink=True)
+    for o in bpy.data.objects:
+        if o.name == 'FG_Preview_Terrain':
+            o.hide_render = True
+    w = bpy.data.objects.get('FG_Preview_Water')
+    if w:
+        for v, co in zip(w.data.vertices, [(-140, -140, 0), (140, -140, 0), (140, 140, 0), (-140, 140, 0)]):
+            v.co = co
+    banks = vg('pv_banks', rays=0)
+    for x0, x1 in ((-70.0, -22.5), (-8.5, 8.5), (22.5, 70.0)):
+        vbox(banks, ((x0 + x1) / 2, -0.15, -30.0), (x1 - x0, 4.5, 110.0), S['Grass'], L['Grass'], 1.0, r=0.1)
+    mk(banks, [1.0] * len(banks.V))
+    lb = pv['lock']['broken']; lr = pv['lock']['repaired']
+    mk(shifted(lb, 'pv_lock_broken', dx=15.5), pv['raw'][lb.name])
+    mk(shifted(lr, 'pv_lock_repaired', dx=-15.5), pv['raw'][lr.name])
+    render_view2(os.path.join(VILLAGE_PREVIEW_DIR, 'Village_Lock_Broken_vs_Repaired.png'), (0.0, 27.0, 50.0), (0.0, 0.0, -2.0), lens=30)
+    made.append('Village_Lock_Broken_vs_Repaired.png')
+    clear()
+    # close shots, one lock each, from the downstream end (the harbour side)
+    banks1 = vg('pv_banks1', rays=0)
+    for x0, x1 in ((-70.0, -6.75), (6.75, 70.0)):
+        vbox(banks1, ((x0 + x1) / 2, -0.15, -30.0), (x1 - x0, 4.5, 110.0), S['Grass'], L['Grass'], 1.0, r=0.1)
+    for tag, lk in (('Broken', lb), ('Repaired', lr)):
+        mk(banks1, [1.0] * len(banks1.V))
+        mk(lk, pv['raw'][lk.name])
+        render_view2(os.path.join(VILLAGE_PREVIEW_DIR, 'Village_Lock_%s.png' % tag), (11.0, 7.5, 33.0), (0.0, 0.5, 4.0), lens=32)
+        made.append('Village_Lock_%s.png' % tag)
+        clear()
+    # the tug in the repaired lock (the real Harbour_Core_CrewBoat), seen from above the harbour end
+    mk(banks1, [1.0] * len(banks1.V))
+    mk(lr, pv['raw'][lr.name])
+    tug = pv['tug']
+    mk(shifted(tug, 'pv_tug', dz=-1.5), [1.0] * len(tug.V))
+    render_view2(os.path.join(VILLAGE_PREVIEW_DIR, 'Village_Lock_TugFit.png'), (-10.0, 12.0, 38.0), (0.0, 1.5, -2.0), lens=30)
+    made.append('Village_Lock_TugFit.png')
+    clear()
+    # the hut and the mixer on a bank
+    hide_world_preview('hide')
+    preview_plane('FG_Preview_Terrain_v', 0.0, -30, 30, -30, 30)
+    hut = pv['hut']
+    mk(hut, pv['raw'][hut.name])
+    mix = shifted(pv['mixer'], 'pv_mixer_hut', dx=5.0, dz=2.5)
+    mk(mix, pv['raw'][pv['mixer'].name])
+    render_view2(os.path.join(VILLAGE_PREVIEW_DIR, 'Village_LockKeeperHut.png'), (-3.0, 3.6, 10.5), (0.3, 1.5, 0.5), lens=32)
+    made.append('Village_LockKeeperHut.png')
+    clear()
+    return made
+
+def village_main(export=True, bake=True, previews=True):
+    for name in P2_COLLECTIONS.values():
+        clear_collection(name)
+    clear_collection('Preview_Instances')
+    os.makedirs(VILLAGE_DIR, exist_ok=True)
+    # restored geometry: occluders for the AO bake, and the preview's "restored" side. Not exported here.
+    bld = build_buildings()
+    yard_a, yard_b = build_yard()
+    upper = build_upper_village()[0]
+    restored = dict(buildings=bld, yardB=yard_b, upper=upper)
+    overlays = {'DockOffice': ro_dock_office(), 'BaitShop': ro_bait_shop(), 'NetShed': ro_net_shed(), 'Smokehouse': ro_smokehouse(),
+                'Boatyard': ro_boatyard(), 'Chapel': ro_chapel()}
+    scaffolds = {'DockOffice': sc_building('DockOffice', DOCK_OFFICE[0], PLATEAU_Y, DOCK_OFFICE[1], DOCK_OFFICE[2], DOCK_OFFICE[3], 3.4,
+                                           'Scaffolding kit for the harbour office (DOCK_OFFICE): front and both sides, two lifts, ladder, sheets, planks.'),
+                 'BaitShop': sc_building('BaitShop', BAIT_SHOP[0], PLATEAU_Y, BAIT_SHOP[1], BAIT_SHOP[2], BAIT_SHOP[3], 3.55,
+                                         'Scaffolding kit for the bait shop (BAIT_SHOP): front and both sides, two lifts, ladder, sheets, planks.'),
+                 'NetShed': sc_building('NetShed', NET_SHED[0], PLATEAU_Y, NET_SHED[1], NET_SHED[2], NET_SHED[3], 3.1,
+                                        'Scaffolding kit for the net shed (NET_SHED): front and both sides, two lifts, ladder, sheets, planks.'),
+                 'Smokehouse': sc_building('Smokehouse', SMOKEHOUSE[0], PLATEAU_Y + 0.95, SMOKEHOUSE[1], SMOKEHOUSE[2], SMOKEHOUSE[3], 3.1,
+                                           'Scaffolding kit for the smokehouse (SMOKEHOUSE): standing on the house floor level (stone base 0.95 m): '
+                                           'front and both sides, two lifts, ladder, sheets, planks.', west=False),
+                 'Boatyard': sc_boatyard(), 'Chapel': sc_chapel()}
+    mixer = build_cement_mixer()
+    locks = {'broken': build_lock('broken'), 'repaired': build_lock('repaired'), 'frame': build_lock('frame', leaves=False)}
+    leaf = build_gate_leaf()
+    hut = build_keeper_hut()
+    fit, tug = tug_fit_check(locks['repaired'])
+    groups = list(overlays.values()) + list(scaffolds.values()) + [mixer, locks['broken'], locks['repaired'], locks['frame'], leaf, hut]
+    for g in groups:
+        if g.tris() > MAX_TRIS or len(g.V) >= 65535:
+            raise RuntimeError('%s: %d triangles, %d vertices' % (g.name, g.tris(), len(g.V)))
+    objs = [make_object2(g) for g in groups]
+    raws = {}
+    if bake:
+        world = [g for g in groups if not g.local]
+        ground = vill_ground(-62.0, 62.0, -112.0, -54.0, PLATEAU_Y)
+        ground2 = vill_ground(-8.0, 20.0, -108.0, -92.0, LEVEL2_Y)
+        occ = [bld, yard_b, upper] + world
+        raw_list = bake_ao2(groups, occ, ground, core_occluders=occ)
+        for ob, g, raw in zip(objs, groups, raw_list):
+            write_ao2(ob, g, raw)
+            raws[g.name] = raw
+    status = {}
+    entries = []
+    for ob, g in zip(objs, groups):
+        path = os.path.join(VILLAGE_DIR, g.name + '.fbx')
+        if export:
+            status[g.name] = export_if_changed(ob, path)
+        entries.append(g)
+    for ob in objs:                      # the export objects carry no material: keep them out of the preview renders
+        ob.hide_render = True
+        ob.hide_viewport = True
+    pv = dict(restored=restored, overlay=overlays, scaffold=scaffolds, mixer=mixer, lock=locks, hut=hut, tug=tug, raw=raws)
+    made = []
+    if previews and bake:
+        made = village_previews(pv)
+    # manifest
+    place = [dict(name='Lock', position=list(LOCK_WORLD['position']), yaw_deg=LOCK_WORLD['yaw'])]
+    lock_info = dict(
+        local_origin='chamber centre on the water line; +z downstream (toward the harbour); y 0 = water surface (put the origin on the water plane)',
+        suggested_world=dict(position=list(LOCK_WORLD['position']), yaw_deg=LOCK_WORLD['yaw'],
+                             note='on the river axis where it meets the bay: RIVER x -80.0 at z -45, CHANNEL_MARKERS G (-72.5, -36.5) / R (-87.5, -34.5) '
+                                  'sit just outside the walls (outer faces at x -86.9 / -73.5); downstream gate at z -38, upstream gate at z -62, guide walls '
+                                  'to z -30.2 / -69.8. Phase B (west wall to x -100) may move it: only the position changes.'),
+        dims=dict(clear_width=2 * LOCK_HW, clear_between_fenders=round(2 * (LOCK_HW - LOCK_FENDER), 2), chamber_length_between_gates=2 * LOCK_GZ,
+                  wall_top_y=LOCK_TOP, floor_y=LOCK_FLOOR, wall_outer_x=6.7, total_length=round(2 * (LOCK_END + 4.8), 1), gate_leaf_length=LOCK_LEAF),
+        hinges=[dict(name='Gate%s_%s' % ('Down' if sz > 0 else 'Up', 'East' if s > 0 else 'West'), position=[s * LOCK_HINGE_X, 0.0, sz * LOCK_GZ],
+                     open_yaw_deg=round(yaw_of(0, sz), 2), closed_yaw_deg=round(yaw_of(-s * math.cos(math.radians(LOCK_MITRE)), -math.sin(math.radians(LOCK_MITRE))), 2))
+                for sz in (1, -1) for s in (-1, 1)],
+        tug_fit=fit)
+    meta = {}
+    for key, g in overlays.items():
+        meta[g.name] = ('rundown_overlay', dict(landmark=key, state='rundown',
+                        show_when='the landmark is RUN-DOWN: show it ON TOP of the restored mesh (nothing is hidden); hide it once restored',
+                        covers_original_signs=True))
+    for key, g in scaffolds.items():
+        meta[g.name] = ('scaffold', dict(landmark=key, state='being_restored',
+                        show_when='the landmark is being restored: show it ON TOP of the restored mesh (or the run-down overlay)',
+                        mixer_placement=g.extra.get('mixer_placement')))
+    meta[mixer.name] = ('prop', dict(placements=[dict(name='CementMixer_' + k, **s.extra['mixer_placement']) for k, s in scaffolds.items()]))
+    meta[locks['broken'].name] = ('lock', dict(state='broken', passable=False, lock=lock_info, placements=place))
+    meta[locks['repaired'].name] = ('lock', dict(state='repaired', passable=True, lock=lock_info, placements=place))
+    meta[locks['frame'].name] = ('lock', dict(state='repaired_frame', passable=True, optional=True, placements=place,
+                                  use_with='4 x Harbour_Village_Lock_GateLeaf at lock.hinges (open_yaw_deg / closed_yaw_deg)'))
+    meta[leaf.name] = ('lock_part', dict(state='repaired', optional=True))
+    meta[hut.name] = ('building', dict(placements=[dict(name='LockKeeperHut', position=list(HUT_WORLD['position']), yaw_deg=HUT_WORLD['yaw'])]))
+    manifest = dict(
+        generator='Art/Blender/fg_harbour.py with FG_STATE=rundown (the VILLAGE STATES section)',
+        branch='harbour-village-states',
+        axes='Unity metres. Authored in Unity axes; Blender = (-x, -z, y); each FBX object is at the origin with an identity transform.',
+        encoding='the harbour\'s: UV0 UVMap metres, UV1 Layer = (palette slot, texture layer), vertex colour Col = 0.5 x baked AO, smooth normals, no materials; '
+                 'all models are M_Toon_Base (no _Tri); no new palette slot or texture layer',
+        states=dict(restored='today\'s meshes, unchanged (Harbour_Core_Buildings, Harbour_Core_Yard_B, Harbour_Core_Buildings_Upper)',
+                    rundown='show Harbour_Village_<Landmark>_Rundown ON TOP of the restored mesh (nothing is hidden)',
+                    being_restored='show Harbour_Village_Scaffold_<Landmark> (+ the cement mixer) on the restored mesh'),
+        tug_fit=fit, preview_files=(sorted(f for f in os.listdir(VILLAGE_PREVIEW_DIR) if f.endswith('.png')) if os.path.isdir(VILLAGE_PREVIEW_DIR) else made), export_status=status, total_triangles=sum(g.tris() for g in groups), fbx=[])
+    for g in groups:
+        kind, extra = meta[g.name]
+        manifest['fbx'].append(v_entry(g, g.name, kind, **extra))
+    with open(VILLAGE_MANIFEST, 'w', encoding='utf-8') as fh:
+        json.dump(manifest, fh, indent=1)
+    print('VILLAGE', {g.name: g.tris() for g in groups}, 'status', status, 'previews', made, 'fit', fit)
+    return groups, objs
+
 
 if __name__ == '__main__':
-    main()
+    if STATE == 'restored':
+        main()
+    elif STATE == 'rundown':
+        village_main(previews=os.environ.get('FG_VILLAGE_PREVIEWS', '1') != '0')
+    elif STATE == 'both':
+        main()
+        village_main(previews=os.environ.get('FG_VILLAGE_PREVIEWS', '1') != '0')
+    else:
+        raise RuntimeError("FG_STATE must be 'restored' (default), 'rundown' or 'both', got %r" % STATE)
