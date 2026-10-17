@@ -518,14 +518,14 @@ def m_glasses(g, r):
        fished=dict(weed=2, barn=2), who='Lorraine Bass (pier)')
 def m_teapot(g, r):
     cream, red, gold = P['ShellCream'], S['Roof'], P['Gold']
-    lat(g, (0, 0, 0), [(0.0, 0.058), (0.008, 0.08), (0.04, 0.1), (0.085, 0.108), (0.12, 0.098), (0.136, 0.074), (0.14, 0.064)], cream, L0, 0.5,
-        sides=14, cap0=True, cap1=False, ring_slots=[cream, cream, red, red, cream, gold])
-    lat(g, (0, 0, 0), [(0.14, 0.06), (0.152, 0.054), (0.168, 0.03), (0.175, 0.012)], cream, L0, 0.5, sides=14, cap0=False, cap1=True,
+    lat(g, (0, 0, 0), [(0.0, 0.05), (0.01, 0.07), (0.03, 0.092), (0.06, 0.105), (0.1, 0.11), (0.14, 0.105), (0.17, 0.09), (0.19, 0.07), (0.2, 0.06)], cream,
+        L0, 0.5, sides=14, cap0=True, cap1=False, ring_slots=[cream, cream, cream, red, red, cream, cream, gold])
+    lat(g, (0, 0, 0), [(0.2, 0.058), (0.212, 0.05), (0.228, 0.03), (0.237, 0.012)], cream, L0, 0.5, sides=14, cap0=False, cap1=True,
         ring_slots=[gold, cream, cream])
-    ball(g, (0, 0.188, 0), 0.015, gold, L0, 0.5, sub=2)
-    g.add(taper_tube([Vector(p) for p in [(0.085, 0.05, 0), (0.125, 0.065, 0), (0.158, 0.1, 0), (0.185, 0.145, 0)]], [0.02, 0.016, 0.012, 0.0085], 7),
+    ball(g, (0, 0.252, 0), 0.016, gold, L0, 0.5, sub=2)
+    g.add(taper_tube([Vector(p) for p in [(0.09, 0.06, 0), (0.14, 0.075, 0), (0.185, 0.13, 0), (0.218, 0.205, 0)]], [0.026, 0.019, 0.014, 0.0095], 7),
           cream, L0, 0.5)
-    path(g, arc((-0.1, 0.085, 0), 0.062, 105, -105, 8)[::-1], 0.0105, cream, L0, 0.5, sides=6)
+    path(g, arc((-0.105, 0.125, 0), 0.078, 105, -105, 8)[::-1], 0.0115, cream, L0, 0.5, sides=6)
 
 @model('ChapelBell', 'villager', 'base: centre of the mouth, mouth down on the ground', "The chapel bell: ~0.8 m, heavy, bronze, on a carrying beam.",
        fished=dict(weed=4, barn=4, grow=1.4), who='Reverend Gil (reef wreck)', ground=True)
@@ -719,19 +719,16 @@ def m_scallop(g, r):
 @model('Shell_Whelk', 'collectible', 'base centre, lying on its side', "Whelk: spiral shell with a flared mouth and a short canal.",
        fished=dict(weed=2, barn=3), who='beach')
 def m_whelk(g, r):
-    pts, rad = [], []
-    n = 26
-    for i in range(n + 1):
-        t = i / n
-        a = t * 4.6 * math.pi
-        R = 0.012 + 0.05 * t
-        y = 0.12 * (1.0 - t) * (1.0 if t < 0.0 else 1.0)
-        pts.append(Vector((R * math.cos(a), 0.012 + 0.11 * (1 - t) ** 1.0 * 0.6 + 0.0, R * math.sin(a))))
-        rad.append(0.004 + 0.034 * t ** 1.1)
-    pts = [Vector((p.x, 0.02 + 0.1 * (1 - i / n) - 0.0, p.z)) for i, p in enumerate(pts)]
-    g.add(taper_tube(pts[::-1][::-1], rad, 8), P['ShellCream'], LR, 0.55)
-    pts2 = [pts[-1], pts[-1] + Vector((0.03, -0.045, 0.02)), pts[-1] + Vector((0.05, -0.09, 0.03))]
-    g.add(taper_tube(pts2, [0.034, 0.02, 0.008], 8), S['Sand'], LR, 0.55)
+    # Spindle shell lying on its side: siphonal canal, big body whorl and a stepped spire with crisp ridges (a sawtooth lathe).
+    prof = [(0.0, 0.004), (0.02, 0.011), (0.04, 0.03), (0.06, 0.05), (0.078, 0.057), (0.09, 0.05)]
+    for k in range(6):
+        h = 0.09 + 0.0105 * k
+        rr = 0.05 * (1 - k / 7.5)
+        prof += [(h + 0.002, rr * 0.8), (h + 0.0075, rr)]
+    prof.append((0.158, 0.004))
+    geo, _ = lathe(prof, 10, True, True)
+    g.add(xform(geo, (-0.08, 0.052, 0.0), rz(-78)), P['ShellCream'], LR, 0.55)
+    ball(g, (0.0, 0.03, 0.0), 0.034, P['ShellPink'], L0, 0.55, scale=(0.45, 0.9, 0.7), sub=1, rot=rz(-10))
 
 @model('Shell_Cowrie', 'collectible', 'base centre, aperture down', "Cowrie: glossy humped shell with a toothed slit, speckled.",
        fished=dict(weed=1, barn=2), who='beach')
@@ -766,26 +763,31 @@ def m_sanddollar(g, r):
         ball(g, c, 0.02, S['Dock'], L0, 0.55, scale=(0.22, 0.06, 1.0), sub=1, rot=ry(math.degrees(a)))
     ball(g, (0, 0.031, 0), 0.006, S['Dock'], L0, 0.55, scale=(1, 0.5, 1), sub=1)
 
-@model('Shell_Razor', 'collectible', 'base centre, lying along x', "Razor clam: long, slightly curved shell with growth bands.",
+@model('Shell_Razor', 'collectible', 'base centre, lying along x, open', "Razor clam: long, slightly curved shell with growth bands.",
        fished=dict(weed=1, barn=2), who='beach')
 def m_razor(g, r):
-    pts = [Vector((x, 0.012 + 0.006 * (1 - (x / 0.075) ** 2) * 0.0, 0.008 * math.sin(x * 20 + 1))) for x in [(-0.07 + 0.14 * i / 8) for i in range(9)]]
-    pts = [Vector((p.x, 0.012, p.z * 0.0 + 0.012 * (1 - (p.x / 0.075) ** 2))) for p in pts]
-    geo = tube(pts, 0.0125, 8, caps=True)
-    geo = scl(geo, (1.0, 0.62, 1.0))
-    g.add(geo, P['ShellCream'], LR, 0.55)
-    for i in range(4):
-        x = -0.045 + 0.03 * i
-        ring(g, (x, 0.012 * 0.62, 0.012 * (1 - (x / 0.075) ** 2)), 0.0128, 0.0014, S['Dock'], L0, 0.55, rot=ry(90), segs=8, sides=3)
+    # Razor clam lying open: two smooth, slightly tapered valves joined at a hinge ligament, each a shallow trough.
+    R = 0.021
+    for s in (-1, 1):
+        def fn(u, v, s=s):
+            x = -0.075 + 0.15 * u
+            k = 1.0 - 0.45 * (2 * u - 1) ** 4
+            phi = math.radians(180 + 150 * v)
+            return Vector((x, 0.021 + R * k * math.sin(phi) * 0.9 + 0.0, s * (R + R * k * math.cos(phi)) * 1.0))
+        geo = xform(surface(fn, 10, 4, thick=0.003), (0, 0.0, 0), None)
+        g.add(xform(xform(geo, (0, -0.021, 0)), (0, 0.021 + 0.004, 0), rx(-s * 24)), P['ShellCream'], LR, 0.55)
+    rod(g, (-0.07, 0.019, 0.0), (0.07, 0.019, 0.0), 0.0035, S['Dock'], LR, 0.55, sides=4)
 
 @model('Shell_MoonSnail', 'collectible', 'base centre', "Moon snail: round coiled shell, pink mouth and a pale navel.",
        fished=dict(weed=2, barn=3), who='beach')
 def m_moonsnail(g, r):
-    ball(g, (0, 0.045, 0), 0.052, P['ShellCream'], L0, 0.55, scale=(1.0, 0.85, 1.0), sub=2)
-    ball(g, (0.012, 0.087, -0.01), 0.036, P['ShellCream'], L0, 0.55, scale=(1.0, 0.8, 1.0), sub=2)
-    ball(g, (0.02, 0.118, -0.014), 0.022, P['ShellCream'], L0, 0.55, sub=2)
-    ball(g, (0.0, 0.032, 0.04), 0.03, P['ShellPink'], L0, 0.55, scale=(0.9, 1.0, 0.45), sub=2)
-    path(g, arc((0, 0.06, 0), 0.047, -40, 120, 8, 'xz'), 0.0035, S['Dock'], L0, 0.55, sides=4)
+    # Moon snail: a round shell whose three whorls step down in crisp shoulders, with a pink mouth and a dark navel.
+    prof = [(0.0, 0.0), (0.008, 0.03), (0.03, 0.052), (0.055, 0.06), (0.078, 0.052), (0.082, 0.036), (0.09, 0.046), (0.102, 0.042), (0.11, 0.032),
+            (0.113, 0.02), (0.12, 0.028), (0.13, 0.022), (0.136, 0.012), (0.142, 0.0)]
+    geo, _ = lathe(prof, 12, True, True)
+    g.add(xform(geo, (0, 0.002, 0), rx(-28)), P['ShellCream'], LR, 0.55)
+    ball(g, (0.0, 0.05, 0.05), 0.034, P['ShellPink'], L0, 0.55, scale=(0.9, 1.1, 0.4), sub=2, rot=rx(-28))
+    ball(g, (0.0, 0.026, 0.056), 0.012, S['Dock'], L0, 0.55, scale=(1, 1, 0.4), sub=1)
 
 @model('Shell_Turret', 'collectible', 'base centre, resting on its side', "Turret shell: tall ridged spire.",
        fished=dict(weed=1, barn=3), who='beach')
@@ -883,7 +885,11 @@ def m_mound(g, r):
         a = i * 0.9 + 0.3
         ball(g, (0.2 * math.cos(a), 0.035, 0.17 * math.sin(a)), r.uniform(0.04, 0.07), S['WoodDark'], LD, 0.55, scale=(1.0, 0.65, 1.0), sub=1,
              amt=0.15, seed=a)
-    ball(g, (0.06, 0.1, 0.05), 0.04, S['Rock'], LR, 0.55, scale=(1.0, 0.7, 0.9), sub=1, amt=0.15, seed=1.0)
+    for (x, z, rr) in ((0.06, 0.05, 0.04), (-0.14, -0.08, 0.03), (0.17, -0.1, 0.027), (-0.05, 0.14, 0.022)):
+        ball(g, (x, 0.09 if abs(x) < 0.1 else 0.07, z), rr, S['Rock'], LR, 0.55, scale=(1.0, 0.7, 0.9), sub=1, amt=0.18, seed=x * 50)
+    ring(g, (0.1, 0.098, 0.1), 0.034, 0.012, S['WoodDark'], LD, 0.55, segs=10, sides=3, flat=True)           # a crab-hole dimple with a dark mouth
+    lat(g, (0.1, 0.1, 0.1), [(0.0, 0.03), (0.002, 0.03)], P['Iron'], LD, 0.55, sides=10)
+    rod(g, (-0.1, 0.09, -0.04), (-0.2, 0.3, -0.12), 0.0105, S['Wood'], LW, 0.5, r1=0.008, sides=5)             # a stick poking out
     box(g, (-0.05, 0.1, 0.0), (0.18, 0.012, 0.03), 0.004, S['Dock'], LD, 0.55, rot=rz(12) @ ry(35))     # spade-edge mark
 
 @model('DugHole', 'collectible', 'rim centre at ground level (y = 0); the hole is 0.16 m deep below it', "A dug hole: lipped crater with a dark floor and spoil lumps.", ground=False,

@@ -4,7 +4,7 @@ Branch `harbour-props`, cut from `origin/harbour-art3`. Generator: `Art/Blender/
 
 Run: `FG_ROOT=$PWD blender -b --factory-startup --python Art/Blender/fg_props.py` (env `FG_NOPREVIEW=1` skips the renders, `FG_NOEXPORT=1` the FBX, `FG_ONLY=Teapot,Shovel` limits the set). Deterministic: a second run keeps all 73 FBX byte-identical (`export_if_changed`: "kept").
 
-## What was built (73 FBX, 45754 triangles in total)
+## What was built (73 FBX, 46182 triangles in total)
 
 * **Villager belongings (10, plain + fished-up):** Doug's reading glasses, Lorraine's teapot, the chapel bell (0.76 m body, bronze, on a carrying beam), the bait-shop sign (TACKLEBY'S / BAIT, TACKLE, OPINIONS, raised lettering, front faces +z), the lost net bundle, the brass propeller (0.6 m), the lock's crank handle, Wendell's smoking hat (fish pin and a corncob pipe in the band), Dr. Hollis's field notebook, Gil's bingo-ball message bottle (B7 ball as the stopper).
 * **Collectibles:** message bottles A/B/C (green wine bottle with scroll, brown flask with wax seal and tag, long blue flask lying down); 8 shells (scallop, whelk, cowrie, clam, sand dollar, razor clam, moon snail, turret); sea glass in 4 colours (green, brown, blue, white = palette slots GlassGreen/GlassBrown/GlassBlue/GlassClear); treasure chest closed and open (coins, ruby, pearl string); dig mound; dug hole. Every one except the mound and the hole also has a `_Fished` variant.
@@ -23,7 +23,7 @@ Run: `FG_ROOT=$PWD blender -b --factory-startup --python Art/Blender/fg_props.py
 | model | group | size m (x,y,z) | plain | fished |
 |---|---|---|---|---|
 | Prop_ReadingGlasses | villager | 0.14 x 0.06 x 0.16 | 302 | 422 |
-| Prop_Teapot | villager | 0.31 x 0.20 x 0.21 | 517 | 697 |
+| Prop_Teapot | villager | 0.36 x 0.27 x 0.21 | 573 | 753 |
 | Prop_ChapelBell | villager | 0.95 x 0.92 x 0.78 | 956 | 1316 |
 | Prop_TacklebySign | villager | 1.61 x 0.83 x 0.20 | 1216 | 1636 |
 | Prop_LostNetBundle | villager | 1.08 x 0.28 x 0.51 | 850 | 1210 |
@@ -36,12 +36,12 @@ Run: `FG_ROOT=$PWD blender -b --factory-startup --python Art/Blender/fg_props.py
 | Prop_Bottle_B | collectible | 0.16 x 0.23 x 0.17 | 506 | 686 |
 | Prop_Bottle_C | collectible | 0.10 x 0.10 x 0.39 | 446 | 626 |
 | Prop_Shell_Scallop | collectible | 0.20 x 0.06 x 0.13 | 560 | 800 |
-| Prop_Shell_Whelk | collectible | 0.16 x 0.20 x 0.18 | 464 | 704 |
+| Prop_Shell_Whelk | collectible | 0.16 x 0.12 x 0.11 | 400 | 640 |
 | Prop_Shell_Cowrie | collectible | 0.06 x 0.07 x 0.11 | 280 | 430 |
 | Prop_Shell_Clam | collectible | 0.14 x 0.09 x 0.17 | 532 | 772 |
 | Prop_Shell_SandDollar | collectible | 0.12 x 0.03 x 0.12 | 246 | 396 |
-| Prop_Shell_Razor | collectible | 0.15 x 0.03 x 0.04 | 336 | 486 |
-| Prop_Shell_MoonSnail | collectible | 0.10 x 0.14 x 0.10 | 392 | 632 |
+| Prop_Shell_Razor | collectible | 0.15 x 0.02 x 0.08 | 448 | 598 |
+| Prop_Shell_MoonSnail | collectible | 0.12 x 0.13 x 0.15 | 412 | 652 |
 | Prop_Shell_Turret | collectible | 0.17 x 0.10 x 0.10 | 362 | 572 |
 | Prop_SeaGlass_Green | collectible | 0.05 x 0.02 x 0.04 | 80 | 110 |
 | Prop_SeaGlass_Brown | collectible | 0.07 x 0.02 x 0.04 | 80 | 110 |
@@ -49,7 +49,7 @@ Run: `FG_ROOT=$PWD blender -b --factory-startup --python Art/Blender/fg_props.py
 | Prop_SeaGlass_Clear | collectible | 0.07 x 0.02 x 0.06 | 164 | 194 |
 | Prop_Chest_Closed | collectible | 0.58 x 0.38 x 0.37 | 652 | 1072 |
 | Prop_Chest_Open | collectible | 0.58 x 0.57 x 0.58 | 1024 | 1444 |
-| Prop_DigMound | collectible | 0.51 x 0.16 x 0.46 | 524 | - |
+| Prop_DigMound | collectible | 0.51 x 0.34 x 0.46 | 704 | - |
 | Prop_DugHole | collectible | 0.82 x 0.21 x 0.82 | 324 | - |
 | Prop_JigLure | gear | 0.09 x 0.17 x 0.09 | 428 | - |
 | Prop_TrollingLure | gear | 0.08 x 0.09 x 0.30 | 520 | - |
@@ -80,7 +80,7 @@ No external assets and no textures: everything is generated from code (no Poly H
 * **Not opened in Unity.** FBX files were re-imported in Blender to confirm the UV sets, the "Col" colour attribute and no materials; the Unity axis round-trip uses the harbour's exact export settings but was not tested for these files.
 * Previews use a 32-colour preview palette (harbour table + my slots); the real Unity palette texture needs slots 16-31 (below).
 * Layers (Wood, Cloth, Rock, Dirt, Foliage) are assigned but only judged by eye through the palette preview; the cast nets and the crab-pot netting rely on the Cloth layer to read as net.
-* Look notes: whelk and moon snail read as soft-serve swirls and the razor clam as a segmented bar from above; the teapot is a bit squat; the dig mound is a plain heap. All are cheap to redo.
+* Look notes (after the redo): the whelk and moon snail now have crisp stepped ridges, the razor clam is two hinged valves, the teapot is taller and rounder, the dig mound has stones, a crab-hole dimple and a stick; the moon snail's mouth is still a simple pink disc.
 * The shell/bottle/sea-glass sizes are real-world and tiny (1-12 cm): scale up in Unity for readability or give them a pickup glow.
 * Unity palette strip is assumed to be extendable beyond 16 slots (the harbour only ever used 0-15).
 * The Asset Store packs on the user's PC were not available; better hand-modelled villager props (sign, bell, propeller) could replace these if one of those packs fits.

@@ -227,8 +227,8 @@
   {
    "name": "Prop_Teapot",
    "file": "Art/Export/Props/Prop_Teapot.fbx",
-   "triangles": 517,
-   "vertices": 335,
+   "triangles": 573,
+   "vertices": 365,
    "material": "M_Toon_Base",
    "group": "villager",
    "variant": "plain",
@@ -238,19 +238,19 @@
    "owner_or_source": "Lorraine Bass (pier)",
    "held_axis": null,
    "bounds_min": [
-    -0.1197,
+    -0.1292,
     0.0,
-    -0.1053
+    -0.1072
    ],
    "bounds_max": [
-    0.1921,
-    0.203,
-    0.1053
+    0.2265,
+    0.268,
+    0.1072
    ],
    "size_m": [
-    0.312,
-    0.203,
-    0.211
+    0.356,
+    0.268,
+    0.214
    ],
    "rests_on_ground": true,
    "slots": [
@@ -266,8 +266,8 @@
   {
    "name": "Prop_Teapot_Fished",
    "file": "Art/Export/Props/Prop_Teapot_Fished.fbx",
-   "triangles": 697,
-   "vertices": 531,
+   "triangles": 753,
+   "vertices": 561,
    "material": "M_Toon_Base",
    "group": "villager",
    "variant": "fished-up",
@@ -277,19 +277,19 @@
    "owner_or_source": "Lorraine Bass (pier)",
    "held_axis": null,
    "bounds_min": [
-    -0.1197,
+    -0.1517,
     0.0,
-    -0.1053
+    -0.1072
    ],
    "bounds_max": [
-    0.1921,
-    0.203,
-    0.1053
+    0.2265,
+    0.268,
+    0.1103
    ],
    "size_m": [
-    0.312,
-    0.203,
-    0.211
+    0.378,
+    0.268,
+    0.217
    ],
    "rests_on_ground": true,
    "slots": [
@@ -1360,8 +1360,8 @@
   {
    "name": "Prop_Shell_Whelk",
    "file": "Art/Export/Props/Prop_Shell_Whelk.fbx",
-   "triangles": 464,
-   "vertices": 272,
+   "triangles": 400,
+   "vertices": 243,
    "material": "M_Toon_Base",
    "group": "collectible",
    "variant": "plain",
@@ -1371,26 +1371,27 @@
    "owner_or_source": "beach",
    "held_axis": null,
    "bounds_min": [
-    -0.0698,
-    -0.0736,
-    -0.0794
+    -0.0808,
+    0.0036,
+    -0.0542
    ],
    "bounds_max": [
-    0.088,
-    0.1235,
-    0.0978
+    0.0754,
+    0.124,
+    0.0542
    ],
    "size_m": [
-    0.158,
-    0.197,
-    0.177
+    0.156,
+    0.12,
+    0.108
    ],
    "rests_on_ground": true,
    "slots": [
-    "Sand",
+    "ShellPink",
     "ShellCream"
    ],
    "layers": [
+    "none",
     "Rock"
    ],
    "wet_tint": 1.0
@@ -1398,8 +1399,8 @@
   {
    "name": "Prop_Shell_Whelk_Fished",
    "file": "Art/Export/Props/Prop_Shell_Whelk_Fished.fbx",
-   "triangles": 704,
-   "vertices": 540,
+   "triangles": 640,
+   "vertices": 511,
    "material": "M_Toon_Base",
    "group": "collectible",
    "variant": "fished-up",
@@ -1409,25 +1410,26 @@
    "owner_or_source": "beach",
    "held_axis": null,
    "bounds_min": [
-    -0.0698,
-    -0.0736,
-    -0.0794
+    -0.0853,
+    0.0002,
+    -0.0542
    ],
    "bounds_max": [
-    0.0916,
-    0.1235,
-    0.1204
+    0.0754,
+    0.124,
+    0.0542
    ],
    "size_m": [
     0.161,
-    0.197,
-    0.2
+    0.124,
+    0.108
    ],
    "rests_on_ground": true,
    "slots": [
     "Foliage",
     "FoliageDark",
     "Sand",
+    "ShellPink",
     "ShellCream"
    ],
    "layers": [
@@ -1686,30 +1688,30 @@
   {
    "name": "Prop_Shell_Razor",
    "file": "Art/Export/Props/Prop_Shell_Razor.fbx",
-   "triangles": 336,
-   "vertices": 227,
+   "triangles": 448,
+   "vertices": 240,
    "material": "M_Toon_Base",
    "group": "collectible",
    "variant": "plain",
    "base_model": "Prop_Shell_Razor",
-   "pivot": "base centre, lying along x",
+   "pivot": "base centre, lying along x, open",
    "description": "Razor clam: long, slightly curved shell with growth bands.",
    "owner_or_source": "beach",
    "held_axis": null,
    "bounds_min": [
-    -0.0742,
-    -0.0068,
-    -0.0105
+    -0.075,
+    0.0147,
+    -0.0396
    ],
    "bounds_max": [
-    0.0742,
-    0.0216,
-    0.0257
+    0.075,
+    0.0342,
+    0.0396
    ],
    "size_m": [
-    0.148,
-    0.028,
-    0.036
+    0.15,
+    0.02,
+    0.079
    ],
    "rests_on_ground": true,
    "slots": [
@@ -1717,7 +1719,6 @@
     "ShellCream"
    ],
    "layers": [
-    "none",
     "Rock"
    ],
    "wet_tint": 1.0
@@ -1725,30 +1726,30 @@
   {
    "name": "Prop_Shell_Razor_Fished",
    "file": "Art/Export/Props/Prop_Shell_Razor_Fished.fbx",
-   "triangles": 486,
-   "vertices": 397,
+   "triangles": 598,
+   "vertices": 410,
    "material": "M_Toon_Base",
    "group": "collectible",
    "variant": "fished-up",
    "base_model": "Prop_Shell_Razor",
-   "pivot": "base centre, lying along x",
+   "pivot": "base centre, lying along x, open",
    "description": "Razor clam: long, slightly curved shell with growth bands.",
    "owner_or_source": "beach",
    "held_axis": null,
    "bounds_min": [
-    -0.0742,
-    -0.0403,
-    -0.0105
+    -0.0815,
+    -0.0176,
+    -0.0396
    ],
    "bounds_max": [
-    0.0742,
-    0.032,
-    0.0257
+    0.075,
+    0.0347,
+    0.0396
    ],
    "size_m": [
-    0.148,
-    0.072,
-    0.036
+    0.157,
+    0.052,
+    0.079
    ],
    "rests_on_ground": true,
    "slots": [
@@ -1768,8 +1769,8 @@
   {
    "name": "Prop_Shell_MoonSnail",
    "file": "Art/Export/Props/Prop_Shell_MoonSnail.fbx",
-   "triangles": 392,
-   "vertices": 215,
+   "triangles": 412,
+   "vertices": 236,
    "material": "M_Toon_Base",
    "group": "collectible",
    "variant": "plain",
@@ -1779,19 +1780,19 @@
    "owner_or_source": "beach",
    "held_axis": null,
    "bounds_min": [
-    -0.0495,
-    0.0008,
-    -0.052
+    -0.06,
+    -0.005,
+    -0.085
    ],
    "bounds_max": [
-    0.0505,
-    0.14,
-    0.0535
+    0.06,
+    0.1277,
+    0.0705
    ],
    "size_m": [
-    0.1,
-    0.139,
-    0.105
+    0.12,
+    0.133,
+    0.155
    ],
    "rests_on_ground": true,
    "slots": [
@@ -1800,15 +1801,16 @@
     "ShellCream"
    ],
    "layers": [
-    "none"
+    "none",
+    "Rock"
    ],
    "wet_tint": 1.0
   },
   {
    "name": "Prop_Shell_MoonSnail_Fished",
    "file": "Art/Export/Props/Prop_Shell_MoonSnail_Fished.fbx",
-   "triangles": 632,
-   "vertices": 483,
+   "triangles": 652,
+   "vertices": 504,
    "material": "M_Toon_Base",
    "group": "collectible",
    "variant": "fished-up",
@@ -1818,32 +1820,34 @@
    "owner_or_source": "beach",
    "held_axis": null,
    "bounds_min": [
-    -0.0495,
-    -0.0023,
-    -0.052
+    -0.06,
+    -0.008,
+    -0.1057
    ],
    "bounds_max": [
-    0.0505,
-    0.14,
-    0.0573
+    0.06,
+    0.1277,
+    0.0737
    ],
    "size_m": [
-    0.1,
-    0.142,
-    0.109
+    0.12,
+    0.136,
+    0.179
    ],
    "rests_on_ground": true,
    "slots": [
     "Foliage",
     "FoliageDark",
     "Sand",
+    "Reed",
     "Dock",
     "ShellPink",
     "ShellCream"
    ],
    "layers": [
     "none",
-    "Foliage"
+    "Foliage",
+    "Rock"
    ],
    "wet_tint": 0.6
   },
@@ -2419,8 +2423,8 @@
   {
    "name": "Prop_DigMound",
    "file": "Art/Export/Props/Prop_DigMound.fbx",
-   "triangles": 524,
-   "vertices": 282,
+   "triangles": 704,
+   "vertices": 430,
    "material": "M_Toon_Base",
    "group": "collectible",
    "variant": "plain",
@@ -2436,21 +2440,24 @@
    ],
    "bounds_max": [
     0.2584,
-    0.1241,
+    0.3035,
     0.226
    ],
    "size_m": [
     0.514,
-    0.163,
+    0.343,
     0.459
    ],
    "rests_on_ground": true,
    "slots": [
+    "Wood",
     "WoodDark",
     "Rock",
-    "Dock"
+    "Dock",
+    "Iron"
    ],
    "layers": [
+    "Wood",
     "Rock",
     "Dirt"
    ],
@@ -3234,6 +3241,6 @@
    "wet_tint": 1.0
   }
  ],
- "total_triangles": 45754,
+ "total_triangles": 46182,
  "models": 73
 }
