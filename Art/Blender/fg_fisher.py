@@ -39,13 +39,13 @@ COL = {
 # ---------------------------------------------------------------- key heights (z, metres)
 H = dict(
     head=1.50,      # head centre
-    head_r=0.205,   # head radius (big, chunky)
-    eye_z=1.53,
+    head_r=0.222,   # head radius (big, chunky)
+    eye_z=1.475,
     shoulder=1.31,
-    chest=1.15,
-    waist=0.94,
-    hip=0.86,
-    knee=0.47,
+    chest=1.13,
+    waist=0.91,
+    hip=0.80,       # short sturdy legs: the torso carries the chunk
+    knee=0.43,
     ankle=0.11,
 )
 
@@ -199,8 +199,8 @@ def build():
         ball((0, 0, hz), hr, (1.0, 0.95, 1.0)),
         ball((0, -0.035, hz - 0.075), hr * 0.72, (1.08, 0.9, 0.75)),     # cheeks / jaw
         ball((0, 0.0, hz - 0.18), 0.075, (1.0, 1.0, 1.4)),               # neck
-        ball((0.198, 0.01, hz - 0.01), 0.04, (0.55, 0.9, 1.1)),          # ear (mirrored)
-    ]) + [ball((0, -0.205, hz - 0.035), 0.032, (1.0, 0.85, 0.9))],  # nose
+        ball((hr * 0.965, 0.01, hz - 0.03), 0.042, (0.55, 0.9, 1.1)),          # ear (mirrored)
+    ]) + [ball((0, -hr * 1.0, hz - 0.075), 0.034, (1.0, 0.85, 0.9))],  # nose
         M['skin'], voxel=0.008, faces=6000, smooth_iter=4)
 
     # Torso (shirt): a pillowy barrel, a touch of belly, shoulders rounded into the sleeves.
@@ -208,7 +208,6 @@ def build():
     torso = mirror_x([
         ball((0, 0.0, H['chest']), 0.215, (1.0, 0.72, 1.2)),
         ball((0, -0.03, H['waist'] + 0.04), 0.20, (1.0, 0.8, 0.9)),       # belly
-        ball((0, 0.0, H['hip'] + 0.02), 0.19, (1.05, 0.75, 0.7)),         # hips
         ball((0.19, 0.0, sh - 0.01), 0.085, (1.0, 1.0, 0.95)),           # shoulder (mirrored)
         capsule((0.20, 0.0, sh - 0.02), (0.30, 0.0, sh - 0.20), 0.072),  # upper-arm sleeve (A-pose)
     ])
@@ -227,7 +226,7 @@ def build():
     blob('Pants', mirror_x([
         capsule((0.10, 0.0, hip), (0.105, -0.005, knee), 0.092),
         capsule((0.105, -0.005, knee), (0.105, 0.0, ank + 0.06), 0.082),
-        ball((0.06, 0.0, hip + 0.02), 0.12, (1.0, 0.85, 0.7)),
+        ball((0, 0.0, hip + 0.06), 0.20, (1.04, 0.78, 0.62)),            # seat / waistband over the shirt hem
     ]), M['pants'], voxel=0.010, faces=3500, smooth_iter=3)
     blob('Boots', mirror_x([
         ball((0.105, -0.03, 0.075), 0.085, (0.95, 1.55, 0.85)),
@@ -255,46 +254,82 @@ def build_vest(M):
         ball((0, -0.03, H['waist'] + 0.06), 0.218, (1.0, 0.82, 0.85)),
         ball((0.17, 0.0, sh - 0.015), 0.07, (1.0, 1.0, 0.9)),
     ])
-    ob = blob('Vest', shell, M['vest'], voxel=0.018, faces=None, smooth_iter=3)
-    # Cut: open front strip, armholes, neck and the hem below the waist.
-    bm = bmesh.new()
-    bm.from_mesh(ob.data)
-    kill = []
-    for f in bm.faces:
-        c = f.calc_center_median()
-        front_gap = c.y < -0.05 and abs(c.x) < 0.045 + 0.10 * max(0.0, (c.z - 1.12)) / 0.2
-        neck = c.z > sh + 0.02 and abs(c.x) < 0.15
-        armhole = abs(c.x) > 0.205 and c.z > sh - 0.17
-        hem = c.z < H['waist'] - 0.06
-        if front_gap or neck or armhole or hem:
-            kill.append(f)
-    bmesh.ops.delete(bm, geom=kill, context='FACES')
-    # The cut follows voxel faces, so it zigzags: relax the open edges along themselves a few times.
-    edge = [v for v in bm.verts if v.is_boundary]
-    for _ in range(12):
-        bmesh.ops.smooth_vert(bm, verts=edge, factor=0.6, use_axis_x=True, use_axis_y=True, use_axis_z=True)
-    bm.to_mesh(ob.data)
-    bm.free()
-    # Give the vest thickness so the open edges read as cloth.
+    ob = blob('Vest', shell, M['vest'], voxel=0.010, faces=None, smooth_iter=3)
+    # Thickness first (a closed double wall), then clean boolean cuts so the open edges are smooth.
     ctx_select(ob)
-    sub = ob.modifiers.new('sub', 'SUBSURF')
-    sub.levels = 2
-    bpy.ops.object.modifier_apply(modifier=sub.name)
     m = ob.modifiers.new('thick', 'SOLIDIFY')
     m.thickness = 0.012
     m.offset = 1.0
-    ctx_select(ob)
     bpy.ops.object.modifier_apply(modifier=m.name)
+    cutters = []
+    bm = bmesh.new()
+    # Front opening: a V that widens toward the collar.
+    z0, z1 = H['waist'] - 0.20, sh + 0.12
+    outline = [(-0.028, z0), (0.028, z0), (0.13, z1), (-0.13, z1)]
+    vs = [bm.verts.new((x, y, z)) for y in (-0.6, -0.04) for x, z in outline]
+    bm.faces.new(vs[:4]); bm.faces.new(vs[4:][::-1])
+    for i in range(4):
+        j = (i + 1) % 4
+        bm.faces.new((vs[i], vs[4 + i], vs[4 + j], vs[j]))
+    cutters.append(bm)
+    def cyl(loc, r, depth, rot, scale=(1, 1, 1)):
+        b = bmesh.new()
+        mt = Matrix.Translation(loc) @ Euler([math.radians(v) for v in rot]).to_matrix().to_4x4() @ Matrix.Diagonal((*scale, 1))
+        bmesh.ops.create_cone(b, cap_ends=True, segments=48, radius1=r, radius2=r, depth=depth, matrix=mt)
+        return b
+    cutters.append(cyl(Vector((0, 0.01, sh + 0.10)), 0.135, 0.2, (0, 0, 0), (1, 0.8, 1)))           # neck
+    for sx in (1, -1):
+        cutters.append(cyl(Vector((sx * 0.30, 0, sh - 0.06)), 0.115, 0.2, (0, 90, 0), (1.25, 0.8, 1)))  # armhole
+    hem = bmesh.new()
+    bmesh.ops.create_cube(hem, size=1.0, matrix=Matrix.Translation((0, 0, H['waist'] - 0.06 - 0.5)))
+    cutters.append(hem)
+    for i, cb in enumerate(cutters):
+        me = bpy.data.meshes.new('VestCut%d' % i)
+        cb.to_mesh(me)
+        cb.free()
+        co = bpy.data.objects.new('VestCut%d' % i, me)
+        bpy.context.scene.collection.objects.link(co)
+        ctx_select(ob)
+        bo = ob.modifiers.new('cut', 'BOOLEAN')
+        bo.operation = 'DIFFERENCE'
+        bo.solver = 'EXACT'
+        bo.object = co
+        bpy.ops.object.modifier_apply(modifier=bo.name)
+        bpy.data.objects.remove(co)
+    ctx_select(ob)
+    bev = ob.modifiers.new('soft', 'BEVEL')       # soften the cut rims
+    bev.width = 0.004
+    bev.segments = 2
+    bev.limit_method = 'ANGLE'
+    bpy.ops.object.modifier_apply(modifier=bev.name)
     dec = ob.modifiers.new('dec', 'DECIMATE')
     dec.ratio = min(1.0, 5000 / max(1, len(ob.data.polygons)))
     bpy.ops.object.modifier_apply(modifier=dec.name)
 
     # Pockets: soft rounded pads on the chest, two each side, with a flap.
-    pk = []
-    for x, z, w, h in ((0.115, 1.17, 0.075, 0.07), (0.12, 1.03, 0.085, 0.075)):
-        pk.append(ball((x, -0.175, z), w, (1.0, 0.32, h / w)))
-    blob('VestPockets', mirror_x(pk), M['vest'], voxel=0.006, faces=1200, smooth_iter=2)
-    for o in (ob, bpy.data.objects['VestPockets']):
+    bm = bmesh.new()
+    for x, z, w, h in ((0.105, H['chest'] + 0.03, 0.095, 0.085), (0.11, H['chest'] - 0.10, 0.105, 0.09)):
+        for sx in (1, -1):
+            hit, loc, nrm, _ = ob.ray_cast(Vector((sx * x, -1.0, z)), Vector((0, 1, 0)))
+            if not hit:
+                continue
+            # A soft box: body plus a flap that overhangs its top edge a little.
+            for dz, hh, dy, d in ((0.0, h, 0.012, 0.028), (h * 0.36, h * 0.32, 0.020, 0.012)):
+                m = (Matrix.Translation(loc + Vector((0, -dy, dz))) @ nrm.to_track_quat('-Y', 'Z').to_matrix().to_4x4()
+                     @ Matrix.Diagonal((w / 2 + 0.004 * (dz > 0), d / 2, hh / 2, 1)))
+                bmesh.ops.create_cube(bm, size=2.0, matrix=m)
+    me = bpy.data.meshes.new('VestPockets')
+    bm.to_mesh(me)
+    bm.free()
+    pk = bpy.data.objects.new('VestPockets', me)
+    bpy.context.scene.collection.objects.link(pk)
+    ctx_select(pk)
+    bev = pk.modifiers.new('bev', 'BEVEL')
+    bev.width = 0.009
+    bev.segments = 3
+    bpy.ops.object.modifier_apply(modifier=bev.name)
+    pk.data.materials.append(M['vest'])
+    for o in (ob, pk):
         for p in o.data.polygons:
             p.use_smooth = True
 
@@ -302,7 +337,7 @@ def build_vest(M):
 def build_hat(M):
     """Bucket hat: a soft crown with a sloped brim, sitting low on the head."""
     hz, hr = H['head'], H['head_r']
-    base = hz + 0.07
+    base = hz + 0.14
     prof = [
         (0.30, base - 0.075), (0.305, base - 0.068), (0.29, base - 0.055),   # brim lip
         (0.235, base - 0.025), (0.205, base), (0.198, base + 0.02),           # brim to crown
@@ -328,7 +363,7 @@ def build_eyes(M):
     """REPO-style eyes: two big white balls half sunk into the face, each with a black pupil cap.
     Pupils are separate objects so they can ride an eye bone; rotating the bone slides the pupil over
     the ball (side-eye). Eye shape variants come from scaling the ball and the lid (see EYE_SHAPES)."""
-    er = 0.062
+    er = 0.076
     head = bpy.data.objects['Head']
     for side, sx in (('L', 1), ('R', -1)):
         # Find the face surface in front of the eye and sink the ball 45% into it.
@@ -354,12 +389,15 @@ def build_eyes(M):
 
 
 def build_mouth(M):
-    """Default mouth: a small soft smile under the nose (one of the swappable face parts)."""
+    """Default mouth: a small soft smile under the nose (one of the swappable face parts), snapped to the face."""
     hz = H['head']
+    head = bpy.data.objects['Head']
     pts = []
-    for i in range(7):
-        t = (i / 6.0) * 2 - 1
-        pts.append(ball((t * 0.045, -0.188 + 0.012 * t * t, hz - 0.095 + 0.016 * t * t), 0.012, (1.0, 0.6, 0.8)))
+    for i in range(9):
+        t = (i / 8.0) * 2 - 1
+        x, z = t * 0.05, hz - 0.135 + 0.018 * t * t
+        hit, loc, nrm, _ = head.ray_cast(Vector((x, -1.0, z)), Vector((0, 1, 0)))
+        pts.append(ball((x, loc.y + 0.004, z), 0.011, (1.0, 0.7, 0.8)))
     blob('Mouth', pts, M['mouth'], voxel=0.004, faces=600, smooth_iter=1)
 
 
