@@ -35,18 +35,23 @@ POLYHAVEN = {
     'rough_linen':      ('Rough Linen',      'Rico Cilliers (processing), colormass (photography)'),
     'stretch_poplin':   ('Stretch Poplin',   'Rico Cilliers (processing), colormass (photography)'),
     'denim_fabric_03':  ('Denim Fabric 03',  'Rico Cilliers (processing), colormass (photography)'),
-    'rubberized_track': ('Rubberized Track', 'Charlotte Baglioni'),
     'hessian_230':      ('Hessian 230',      'Rico Cilliers (processing), colormass (photography)'),
+    'brown_leather':    ('Brown Leather',    'Rob Tuytel'),
+    'cotton_jersey':    ('Cotton Jersey',    'Rico Cilliers (processing), colormass (photography)'),
 }
+# base=None: tintable part, greyscale `<name>_detail.png` centred on 0.5, tinted by `tint` (sRGB-ish linear values).
+# doodle: painted line details baked in (stitch = stitched panel border, patch = stitched patch pocket,
+# rows = stitched rows, seam = centre seam + scratches).
 MATERIALS = {
-    #  name        src                 base colour           amp   brush warm  nrm  rough
-    'vest':     dict(src='rough_linen',      base=None,               amp=0.16, brush=0.10, warm=0.0,  nrm=0.9, rough=0.85),
-    'hat':      dict(src='rough_linen',      base=(0.55, 0.50, 0.33), amp=0.14, brush=0.10, warm=0.7,  nrm=0.9, rough=0.85),
-    'shirt':    dict(src='stretch_poplin',   base=(0.86, 0.82, 0.70), amp=0.07, brush=0.07, warm=0.6,  nrm=0.6, rough=0.8),
-    'twill':    dict(src='denim_fabric_03',  base=(0.42, 0.36, 0.26), amp=0.16, brush=0.09, warm=0.6,  nrm=1.1, rough=0.85),
-    'rubber':   dict(src='rubberized_track', base=(0.20, 0.27, 0.20), amp=0.14, brush=0.10, warm=0.5,  nrm=0.8, rough=0.45),
-    'webbing':  dict(src='hessian_230',      base=(0.30, 0.22, 0.15), amp=0.16, brush=0.07, warm=0.4,  nrm=1.2, rough=0.9),
-    'skin':     dict(src=None,               base=(0.93, 0.70, 0.55), amp=0.0,  brush=0.05, warm=0.9,  nrm=0.0, rough=0.7),
+    #  name        src                 base colour           amp   brush warm  nrm  rough doodle
+    'skin':     dict(src='cotton_jersey',    base=None, tint=(0.93, 0.70, 0.55), amp=0.02, brush=0.06, warm=0.0, nrm=0.0, rough=0.7,  doodle=None),
+    'vest':     dict(src='rough_linen',      base=None, tint=(0.20, 0.42, 0.85), amp=0.16, brush=0.10, warm=0.0, nrm=0.9, rough=0.85, doodle='stitch'),
+    'hat':      dict(src='rough_linen',      base=(0.55, 0.50, 0.33), amp=0.14, brush=0.10, warm=0.7,  nrm=0.9, rough=0.85, doodle='rows'),
+    'shirt':    dict(src='stretch_poplin',   base=(0.86, 0.82, 0.70), amp=0.07, brush=0.07, warm=0.6,  nrm=0.6, rough=0.8,  doodle=None),
+    'cargo':    dict(src='denim_fabric_03',  base=(0.42, 0.36, 0.26), amp=0.16, brush=0.09, warm=0.6,  nrm=1.1, rough=0.85, doodle='patch'),
+    'sock':     dict(src='cotton_jersey',    base=(0.92, 0.91, 0.88), amp=0.10, brush=0.05, warm=0.4,  nrm=0.7, rough=0.9,  doodle=None),
+    'leather':  dict(src='brown_leather',    base=(0.30, 0.17, 0.09), amp=0.14, brush=0.10, warm=0.6,  nrm=1.0, rough=0.6,  doodle='seam'),
+    'webbing':  dict(src='hessian_230',      base=(0.30, 0.22, 0.15), amp=0.16, brush=0.07, warm=0.4,  nrm=1.2, rough=0.9,  doodle=None),
 }
 
 
@@ -98,6 +103,42 @@ def brush_layer(rng, angle, length, width):
     return unit(gauss(n, length, width, angle))
 
 
+def doodle_mask(kind, rng):
+    """Hand-drawn line details (0..1) on a tileable canvas: stitches, patch pockets, seams, scratches."""
+    np = _np()
+    from PIL import Image, ImageDraw
+    im = Image.new('L', (SIZE, SIZE), 0)
+    d = ImageDraw.Draw(im)
+
+    def dashed(x0, y0, x1, y1, dash=11, gap=8, w=3):
+        n = max(abs(x1 - x0), abs(y1 - y0))
+        steps = int(n // (dash + gap)) + 1
+        for i in range(steps):
+            a = i * (dash + gap) / n
+            b = min(1.0, (i * (dash + gap) + dash) / n)
+            d.line([x0 + (x1 - x0) * a, y0 + (y1 - y0) * a, x0 + (x1 - x0) * b, y0 + (y1 - y0) * b], fill=255, width=w)
+
+    def box(x0, y0, x1, y1):
+        dashed(x0, y0, x1, y0); dashed(x1, y0, x1, y1); dashed(x1, y1, x0, y1); dashed(x0, y1, x0, y0)
+
+    if kind == 'stitch':
+        box(26, 26, SIZE - 27, SIZE - 27)
+    elif kind == 'patch':
+        box(250, 270, 440, 440)                       # patch pocket
+        dashed(250, 318, 440, 318)                    # flap line
+        d.rectangle([252, 272, 438, 316], outline=255, width=2)
+    elif kind == 'rows':
+        for y in (150, 175, 330, 355):
+            dashed(18, y, SIZE - 19, y, dash=14, gap=6)
+    elif kind == 'seam':
+        dashed(18, 256, SIZE - 19, 256, dash=16, gap=9, w=3)
+        for _ in range(26):                           # scratches and scuffs
+            x, y = int(rng.integers(40, 470)), int(rng.integers(40, 470))
+            d.line([x, y, x + int(rng.integers(-24, 24)), y + int(rng.integers(-24, 24))], fill=140, width=1)
+    k = gauss(np.asarray(im, np.float32) / 255, 0.7)
+    return np.clip(k / max(k.max(), 1e-6) * 1.4, 0, 1)
+
+
 def srgb(c):
     np = _np()
     c = np.clip(np.asarray(c, np.float32), 0, 1)
@@ -138,21 +179,25 @@ def make_all(srcdir):
     os.makedirs(OUT, exist_ok=True)
     for i, (name, m) in enumerate(MATERIALS.items()):
         rng = np.random.default_rng(1000 + i)
-        hp = stylise_detail(srcdir, m['src']) if m['src'] else np.zeros((SIZE, SIZE), np.float32)
+        hp = stylise_detail(srcdir, m['src'])
         # Hand-painted overlay: short dry-brush strokes at two angles + a big soft blotch for warm/cool drift.
         strokes = np.tanh(1.3 * (0.6 * brush_layer(rng, 0.6, 9, 1.6) + 0.4 * brush_layer(rng, -0.9, 14, 2.2)))
         blotch = brush_layer(rng, 0.3, 26, 20)
         f = 1 + m['amp'] * hp * 0.8 + 1.3 * m['brush'] * strokes + 0.8 * m['brush'] * blotch
+        f = f + 0.07 * np.clip(hp - 1.2, 0, 2)                  # worn, scuffed high spots
+        f = f * (1 + 0.035 * unit(gauss(rng.standard_normal((SIZE, SIZE)).astype(np.float32), 0.55)))   # print-like grain
+        ink = doodle_mask(m['doodle'], rng) if m['doodle'] else np.zeros((SIZE, SIZE), np.float32)
+        f = f * (1 - 0.5 * ink)                                # stitches / patch edges read as darker thread lines
         f = f / f.mean()
         if m['base'] is None:
             img = np.stack([np.clip(0.5 * f, 0, 1)] * 3, -1)        # vest: greyscale detail centred on 0.5
-            height = 0.5 * hp + 0.25 * strokes
+            height = 0.5 * hp + 0.25 * strokes - 1.2 * ink
         else:
             base = np.asarray(m['base'], np.float32)
             shift = np.array([1.0, 0.25, -0.9], np.float32) * (0.04 * m["warm"])     # warm lights, cool shadows
             lin = base * f[..., None] * (1 + shift * blotch[..., None])
             img = srgb(lin)
-            height = 0.5 * hp + 0.2 * strokes
+            height = 0.5 * hp + 0.2 * strokes - 1.2 * ink
         save(os.path.join(OUT, name + ('_detail' if m['base'] is None else '_albedo') + '.png'), img)
         if m['nrm'] > 0:
             nm = normal_from_height(gauss(height.astype(np.float32), 0.6), m['nrm'] * 1.4)
@@ -176,8 +221,8 @@ def fetch(srcdir):
 
 # ================================================================ Blender stages
 PART_MATERIAL = {
-    'Head': 'skin', 'Arms': 'skin', 'Shirt': 'shirt', 'Pants': 'twill', 'Boots': 'rubber',
-    'Vest': 'vest', 'VestPockets': 'vest', 'Hat': 'hat', 'HatBand': 'webbing',
+    'Head': 'skin', 'Arms': 'skin', 'Shirt': 'shirt', 'Pants': 'cargo', 'Shorts': 'cargo', 'Socks': 'sock',
+    'Boots': 'leather', 'Vest': 'vest', 'VestPockets': 'vest', 'Hat': 'hat', 'HatBand': 'webbing',
 }
 
 
@@ -318,8 +363,8 @@ def make_pick(ob):
         torso = vert(0, cy, 0.2)
         sleeve = {s: vert(s * hi.x * 0.8, cy, 0.07) for s in (1, -1)}
         return lambda c, n: sleeve[1 if c.x > 0 else -1] if abs(c.x) > hi.x * 0.62 else torso
-    if name in ('Arms', 'Pants', 'Boots'):
-        r = {'Arms': 0.06, 'Pants': 0.09, 'Boots': 0.085}[name]
+    if name in ('Arms', 'Pants', 'Shorts', 'Socks', 'Boots'):
+        r = {'Arms': 0.06, 'Pants': 0.09, 'Shorts': 0.11, 'Socks': 0.075, 'Boots': 0.085}[name]
         side = {s: vert(s * mean_x(ob, s), cy, r) for s in (1, -1)}
         return lambda c, n: side[1 if c.x >= 0 else -1]
     p = vert(0, cy, 0.1)
@@ -355,7 +400,7 @@ def apply():
     import bpy
     bpy.ops.wm.open_mainfile(filepath=BLEND_PATH)
     meshes = [o for o in bpy.data.collections['Fisher'].objects if o.type == 'MESH']
-    mats = {k: build_material(bpy, k, SLOT_COLOURS['blue']) for k in MATERIALS}
+    mats = {k: build_material(bpy, k, MATERIALS[k].get('tint')) for k in MATERIALS}
     for ob in meshes:
         key = PART_MATERIAL.get(ob.name)
         if not key:
@@ -374,14 +419,14 @@ def preview(outdir):
     fg_fisher.preview(outdir)            # opens the .blend, lights it, renders the turnaround + face close-up
     sc = bpy.context.scene
     pivot, cam = bpy.data.objects['Pivot'], bpy.data.objects['Cam']
-    tint = bpy.data.materials['M_Fisher_vest'].node_tree.nodes['SlotTint']
+    tints = [bpy.data.materials['M_Fisher_%s' % k].node_tree.nodes['SlotTint'] for k in ('vest', 'skin')]
     pivot.rotation_euler = (0, 0, math.radians(-15))
     cam.data.ortho_scale = 1.0
     cam.location = (0, -6, 1.2)
     sc.render.resolution_x, sc.render.resolution_y = 420, 420
     sc.cycles.samples = 32
     for name, rgb in SLOT_COLOURS.items():
-        tint.outputs[0].default_value = (*rgb, 1)
+        tints[0].outputs[0].default_value = (*rgb, 1)
         sc.render.filepath = os.path.join(outdir, 'fisher_vest_%s.png' % name)
         bpy.ops.render.render(write_still=True)
 

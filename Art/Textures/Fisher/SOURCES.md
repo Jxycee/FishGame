@@ -10,8 +10,9 @@ commercial use allowed, no attribution required; credited anyway).
 |---|---|---|---|---|
 | Rough Linen (`rough_linen`) | https://polyhaven.com/a/rough_linen | Rico Cilliers (processing), colormass (photography) | CC0 | `vest_*`, `hat_*` |
 | Stretch Poplin (`stretch_poplin`) | https://polyhaven.com/a/stretch_poplin | Rico Cilliers (processing), colormass (photography) | CC0 | `shirt_*` |
-| Denim Fabric 03 (`denim_fabric_03`) | https://polyhaven.com/a/denim_fabric_03 | Rico Cilliers (processing), colormass (photography) | CC0 | `twill_*` (trousers) |
-| Rubberized Track (`rubberized_track`) | https://polyhaven.com/a/rubberized_track | Charlotte Baglioni | CC0 | `rubber_*` (boots) |
+| Denim Fabric 03 (`denim_fabric_03`) | https://polyhaven.com/a/denim_fabric_03 | Rico Cilliers (processing), colormass (photography) | CC0 | `cargo_*` (shorts/trousers) |
+| Brown Leather (`brown_leather`) | https://polyhaven.com/a/brown_leather | Rob Tuytel | CC0 | `leather_*` (boots) |
+| Cotton Jersey (`cotton_jersey`) | https://polyhaven.com/a/cotton_jersey | Rico Cilliers (processing), colormass (photography) | CC0 | `sock_*`, `skin_detail` |
 | Hessian 230 (`hessian_230`) | https://polyhaven.com/a/hessian_230 | Rico Cilliers (processing), colormass (photography) | CC0 | `webbing_*` (hat band) |
 
-`skin_albedo.png` has no photo source: it is purely procedural brush strokes.
+The stitches, patch pocket, seams and scratches are drawn procedurally by the script, not taken from any photo.
