@@ -1,0 +1,2005 @@
+{
+ "note": "Villager FBX files (static A-pose, not rigged). See docs/superpowers/handoff/art/harbour-villagers.md.",
+ "encoding": {
+  "uv0": "UVMap, metres, box projection per face",
+  "uv1": "Layer = (palette slot, texture layer); slot indexes models[].palette, layer = CHAR_LAYERS",
+  "col": "Col = 0.5 x (0.5 + 0.5 x AO)",
+  "char_layers": {
+   "none": 0,
+   "skin": 20,
+   "shirt": 21,
+   "vest": 22,
+   "hat": 23,
+   "cargo": 24,
+   "sock": 25,
+   "leather": 26,
+   "webbing": 27
+  },
+  "layer_textures": {
+   "20": "Art/Textures/Fisher/skin_detail.png",
+   "21": "Art/Textures/Fisher/shirt_detail.png",
+   "22": "Art/Textures/Fisher/vest_detail.png",
+   "23": "Art/Textures/Fisher/hat_detail.png",
+   "24": "Art/Textures/Fisher/cargo_detail.png",
+   "25": "Art/Textures/Fisher/sock_detail.png",
+   "26": "Art/Textures/Fisher/leather_detail.png",
+   "27": "Art/Textures/Fisher/webbing_detail.png"
+  },
+  "axes": "Unity metres, feet on y=0, facing +z, pivot at the base centre"
+ },
+ "models": [
+  {
+   "name": "Doug Pellow",
+   "id": "Doug_Pellow",
+   "file": "Art/Export/Villagers/Doug_Pellow.fbx",
+   "tris": 8932,
+   "tris_by_object": {
+    "Doug_Pellow_Body": 5352,
+    "Doug_Pellow_Head": 1958,
+    "Doug_Pellow_Face": 610,
+    "Doug_Pellow_Pupil_L": 36,
+    "Doug_Pellow_Pupil_R": 36,
+    "Doug_Pellow_Prop_Lanyard": 276,
+    "Doug_Pellow_Prop_Clipboard": 324,
+    "Doug_Pellow_Prop_ReadingGlasses": 340
+   },
+   "material": "M_Toon_Base",
+   "height_m": 2.023,
+   "palette": [
+    {
+     "key": "skin",
+     "rgb": [
+      0.94,
+      0.76,
+      0.62
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "nose",
+     "rgb": [
+      0.978,
+      0.654,
+      0.558
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "eye",
+     "rgb": [
+      1.0,
+      1.0,
+      0.97
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pupil",
+     "rgb": [
+      0.03,
+      0.03,
+      0.04
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "brow",
+     "rgb": [
+      0.55,
+      0.55,
+      0.57
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "wrinkle",
+     "rgb": [
+      0.696,
+      0.562,
+      0.459
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "mouth",
+     "rgb": [
+      0.25,
+      0.08,
+      0.08
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "hair",
+     "rgb": [
+      0.55,
+      0.55,
+      0.57
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "shirt",
+     "rgb": [
+      0.9,
+      0.92,
+      0.95
+     ],
+     "layer": "shirt"
+    },
+    {
+     "key": "hivis",
+     "rgb": [
+      0.98,
+      0.62,
+      0.05
+     ],
+     "layer": "vest"
+    },
+    {
+     "key": "reflect",
+     "rgb": [
+      0.8,
+      0.82,
+      0.78
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "navy",
+     "rgb": [
+      0.12,
+      0.17,
+      0.3
+     ],
+     "layer": "cargo"
+    },
+    {
+     "key": "blackshoe",
+     "rgb": [
+      0.1,
+      0.1,
+      0.11
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "sole",
+     "rgb": [
+      0.06,
+      0.06,
+      0.06
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "lan_cord",
+     "rgb": [
+      0.1,
+      0.2,
+      0.55
+     ],
+     "layer": "webbing"
+    },
+    {
+     "key": "badge",
+     "rgb": [
+      0.92,
+      0.92,
+      0.9
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "badge_face",
+     "rgb": [
+      0.25,
+      0.45,
+      0.8
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "board",
+     "rgb": [
+      0.55,
+      0.38,
+      0.2
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "paper",
+     "rgb": [
+      0.97,
+      0.97,
+      0.94
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "metal",
+     "rgb": [
+      0.75,
+      0.75,
+      0.72
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "frame",
+     "rgb": [
+      0.1,
+      0.1,
+      0.12
+     ],
+     "layer": "none"
+    }
+   ],
+   "role": "Harbourmaster",
+   "notes": "Tall and stiff, hi-vis vest with reflective bands, lanyard, clipboard. Squints: his reading glasses are the separate lost prop Prop_ReadingGlasses.",
+   "props": [
+    {
+     "object": "Doug_Pellow_Prop_Lanyard",
+     "lost": false,
+     "note": "worn round the neck"
+    },
+    {
+     "object": "Doug_Pellow_Prop_Clipboard",
+     "lost": false,
+     "note": "held in the left hand; a harbour log with a single entry"
+    },
+    {
+     "object": "Doug_Pellow_Prop_ReadingGlasses",
+     "lost": true,
+     "note": "His lost reading glasses (wish item, fished up under the T-head). Shown lying beside him; hide until found, then show on his forehead/hand. Origin = ground under the lenses."
+    }
+   ],
+   "building": "dock office (fixed)",
+   "placement": {
+    "note": "stand at the building; Unity builder places, yaw faces the player/door"
+   }
+  },
+  {
+   "name": "Marge Tackleby",
+   "id": "Marge_Tackleby",
+   "file": "Art/Export/Villagers/Marge_Tackleby.fbx",
+   "tris": 7998,
+   "tris_by_object": {
+    "Marge_Tackleby_Body": 5440,
+    "Marge_Tackleby_Head": 2170,
+    "Marge_Tackleby_Face": 316,
+    "Marge_Tackleby_Pupil_L": 36,
+    "Marge_Tackleby_Pupil_R": 36
+   },
+   "material": "M_Toon_Base",
+   "height_m": 1.664,
+   "palette": [
+    {
+     "key": "skin",
+     "rgb": [
+      0.93,
+      0.66,
+      0.54
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "nose",
+     "rgb": [
+      0.967,
+      0.568,
+      0.486
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "eye",
+     "rgb": [
+      1.0,
+      1.0,
+      0.97
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pupil",
+     "rgb": [
+      0.03,
+      0.03,
+      0.04
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "brow",
+     "rgb": [
+      0.7,
+      0.7,
+      0.72
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "mouth",
+     "rgb": [
+      0.25,
+      0.08,
+      0.08
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "teeth",
+     "rgb": [
+      0.96,
+      0.95,
+      0.9
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "hair",
+     "rgb": [
+      0.7,
+      0.7,
+      0.72
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "headband",
+     "rgb": [
+      0.95,
+      0.35,
+      0.6
+     ],
+     "layer": "sock"
+    },
+    {
+     "key": "tank",
+     "rgb": [
+      0.78,
+      0.1,
+      0.12
+     ],
+     "layer": "shirt"
+    },
+    {
+     "key": "apron",
+     "rgb": [
+      0.72,
+      0.64,
+      0.44
+     ],
+     "layer": "webbing"
+    },
+    {
+     "key": "apron_tie",
+     "rgb": [
+      0.45,
+      0.33,
+      0.2
+     ],
+     "layer": "webbing"
+    },
+    {
+     "key": "stain_bait",
+     "rgb": [
+      0.38,
+      0.26,
+      0.14
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "stain_fish",
+     "rgb": [
+      0.62,
+      0.72,
+      0.72
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pad",
+     "rgb": [
+      0.13,
+      0.13,
+      0.15
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "derby_shorts",
+     "rgb": [
+      0.1,
+      0.12,
+      0.35
+     ],
+     "layer": "cargo"
+    },
+    {
+     "key": "sneaker",
+     "rgb": [
+      0.92,
+      0.92,
+      0.9
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "sole_white",
+     "rgb": [
+      0.85,
+      0.85,
+      0.82
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "padcap",
+     "rgb": [
+      0.95,
+      0.35,
+      0.6
+     ],
+     "layer": "leather"
+    }
+   ],
+   "role": "Bait shop owner, retired roller-derby champion",
+   "notes": "Stocky, huge arms, bait-stained apron with stains in two colours, knee pads over bare knees, wrist guards, sweatband.",
+   "props": [],
+   "building": "bait shop (fixed)",
+   "placement": {
+    "note": "stand at the building; Unity builder places, yaw faces the player/door"
+   }
+  },
+  {
+   "name": "Gary Nettle (neat comb-over)",
+   "id": "Gary_Nettle_Neat",
+   "file": "Art/Export/Villagers/Gary_Nettle_Neat.fbx",
+   "tris": 7026,
+   "tris_by_object": {
+    "Gary_Nettle_Neat_Body": 4104,
+    "Gary_Nettle_Neat_Head": 2456,
+    "Gary_Nettle_Neat_Face": 394,
+    "Gary_Nettle_Neat_Pupil_L": 36,
+    "Gary_Nettle_Neat_Pupil_R": 36
+   },
+   "material": "M_Toon_Base",
+   "height_m": 1.755,
+   "palette": [
+    {
+     "key": "skin",
+     "rgb": [
+      0.93,
+      0.66,
+      0.54
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "nose",
+     "rgb": [
+      0.967,
+      0.568,
+      0.486
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "eye",
+     "rgb": [
+      1.0,
+      1.0,
+      0.97
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pupil",
+     "rgb": [
+      0.03,
+      0.03,
+      0.04
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "wrinkle",
+     "rgb": [
+      0.688,
+      0.488,
+      0.4
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "brow",
+     "rgb": [
+      0.36,
+      0.3,
+      0.27
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "mouth",
+     "rgb": [
+      0.25,
+      0.08,
+      0.08
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "hair",
+     "rgb": [
+      0.36,
+      0.3,
+      0.27
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "jumper",
+     "rgb": [
+      0.78,
+      0.12,
+      0.12
+     ],
+     "layer": "sock"
+    },
+    {
+     "key": "trim",
+     "rgb": [
+      0.18,
+      0.32,
+      0.72
+     ],
+     "layer": "sock"
+    },
+    {
+     "key": "slacks",
+     "rgb": [
+      0.4,
+      0.33,
+      0.24
+     ],
+     "layer": "cargo"
+    },
+    {
+     "key": "brown_shoe",
+     "rgb": [
+      0.34,
+      0.2,
+      0.11
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "sole",
+     "rgb": [
+      0.12,
+      0.09,
+      0.07
+     ],
+     "layer": "leather"
+    }
+   ],
+   "role": "Net-mender (twin)",
+   "notes": "Twin A: neat comb-over, red jumper with blue trim. Same body as Gary_Nettle_Wild; the jumper colours are swapped (palette slots are the same keys: jumper/trim).",
+   "props": [],
+   "building": "net shed (fixed); cottage (placeable)",
+   "placement": {
+    "note": "stand at the building; Unity builder places, yaw faces the player/door"
+   }
+  },
+  {
+   "name": "Gary Nettle (wild hair)",
+   "id": "Gary_Nettle_Wild",
+   "file": "Art/Export/Villagers/Gary_Nettle_Wild.fbx",
+   "tris": 7050,
+   "tris_by_object": {
+    "Gary_Nettle_Wild_Body": 4104,
+    "Gary_Nettle_Wild_Head": 2480,
+    "Gary_Nettle_Wild_Face": 394,
+    "Gary_Nettle_Wild_Pupil_L": 36,
+    "Gary_Nettle_Wild_Pupil_R": 36
+   },
+   "material": "M_Toon_Base",
+   "height_m": 1.816,
+   "palette": [
+    {
+     "key": "skin",
+     "rgb": [
+      0.93,
+      0.66,
+      0.54
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "nose",
+     "rgb": [
+      0.967,
+      0.568,
+      0.486
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "eye",
+     "rgb": [
+      1.0,
+      1.0,
+      0.97
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pupil",
+     "rgb": [
+      0.03,
+      0.03,
+      0.04
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "wrinkle",
+     "rgb": [
+      0.688,
+      0.488,
+      0.4
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "brow",
+     "rgb": [
+      0.78,
+      0.38,
+      0.12
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "mouth",
+     "rgb": [
+      0.25,
+      0.08,
+      0.08
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "hair",
+     "rgb": [
+      0.78,
+      0.38,
+      0.12
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "jumper",
+     "rgb": [
+      0.18,
+      0.32,
+      0.72
+     ],
+     "layer": "sock"
+    },
+    {
+     "key": "trim",
+     "rgb": [
+      0.78,
+      0.12,
+      0.12
+     ],
+     "layer": "sock"
+    },
+    {
+     "key": "slacks",
+     "rgb": [
+      0.4,
+      0.33,
+      0.24
+     ],
+     "layer": "cargo"
+    },
+    {
+     "key": "brown_shoe",
+     "rgb": [
+      0.34,
+      0.2,
+      0.11
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "sole",
+     "rgb": [
+      0.12,
+      0.09,
+      0.07
+     ],
+     "layer": "leather"
+    }
+   ],
+   "role": "Net-mender (twin)",
+   "notes": "Twin B: wild ginger hair, blue jumper with red trim. Same body as Gary_Nettle_Neat; the jumper colours are swapped.",
+   "props": [],
+   "building": "net shed (fixed); cottage (placeable)",
+   "placement": {
+    "note": "stand at the building; Unity builder places, yaw faces the player/door"
+   }
+  },
+  {
+   "name": "Wendell Krill",
+   "id": "Wendell_Krill",
+   "file": "Art/Export/Villagers/Wendell_Krill.fbx",
+   "tris": 7798,
+   "tris_by_object": {
+    "Wendell_Krill_Body": 4794,
+    "Wendell_Krill_Head": 2078,
+    "Wendell_Krill_Face": 600,
+    "Wendell_Krill_Pupil_L": 36,
+    "Wendell_Krill_Pupil_R": 36,
+    "Wendell_Krill_Prop_LuckyHat": 254
+   },
+   "material": "M_Toon_Base",
+   "height_m": 1.583,
+   "palette": [
+    {
+     "key": "skin",
+     "rgb": [
+      0.86,
+      0.62,
+      0.46
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "nose",
+     "rgb": [
+      0.894,
+      0.533,
+      0.414
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "eye",
+     "rgb": [
+      1.0,
+      1.0,
+      0.97
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pupil",
+     "rgb": [
+      0.03,
+      0.03,
+      0.04
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "brow",
+     "rgb": [
+      0.62,
+      0.62,
+      0.6
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "wrinkle",
+     "rgb": [
+      0.636,
+      0.459,
+      0.34
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "moustache",
+     "rgb": [
+      0.75,
+      0.75,
+      0.72
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "mouth",
+     "rgb": [
+      0.25,
+      0.08,
+      0.08
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "cap",
+     "rgb": [
+      0.34,
+      0.34,
+      0.3
+     ],
+     "layer": "hat"
+    },
+    {
+     "key": "shirt",
+     "rgb": [
+      0.45,
+      0.5,
+      0.42
+     ],
+     "layer": "shirt"
+    },
+    {
+     "key": "apron",
+     "rgb": [
+      0.33,
+      0.24,
+      0.17
+     ],
+     "layer": "webbing"
+    },
+    {
+     "key": "apron_tie",
+     "rgb": [
+      0.2,
+      0.16,
+      0.12
+     ],
+     "layer": "webbing"
+    },
+    {
+     "key": "soot",
+     "rgb": [
+      0.1,
+      0.08,
+      0.07
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "baggy",
+     "rgb": [
+      0.3,
+      0.3,
+      0.28
+     ],
+     "layer": "cargo"
+    },
+    {
+     "key": "boot",
+     "rgb": [
+      0.2,
+      0.14,
+      0.1
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "sole",
+     "rgb": [
+      0.08,
+      0.07,
+      0.06
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "lucky",
+     "rgb": [
+      0.55,
+      0.1,
+      0.12
+     ],
+     "layer": "hat"
+    },
+    {
+     "key": "lucky_gold",
+     "rgb": [
+      0.9,
+      0.72,
+      0.2
+     ],
+     "layer": "none"
+    }
+   ],
+   "role": "Smokehouse",
+   "notes": "Old and stooped, flat cap, droopy moustache, long smoke-darkened apron with soot. The lucky smoking hat is the separate lost prop Prop_LuckyHat.",
+   "props": [
+    {
+     "object": "Wendell_Krill_Prop_LuckyHat",
+     "lost": true,
+     "note": "His lucky smoking hat (wish item, gull nest on the sea arch). Shown on the ground beside him; hide until returned, then show it on his head instead of the flat cap."
+    }
+   ],
+   "building": "smokehouse (fixed)",
+   "placement": {
+    "note": "stand at the building; Unity builder places, yaw faces the player/door"
+   }
+  },
+  {
+   "name": "Ines Varga",
+   "id": "Ines_Varga",
+   "file": "Art/Export/Villagers/Ines_Varga.fbx",
+   "tris": 8422,
+   "tris_by_object": {
+    "Ines_Varga_Body": 5390,
+    "Ines_Varga_Head": 2142,
+    "Ines_Varga_Face": 442,
+    "Ines_Varga_Pupil_L": 36,
+    "Ines_Varga_Pupil_R": 36,
+    "Ines_Varga_Prop_WeldingGoggles": 376
+   },
+   "material": "M_Toon_Base",
+   "height_m": 1.761,
+   "palette": [
+    {
+     "key": "skin",
+     "rgb": [
+      0.8,
+      0.62,
+      0.45
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "nose",
+     "rgb": [
+      0.832,
+      0.533,
+      0.405
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "eye",
+     "rgb": [
+      1.0,
+      1.0,
+      0.97
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pupil",
+     "rgb": [
+      0.03,
+      0.03,
+      0.04
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "brow",
+     "rgb": [
+      0.1,
+      0.08,
+      0.08
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "mouth",
+     "rgb": [
+      0.25,
+      0.08,
+      0.08
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "hair",
+     "rgb": [
+      0.1,
+      0.08,
+      0.08
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "tee",
+     "rgb": [
+      0.82,
+      0.82,
+      0.78
+     ],
+     "layer": "shirt"
+    },
+    {
+     "key": "denim",
+     "rgb": [
+      0.2,
+      0.34,
+      0.58
+     ],
+     "layer": "cargo"
+    },
+    {
+     "key": "denim_dark",
+     "rgb": [
+      0.13,
+      0.22,
+      0.4
+     ],
+     "layer": "cargo"
+    },
+    {
+     "key": "work_boot",
+     "rgb": [
+      0.42,
+      0.3,
+      0.16
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "sole",
+     "rgb": [
+      0.08,
+      0.07,
+      0.06
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "rubber",
+     "rgb": [
+      0.12,
+      0.12,
+      0.12
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "weldglass",
+     "rgb": [
+      0.08,
+      0.22,
+      0.12
+     ],
+     "layer": "none"
+    }
+   ],
+   "role": "Boatwright",
+   "notes": "Broad, thick arms, denim overalls with a patch pocket, welding goggles pushed up on the forehead (separate prop), a permanent scowl.",
+   "props": [
+    {
+     "object": "Ines_Varga_Prop_WeldingGoggles",
+     "lost": false,
+     "note": "worn on the forehead, strap round the head"
+    }
+   ],
+   "building": "boatyard (fixed)",
+   "placement": {
+    "note": "stand at the building; Unity builder places, yaw faces the player/door"
+   }
+  },
+  {
+   "name": "Dr. Penny Hollis",
+   "id": "Penny_Hollis",
+   "file": "Art/Export/Villagers/Penny_Hollis.fbx",
+   "tris": 9898,
+   "tris_by_object": {
+    "Penny_Hollis_Body": 5790,
+    "Penny_Hollis_Head": 3038,
+    "Penny_Hollis_Face": 394,
+    "Penny_Hollis_Pupil_L": 36,
+    "Penny_Hollis_Pupil_R": 36,
+    "Penny_Hollis_Prop_Spectacles": 328,
+    "Penny_Hollis_Prop_Lanyard": 276
+   },
+   "material": "M_Toon_Base",
+   "height_m": 1.838,
+   "palette": [
+    {
+     "key": "skin",
+     "rgb": [
+      0.94,
+      0.76,
+      0.62
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "nose",
+     "rgb": [
+      0.978,
+      0.654,
+      0.558
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "eye",
+     "rgb": [
+      1.0,
+      1.0,
+      0.97
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pupil",
+     "rgb": [
+      0.03,
+      0.03,
+      0.04
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "wrinkle",
+     "rgb": [
+      0.696,
+      0.562,
+      0.459
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "brow",
+     "rgb": [
+      0.55,
+      0.26,
+      0.12
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "mouth",
+     "rgb": [
+      0.25,
+      0.08,
+      0.08
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "hair",
+     "rgb": [
+      0.55,
+      0.26,
+      0.12
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pencil",
+     "rgb": [
+      0.95,
+      0.8,
+      0.15
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "frame",
+     "rgb": [
+      0.2,
+      0.14,
+      0.1
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "blouse",
+     "rgb": [
+      0.92,
+      0.88,
+      0.8
+     ],
+     "layer": "shirt"
+    },
+    {
+     "key": "waders",
+     "rgb": [
+      0.34,
+      0.42,
+      0.2
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "cardigan",
+     "rgb": [
+      0.86,
+      0.62,
+      0.12
+     ],
+     "layer": "sock"
+    },
+    {
+     "key": "patch",
+     "rgb": [
+      0.4,
+      0.25,
+      0.12
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "wader_boot",
+     "rgb": [
+      0.26,
+      0.32,
+      0.15
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "sole",
+     "rgb": [
+      0.08,
+      0.07,
+      0.06
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "lan_cord",
+     "rgb": [
+      0.45,
+      0.07,
+      0.1
+     ],
+     "layer": "webbing"
+    },
+    {
+     "key": "badge",
+     "rgb": [
+      0.92,
+      0.92,
+      0.88
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "crest",
+     "rgb": [
+      0.45,
+      0.07,
+      0.1
+     ],
+     "layer": "none"
+    }
+   ],
+   "role": "Marine biologist \"between universities\"",
+   "notes": "Mustard cardigan with elbow patches, olive waders, a lanyard for a university she no longer works at, a messy bun with a pencil, round spectacles (separate prop).",
+   "props": [
+    {
+     "object": "Penny_Hollis_Prop_Spectacles",
+     "lost": false,
+     "note": "round wire spectacles, worn"
+    },
+    {
+     "object": "Penny_Hollis_Prop_Lanyard",
+     "lost": false,
+     "note": "worn round the neck"
+    }
+   ],
+   "building": "aquarium (placeable)",
+   "placement": {
+    "note": "stand at the building; Unity builder places, yaw faces the player/door"
+   }
+  },
+  {
+   "name": "Lorraine Bass",
+   "id": "Lorraine_Bass",
+   "file": "Art/Export/Villagers/Lorraine_Bass.fbx",
+   "tris": 7462,
+   "tris_by_object": {
+    "Lorraine_Bass_Body": 4066,
+    "Lorraine_Bass_Head": 2582,
+    "Lorraine_Bass_Face": 526,
+    "Lorraine_Bass_Pupil_L": 36,
+    "Lorraine_Bass_Pupil_R": 36,
+    "Lorraine_Bass_Prop_CoffeePot": 216
+   },
+   "material": "M_Toon_Base",
+   "height_m": 2.062,
+   "palette": [
+    {
+     "key": "skin",
+     "rgb": [
+      0.94,
+      0.76,
+      0.62
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "nose",
+     "rgb": [
+      0.978,
+      0.654,
+      0.558
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "eye",
+     "rgb": [
+      1.0,
+      1.0,
+      0.97
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pupil",
+     "rgb": [
+      0.03,
+      0.03,
+      0.04
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "brow",
+     "rgb": [
+      0.6,
+      0.34,
+      0.18
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "wrinkle",
+     "rgb": [
+      0.696,
+      0.562,
+      0.459
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "mouth",
+     "rgb": [
+      0.25,
+      0.08,
+      0.08
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "hair",
+     "rgb": [
+      0.6,
+      0.34,
+      0.18
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "blouse",
+     "rgb": [
+      0.12,
+      0.52,
+      0.55
+     ],
+     "layer": "shirt"
+    },
+    {
+     "key": "apron",
+     "rgb": [
+      0.93,
+      0.9,
+      0.8
+     ],
+     "layer": "webbing"
+    },
+    {
+     "key": "apron_stripe",
+     "rgb": [
+      0.78,
+      0.18,
+      0.18
+     ],
+     "layer": "webbing"
+    },
+    {
+     "key": "slacks",
+     "rgb": [
+      0.2,
+      0.2,
+      0.24
+     ],
+     "layer": "cargo"
+    },
+    {
+     "key": "flat_shoe",
+     "rgb": [
+      0.12,
+      0.12,
+      0.14
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "sole",
+     "rgb": [
+      0.08,
+      0.07,
+      0.06
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "glass",
+     "rgb": [
+      0.7,
+      0.82,
+      0.84
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "coffee",
+     "rgb": [
+      0.16,
+      0.08,
+      0.04
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "blk",
+     "rgb": [
+      0.07,
+      0.07,
+      0.08
+     ],
+     "layer": "none"
+    }
+   ],
+   "role": "Cafe owner",
+   "notes": "Thin and dry, tall beehive, half-lidded deadpan, cafe apron, a coffee pot in the right hand (separate prop).",
+   "props": [
+    {
+     "object": "Lorraine_Bass_Prop_CoffeePot",
+     "lost": false,
+     "note": "held in the right hand by the handle"
+    }
+   ],
+   "building": "cafe (placeable)",
+   "placement": {
+    "note": "stand at the building; Unity builder places, yaw faces the player/door"
+   }
+  },
+  {
+   "name": "Reverend Gil",
+   "id": "Reverend_Gil",
+   "file": "Art/Export/Villagers/Reverend_Gil.fbx",
+   "tris": 6770,
+   "tris_by_object": {
+    "Reverend_Gil_Body": 4108,
+    "Reverend_Gil_Head": 1950,
+    "Reverend_Gil_Face": 316,
+    "Reverend_Gil_Pupil_L": 36,
+    "Reverend_Gil_Pupil_R": 36,
+    "Reverend_Gil_Prop_BingoDauber": 172,
+    "Reverend_Gil_Prop_Sunglasses": 152
+   },
+   "material": "M_Toon_Base",
+   "height_m": 1.802,
+   "palette": [
+    {
+     "key": "skin",
+     "rgb": [
+      0.62,
+      0.42,
+      0.3
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "nose",
+     "rgb": [
+      0.645,
+      0.361,
+      0.27
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "eye",
+     "rgb": [
+      1.0,
+      1.0,
+      0.97
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pupil",
+     "rgb": [
+      0.03,
+      0.03,
+      0.04
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "brow",
+     "rgb": [
+      0.78,
+      0.78,
+      0.8
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "mouth",
+     "rgb": [
+      0.25,
+      0.08,
+      0.08
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "teeth",
+     "rgb": [
+      0.96,
+      0.95,
+      0.9
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "hair",
+     "rgb": [
+      0.78,
+      0.78,
+      0.8
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "clerical",
+     "rgb": [
+      0.1,
+      0.1,
+      0.12
+     ],
+     "layer": "shirt"
+    },
+    {
+     "key": "collar",
+     "rgb": [
+      0.96,
+      0.96,
+      0.94
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "stole",
+     "rgb": [
+      0.5,
+      0.18,
+      0.62
+     ],
+     "layer": "sock"
+    },
+    {
+     "key": "clerical2",
+     "rgb": [
+      0.15,
+      0.15,
+      0.18
+     ],
+     "layer": "shirt"
+    },
+    {
+     "key": "black_trousers",
+     "rgb": [
+      0.09,
+      0.09,
+      0.1
+     ],
+     "layer": "cargo"
+    },
+    {
+     "key": "dress_shoe",
+     "rgb": [
+      0.07,
+      0.07,
+      0.08
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "sole",
+     "rgb": [
+      0.05,
+      0.05,
+      0.05
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "dauber",
+     "rgb": [
+      0.95,
+      0.2,
+      0.55
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "dauber_dark",
+     "rgb": [
+      0.15,
+      0.15,
+      0.18
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "dauber_ink",
+     "rgb": [
+      0.6,
+      0.05,
+      0.35
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "shade",
+     "rgb": [
+      0.04,
+      0.04,
+      0.05
+     ],
+     "layer": "none"
+    }
+   ],
+   "role": "Chapel",
+   "notes": "Round and beaming, clerical black with a dog collar and a purple stole, sunglasses (separate prop), a bingo dauber in the breast pocket (separate prop).",
+   "props": [
+    {
+     "object": "Reverend_Gil_Prop_BingoDauber",
+     "lost": false,
+     "note": "tucked in the breast pocket, tip up"
+    },
+    {
+     "object": "Reverend_Gil_Prop_Sunglasses",
+     "lost": false,
+     "note": "worn indoors; the eyes underneath are modelled so they can come off"
+    }
+   ],
+   "building": "chapel (fixed)",
+   "placement": {
+    "note": "stand at the building; Unity builder places, yaw faces the player/door"
+   }
+  },
+  {
+   "name": "Mr. Fenwick",
+   "id": "Mr_Fenwick",
+   "file": "Art/Export/Villagers/Mr_Fenwick.fbx",
+   "tris": 8799,
+   "tris_by_object": {
+    "Mr_Fenwick_Body": 5718,
+    "Mr_Fenwick_Head": 2590,
+    "Mr_Fenwick_Face": 328,
+    "Mr_Fenwick_Pupil_L": 36,
+    "Mr_Fenwick_Pupil_R": 36,
+    "Mr_Fenwick_Prop_TinfoilBrim": 91
+   },
+   "material": "M_Toon_Base",
+   "height_m": 1.728,
+   "palette": [
+    {
+     "key": "skin",
+     "rgb": [
+      0.93,
+      0.66,
+      0.54
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "nose",
+     "rgb": [
+      0.9,
+      0.5,
+      0.42
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "eye",
+     "rgb": [
+      1.0,
+      1.0,
+      0.97
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pupil",
+     "rgb": [
+      0.03,
+      0.03,
+      0.04
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "wrinkle",
+     "rgb": [
+      0.688,
+      0.488,
+      0.4
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "beard",
+     "rgb": [
+      0.74,
+      0.74,
+      0.72
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "oil_yellow",
+     "rgb": [
+      0.95,
+      0.76,
+      0.1
+     ],
+     "layer": "vest"
+    },
+    {
+     "key": "foil",
+     "rgb": [
+      0.82,
+      0.84,
+      0.86
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "sack",
+     "rgb": [
+      0.5,
+      0.4,
+      0.26
+     ],
+     "layer": "webbing"
+    },
+    {
+     "key": "oil_green",
+     "rgb": [
+      0.22,
+      0.34,
+      0.18
+     ],
+     "layer": "vest"
+    },
+    {
+     "key": "rope",
+     "rgb": [
+      0.6,
+      0.48,
+      0.3
+     ],
+     "layer": "webbing"
+    },
+    {
+     "key": "welly",
+     "rgb": [
+      0.07,
+      0.07,
+      0.08
+     ],
+     "layer": "leather"
+    },
+    {
+     "key": "sole",
+     "rgb": [
+      0.05,
+      0.05,
+      0.05
+     ],
+     "layer": "leather"
+    }
+   ],
+   "role": "Gull Bar hermit",
+   "notes": "Bearded, hunched, three layers of oilskin, a sou'wester with a tinfoil-lined brim (the foil is a separate prop), paranoid up-and-away stare.",
+   "props": [
+    {
+     "object": "Mr_Fenwick_Prop_TinfoilBrim",
+     "lost": false,
+     "note": "a tinfoil lining wrapped round the sou'wester brim; it is part of his hat, left as an object so it can be swapped for a plain brim"
+    }
+   ],
+   "building": "stilt shack on Gull Bar",
+   "placement": {
+    "note": "stand at the building; Unity builder places, yaw faces the player/door"
+   }
+  },
+  {
+   "name": "Ambrose Lock",
+   "id": "Ambrose_Lock",
+   "file": "Art/Export/Villagers/Ambrose_Lock.fbx",
+   "tris": 6858,
+   "tris_by_object": {
+    "Ambrose_Lock_Body": 4328,
+    "Ambrose_Lock_Head": 1650,
+    "Ambrose_Lock_Face": 600,
+    "Ambrose_Lock_Pupil_L": 36,
+    "Ambrose_Lock_Pupil_R": 36,
+    "Ambrose_Lock_Prop_PocketWatch": 208
+   },
+   "material": "M_Toon_Base",
+   "height_m": 1.488,
+   "palette": [
+    {
+     "key": "skin",
+     "rgb": [
+      0.94,
+      0.76,
+      0.62
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "nose",
+     "rgb": [
+      0.978,
+      0.654,
+      0.558
+     ],
+     "layer": "skin"
+    },
+    {
+     "key": "eye",
+     "rgb": [
+      1.0,
+      1.0,
+      0.97
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "pupil",
+     "rgb": [
+      0.03,
+      0.03,
+      0.04
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "brow",
+     "rgb": [
+      0.92,
+      0.92,
+      0.92
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "wrinkle",
+     "rgb": [
+      0.696,
+      0.562,
+      0.459
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "white_hair",
+     "rgb": [
+      0.92,
+      0.92,
+      0.92
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "mouth",
+     "rgb": [
+      0.25,
+      0.08,
+      0.08
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "waistcoat",
+     "rgb": [
+      0.42,
+      0.28,
+      0.26
+     ],
+     "layer": "vest"
+    },
+    {
+     "key": "cardigan",
+     "rgb": [
+      0.4,
+      0.52,
+      0.42
+     ],
+     "layer": "sock"
+    },
+    {
+     "key": "button",
+     "rgb": [
+      0.3,
+      0.2,
+      0.12
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "highwaist",
+     "rgb": [
+      0.4,
+      0.4,
+      0.42
+     ],
+     "layer": "cargo"
+    },
+    {
+     "key": "slipper",
+     "rgb": [
+      0.36,
+      0.17,
+      0.14
+     ],
+     "layer": "sock"
+    },
+    {
+     "key": "gold",
+     "rgb": [
+      0.92,
+      0.75,
+      0.25
+     ],
+     "layer": "none"
+    },
+    {
+     "key": "watch_face",
+     "rgb": [
+      0.95,
+      0.94,
+      0.88
+     ],
+     "layer": "none"
+    }
+   ],
+   "role": "Lock-keeper",
+   "notes": "Very old and frail, cardigan over a waistcoat, high-waisted trousers, slippers, a pocket watch on a chain (separate prop), big ears, white tufts, eleven years of waiting in the eyelids.",
+   "props": [
+    {
+     "object": "Ambrose_Lock_Prop_PocketWatch",
+     "lost": false,
+     "note": "hangs on its chain from the waistcoat; keeps the wrong time"
+    }
+   ],
+   "building": "river lock (fixed)",
+   "placement": {
+    "note": "stand at the building; Unity builder places, yaw faces the player/door"
+   }
+  }
+ ]
+}
