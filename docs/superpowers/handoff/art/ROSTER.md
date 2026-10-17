@@ -26,3 +26,6 @@ Orchestrator: session_01H1ZV7xiNZCUURUzwXrnHEZ (branch design/open-world-pivot).
 ## Status
 - **fish-genome:** done, 5a24fa0.
 - **harbour-props:** done, 8e2a59c; a small redo of 4 weak models was requested.
+- **harbour-berth-kit:** done. It adds slot 48 FlamingoPink. The tug's beam is 5 m. The berth's deep-water spot is the pontoon edge; the jetty perk goes to the camp plots.
+- **harbour-village-buildings:** done, af6ad44. 8 lots. Unity must suppress grass and hedges inside the lots.
+- **harbour-villagers:** reworked to proxy bodies, outfits and props at 45d31e1. The first pass on the rejected fisher base is superseded. Slots 72-79 are tintable, so Unity needs a per-object tint (a MaterialPropertyBlock). The face briefs are in `harbour-villagers-face-briefs.md`.
