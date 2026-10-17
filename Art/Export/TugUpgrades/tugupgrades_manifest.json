@@ -1,0 +1,3266 @@
+{
+ "generator": "Art/Blender/fg_tugmods.py (imports Art/Blender/fg_harbour.py, which stays untouched)",
+ "date": "2026-10-17",
+ "branch": "harbour-tug-upgrades",
+ "based_on": "origin/harbour-art3",
+ "axes": "TUG-LOCAL Unity metres: origin at the tug waterline centre, +z bow, +x starboard, y up (TUG_WORLD places the tug). Every FBX object is authored in tug-local space with an identity transform: install a module by parenting its mesh object to the tug at (0,0,0). Parts with a \"pivot\" (lids, hook block, gimbal, searchlight head, kettle): make an empty at pivot.position under the tug, parent the mesh under it with localPosition = -pivot.position, animate the empty. Tug_Dinghy is the one free body: its own origin is its keel centre, placement in mod/mount.placement_tug_local.",
+ "tug_reference": {
+  "file": "Art/Export/Harbour/Harbour_Core_CrewBoat.fbx",
+  "constants": {
+   "main_deck_y": 1.25,
+   "foredeck_y": 1.55,
+   "upper_deck_y": 3.6,
+   "wheelhouse_roof_y": 5.85,
+   "deckhouse": {
+    "z0": -2.6,
+    "z1": 3.4,
+    "half_width": 1.55
+   },
+   "wheelhouse": {
+    "z0": 0.5,
+    "z1": 3.2,
+    "half_width": 1.35
+   },
+   "gangway_gap_z": -7.0,
+   "ice_chests": [
+    [
+     1.2,
+     -6.3
+    ],
+    [
+     1.8,
+     -5.05
+    ],
+    [
+     -0.95,
+     -4.55
+    ],
+    [
+     0.65,
+     -4.55
+    ]
+   ],
+   "fishing_spots": [
+    {
+     "name": "Bow",
+     "local": [
+      0.0,
+      1.55,
+      6.95
+     ],
+     "facing_deg": 0.0
+    },
+    {
+     "name": "PortRail",
+     "local": [
+      -1.95,
+      1.25,
+      0.6
+     ],
+     "facing_deg": 270.0
+    },
+    {
+     "name": "StarboardRail",
+     "local": [
+      1.95,
+      1.25,
+      0.6
+     ],
+     "facing_deg": 90.0
+    },
+    {
+     "name": "Stern",
+     "local": [
+      0.0,
+      1.25,
+      -6.7
+     ],
+     "facing_deg": 180.0
+    },
+    {
+     "name": "UpperDeckPort",
+     "local": [
+      -1.2,
+      3.6,
+      -1.6
+     ],
+     "facing_deg": 270.0
+    },
+    {
+     "name": "UpperDeckStarboard",
+     "local": [
+      1.2,
+      3.6,
+      -1.6
+     ],
+     "facing_deg": 90.0
+    }
+   ],
+   "world": {
+    "position": [
+     41.0,
+     0.0,
+     -19.0
+    ],
+    "yaw": 0.0
+   }
+  }
+ },
+ "encoding": "UV0 UVMap metres; UV1 Layer = (palette slot, texture layer); vertex colour Col = 0.5 x AO (baked here against the tug and the other modules); smooth / analytic normals; no materials exported; M_Toon_Base unless a model names another material (the two water objects).",
+ "install_sets": {
+  "stock": [
+   "Tug_Dash_Stock"
+  ],
+  "upgraded": [
+   "Tug_LiveWell",
+   "Tug_LiveWell_Lid",
+   "Tug_LiveWell_Water",
+   "Tug_FightingChair",
+   "Tug_RodGimbal",
+   "Tug_Davit",
+   "Tug_Davit_Hook",
+   "Tug_TowFairlead",
+   "Tug_Dinghy",
+   "Tug_SonarDome",
+   "Tug_SonarCable",
+   "Tug_SonarScreen",
+   "Tug_Dash_Upgraded",
+   "Tug_Searchlight",
+   "Tug_Searchlight_Head",
+   "Tug_Outriggers_Deployed",
+   "Tug_Bunks",
+   "Tug_Galley",
+   "Tug_Galley_Kettle",
+   "Tug_AquariumTank",
+   "Tug_AquariumTank_Water",
+   "Tug_BaitFreezer"
+  ]
+ },
+ "upgrades": [
+  {
+   "id": "live_well",
+   "design": "live well",
+   "models": [
+    "Tug_LiveWell",
+    "Tug_LiveWell_Lid",
+    "Tug_LiveWell_Water"
+   ]
+  },
+  {
+   "id": "sonar",
+   "design": "sonar",
+   "models": [
+    "Tug_SonarDome",
+    "Tug_SonarCable",
+    "Tug_SonarScreen"
+   ]
+  },
+  {
+   "id": "davit",
+   "design": "crane and davit",
+   "models": [
+    "Tug_Davit",
+    "Tug_Davit_Hook"
+   ]
+  },
+  {
+   "id": "fighting_chair",
+   "design": "fighting chair",
+   "models": [
+    "Tug_FightingChair",
+    "Tug_RodGimbal"
+   ]
+  },
+  {
+   "id": "bunks",
+   "design": "bunks (sleep anywhere)",
+   "models": [
+    "Tug_Bunks"
+   ]
+  },
+  {
+   "id": "galley",
+   "design": "galley (cook catches for buffs)",
+   "models": [
+    "Tug_Galley",
+    "Tug_Galley_Kettle"
+   ]
+  },
+  {
+   "id": "aquarium",
+   "design": "aquarium tank",
+   "models": [
+    "Tug_AquariumTank",
+    "Tug_AquariumTank_Water"
+   ]
+  },
+  {
+   "id": "bait_freezer",
+   "design": "bait freezer",
+   "models": [
+    "Tug_BaitFreezer"
+   ]
+  },
+  {
+   "id": "outriggers",
+   "design": "outriggers",
+   "models": [
+    "Tug_Outriggers_Folded",
+    "Tug_Outriggers_Deployed"
+   ]
+  },
+  {
+   "id": "searchlight",
+   "design": "searchlight",
+   "models": [
+    "Tug_Searchlight",
+    "Tug_Searchlight_Head"
+   ]
+  },
+  {
+   "id": "dinghy",
+   "design": "a towed dinghy for shallows",
+   "models": [
+    "Tug_Dinghy",
+    "Tug_TowFairlead"
+   ]
+  },
+  {
+   "id": "dash",
+   "design": "wheelhouse dash: stock / upgraded pair",
+   "models": [
+    "Tug_Dash_Stock",
+    "Tug_Dash_Upgraded"
+   ]
+  }
+ ],
+ "clearance_method": "Per part, an axis-aligned box (long diagonals such as the boom, the cable and the outrigger poles are split into chunks) against: the deckhouse and wheelhouse walls, roofs, door openings and ladder volumes, the upper-deck rails, the roof rail, the mast, the console, the 4 ice chests, the 6 fishing spots (0.5 m standing circle, 1.9 m tall), the gangway landing (x -2.4..-0.8, z -7.55..-6.4), the bulwark inner face (offset outline, 0.17 m in), the interior furniture of the stock deckhouse and the stock deck clutter that is baked into the tug mesh (soft). gap_m is the box-to-box distance; overlap true means the volumes intersect. Intended contacts (a cable over the cap, a base clamped to a rail post) are marked allowed. Every module is also tested against every other module (parent/child and swap pairs excepted).",
+ "clearance_problems": [],
+ "models": [
+  {
+   "name": "Tug_LiveWell",
+   "file": "Art/Export/TugUpgrades/Tug_LiveWell.fbx",
+   "upgrade": "live_well",
+   "state": null,
+   "triangles": 774,
+   "vertices": 1030,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    0.542,
+    1.24,
+    -5.83
+   ],
+   "bounds_max": [
+    1.29,
+    1.6749,
+    -5.03
+   ],
+   "footprint": [
+    0.748,
+    0.435,
+    0.8
+   ],
+   "mount": {
+    "position": [
+     0.92,
+     1.25,
+     -5.45
+    ],
+    "yaw_deg": 0.0,
+    "surface": "main deck, aft starboard of the chair",
+    "footprint_xz": [
+     0.55,
+     -5.7700000000000005,
+     1.29,
+     -5.13
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [],
+   "animHint": "static (lid and water are separate objects)",
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    3
+   ],
+   "note": "Raised live well: a planked fish box on the aft deck (3 planks, one repainted orange: the mismatched replacement) with its own hinged lid (Tug_LiveWell_Lid) and its own water surface (Tug_LiveWell_Water). Box top at deck + 0.34; water at deck + 0.26.",
+   "colliders": [
+    {
+     "name": "LiveWell_Box",
+     "collider": "box",
+     "position": [
+      0.92,
+      1.42,
+      -5.45
+     ],
+     "footprint": [
+      0.74,
+      0.34,
+      0.64
+     ],
+     "bounds_min": [
+      0.55,
+      1.25,
+      -5.77
+     ],
+     "bounds_max": [
+      1.29,
+      1.59,
+      -5.13
+     ]
+    }
+   ],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.1,
+    "nearest": [
+     {
+      "part": "box",
+      "obstacle": "ice chest 2",
+      "kind": "box",
+      "gap_m": 0.1,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "box",
+      "obstacle": "ice chest 1",
+      "kind": "box",
+      "gap_m": 0.2,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "box",
+      "obstacle": "ice chest 4",
+      "kind": "box",
+      "gap_m": 0.21,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "box",
+      "obstacle": "fishing spot stern",
+      "kind": "cyl",
+      "gap_m": 0.525,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "box",
+      "obstacle": "bulwark (inner face)",
+      "kind": "bulwark",
+      "gap_m": 0.686,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": []
+   },
+   "water_surface_y": 1.51,
+   "lid_pivot_hint": "see Tug_LiveWell_Lid.pivot"
+  },
+  {
+   "name": "Tug_LiveWell_Lid",
+   "file": "Art/Export/TugUpgrades/Tug_LiveWell_Lid.fbx",
+   "upgrade": "live_well",
+   "state": null,
+   "triangles": 320,
+   "vertices": 323,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    0.53,
+    1.5608,
+    -5.8037
+   ],
+   "bounds_max": [
+    1.31,
+    1.7092,
+    -5.082
+   ],
+   "footprint": [
+    0.78,
+    0.148,
+    0.722
+   ],
+   "mount": {
+    "position": [
+     0.92,
+     1.615,
+     -5.1
+    ],
+    "yaw_deg": 0.0,
+    "surface": "top of Tug_LiveWell"
+   },
+   "pivot": {
+    "position": [
+     0.92,
+     1.615,
+     -5.1
+    ],
+    "axis": "x",
+    "open_angle_deg": 100.0,
+    "note": "aft edge goes up and over towards +z"
+   },
+   "requires": [
+    "Tug_LiveWell"
+   ],
+   "replaces": [],
+   "animHint": "hinge (open/close)",
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    8
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "note": "Hinged lid of the live well (closed pose). Hinge axis along x at the forward top edge; opens by rotating so the aft edge rises and swings over past the vertical (max ~100 degrees). Planked, one board replaced in a different wood, rope handle on the aft edge.",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.08,
+    "nearest": [
+     {
+      "part": "lid",
+      "obstacle": "ice chest 2",
+      "kind": "box",
+      "gap_m": 0.08,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "lid_open_envelope",
+      "obstacle": "ice chest 4",
+      "kind": "box",
+      "gap_m": 0.122,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "lid",
+      "obstacle": "ice chest 1",
+      "kind": "box",
+      "gap_m": 0.226,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "lid",
+      "obstacle": "fishing spot stern",
+      "kind": "cyl",
+      "gap_m": 0.541,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "lid",
+      "obstacle": "bulwark (inner face)",
+      "kind": "bulwark",
+      "gap_m": 0.679,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": []
+   },
+   "open_envelope": {
+    "min": [
+     0.53,
+     1.615,
+     -5.13
+    ],
+    "max": [
+     1.31,
+     2.315,
+     -4.942
+    ]
+   }
+  },
+  {
+   "name": "Tug_LiveWell_Water",
+   "file": "Art/Export/TugUpgrades/Tug_LiveWell_Water.fbx",
+   "upgrade": "live_well",
+   "state": null,
+   "triangles": 152,
+   "vertices": 106,
+   "material": "M_Water_Tank (the creek water material without the shore-foam band; builder: translucent, scrolling ripples, no toon lighting)",
+   "bounds_min": [
+    0.615,
+    1.47,
+    -5.705
+   ],
+   "bounds_max": [
+    1.225,
+    1.5159,
+    -5.195
+   ],
+   "footprint": [
+    0.61,
+    0.046,
+    0.51
+   ],
+   "mount": {
+    "position": [
+     0.92,
+     1.51,
+     -5.45
+    ],
+    "yaw_deg": 0.0,
+    "surface": "inside Tug_LiveWell"
+   },
+   "pivot": null,
+   "requires": [
+    "Tug_LiveWell"
+   ],
+   "replaces": [],
+   "animHint": "ripple",
+   "slots": [
+    1
+   ],
+   "layers": [
+    0
+   ],
+   "note": "Water surface of the live well, its own object: a ripple grid at deck + 0.26 (0.04 skirt). Builder: water material, slow ripple; hide when the well is empty; fish models swim just under it.",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": null,
+    "nearest": [],
+    "intended_contacts": []
+   }
+  },
+  {
+   "name": "Tug_FightingChair",
+   "file": "Art/Export/TugUpgrades/Tug_FightingChair.fbx",
+   "upgrade": "fighting_chair",
+   "state": null,
+   "triangles": 1022,
+   "vertices": 737,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.375,
+    1.2402,
+    -6.1
+   ],
+   "bounds_max": [
+    0.452,
+    2.56,
+    -5.06
+   ],
+   "footprint": [
+    0.827,
+    1.32,
+    1.04
+   ],
+   "mount": {
+    "position": [
+     0.0,
+     1.25,
+     -5.4
+    ],
+    "yaw_deg": 180.0,
+    "surface": "main deck, stern",
+    "seat_point": [
+     0.0,
+     1.95,
+     -5.4
+    ],
+    "footprint_xz": [
+     -0.33,
+     -6.12,
+     0.33,
+     -5.0
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [],
+   "animHint": "static",
+   "slots": [
+    4,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "note": "Fighting chair bolted to the aft deck, the angler faces the stern (yaw 180). Home-built: deck-plank frame, a steel pedestal, a red seat cushion with a duct-tape patch and an olive back cushion from another seat. The rod gimbal is a separate object (Tug_RodGimbal). Replaces the stern fishing spot: spot = seat_point, facing 180.",
+   "colliders": [
+    {
+     "name": "FightingChair_Body",
+     "collider": "box",
+     "position": [
+      0.0,
+      1.8,
+      -5.45
+     ],
+     "footprint": [
+      0.66,
+      1.1,
+      1.0
+     ],
+     "bounds_min": [
+      -0.33,
+      1.25,
+      -5.95
+     ],
+     "bounds_max": [
+      0.33,
+      2.35,
+      -4.95
+     ]
+    }
+   ],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.1,
+    "nearest": [
+     {
+      "part": "chair",
+      "obstacle": "fishing spot stern",
+      "kind": "cyl",
+      "gap_m": 0.1,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "chair",
+      "obstacle": "ice chest 4",
+      "kind": "box",
+      "gap_m": 0.24,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "chair",
+      "obstacle": "ice chest 3",
+      "kind": "box",
+      "gap_m": 0.291,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "chair",
+      "obstacle": "ice chest 1",
+      "kind": "box",
+      "gap_m": 0.338,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "chair",
+      "obstacle": "rope coil aft",
+      "kind": "soft",
+      "gap_m": 0.388,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "chair",
+      "obstacle": "gangway landing (keep clear)",
+      "kind": "box",
+      "gap_m": 0.52,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": []
+   },
+   "gimbal_socket": [
+    0.0,
+    1.97,
+    -5.76
+   ]
+  },
+  {
+   "name": "Tug_RodGimbal",
+   "file": "Art/Export/TugUpgrades/Tug_RodGimbal.fbx",
+   "upgrade": "fighting_chair",
+   "state": null,
+   "triangles": 266,
+   "vertices": 173,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.12,
+    1.86,
+    -6.0333
+   ],
+   "bounds_max": [
+    0.12,
+    2.1963,
+    -5.62
+   ],
+   "footprint": [
+    0.24,
+    0.336,
+    0.413
+   ],
+   "mount": {
+    "position": [
+     0.0,
+     1.97,
+     -5.760000000000001
+    ],
+    "yaw_deg": 180.0,
+    "surface": "front edge of Tug_FightingChair seat"
+   },
+   "pivot": {
+    "position": [
+     0.0,
+     1.97,
+     -5.76
+    ],
+    "axis": "x (pitch), y (yaw)",
+    "limits_deg": {
+     "pitch": [
+      -20,
+      50
+     ],
+     "yaw": [
+      -35,
+      35
+     ]
+    }
+   },
+   "requires": [
+    "Tug_FightingChair"
+   ],
+   "replaces": [],
+   "animHint": "follows the rod (rotates)",
+   "slots": [
+    4,
+    6,
+    10
+   ],
+   "layers": [
+    0
+   ],
+   "note": "Rod gimbal socket for the fighting chair: a bracket plate, a cross pin and a cup whose axis points aft and up (35 deg). The rod butt sits in the cup. Pivot is the cross pin: pitch about x, and the pin yoke swivels a few degrees about the vertical.",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.167,
+    "nearest": [
+     {
+      "part": "gimbal",
+      "obstacle": "fishing spot stern",
+      "kind": "cyl",
+      "gap_m": 0.167,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "gimbal",
+      "obstacle": "ice chest 1",
+      "kind": "box",
+      "gap_m": 0.673,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "gimbal",
+      "obstacle": "gangway landing (keep clear)",
+      "kind": "box",
+      "gap_m": 0.773,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "gimbal",
+      "obstacle": "rope coil aft",
+      "kind": "soft",
+      "gap_m": 0.793,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "gimbal",
+      "obstacle": "ice chest 4",
+      "kind": "box",
+      "gap_m": 0.811,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "gimbal",
+      "obstacle": "ice chest 3",
+      "kind": "box",
+      "gap_m": 0.906,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": []
+   }
+  },
+  {
+   "name": "Tug_Davit",
+   "file": "Art/Export/TugUpgrades/Tug_Davit.fbx",
+   "upgrade": "davit",
+   "state": null,
+   "triangles": 969,
+   "vertices": 1423,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    0.83,
+    1.25,
+    -7.2297
+   ],
+   "bounds_max": [
+    3.3452,
+    3.9108,
+    -6.73
+   ],
+   "footprint": [
+    2.515,
+    2.661,
+    0.5
+   ],
+   "mount": {
+    "position": [
+     1.05,
+     1.25,
+     -6.95
+    ],
+    "yaw_deg": 90.0,
+    "surface": "main deck, starboard stern quarter",
+    "footprint_xz": [
+     0.8300000000000001,
+     -7.17,
+     1.27,
+     -6.73
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [],
+   "animHint": "static (slew about the pedestal axis if the builder wants; hook block is separate)",
+   "slots": [
+    4,
+    5,
+    6,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "note": "Deck crane (a davit): a bolted pedestal at the starboard stern quarter, a boom that reaches out over the quarter (overhangs the water by ~1.6 m; the boom is at y > 3 so nothing on the deck is under its swing), brace rod, hand winch and a wire that ends at the hook block (Tug_Davit_Hook, its own object). Pedestal re-painted orange, the boom is the old red one: mismatched.",
+   "colliders": [
+    {
+     "name": "Davit_Pedestal",
+     "collider": "box",
+     "position": [
+      1.05,
+      2.15,
+      -6.95
+     ],
+     "footprint": [
+      0.3,
+      1.8,
+      0.3
+     ],
+     "bounds_min": [
+      0.9,
+      1.25,
+      -7.1
+     ],
+     "bounds_max": [
+      1.2,
+      3.05,
+      -6.8
+     ]
+    }
+   ],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.061,
+    "nearest": [
+     {
+      "part": "winch",
+      "obstacle": "bulwark (inner face)",
+      "kind": "bulwark",
+      "gap_m": 0.061,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "pedestal",
+      "obstacle": "ice chest 1",
+      "kind": "box",
+      "gap_m": 0.16,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "boom0",
+      "obstacle": "fishing spot stern",
+      "kind": "cyl",
+      "gap_m": 0.267,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": []
+   },
+   "boom_tip": [
+    3.275,
+    3.869,
+    -6.95
+   ],
+   "sheave": [
+    3.275,
+    3.729,
+    -6.98
+   ],
+   "boom_pivot": [
+    1.05,
+    2.97,
+    -6.95
+   ],
+   "rest_hook_attach": [
+    3.275,
+    3.669,
+    -6.95
+   ]
+  },
+  {
+   "name": "Tug_Davit_Hook",
+   "file": "Art/Export/TugUpgrades/Tug_Davit_Hook.fbx",
+   "upgrade": "davit",
+   "state": null,
+   "triangles": 344,
+   "vertices": 293,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    3.2202,
+    1.815,
+    -7.0075
+   ],
+   "bounds_max": [
+    3.4392,
+    2.5691,
+    -6.7958
+   ],
+   "footprint": [
+    0.219,
+    0.754,
+    0.212
+   ],
+   "mount": {
+    "position": [
+     3.275,
+     2.569,
+     -6.95
+    ],
+    "yaw_deg": 0.0,
+    "surface": "hangs on the wire from the Tug_Davit boom tip"
+   },
+   "pivot": {
+    "position": [
+     3.275,
+     2.569,
+     -6.95
+    ],
+    "axis": "any (hangs)",
+    "travel_y": [
+     -1.0,
+     1.1
+    ]
+   },
+   "requires": [
+    "Tug_Davit"
+   ],
+   "replaces": [],
+   "animHint": "lower/raise + swing (pendulum)",
+   "slots": [
+    5,
+    6,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "note": "Hook block of the davit, its own object. Rest pose: hanging 1.3 m below the boom tip. Pivot = the wire attachment (top of the block): lower/raise by moving the pivot along y, swing about it. Orange cheek plates, steel hook with a safety latch, a short pennant. The wire above the pivot is drawn by the builder (LineRenderer from Tug_Davit mod.sheave down to this pivot).",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": null,
+    "nearest": [
+     {
+      "part": "hook",
+      "obstacle": "bulwark (inner face)",
+      "kind": "bulwark",
+      "gap_m": -1.759,
+      "overlap": true,
+      "allowed": true
+     }
+    ],
+    "intended_contacts": [
+     "bulwark (inner face)"
+    ]
+   }
+  },
+  {
+   "name": "Tug_TowFairlead",
+   "file": "Art/Export/TugUpgrades/Tug_TowFairlead.fbx",
+   "upgrade": "dinghy",
+   "state": null,
+   "triangles": 312,
+   "vertices": 243,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    0.53,
+    2.17,
+    -7.6508
+   ],
+   "bounds_max": [
+    0.91,
+    2.4,
+    -7.27
+   ],
+   "footprint": [
+    0.38,
+    0.23,
+    0.381
+   ],
+   "mount": {
+    "position": [
+     0.72,
+     2.17,
+     -7.4
+    ],
+    "yaw_deg": 180.0,
+    "surface": "transom bulwark cap, starboard of the stern spot",
+    "footprint_xz": [
+     0.53,
+     -7.550000000000001,
+     0.9099999999999999,
+     -7.28
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [],
+   "animHint": "static",
+   "slots": [
+    4,
+    6
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "note": "Roller fairlead bolted over the transom bulwark cap: the tug end of the dinghy tow line. Tow point (tug side) in mod.tow_point.",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.278,
+    "nearest": [
+     {
+      "part": "fairlead",
+      "obstacle": "bulwark (inner face)",
+      "kind": "bulwark",
+      "gap_m": -0.34,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "fairlead",
+      "obstacle": "fishing spot stern",
+      "kind": "cyl",
+      "gap_m": 0.278,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "fairlead",
+      "obstacle": "ice chest 1",
+      "kind": "box",
+      "gap_m": 0.792,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": [
+     "bulwark (inner face)"
+    ]
+   },
+   "tow_point": [
+    0.72,
+    2.27,
+    -7.64
+   ]
+  },
+  {
+   "name": "Tug_SonarDome",
+   "file": "Art/Export/TugUpgrades/Tug_SonarDome.fbx",
+   "upgrade": "sonar",
+   "state": null,
+   "triangles": 568,
+   "vertices": 457,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.36,
+    -1.84,
+    0.65
+   ],
+   "bounds_max": [
+    0.36,
+    -1.49,
+    1.97
+   ],
+   "footprint": [
+    0.72,
+    0.35,
+    1.32
+   ],
+   "mount": {
+    "position": [
+     0.0,
+     -1.5,
+     1.2
+    ],
+    "yaw_deg": 0.0,
+    "surface": "hull bottom, on the keel line (underwater)",
+    "footprint_xz": [
+     -0.36,
+     0.6499999999999999,
+     0.36,
+     1.75
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [],
+   "animHint": "static",
+   "slots": [
+    5,
+    6,
+    9
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "note": "Transducer dome bolted under the hull on the keel line (it hangs 0.34 m below the keel, so the draft grows to 1.84 m). Dark rubber fairing on a steel mounting plate with 8 bolts, a zinc anode, and a duct-taped cable pigtail going up into the hull (the cable run is Tug_SonarCable). Underwater: only visible in the clear-water view.",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": null,
+    "nearest": [],
+    "intended_contacts": []
+   },
+   "draft_added": 0.34,
+   "mount_world_note": "on the hull, centre line, z 1.20; underwater, hide with the water surface culled"
+  },
+  {
+   "name": "Tug_SonarCable",
+   "file": "Art/Export/TugUpgrades/Tug_SonarCable.fbx",
+   "upgrade": "sonar",
+   "state": null,
+   "triangles": 1618,
+   "vertices": 926,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.017,
+    -1.5669,
+    1.2806
+   ],
+   "bounds_max": [
+    2.8097,
+    4.6373,
+    2.2112
+   ],
+   "footprint": [
+    2.827,
+    6.204,
+    0.931
+   ],
+   "mount": {
+    "position": [
+     0,
+     0,
+     0
+    ],
+    "yaw_deg": 0.0,
+    "surface": "hull, bulwark, deckhouse and wheelhouse walls (starboard side)"
+   },
+   "pivot": null,
+   "requires": [
+    "Tug_SonarDome"
+   ],
+   "replaces": [],
+   "animHint": "static",
+   "slots": [
+    4,
+    5,
+    6
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "note": "The sonar cable, run by someone in a hurry: from the dome up the starboard topsides over the fender ring, over the bulwark cap, across the walkway (a trip hazard), up the deckhouse wall between the nameboard and the porthole, over the roof lip, under the upper-deck rail, up the wheelhouse wall and through a drilled hole to the screen. Strips of grey duct tape every ~0.7 m, a blob of sealant on the hole.",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.145,
+    "nearest": [
+     {
+      "part": "cable07",
+      "obstacle": "bulwark (inner face)",
+      "kind": "bulwark",
+      "gap_m": -0.502,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "cable14",
+      "obstacle": "deckhouse roof slab",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "cable14",
+      "obstacle": "upper-deck rail stbd",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "cable15",
+      "obstacle": "wheelhouse stbd wall",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "cable12",
+      "obstacle": "deckhouse stbd wall",
+      "kind": "box",
+      "gap_m": 0.005,
+      "overlap": false,
+      "allowed": true
+     },
+     {
+      "part": "cable13",
+      "obstacle": "porthole stbd z2.2",
+      "kind": "soft",
+      "gap_m": 0.08,
+      "overlap": false,
+      "allowed": true
+     }
+    ],
+    "intended_contacts": [
+     "bulwark (inner face)",
+     "deckhouse roof slab",
+     "deckhouse stbd wall",
+     "upper-deck rail stbd",
+     "wheelhouse stbd wall"
+    ]
+   },
+   "route_note": "passes over the starboard fender ring and the bulwark cap by design (allowed contacts in the clearance report)"
+  },
+  {
+   "name": "Tug_SonarScreen",
+   "file": "Art/Export/TugUpgrades/Tug_SonarScreen.fbx",
+   "upgrade": "sonar",
+   "state": null,
+   "triangles": 647,
+   "vertices": 994,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    0.853,
+    4.605,
+    2.0452
+   ],
+   "bounds_max": [
+    1.345,
+    5.16,
+    2.4918
+   ],
+   "footprint": [
+    0.492,
+    0.555,
+    0.447
+   ],
+   "mount": {
+    "position": [
+     1.0,
+     4.95,
+     2.27
+    ],
+    "yaw_deg": 249.0,
+    "surface": "wheelhouse starboard sill (swing arm)",
+    "footprint_xz": [
+     0.78,
+     2.07,
+     1.32,
+     2.5
+    ]
+   },
+   "pivot": null,
+   "requires": [
+    "Tug_SonarDome",
+    "Tug_SonarCable"
+   ],
+   "replaces": [],
+   "animHint": "screen can flicker",
+   "slots": [
+    1,
+    2,
+    4,
+    5,
+    6,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "note": "Sonar display on a swing arm clamped to the starboard sill of the wheelhouse, facing the helm (yaw 249). A cream bezel on a grey housing (two different monitors): dark green screen with depth lines, the sea floor and an orange fish arch. Screen quad in mod.screen_quad for a builder-driven readout. Cable arrives from Tug_SonarCable.",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.034,
+    "nearest": [
+     {
+      "part": "screen",
+      "obstacle": "wheelhouse stbd wall",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "screen",
+      "obstacle": "wheelhouse console",
+      "kind": "box",
+      "gap_m": 0.034,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "screen",
+      "obstacle": "compass binnacle",
+      "kind": "box",
+      "gap_m": 0.108,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "screen",
+      "obstacle": "upper-deck rail stbd",
+      "kind": "box",
+      "gap_m": 0.275,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "screen",
+      "obstacle": "helm wheel",
+      "kind": "box",
+      "gap_m": 0.353,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "screen",
+      "obstacle": "wheelhouse roof slab",
+      "kind": "box",
+      "gap_m": 0.55,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": [
+     "wheelhouse stbd wall"
+    ]
+   },
+   "screen_quad": {
+    "center": [
+     0.972,
+     4.95,
+     2.259
+    ],
+    "size": [
+     0.36,
+     0.26
+    ],
+    "yaw_deg": 249.0
+   },
+   "cable_end": [
+    1.1,
+    4.62,
+    2.2
+   ]
+  },
+  {
+   "name": "Tug_Dash_Stock",
+   "file": "Art/Export/TugUpgrades/Tug_Dash_Stock.fbx",
+   "upgrade": "dash",
+   "state": null,
+   "triangles": 914,
+   "vertices": 1029,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.35,
+    4.6,
+    2.791
+   ],
+   "bounds_max": [
+    0.55,
+    5.15,
+    3.07
+   ],
+   "footprint": [
+    0.9,
+    0.55,
+    0.279
+   ],
+   "mount": {
+    "position": [
+     0.1,
+     4.6,
+     3.07
+    ],
+    "yaw_deg": 180.0,
+    "surface": "wheelhouse console top, front edge",
+    "footprint_xz": [
+     -0.35,
+     2.8,
+     0.55,
+     3.07
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [],
+   "animHint": "static",
+   "slots": [
+    2,
+    4,
+    5,
+    6,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "note": "STOCK wheelhouse dash: a sloped wooden binnacle with three gauges (one cracked, taped), four toggle switches, a key and a handheld VHF in a cradle, a label-maker strip that reads \"FUEL?\". Swap with Tug_Dash_Upgraded when the dash upgrade is bought (never both).",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.02,
+    "nearest": [
+     {
+      "part": "dash",
+      "obstacle": "wheelhouse console",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "dash",
+      "obstacle": "rolled map",
+      "kind": "box",
+      "gap_m": 0.02,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "dash",
+      "obstacle": "wheelhouse front wall",
+      "kind": "box",
+      "gap_m": 0.03,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "dash",
+      "obstacle": "compass binnacle",
+      "kind": "box",
+      "gap_m": 0.05,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "dash",
+      "obstacle": "helm wheel",
+      "kind": "box",
+      "gap_m": 0.171,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "dash",
+      "obstacle": "upper-deck rail front",
+      "kind": "box",
+      "gap_m": 0.4,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": [
+     "wheelhouse console"
+    ]
+   }
+  },
+  {
+   "name": "Tug_Dash_Upgraded",
+   "file": "Art/Export/TugUpgrades/Tug_Dash_Upgraded.fbx",
+   "upgrade": "dash",
+   "state": null,
+   "triangles": 891,
+   "vertices": 1368,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.35,
+    4.6,
+    2.72
+   ],
+   "bounds_max": [
+    0.55,
+    5.115,
+    3.07
+   ],
+   "footprint": [
+    0.9,
+    0.515,
+    0.35
+   ],
+   "mount": {
+    "position": [
+     0.1,
+     4.6,
+     3.07
+    ],
+    "yaw_deg": 180.0,
+    "surface": "wheelhouse console top, front edge",
+    "footprint_xz": [
+     -0.35,
+     2.72,
+     0.55,
+     3.07
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [
+    "Tug_Dash_Stock"
+   ],
+   "animHint": "static (screens can flicker)",
+   "slots": [
+    1,
+    2,
+    4,
+    5,
+    6,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "note": "UPGRADED wheelhouse dash (replaces Tug_Dash_Stock): a taller console cap with a chartplotter (a cracked-screen tablet in a case), a red-LED depth read-out, a big autopilot knob, three rocker switches, a USB fan, and a right-hand panel that is a different orange one from another boat (odd screws, its own sticker). The Tug_SonarScreen is a separate object on the starboard sill.",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.02,
+    "nearest": [
+     {
+      "part": "dash",
+      "obstacle": "wheelhouse console",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "dash",
+      "obstacle": "rolled map",
+      "kind": "box",
+      "gap_m": 0.02,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "dash",
+      "obstacle": "wheelhouse front wall",
+      "kind": "box",
+      "gap_m": 0.03,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "dash",
+      "obstacle": "compass binnacle",
+      "kind": "box",
+      "gap_m": 0.05,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "dash",
+      "obstacle": "helm wheel",
+      "kind": "box",
+      "gap_m": 0.1,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "dash",
+      "obstacle": "upper-deck rail front",
+      "kind": "box",
+      "gap_m": 0.4,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": [
+     "wheelhouse console"
+    ]
+   },
+   "screen_quad": {
+    "center": [
+     0.22,
+     4.879,
+     2.945
+    ],
+    "size": [
+     0.29,
+     0.17
+    ],
+    "yaw_deg": 180.0,
+    "note": "chartplotter"
+   }
+  },
+  {
+   "name": "Tug_Searchlight",
+   "file": "Art/Export/TugUpgrades/Tug_Searchlight.fbx",
+   "upgrade": "searchlight",
+   "state": null,
+   "triangles": 504,
+   "vertices": 394,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -1.0552,
+    5.85,
+    0.925
+   ],
+   "bounds_max": [
+    -0.28,
+    6.66,
+    1.4402
+   ],
+   "footprint": [
+    0.775,
+    0.81,
+    0.515
+   ],
+   "mount": {
+    "position": [
+     -0.55,
+     5.85,
+     1.25
+    ],
+    "yaw_deg": 0.0,
+    "surface": "wheelhouse roof, port of the mast",
+    "footprint_xz": [
+     -0.81,
+     0.99,
+     -0.29000000000000004,
+     1.51
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [],
+   "animHint": "static",
+   "slots": [
+    4,
+    6,
+    10
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "note": "Searchlight base on the wheelhouse roof: a bolted plate, a pedestal and the yoke. The lamp is a separate object (Tug_Searchlight_Head) that pans and tilts. The stock tug already has a small lamp at (-0.7, 5.95, 2.9); this is the big one.",
+   "colliders": [
+    {
+     "name": "Searchlight_Base",
+     "collider": "box",
+     "position": [
+      -0.55,
+      6.1,
+      1.25
+     ],
+     "footprint": [
+      0.4,
+      0.5,
+      0.4
+     ],
+     "bounds_min": [
+      -0.75,
+      5.85,
+      1.05
+     ],
+     "bounds_max": [
+      -0.35,
+      6.35,
+      1.45
+     ]
+    }
+   ],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.195,
+    "nearest": [
+     {
+      "part": "base",
+      "obstacle": "wheelhouse roof slab",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "base",
+      "obstacle": "wheelhouse port wall",
+      "kind": "box",
+      "gap_m": 0.195,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "base",
+      "obstacle": "wheelhouse roof rail port",
+      "kind": "box",
+      "gap_m": 0.265,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "base",
+      "obstacle": "wheelhouse aft wall W",
+      "kind": "box",
+      "gap_m": 0.325,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "base",
+      "obstacle": "wheelhouse door lintel",
+      "kind": "box",
+      "gap_m": 0.325,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "base",
+      "obstacle": "wheelhouse aft wall E",
+      "kind": "box",
+      "gap_m": 0.398,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": [
+     "wheelhouse roof slab"
+    ]
+   },
+   "light_point": {
+    "position": [
+     -0.55,
+     6.49,
+     1.67
+    ],
+    "direction": [
+     0.0,
+     -0.08,
+     1.0
+    ],
+    "range_m": 60.0,
+    "spot_angle_deg": 22.0,
+    "colour": "warm white",
+    "frame": "tug local; the head pivot is Tug_Searchlight_Head.pivot"
+   }
+  },
+  {
+   "name": "Tug_Searchlight_Head",
+   "file": "Art/Export/TugUpgrades/Tug_Searchlight_Head.fbx",
+   "upgrade": "searchlight",
+   "state": null,
+   "triangles": 408,
+   "vertices": 381,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.76,
+    6.2069,
+    0.995
+   ],
+   "bounds_max": [
+    -0.34,
+    6.7463,
+    1.5
+   ],
+   "footprint": [
+    0.42,
+    0.539,
+    0.505
+   ],
+   "mount": {
+    "position": [
+     -0.55,
+     6.489999999999999,
+     1.25
+    ],
+    "yaw_deg": 0.0,
+    "surface": "yoke of Tug_Searchlight"
+   },
+   "pivot": {
+    "position": [
+     -0.55,
+     6.49,
+     1.25
+    ],
+    "axis": "x (tilt, -30..60), y (pan, +-160)"
+   },
+   "requires": [
+    "Tug_Searchlight"
+   ],
+   "replaces": [],
+   "animHint": "pan/tilt",
+   "slots": [
+    4,
+    5,
+    6,
+    9
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "note": "The searchlight lamp: a drum with a bezel, a lens, a pistol grip with a taped trigger and a rusty hood. Pivot = the yoke pin: tilt about x, pan about the vertical through the base. Light point in mod.light_point (the lens centre, forward +z).",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.357,
+    "nearest": [
+     {
+      "part": "head",
+      "obstacle": "wheelhouse roof slab",
+      "kind": "box",
+      "gap_m": 0.357,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "head",
+      "obstacle": "wheelhouse door lintel",
+      "kind": "box",
+      "gap_m": 0.532,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "head",
+      "obstacle": "wheelhouse aft wall W",
+      "kind": "box",
+      "gap_m": 0.55,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "head",
+      "obstacle": "wheelhouse roof rail port",
+      "kind": "box",
+      "gap_m": 0.56,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "head",
+      "obstacle": "wheelhouse port wall",
+      "kind": "box",
+      "gap_m": 0.606,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "head",
+      "obstacle": "wheelhouse aft wall E",
+      "kind": "box",
+      "gap_m": 0.606,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": []
+   }
+  },
+  {
+   "name": "Tug_Outriggers_Folded",
+   "file": "Art/Export/TugUpgrades/Tug_Outriggers_Folded.fbx",
+   "upgrade": "outriggers",
+   "state": "folded",
+   "triangles": 840,
+   "vertices": 764,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -1.908,
+    3.92,
+    0.4616
+   ],
+   "bounds_max": [
+    1.908,
+    8.6522,
+    1.533
+   ],
+   "footprint": [
+    3.816,
+    4.732,
+    1.071
+   ],
+   "mount": {
+    "position": [
+     0.0,
+     4.05,
+     1.433
+    ],
+    "yaw_deg": 0.0,
+    "surface": "outside of the upper-deck rail posts, both sides, z 1.43",
+    "footprint_xz": [
+     -1.94,
+     1.3130000000000002,
+     1.94,
+     1.553
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [
+    "Tug_Outriggers_Deployed"
+   ],
+   "animHint": "swap folded/deployed (or lerp the pole pivots at the bases)",
+   "slots": [
+    5,
+    6,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "note": "Outriggers FOLDED: both poles stand against the wheelhouse side, leaning 12 deg aft, lashed to the rail posts (tips at y 8.5, still below the mast top 8.47 +- 0.1). Swap with Tug_Outriggers_Deployed.",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.09,
+    "nearest": [
+     {
+      "part": "base_P",
+      "obstacle": "upper-deck rail port",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "base_S",
+      "obstacle": "upper-deck rail stbd",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "pole1_P",
+      "obstacle": "wheelhouse roof slab",
+      "kind": "box",
+      "gap_m": 0.22,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "base_P",
+      "obstacle": "wheelhouse port wall",
+      "kind": "box",
+      "gap_m": 0.3,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "base_S",
+      "obstacle": "wheelhouse stbd wall",
+      "kind": "box",
+      "gap_m": 0.3,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "base_P",
+      "obstacle": "deckhouse roof slab",
+      "kind": "box",
+      "gap_m": 0.32,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": [
+     "upper-deck rail port",
+     "upper-deck rail stbd"
+    ]
+   },
+   "pole_pivots": [
+    {
+     "name": "pole_port",
+     "position": [
+      -1.82,
+      4.15,
+      1.433
+     ],
+     "tip": [
+      -1.82,
+      8.649,
+      0.477
+     ],
+     "length": 4.6
+    },
+    {
+     "name": "pole_starboard",
+     "position": [
+      1.82,
+      4.15,
+      1.433
+     ],
+     "tip": [
+      1.82,
+      8.649,
+      0.477
+     ],
+     "length": 4.6
+    }
+   ]
+  },
+  {
+   "name": "Tug_Outriggers_Deployed",
+   "file": "Art/Export/TugUpgrades/Tug_Outriggers_Deployed.fbx",
+   "upgrade": "outriggers",
+   "state": "deployed",
+   "triangles": 1036,
+   "vertices": 932,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -5.6971,
+    3.88,
+    -2.5
+   ],
+   "bounds_max": [
+    5.6971,
+    6.8293,
+    1.533
+   ],
+   "footprint": [
+    11.394,
+    2.949,
+    4.033
+   ],
+   "mount": {
+    "position": [
+     0.0,
+     4.05,
+     1.433
+    ],
+    "yaw_deg": 0.0,
+    "surface": "outside of the upper-deck rail posts, both sides, z 1.43",
+    "footprint_xz": [
+     -1.94,
+     1.3130000000000002,
+     1.94,
+     1.553
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [
+    "Tug_Outriggers_Folded"
+   ],
+   "animHint": "swap folded/deployed (or lerp the pole pivots at the bases)",
+   "slots": [
+    5,
+    6,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "note": "Outriggers DEPLOYED: both poles swung out 32 deg above horizontal and 25 deg aft, a line from each tip back to a rail cleat with a release clip and a flag. The port pole is grey, the starboard one is cream (a replacement from another boat). The swept volume overhangs the water; tips at about x +-5.8. Swap with Tug_Outriggers_Folded.",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.09,
+    "nearest": [
+     {
+      "part": "base_P",
+      "obstacle": "upper-deck rail port",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "base_S",
+      "obstacle": "upper-deck rail stbd",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "base_P",
+      "obstacle": "wheelhouse port wall",
+      "kind": "box",
+      "gap_m": 0.3,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "base_S",
+      "obstacle": "wheelhouse stbd wall",
+      "kind": "box",
+      "gap_m": 0.3,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "base_P",
+      "obstacle": "deckhouse roof slab",
+      "kind": "box",
+      "gap_m": 0.32,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "base_P",
+      "obstacle": "deckhouse port wall",
+      "kind": "box",
+      "gap_m": 0.335,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": [
+     "upper-deck rail port",
+     "upper-deck rail stbd"
+    ]
+   },
+   "pole_pivots": [
+    {
+     "name": "pole_port",
+     "position": [
+      -1.82,
+      4.15,
+      1.433
+     ],
+     "tip": [
+      -5.663,
+      6.8,
+      -0.359
+     ],
+     "length": 5.0
+    },
+    {
+     "name": "pole_starboard",
+     "position": [
+      1.82,
+      4.15,
+      1.433
+     ],
+     "tip": [
+      5.663,
+      6.8,
+      -0.359
+     ],
+     "length": 5.0
+    }
+   ]
+  },
+  {
+   "name": "Tug_Bunks",
+   "file": "Art/Export/TugUpgrades/Tug_Bunks.fbx",
+   "upgrade": "bunks",
+   "state": null,
+   "triangles": 1259,
+   "vertices": 1615,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -1.41,
+    1.2395,
+    -1.9
+   ],
+   "bounds_max": [
+    -0.5875,
+    2.9605,
+    -0.082
+   ],
+   "footprint": [
+    0.822,
+    1.721,
+    1.818
+   ],
+   "mount": {
+    "position": [
+     -1.0499999999999998,
+     1.25,
+     -1.0
+    ],
+    "yaw_deg": 0.0,
+    "surface": "deckhouse floor, port wall, aft half",
+    "footprint_xz": [
+     -1.41,
+     -1.9,
+     -0.69,
+     -0.1
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [],
+   "animHint": "static",
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "note": "Two stacked bunks against the deckhouse port wall (1.8 x 0.72 m each). Olive mattress below, cream above (two different mattresses), a half-drawn curtain, a clip lamp, a sock on a post and footboard plates that are swapped (the LOWER bunk says UPPER and the other way round). Sleep points in mod.sleep_points. Leaves the cot (z >= 1.0), the lockers and the aft door clear.",
+   "colliders": [
+    {
+     "name": "Bunk_Lower",
+     "collider": "box",
+     "position": [
+      -1.05,
+      1.45,
+      -1.0
+     ],
+     "footprint": [
+      0.72,
+      0.4,
+      1.8
+     ],
+     "bounds_min": [
+      -1.41,
+      1.25,
+      -1.9
+     ],
+     "bounds_max": [
+      -0.69,
+      1.65,
+      -0.1
+     ],
+     "walkable": false
+    },
+    {
+     "name": "Bunk_Upper",
+     "collider": "box",
+     "position": [
+      -1.05,
+      2.32,
+      -1.0
+     ],
+     "footprint": [
+      0.72,
+      0.28,
+      1.8
+     ],
+     "bounds_min": [
+      -1.41,
+      2.18,
+      -1.9
+     ],
+     "bounds_max": [
+      -0.69,
+      2.46,
+      -0.1
+     ],
+     "walkable": false
+    }
+   ],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.14,
+    "nearest": [
+     {
+      "part": "bunks",
+      "obstacle": "deckhouse port wall",
+      "kind": "box",
+      "gap_m": 0.02,
+      "overlap": false,
+      "allowed": true
+     },
+     {
+      "part": "bunks",
+      "obstacle": "porthole port z-1.4",
+      "kind": "soft",
+      "gap_m": 0.14,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "bunks",
+      "obstacle": "nameboard port",
+      "kind": "soft",
+      "gap_m": 0.156,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "bunks",
+      "obstacle": "aft door opening (keep clear)",
+      "kind": "box",
+      "gap_m": 0.2,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "bunks",
+      "obstacle": "deckhouse interior lamp",
+      "kind": "box",
+      "gap_m": 0.26,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "bunks",
+      "obstacle": "porthole port z0.4",
+      "kind": "soft",
+      "gap_m": 0.28,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": [
+     "deckhouse port wall"
+    ]
+   },
+   "sleep_points": [
+    {
+     "name": "LowerBunk",
+     "position": [
+      -1.05,
+      1.75,
+      -1.0
+     ],
+     "head_toward": "-z",
+     "facing_deg": 0.0,
+     "trigger_radius": 0.9
+    },
+    {
+     "name": "UpperBunk",
+     "position": [
+      -1.05,
+      2.55,
+      -1.0
+     ],
+     "head_toward": "-z",
+     "facing_deg": 0.0,
+     "trigger_radius": 0.9
+    }
+   ]
+  },
+  {
+   "name": "Tug_Galley",
+   "file": "Art/Export/TugUpgrades/Tug_Galley.fbx",
+   "upgrade": "galley",
+   "state": null,
+   "triangles": 1842,
+   "vertices": 2172,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.47,
+    1.25,
+    2.685
+   ],
+   "bounds_max": [
+    0.97,
+    3.4,
+    3.72
+   ],
+   "footprint": [
+    1.44,
+    2.15,
+    1.035
+   ],
+   "mount": {
+    "position": [
+     0.24999999999999997,
+     1.25,
+     3.005
+    ],
+    "yaw_deg": 180.0,
+    "surface": "deckhouse interior, forward wall",
+    "footprint_xz": [
+     -0.45,
+     2.73,
+     0.95,
+     3.6799999999999997
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [],
+   "animHint": "static",
+   "slots": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3
+   ],
+   "note": "Galley: a counter unit (three doors, the right one a different olive green from the others), a 2-burner stove under an extractor hood with a vent cowl through the front wall, a sink with a thawing fish in it, mugs, a spice shelf, a chalkboard menu and a fire extinguisher. The kettle is a separate object (Tug_Galley_Kettle). Interactable points in mod.interaction_points. The vent pipe and cowl poke through the front wall of the deckhouse (z 3.28..3.4) by design.",
+   "colliders": [
+    {
+     "name": "Galley_Counter",
+     "collider": "box",
+     "position": [
+      0.25,
+      1.7,
+      3.005
+     ],
+     "footprint": [
+      1.44,
+      0.9,
+      0.59
+     ],
+     "bounds_min": [
+      -0.47,
+      1.25,
+      2.71
+     ],
+     "bounds_max": [
+      0.97,
+      2.15,
+      3.3
+     ]
+    }
+   ],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.08,
+    "nearest": [
+     {
+      "part": "galley",
+      "obstacle": "deckhouse front wall",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "galley",
+      "obstacle": "deckhouse roof slab",
+      "kind": "box",
+      "gap_m": 0.06,
+      "overlap": false,
+      "allowed": true
+     },
+     {
+      "part": "galley",
+      "obstacle": "cot (port)",
+      "kind": "box",
+      "gap_m": 0.08,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "galley",
+      "obstacle": "shelves low (starboard)",
+      "kind": "box",
+      "gap_m": 0.08,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "galley",
+      "obstacle": "shelves high (starboard)",
+      "kind": "box",
+      "gap_m": 0.08,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "galley",
+      "obstacle": "wheelhouse front wall",
+      "kind": "box",
+      "gap_m": 0.2,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": [
+     "deckhouse front wall"
+    ]
+   },
+   "interaction_points": [
+    {
+     "name": "Stove",
+     "position": [
+      -0.14,
+      2.27,
+      3.005
+     ],
+     "stand_at": [
+      -0.14,
+      1.25,
+      2.4
+     ],
+     "facing_deg": 0.0,
+     "action": "cook catch (buff)"
+    },
+    {
+     "name": "Sink",
+     "position": [
+      0.55,
+      2.17,
+      3.005
+     ],
+     "stand_at": [
+      0.55,
+      1.25,
+      2.4
+     ],
+     "facing_deg": 0.0,
+     "action": "clean fish"
+    },
+    {
+     "name": "Chalkboard",
+     "position": [
+      0.52,
+      3.12,
+      3.2399999999999998
+     ],
+     "stand_at": [
+      0.52,
+      1.25,
+      2.4
+     ],
+     "facing_deg": 0.0,
+     "action": "read the menu"
+    }
+   ],
+   "steam_point_stove": [
+    -0.01,
+    2.7,
+    3.005
+   ]
+  },
+  {
+   "name": "Tug_Galley_Kettle",
+   "file": "Art/Export/TugUpgrades/Tug_Galley_Kettle.fbx",
+   "upgrade": "galley",
+   "state": null,
+   "triangles": 332,
+   "vertices": 250,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.135,
+    2.29,
+    2.7613
+   ],
+   "bounds_max": [
+    0.115,
+    2.61,
+    3.1319
+   ],
+   "footprint": [
+    0.25,
+    0.32,
+    0.371
+   ],
+   "mount": {
+    "position": [
+     -0.010000000000000009,
+     2.29,
+     3.0
+    ],
+    "yaw_deg": 180.0,
+    "surface": "right burner of the Tug_Galley stove",
+    "footprint_xz": [
+     -0.21000000000000002,
+     2.85,
+     0.19,
+     3.15
+    ]
+   },
+   "pivot": {
+    "position": [
+     -0.010000000000000009,
+     2.29,
+     3.0
+    ],
+    "axis": "base centre"
+   },
+   "requires": [
+    "Tug_Galley"
+   ],
+   "replaces": [],
+   "animHint": "shake/steam",
+   "slots": [
+    1,
+    4,
+    6
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "note": "The kettle: a dented enamel body with a taped handle, spout aimed at the room (-z). Own object so it can shake and steam (steam_point). Pivot at the base centre, on the grate (y = counter top + 0.14).",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.148,
+    "nearest": [
+     {
+      "part": "kettle",
+      "obstacle": "deckhouse front wall",
+      "kind": "box",
+      "gap_m": 0.148,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "kettle",
+      "obstacle": "cot (port)",
+      "kind": "box",
+      "gap_m": 0.425,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "kettle",
+      "obstacle": "deckhouse roof slab",
+      "kind": "box",
+      "gap_m": 0.85,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "kettle",
+      "obstacle": "tarp pile",
+      "kind": "soft",
+      "gap_m": 0.895,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "kettle",
+      "obstacle": "shelves low (starboard)",
+      "kind": "box",
+      "gap_m": 0.935,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "kettle",
+      "obstacle": "wheelhouse front wall",
+      "kind": "box",
+      "gap_m": 0.99,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": []
+   },
+   "steam_point": [
+    -0.01,
+    2.49,
+    2.78
+   ]
+  },
+  {
+   "name": "Tug_AquariumTank",
+   "file": "Art/Export/TugUpgrades/Tug_AquariumTank.fbx",
+   "upgrade": "aquarium",
+   "state": null,
+   "triangles": 1377,
+   "vertices": 1222,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    0.964,
+    1.265,
+    -0.01
+   ],
+   "bounds_max": [
+    1.43,
+    2.51,
+    1.215
+   ],
+   "footprint": [
+    0.466,
+    1.245,
+    1.225
+   ],
+   "mount": {
+    "position": [
+     1.21,
+     1.25,
+     0.55
+    ],
+    "yaw_deg": 270.0,
+    "surface": "deckhouse interior, starboard wall, between the lockers and the shelves",
+    "footprint_xz": [
+     1.0,
+     0.0,
+     1.42,
+     1.2000000000000002
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [],
+   "animHint": "static (water and bubbles animate)",
+   "slots": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    6,
+    12
+   ],
+   "note": "Aquarium-on-board: a 1.1 x 0.42 x 0.5 m glass tank on a plank cabinet (one orange door, one olive: mismatched), hood with a light strip, a hang-on filter, gravel, rocks, plants, a plastic castle and a plastic diver (tacky, as per design). Front glass left out, quad in mod.front_glass. Water is Tug_AquariumTank_Water. Bubbles: spawn at mod.bubble_point.",
+   "colliders": [
+    {
+     "name": "Aquarium_Cabinet",
+     "collider": "box",
+     "position": [
+      1.21,
+      1.87,
+      0.55
+     ],
+     "footprint": [
+      0.42,
+      1.24,
+      1.22
+     ],
+     "bounds_min": [
+      1.0,
+      1.25,
+      -0.06
+     ],
+     "bounds_max": [
+      1.42,
+      2.49,
+      1.16
+     ]
+    }
+   ],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.02,
+    "nearest": [
+     {
+      "part": "tank",
+      "obstacle": "deckhouse stbd wall",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": true,
+      "allowed": true
+     },
+     {
+      "part": "tank",
+      "obstacle": "fishing spot StarboardRail",
+      "kind": "cyl",
+      "gap_m": 0.02,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "tank",
+      "obstacle": "porthole stbd z0.4",
+      "kind": "soft",
+      "gap_m": 0.126,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "tank",
+      "obstacle": "shelves low (starboard)",
+      "kind": "box",
+      "gap_m": 0.135,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "tank",
+      "obstacle": "lockers (starboard)",
+      "kind": "box",
+      "gap_m": 0.16,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "tank",
+      "obstacle": "shelves high (starboard)",
+      "kind": "box",
+      "gap_m": 0.508,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": [
+     "deckhouse stbd wall"
+    ]
+   },
+   "front_glass": {
+    "center": [
+     1.0,
+     2.15,
+     0.55
+    ],
+    "size": [
+     0.0,
+     0.5,
+     1.1
+    ],
+    "facing_deg": 270.0,
+    "note": "quad in the y-z plane at x = 1.0 facing -x"
+   },
+   "bubble_point": [
+    1.35,
+    1.975,
+    0.9
+   ],
+   "water_surface_y": 2.33,
+   "fish_swim_volume": {
+    "min": [
+     1.05,
+     2.045,
+     0.05
+    ],
+    "max": [
+     1.3699999999999999,
+     2.27,
+     1.05
+    ]
+   }
+  },
+  {
+   "name": "Tug_AquariumTank_Water",
+   "file": "Art/Export/TugUpgrades/Tug_AquariumTank_Water.fbx",
+   "upgrade": "aquarium",
+   "state": null,
+   "triangles": 128,
+   "vertices": 93,
+   "material": "M_Water_Tank (the creek water material without the shore-foam band; builder: translucent, scrolling ripples, no toon lighting)",
+   "bounds_min": [
+    1.015,
+    1.97,
+    0.015
+   ],
+   "bounds_max": [
+    1.4,
+    2.333,
+    1.085
+   ],
+   "footprint": [
+    0.385,
+    0.363,
+    1.07
+   ],
+   "mount": {
+    "position": [
+     1.21,
+     2.33,
+     0.55
+    ],
+    "yaw_deg": 270.0,
+    "surface": "inside Tug_AquariumTank"
+   },
+   "pivot": null,
+   "requires": [
+    "Tug_AquariumTank"
+   ],
+   "replaces": [],
+   "animHint": "ripple",
+   "slots": [
+    1
+   ],
+   "layers": [
+    0
+   ],
+   "note": "Water of the aquarium, its own object: a closed ripple-topped body from the gravel to deck + 1.08 (y 2.33), open front face. Builder: translucent water material; fish models swim inside.",
+   "colliders": [],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": null,
+    "nearest": [],
+    "intended_contacts": []
+   }
+  },
+  {
+   "name": "Tug_BaitFreezer",
+   "file": "Art/Export/TugUpgrades/Tug_BaitFreezer.fbx",
+   "upgrade": "bait_freezer",
+   "state": null,
+   "triangles": 627,
+   "vertices": 898,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -1.617,
+    1.2688,
+    3.4
+   ],
+   "bounds_max": [
+    -0.795,
+    2.5043,
+    4.915
+   ],
+   "footprint": [
+    0.822,
+    1.236,
+    1.515
+   ],
+   "mount": {
+    "position": [
+     -1.2,
+     1.55,
+     4.45
+    ],
+    "yaw_deg": 90.0,
+    "surface": "foredeck, port side, forward of the step",
+    "footprint_xz": [
+     -1.51,
+     4.0,
+     -0.8899999999999999,
+     4.9
+    ]
+   },
+   "pivot": null,
+   "requires": [],
+   "replaces": [],
+   "animHint": "static",
+   "slots": [
+    4,
+    5,
+    6,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "note": "Chest freezer for bait on the port foredeck: cream body, a lid that is a different red, a taped hasp and padlock, a compressor bulge with vent slots on the bulwark side, and a power cord that runs over the step to an outlet on the deckhouse front wall. Lettered BAIT / NOT FOOD on the lid and the walkway face. Lid is part of the body (no animation).",
+   "colliders": [
+    {
+     "name": "BaitFreezer",
+     "collider": "box",
+     "position": [
+      -1.2,
+      1.96,
+      4.45
+     ],
+     "footprint": [
+      0.72,
+      0.82,
+      0.93
+     ],
+     "bounds_min": [
+      -1.56,
+      1.55,
+      3.985
+     ],
+     "bounds_max": [
+      -0.84,
+      2.37,
+      4.915
+     ]
+    }
+   ],
+   "clearance": {
+    "status": "ok",
+    "min_clearance_m": 0.064,
+    "nearest": [
+     {
+      "part": "cord",
+      "obstacle": "deckhouse front wall",
+      "kind": "box",
+      "gap_m": 0.0,
+      "overlap": false,
+      "allowed": true
+     },
+     {
+      "part": "freezer",
+      "obstacle": "bulwark (inner face)",
+      "kind": "bulwark",
+      "gap_m": 0.064,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "cord",
+      "obstacle": "cot (port)",
+      "kind": "box",
+      "gap_m": 0.25,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "freezer",
+      "obstacle": "windlass",
+      "kind": "soft",
+      "gap_m": 0.28,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "cord",
+      "obstacle": "deckhouse port wall",
+      "kind": "box",
+      "gap_m": 0.285,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "freezer",
+      "obstacle": "rope coil fore",
+      "kind": "soft",
+      "gap_m": 0.665,
+      "overlap": false,
+      "allowed": false
+     }
+    ],
+    "intended_contacts": [
+     "deckhouse front wall"
+    ]
+   },
+   "interaction_point": {
+    "name": "BaitFreezer",
+    "position": [
+     -0.79,
+     2.15,
+     4.45
+    ],
+    "stand_at": [
+     -0.5,
+     1.55,
+     4.45
+    ],
+    "action": "take bait / stock bait"
+   }
+  },
+  {
+   "name": "Tug_Dinghy",
+   "file": "Art/Export/TugUpgrades/Tug_Dinghy.fbx",
+   "upgrade": "dinghy",
+   "state": null,
+   "triangles": 2376,
+   "vertices": 2046,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.7363,
+    -0.1741,
+    -2.261
+   ],
+   "bounds_max": [
+    0.7363,
+    1.0396,
+    1.654
+   ],
+   "footprint": [
+    1.473,
+    1.214,
+    3.915
+   ],
+   "mount": {
+    "placement_tug_local": {
+     "position": [
+      0.3,
+      -0.17,
+      -15.02
+     ],
+     "yaw_deg": 0.0
+    },
+    "surface": "floats on the water, towed behind the tug (own origin = keel centre, +z bow)"
+   },
+   "pivot": null,
+   "requires": [
+    "Tug_TowFairlead"
+   ],
+   "replaces": [],
+   "animHint": "floats (physics body), towed on a rope from the fairlead",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "note": "Towable dinghy \"BREAK II\": a green flat-bottomed skiff, 3.2 x 1.45 m, cream inside, with an outboard (red cowl, one orange panel), two thwarts, two oars that do not match, a cut-down jug for a bailer, a bow eye with a bridle and a tow rope loop. Own origin at the keel centre. Floats with the keel 0.17 under the waterline. Tow point (bow eye) at mod.tow_point in dinghy-local space; the tug end is Tug_TowFairlead mod.tow_point.",
+   "colliders": [
+    {
+     "name": "Dinghy_Hull",
+     "collider": "box",
+     "position": [
+      0.0,
+      0.3,
+      0.0
+     ],
+     "footprint": [
+      1.45,
+      0.6,
+      3.2
+     ],
+     "bounds_min": [
+      -0.725,
+      0.0,
+      -1.6
+     ],
+     "bounds_max": [
+      0.725,
+      0.6,
+      1.6
+     ]
+    }
+   ],
+   "clearance": {
+    "status": "free body (not on the tug)",
+    "nearest": []
+   },
+   "tow_point": [
+    0.0,
+    0.694,
+    1.69
+   ],
+   "draft_m": 0.17,
+   "dimensions_m": {
+    "length": 3.22,
+    "beam": 1.45,
+    "height": 0.8
+   },
+   "seats": [
+    {
+     "name": "Thwart_Fore",
+     "position": [
+      0.0,
+      0.38,
+      0.5
+     ]
+    },
+    {
+     "name": "Thwart_Aft",
+     "position": [
+      0.0,
+      0.38,
+      -0.55
+     ]
+    }
+   ]
+  }
+ ],
+ "total_triangles": 19526,
+ "export_status": {
+  "Tug_LiveWell": "kept",
+  "Tug_LiveWell_Lid": "kept",
+  "Tug_LiveWell_Water": "kept",
+  "Tug_FightingChair": "kept",
+  "Tug_RodGimbal": "kept",
+  "Tug_Davit": "kept",
+  "Tug_Davit_Hook": "kept",
+  "Tug_TowFairlead": "kept",
+  "Tug_SonarDome": "kept",
+  "Tug_SonarCable": "kept",
+  "Tug_SonarScreen": "kept",
+  "Tug_Dash_Stock": "kept",
+  "Tug_Dash_Upgraded": "kept",
+  "Tug_Searchlight": "kept",
+  "Tug_Searchlight_Head": "kept",
+  "Tug_Outriggers_Folded": "kept",
+  "Tug_Outriggers_Deployed": "kept",
+  "Tug_Bunks": "kept",
+  "Tug_Galley": "kept",
+  "Tug_Galley_Kettle": "kept",
+  "Tug_AquariumTank": "kept",
+  "Tug_AquariumTank_Water": "kept",
+  "Tug_BaitFreezer": "kept",
+  "Tug_Dinghy": "kept"
+ },
+ "not_built": [
+  "smoker (design 3.7 lists one; the task did not ask for it)",
+  "the tug-end tow line mesh (builder draws a rope between Tug_TowFairlead mod.tow_point and Tug_Dinghy mod.tow_point)"
+ ]
+}
