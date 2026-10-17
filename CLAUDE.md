@@ -1,50 +1,39 @@
 # FishGame — project instructions
 
-Co-op (1–4) friend-slop rogue-lite fishing game. Unity 6000.6.5f1 (URP), Netcode for GameObjects, Unity Multiplayer Services (Relay + Lobby join codes). Design spec: `docs/superpowers/specs/2026-10-09-fishgame-design.md` — source of truth for decisions; don't re-litigate agreed items there.
+Co-op (1–4) friend-slop rogue-lite fishing game. Unity 6000.6.5f1 (URP), Netcode for GameObjects, Unity Multiplayer Services (Relay + Lobby join codes). Design spec: `docs/superpowers/specs/2026-10-09-fishgame-design.md` — source of truth for decisions; don't re-litigate agreed items there. Performance target is the spec's quality-first one; ignore generic "60+ FPS on all platforms" rules from skills.
 
 ## Running handoff
-`docs/superpowers/handoff/CURRENT.md` (on `main` only) is the live state of the project. Read it first in every new conversation. The controller rewrites it after every meaningful step (a task landed, a review, a user decision, a merge), then commits and pushes it to `main`. Feature branches never edit it.
+The main (controller) session reads `docs/superpowers/handoff/CURRENT.md` (on `main` only) first in every new conversation; subagents skip it unless their brief names it. The controller keeps it current after every meaningful step (a task landed, a review, a user decision, a merge) with the `fg-handoff` skill, then commits and pushes it to `main`. Feature branches never edit it.
 
-## Unity CLI
-- Editor: `C:\Program Files\Unity\Hub\Editor\6000.6.5f1\Editor\Unity.exe`
-- Project root = repo root `C:\Dev\FishGame`.
-- Before any batchmode run, check whether `Temp/UnityLockfile` is **held** (an exclusive open fails), not merely present: Unity often leaves the file behind after a batch run. `Tools/unity.ps1` tests this itself and reports `LOCKED` (exit 2) only when it is held. If held, the user has the editor open — ask them to close it; never kill Unity processes and never delete the lockfile.
-- Compile/import check:
-  `Unity.exe -batchmode -nographics -quit -projectPath C:/Dev/FishGame -logFile <scratchpad>/unity.log`
-  then grep the log for `error CS` and `Exiting batchmode successfully`. Exit 0 alone is not proof — read the log.
-- Tests: add `-runTests -testPlatform EditMode|PlayMode -testResults <scratchpad>/results.xml` (drop `-quit`).
-- Editor scripts that build scenes/prefabs: `-executeMethod FishGame.EditorTools.<Class>.<Method>`.
+## Unity (Windows PC only)
+- Run Unity only through the wrapper: `powershell -NoProfile -ExecutionPolicy Bypass -File C:\Dev\FishGame\Tools\unity.ps1 <compile|build|test-edit|test-play|check> -OutDir <scratchpad dir>`. Exit codes: 0 PASS, 1 FAIL, 2 LOCKED, 3 TIMEOUT, 4 usage. It reads the log (exit 0 alone is not proof), adds `-dev-profile fgtest` to test runs (without it tests touch the user's real LocalLow settings), and records a PASS marker that the merge gate checks.
+- `LOCKED` means the user has the editor open: ask them to close it. Never kill Unity processes and never delete `Temp/UnityLockfile`.
+- PlayMode runs in different worktrees collide on the same UDP port: before `test-play` or `check`, look for another Unity process with `-testPlatform PlayMode` and wait for it to finish.
+- Editor scripts build scenes and prefabs (`FishGame.EditorTools.*`); never edit `.unity`/`.prefab` YAML by hand (a hook blocks it).
 - Logs and test results go in the session scratchpad, never in the repo.
 
-## Token efficiency (user, 2026-10-14)
-- Navigate C# with the LSP tool (csharp-lsp plugin, csharp-ls): definitions, references and symbols before reading whole files. In a worktree that has no `.csproj`/`.slnx`, first run `powershell -NoProfile -ExecutionPolicy Bypass -File C:\Dev\FishGame\Tools\sync-csproj.ps1` (copies Unity's generated project files from the main checkout; gitignored, never commit them).
-- Briefs name exact files and symbols (file:line). Send follow-ups to an existing agent with SendMessage instead of spawning a fresh one.
-- Plugins and connectors unused here are off for this project (`.claude/settings.json`); don't turn them back on for FishGame work without asking.
+## Cloud sessions (Linux)
+No Unity and no Windows paths. Follow `docs/superpowers/handoff/cloud-environment.md`: push a feature branch (a hook blocks pushes to `main`), never edit `CURRENT.md`, and report which Unity tests the local run must check.
 
 ## Code conventions
-- Gameplay code under `Assets/_Project/`, split by assembly definition (see spec for the list).
-- Pure C# logic (fishing tension model, spawn resolver, quota math) lives in classes with no MonoBehaviour dependency so EditMode tests cover it.
+- Gameplay code under `Assets/_Project/`, split by assembly definition (see spec for the list). `ArchitectureTests` enforces the forbidden references.
+- Pure C# logic (tension model, spawn resolver, quota math) lives in classes with no MonoBehaviour dependency so EditMode tests cover it.
 - Host-authoritative networking. Every new networked system states its authority (host vs owner) in a class-level comment.
-- Scenes and prefabs are generated by editor scripts where practical so they're reproducible from text.
-- No paid assets. Free assets are allowed after checking the source is safe and trustworthy (user, 2026-10-14): official Blender extensions, Poly Haven CC0, Unity's own free packages and free Unity Asset Store items the user adds to their account; record source + licence for each. Trusted free asset APIs and sites for models, textures, HDRIs and sound are also allowed (user, 2026-10-15), e.g. the Poly Haven API; check the licence allows use in a commercial game and record source + licence for each. Art direction (spec R74, 2026-10-12): smooth stylised "realistic toon" (references RV There Yet, Gamble With Your Friends) - rounded models, soft toon lighting, painted-style textures made for the project (Blender, procedural or baked). The old low-poly flat-colour look is the M2 baseline being replaced after look-dev approval.
+- No anti-cheat (user): modded clients and trainers are welcome. Host authority keeps peers in sync; don't add cheat-proofing or report client exploits as findings.
+- Navigate C# with the LSP tool before reading whole files. In a worktree with no `.csproj`/`.slnx`, first run `Tools/sync-csproj.ps1` (gitignored output; never commit it).
+- Art and asset rules (licences, art direction) live in `.claude/rules/art-assets.md` and load when you touch art.
 
 ## Git
-- Commit when the user asks or a plan step says to. Never force-push. Milestone work happens on a feature branch (`m1-foundation`, `m2-fishing-core`, `m3-fish-ecology`).
-- No pull requests (user preference, 2026-10-13): push branches, and merge them yourself (including into `main`) once the work is reviewed and a full `check` is green. Merge commits, never squash. Tell the user what was merged.
-- PlayMode runs in different worktrees collide on the same UDP port: before a PlayMode run, check for another Unity process with `-testPlatform PlayMode` and wait for it to finish.
-- Never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`, `*.csproj`, `*.slnx`.
+- Commit when the user asks or a plan step says to. Never force-push. Milestone work happens on a feature branch.
+- No pull requests (user): push branches and merge them yourself, including into `main`, once reviewed and a full `check` is green on the branch tip. Merge commits, never squash. Tell the user what was merged. Use the `fg-merge` skill.
+- Never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`, `.vscode/`, `*.csproj`, `*.slnx`.
 
-## Agent roles (user preference)
-One rule set; where older handoffs (e.g. `2026-10-10-m2-handoff.md`) disagree, this section wins.
-- No anti-cheat (user, 2026-10-14): modded clients and trainers (WeMod) are welcome, as in other friend-slop games. Host authority exists to keep peers in sync, not to stop cheating; don't add cheat-proofing or report client exploits as findings.
-- Plan big features in a short design session before any code. No research swarm by default. One Opus (effort high) author per plan section.
-- Implement: Sonnet; Haiku only when the brief contains the complete code, and for mechanical scans. Batch small tasks into one implementer run and one review.
-- Review, scaled to risk (2026-10-13):
-  - Opus (high): networking/host sync and save data.
-  - Opus (xhigh): the final branch review before a milestone merge.
-  - Sonnet: everything else (gameplay without networking, Core logic, data, art, presentation, docs).
-  - A fix of 30 lines or fewer in one area: the controller reads the diff itself, no review agent.
-- Fable: escalation fixer for anything the others can't solve.
+## Agents and review
+- Delegate with the `fg-delegate` skill: it holds the brief template and the routing. Roles, models and effort are pinned in `.claude/agents/`; don't set `CLAUDE_CODE_EFFORT_LEVEL` (it overrides them).
+- Review scaled to risk: `risk-reviewer` (Opus) for networking/host sync and save data, `branch-reviewer` (Opus xhigh) before a milestone merge, `reviewer` (Sonnet) for everything else; a fix of 30 lines or fewer in one area gets the controller's own diff read. Reviewers follow `REVIEW.md`.
+- Plan big features in a short design session with the user before any code. Multi-agent workflows and critic loops only with the user's go-ahead and a stated agent count and token budget.
+- Never SendMessage a running workflow agent (it cloned the agent once).
+- Plugins and connectors unused here are off in `.claude/settings.json`; don't turn them back on without asking.
 
-## Cloud sessions (Linux)
-The Windows paths, `Tools/unity.ps1` and the LSP setup above apply on the user's PC only. In a cloud session, follow `docs/superpowers/handoff/cloud-environment.md`: no Unity, so list the tests the local run must check; push a feature branch, never `main`, and never edit `CURRENT.md`.
+# Compact instructions
+When compacting, keep: the current branch and worktree, files modified, live agent IDs and what each is doing, the last `check`/test result with its commit, open review findings, and the next step.

@@ -6,7 +6,7 @@ Every brief assumes the setup in `docs/superpowers/handoff/cloud-environment.md`
 
 ## Brief 1: Opus review of two save-data fixes (use Opus)
 ```
-Setup: sudo apt-get update -qq && sudo apt-get install -y -qq git-lfs && git lfs install && git lfs pull. Read CLAUDE.md and docs/superpowers/handoff/cloud-environment.md. Unity is not available: you can't compile against UnityEngine or run tests, so reason carefully and list the tests the local Unity run must check. Never push to main or edit CURRENT.md. End commits with the attribution trailer your session gives you.
+Read CLAUDE.md and docs/superpowers/handoff/cloud-environment.md. Unity is not available: you can't compile against UnityEngine or run tests, so reason carefully and list the tests the local Unity run must check. Never push to main or edit CURRENT.md. End commits with the attribution trailer your session gives you.
 
 Task: review two save-data fixes as the project's save-data reviewer, then make each branch merge-ready.
 1. fix/save-newer-schema-readonly (c5b48d5): Assets/_Project/Runtime/Save/SaveService.cs TryReadNewerSchemaVersion. A newer-schema meta.json that fails to deserialize is no longer treated as corrupt; the session runs read-only and still tries the .bak. 4 new EditMode tests in Assets/_Project/Tests/EditMode/SaveServiceTests.cs.
@@ -24,7 +24,7 @@ Report: per branch, merge-ready or not, findings (severity, file:line), what you
 
 ## Brief 2: M4 design draft (use Opus)
 ```
-Setup: sudo apt-get update -qq && sudo apt-get install -y -qq git-lfs && git lfs install && git lfs pull. Read CLAUDE.md, docs/superpowers/handoff/CURRENT.md and docs/superpowers/handoff/cloud-environment.md. This is a docs task. Work on a new branch m4-design-draft from origin/main and push it. Never push to main or edit CURRENT.md. End commits with the attribution trailer your session gives you.
+Read CLAUDE.md, docs/superpowers/handoff/CURRENT.md and docs/superpowers/handoff/cloud-environment.md. This is a docs task. Work on a new branch m4-design-draft from origin/main and push it. Never push to main or edit CURRENT.md. End commits with the attribution trailer your session gives you.
 
 Task: prepare the M4 design session. This is a draft; the user decides.
 Read in full:

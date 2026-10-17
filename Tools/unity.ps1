@@ -212,6 +212,30 @@ $OutDir = $outFull
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
 $code = 1
+# After a check PASS, record the tested commit for the merge gate (.claude/hooks/guard.sh).
+function Write-PassMarker {
+    try {
+        $sha = & git -C $ProjectRoot rev-parse HEAD 2>$null
+        $common = & git -C $ProjectRoot rev-parse --git-common-dir 2>$null
+        if ([string]::IsNullOrEmpty($sha) -or [string]::IsNullOrEmpty($common)) {
+            Say 'FG MARKER skipped (git rev-parse failed)'
+            return
+        }
+        $sha = ([string]$sha).Trim()
+        $common = ([string]$common).Trim()
+        if (-not [IO.Path]::IsPathRooted($common)) { $common = Join-Path $ProjectRoot $common }
+        $dir = Join-Path $common 'fg-check-pass'
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        Set-Content -LiteralPath (Join-Path $dir $sha) -Value (Get-Date -Format o) -Encoding ASCII
+        $dirty = & git -C $ProjectRoot status --porcelain --untracked-files=no 2>$null
+        if ($dirty) { Say ('FG MARKER ' + $sha + ' (uncommitted changes were present; the marker covers the commit only)') }
+        else { Say ('FG MARKER ' + $sha) }
+    }
+    catch {
+        Say ('FG MARKER failed: ' + $_.Exception.Message)
+    }
+}
+
 switch ($Command) {
     'compile'   { $code = Invoke-Compile }
     'build'     { $code = Invoke-Build }
@@ -222,7 +246,7 @@ switch ($Command) {
         if ($code -eq 0) { $code = Invoke-Tests 'test-edit' 'EditMode' 'editmode.xml' }
         if ($code -eq 0) { $code = Invoke-Tests 'test-play' 'PlayMode' 'playmode.xml' }
         switch ($code) {
-            0       { Say 'FG RESULT check PASS' }
+            0       { Say 'FG RESULT check PASS'; Write-PassMarker }
             2       { Say 'FG RESULT check LOCKED (close the Unity editor, then rerun)' }
             3       { Say 'FG RESULT check TIMEOUT' }
             default { Say 'FG RESULT check FAIL' }
