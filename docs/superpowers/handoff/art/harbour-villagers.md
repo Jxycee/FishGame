@@ -25,7 +25,7 @@ stooped with huge ears, and so on. Tone 2.1: grown-up goofy, worn and tacky, not
 | Mr. Fenwick | Mr_Fenwick.fbx | 8799 | 1.73 | Gull Bar hermit | TinfoilBrim |
 | Ambrose Lock | Ambrose_Lock.fbx | 6858 | 1.49 | Lock-keeper | PocketWatch |
 
-Budget 6-10k each: all within (6.6k-9.9k). `tris` is the sum over every object in the file (props included); `tris_by_object` is in the manifest.
+Budget 6-10k each: all within (6.8k-9.9k). `tris` is the sum over every object in the file (props included); `tris_by_object` is in the manifest.
 
 Signature features: Doug (hi-vis vest + reflective bands, lanyard with badge, clipboard, squint), Marge (bait-stained apron with two stain colours,
 knee pads, wrist guards, sweatband), the Garys (same body and jumpers in swapped colours: Neat = comb-over, red jumper/blue trim; Wild = spiky ginger hair,
