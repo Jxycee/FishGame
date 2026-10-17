@@ -1718,8 +1718,8 @@ def render_shot(path, eye_u, target_u, lens=26, res=(1280, 720), samples=24):
     H.shrink_png(path, 48)
 
 SHOTS = {
-    'stock':     dict(eye=(8.0, 8.6, -23.5), tgt=(0.4, 1.9, -9.0), lens=32, vis='stock', res=(960, 540)),
-    'upgraded':  dict(eye=(8.0, 8.6, -23.5), tgt=(0.4, 1.9, -9.0), lens=32, vis='upgraded', res=(960, 540)),
+    'stock':     dict(eye=(8.0, 7.2, -29.0), tgt=(0.4, 2.7, -7.5), lens=31, vis='stock', res=(960, 540)),
+    'upgraded':  dict(eye=(8.0, 7.2, -29.0), tgt=(0.4, 2.7, -7.5), lens=31, vis='upgraded', res=(960, 540)),
     'aft':       dict(eye=(-3.3, 3.7, -9.9), tgt=(0.8, 1.9, -5.8), lens=34, vis='upgraded', hide=('Tug_Dinghy',), res=(1280, 720), lid_open_deg=100.0),
     'galley':    dict(eye=(-0.1, 2.62, -2.35), tgt=(0.5, 2.25, 2.6), lens=23, vis='upgraded', res=(1280, 720), lights=[((0.0, 3.25, 1.0), 700.0), ((0.2, 3.0, 2.2), 250.0)]),
     'bunks':     dict(eye=(0.3, 2.7, 1.2), tgt=(-1.1, 2.0, -1.0), lens=24, vis='upgraded', res=(1280, 720), lights=[((0.0, 3.25, 0.4), 700.0)]),
