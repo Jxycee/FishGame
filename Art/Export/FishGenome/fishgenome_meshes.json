@@ -1,0 +1,1802 @@
+[
+ {
+  "bodyHeightOverLength": 0.782,
+  "bodyLengthM": 0.2456,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.21
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.26,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.06
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.23,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.06
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.01,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.01
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_Bluegill.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "25c4f85e567c0656",
+  "name": "Bluegill",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 0,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 7,
+   "islands": 14
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0659,
+    "meanDelta": 0.0043
+   },
+   "Fat": {
+    "maxDelta": 0.0403,
+    "meanDelta": 0.0132
+   },
+   "Long": {
+    "maxDelta": 0.0945,
+    "meanDelta": 0.0375
+   },
+   "Stubby": {
+    "maxDelta": 0.0667,
+    "meanDelta": 0.0268
+   }
+  },
+  "skinLayer": 1,
+  "tris": 3876,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 1966
+ },
+ {
+  "bodyHeightOverLength": 0.389,
+  "bodyLengthM": 0.2715,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.0
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.35,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.41
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.3,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.6
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.07,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.07
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_Perch.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "8ae533b8d5c927e6",
+  "name": "Perch",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 0,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 8,
+   "islands": 15
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0423,
+    "meanDelta": 0.0037
+   },
+   "Fat": {
+    "maxDelta": 0.0225,
+    "meanDelta": 0.0093
+   },
+   "Long": {
+    "maxDelta": 0.1027,
+    "meanDelta": 0.0404
+   },
+   "Stubby": {
+    "maxDelta": 0.0725,
+    "meanDelta": 0.0286
+   }
+  },
+  "skinLayer": 2,
+  "tris": 3976,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2018
+ },
+ {
+  "bodyHeightOverLength": 0.552,
+  "bodyLengthM": 0.2885,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -2.24
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.49,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -2.89
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.48,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.98
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.04,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.06
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_Carp.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "e564722349282113",
+  "name": "Carp",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 4,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 7,
+   "islands": 18
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0549,
+    "meanDelta": 0.0032
+   },
+   "Fat": {
+    "maxDelta": 0.0351,
+    "meanDelta": 0.0118
+   },
+   "Long": {
+    "maxDelta": 0.1099,
+    "meanDelta": 0.0403
+   },
+   "Stubby": {
+    "maxDelta": 0.0776,
+    "meanDelta": 0.0286
+   }
+  },
+  "skinLayer": 3,
+  "tris": 4344,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2228
+ },
+ {
+  "bodyHeightOverLength": 0.32,
+  "bodyLengthM": 0.3091,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.31
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.25,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.26
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.2,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.29
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.07,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.22
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_Trout.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "8112fbf2f8cec92d",
+  "name": "Trout",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 0,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 8,
+   "islands": 15
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0426,
+    "meanDelta": 0.0029
+   },
+   "Fat": {
+    "maxDelta": 0.0212,
+    "meanDelta": 0.0094
+   },
+   "Long": {
+    "maxDelta": 0.1168,
+    "meanDelta": 0.0472
+   },
+   "Stubby": {
+    "maxDelta": 0.0825,
+    "meanDelta": 0.0333
+   }
+  },
+  "skinLayer": 4,
+  "tris": 3856,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 1958
+ },
+ {
+  "bodyHeightOverLength": 0.261,
+  "bodyLengthM": 0.3265,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.62
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.03,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.24
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.01,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.53
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.01,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.39
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_Catfish.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "8add0c8a06e35613",
+  "name": "Catfish",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 8,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 6,
+   "islands": 21
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0492,
+    "meanDelta": 0.0023
+   },
+   "Fat": {
+    "maxDelta": 0.0203,
+    "meanDelta": 0.0089
+   },
+   "Long": {
+    "maxDelta": 0.122,
+    "meanDelta": 0.0392
+   },
+   "Stubby": {
+    "maxDelta": 0.0861,
+    "meanDelta": 0.0276
+   }
+  },
+  "skinLayer": 5,
+  "tris": 4724,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2434
+ },
+ {
+  "bodyHeightOverLength": 0.239,
+  "bodyLengthM": 0.2576,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.45
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.39,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.11
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.32,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.11
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.16,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.04
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_MirrorMinnow.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "9dee6cfc868157c1",
+  "name": "MirrorMinnow",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 0,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 7,
+   "islands": 14
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0406,
+    "meanDelta": 0.0024
+   },
+   "Fat": {
+    "maxDelta": 0.0134,
+    "meanDelta": 0.0068
+   },
+   "Long": {
+    "maxDelta": 0.097,
+    "meanDelta": 0.0386
+   },
+   "Stubby": {
+    "maxDelta": 0.0684,
+    "meanDelta": 0.0273
+   }
+  },
+  "skinLayer": 6,
+  "tris": 3796,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 1926
+ },
+ {
+  "bodyHeightOverLength": 0.402,
+  "bodyLengthM": 0.3055,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.41
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 1.71,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.02
+   },
+   "Long": {
+    "eyeDepthChange_mm": 1.27,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.08
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.77,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.01
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_BucketmouthBass.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "ef7cfd9d81d93cd7",
+  "name": "BucketmouthBass",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 0,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 9,
+   "islands": 16
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0582,
+    "meanDelta": 0.0067
+   },
+   "Fat": {
+    "maxDelta": 0.026,
+    "meanDelta": 0.0105
+   },
+   "Long": {
+    "maxDelta": 0.1156,
+    "meanDelta": 0.0401
+   },
+   "Stubby": {
+    "maxDelta": 0.0816,
+    "meanDelta": 0.0283
+   }
+  },
+  "skinLayer": 7,
+  "tris": 4588,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2324
+ },
+ {
+  "bodyHeightOverLength": 0.223,
+  "bodyLengthM": 0.2919,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 1.36
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.31,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.0
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.47,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.29
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.09,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.14
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_SilverMullet.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "62f52ec33aba8272",
+  "name": "SilverMullet",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 4,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 7,
+   "islands": 18
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0445,
+    "meanDelta": 0.0017
+   },
+   "Fat": {
+    "maxDelta": 0.0154,
+    "meanDelta": 0.008
+   },
+   "Long": {
+    "maxDelta": 0.1093,
+    "meanDelta": 0.0395
+   },
+   "Stubby": {
+    "maxDelta": 0.0772,
+    "meanDelta": 0.0279
+   }
+  },
+  "skinLayer": 8,
+  "tris": 4676,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2390
+ },
+ {
+  "bodyHeightOverLength": 0.188,
+  "bodyLengthM": 0.3477,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.23
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.3,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.1
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.14,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.02
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.05,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.05
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_LakePike.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "674de07170a66f9d",
+  "name": "LakePike",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 10,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 7,
+   "islands": 24
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0444,
+    "meanDelta": 0.0023
+   },
+   "Fat": {
+    "maxDelta": 0.0153,
+    "meanDelta": 0.009
+   },
+   "Long": {
+    "maxDelta": 0.1299,
+    "meanDelta": 0.0537
+   },
+   "Stubby": {
+    "maxDelta": 0.0917,
+    "meanDelta": 0.0379
+   }
+  },
+  "skinLayer": 9,
+  "tris": 4220,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2158
+ },
+ {
+  "bodyHeightOverLength": 0.329,
+  "bodyLengthM": 0.3091,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.31
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.34,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.28
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.28,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.28
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.1,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.34
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_FrostChar.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "933d3c81edcc1ec4",
+  "name": "FrostChar",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 0,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 8,
+   "islands": 15
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0436,
+    "meanDelta": 0.003
+   },
+   "Fat": {
+    "maxDelta": 0.0218,
+    "meanDelta": 0.0095
+   },
+   "Long": {
+    "maxDelta": 0.1168,
+    "meanDelta": 0.0472
+   },
+   "Stubby": {
+    "maxDelta": 0.0825,
+    "meanDelta": 0.0334
+   }
+  },
+  "skinLayer": 10,
+  "tris": 3856,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 1958
+ },
+ {
+  "bodyHeightOverLength": 0.111,
+  "bodyLengthM": 0.4033,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.95
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.02,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.11
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.03,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.05
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.01,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.05
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_GlimmerEel.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "ca3260f26b5c602c",
+  "name": "GlimmerEel",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 2,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 2,
+   "islands": 11
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.016,
+    "meanDelta": 0.0004
+   },
+   "Fat": {
+    "maxDelta": 0.0161,
+    "meanDelta": 0.0082
+   },
+   "Long": {
+    "maxDelta": 0.1371,
+    "meanDelta": 0.061
+   },
+   "Stubby": {
+    "maxDelta": 0.0968,
+    "meanDelta": 0.0431
+   }
+  },
+  "skinLayer": 11,
+  "tris": 4184,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2114
+ },
+ {
+  "bodyHeightOverLength": 0.177,
+  "bodyLengthM": 0.3858,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.12
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.1,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.01
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.05,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.01
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.03,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.07
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_SleepySturgeon.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "537e9c93f5dd820e",
+  "name": "SleepySturgeon",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 31,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 7,
+   "islands": 45
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.049,
+    "meanDelta": 0.0017
+   },
+   "Fat": {
+    "maxDelta": 0.0168,
+    "meanDelta": 0.0094
+   },
+   "Long": {
+    "maxDelta": 0.1429,
+    "meanDelta": 0.0548
+   },
+   "Stubby": {
+    "maxDelta": 0.1008,
+    "meanDelta": 0.0387
+   }
+  },
+  "skinLayer": 12,
+  "tris": 4776,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2494
+ },
+ {
+  "bodyHeightOverLength": 0.566,
+  "bodyLengthM": 0.3055,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -2.79
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.58,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.02
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.58,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.39
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.04,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.08
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_GildedCarp.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "93ca6f206a404cec",
+  "name": "GildedCarp",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 5,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 7,
+   "islands": 19
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0611,
+    "meanDelta": 0.004
+   },
+   "Fat": {
+    "maxDelta": 0.0371,
+    "meanDelta": 0.0139
+   },
+   "Long": {
+    "maxDelta": 0.1167,
+    "meanDelta": 0.0441
+   },
+   "Stubby": {
+    "maxDelta": 0.0824,
+    "meanDelta": 0.0314
+   }
+  },
+  "skinLayer": 13,
+  "tris": 4536,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2314
+ },
+ {
+  "bodyHeightOverLength": 0.411,
+  "bodyLengthM": 0.3394,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.09
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.79,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.03
+   },
+   "Long": {
+    "eyeDepthChange_mm": 1.02,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.06
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.05,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.02
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_OldBarnacle.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "6ffde8f1d77744ff",
+  "name": "OldBarnacle",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 17,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 7,
+   "islands": 31
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0632,
+    "meanDelta": 0.0032
+   },
+   "Fat": {
+    "maxDelta": 0.0294,
+    "meanDelta": 0.0135
+   },
+   "Long": {
+    "maxDelta": 0.1294,
+    "meanDelta": 0.0474
+   },
+   "Stubby": {
+    "maxDelta": 0.0913,
+    "meanDelta": 0.0336
+   }
+  },
+  "skinLayer": 14,
+  "tris": 4890,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2519
+ },
+ {
+  "bodyHeightOverLength": 0.253,
+  "bodyLengthM": 0.2576,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.0
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.31,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.04
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.25,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.02
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.12,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.02
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_PierSardine.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "39a7b97aef237d8f",
+  "name": "PierSardine",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 2,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 7,
+   "islands": 16
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0406,
+    "meanDelta": 0.0022
+   },
+   "Fat": {
+    "maxDelta": 0.0141,
+    "meanDelta": 0.0069
+   },
+   "Long": {
+    "maxDelta": 0.097,
+    "meanDelta": 0.0373
+   },
+   "Stubby": {
+    "maxDelta": 0.0684,
+    "meanDelta": 0.0264
+   }
+  },
+  "skinLayer": 15,
+  "tris": 3972,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2024
+ },
+ {
+  "bodyHeightOverLength": 0.306,
+  "bodyLengthM": 0.2747,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.0
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.25,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.36
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.2,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.16
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.1,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.19
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_IceHerring.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "6605d0d9049722fb",
+  "name": "IceHerring",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 6,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 7,
+   "islands": 20
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0433,
+    "meanDelta": 0.0024
+   },
+   "Fat": {
+    "maxDelta": 0.0178,
+    "meanDelta": 0.0077
+   },
+   "Long": {
+    "maxDelta": 0.1034,
+    "meanDelta": 0.0405
+   },
+   "Stubby": {
+    "maxDelta": 0.073,
+    "meanDelta": 0.0286
+   }
+  },
+  "skinLayer": 16,
+  "tris": 3844,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 1962
+ },
+ {
+  "bodyHeightOverLength": 0.218,
+  "bodyLengthM": 0.3091,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.9
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.43,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.02
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.36,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.02
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.15,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.04
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_GrumbleMackerel.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "4f8d89b704739144",
+  "name": "GrumbleMackerel",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 8,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 6,
+   "islands": 21
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0468,
+    "meanDelta": 0.0019
+   },
+   "Fat": {
+    "maxDelta": 0.0149,
+    "meanDelta": 0.0081
+   },
+   "Long": {
+    "maxDelta": 0.116,
+    "meanDelta": 0.0483
+   },
+   "Stubby": {
+    "maxDelta": 0.0819,
+    "meanDelta": 0.0341
+   }
+  },
+  "skinLayer": 17,
+  "tris": 4196,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2140
+ },
+ {
+  "bodyHeightOverLength": 0.306,
+  "bodyLengthM": 0.3091,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.38
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.47,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.01
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.36,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.1
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.2,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -1.04
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_GawpingGurnard.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "e8e896b004190e6a",
+  "name": "GawpingGurnard",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 4,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 6,
+   "islands": 17
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0645,
+    "meanDelta": 0.0052
+   },
+   "Fat": {
+    "maxDelta": 0.0176,
+    "meanDelta": 0.0098
+   },
+   "Long": {
+    "maxDelta": 0.1157,
+    "meanDelta": 0.0407
+   },
+   "Stubby": {
+    "maxDelta": 0.0816,
+    "meanDelta": 0.0287
+   }
+  },
+  "skinLayer": 18,
+  "tris": 4532,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2304
+ },
+ {
+  "bodyHeightOverLength": 0.409,
+  "bodyLengthM": 0.3224,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.27
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 1.21,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.2
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.87,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.08
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.39,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.54
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_RedSnapper.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "b1428e1232345988",
+  "name": "RedSnapper",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 3,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 7,
+   "islands": 17
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0612,
+    "meanDelta": 0.0039
+   },
+   "Fat": {
+    "maxDelta": 0.028,
+    "meanDelta": 0.0117
+   },
+   "Long": {
+    "maxDelta": 0.1216,
+    "meanDelta": 0.0473
+   },
+   "Stubby": {
+    "maxDelta": 0.0858,
+    "meanDelta": 0.0335
+   }
+  },
+  "skinLayer": 19,
+  "tris": 4088,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2078
+ },
+ {
+  "bodyHeightOverLength": 0.668,
+  "bodyLengthM": 0.2516,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 1.2
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.33,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.49
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.03,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.26
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 1.37,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.19
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_GrumpyPuffer.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "f878fdca322da014",
+  "name": "GrumpyPuffer",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 45,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 5,
+   "islands": 57
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0354,
+    "meanDelta": 0.0014
+   },
+   "Fat": {
+    "maxDelta": 0.0354,
+    "meanDelta": 0.0132
+   },
+   "Long": {
+    "maxDelta": 0.0962,
+    "meanDelta": 0.036
+   },
+   "Stubby": {
+    "maxDelta": 0.0679,
+    "meanDelta": 0.0257
+   }
+  },
+  "skinLayer": 20,
+  "tris": 4380,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2308
+ },
+ {
+  "bodyHeightOverLength": 0.192,
+  "bodyLengthM": 0.3754,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.18
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.53,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.16
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.52,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.08
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.27,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.04
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_MoonSquid.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "cee57d3624affcc0",
+  "name": "MoonSquid",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 8,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 2,
+   "islands": 17
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0393,
+    "meanDelta": 0.001
+   },
+   "Fat": {
+    "maxDelta": 0.0166,
+    "meanDelta": 0.0063
+   },
+   "Long": {
+    "maxDelta": 0.1276,
+    "meanDelta": 0.0354
+   },
+   "Stubby": {
+    "maxDelta": 0.0901,
+    "meanDelta": 0.0249
+   }
+  },
+  "skinLayer": 21,
+  "tris": 4664,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2390
+ },
+ {
+  "bodyHeightOverLength": 0.574,
+  "bodyLengthM": 0.3394,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.78
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.11,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.33
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.09,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.21
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.01,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.04
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_SneakyFlounder.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "7b7b7c3d9e50c85b",
+  "name": "SneakyFlounder",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 2,
+   "eyeIslands": 10,
+   "eyes": 2,
+   "finPlates": 3,
+   "islands": 16
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0412,
+    "meanDelta": 0.0012
+   },
+   "Fat": {
+    "maxDelta": 0.041,
+    "meanDelta": 0.0126
+   },
+   "Long": {
+    "maxDelta": 0.13,
+    "meanDelta": 0.0521
+   },
+   "Stubby": {
+    "maxDelta": 0.0917,
+    "meanDelta": 0.0369
+   }
+  },
+  "skinLayer": 22,
+  "tris": 4296,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2180
+ },
+ {
+  "bodyHeightOverLength": 0.341,
+  "bodyLengthM": 0.3734,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.3
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.42,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.2
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.4,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.14
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.07
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_BruiserTuna.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "bf7388f511b38ccb",
+  "name": "BruiserTuna",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 11,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 4,
+   "islands": 22
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0664,
+    "meanDelta": 0.0019
+   },
+   "Fat": {
+    "maxDelta": 0.0273,
+    "meanDelta": 0.013
+   },
+   "Long": {
+    "maxDelta": 0.1401,
+    "meanDelta": 0.0586
+   },
+   "Stubby": {
+    "maxDelta": 0.0989,
+    "meanDelta": 0.0415
+   }
+  },
+  "skinLayer": 23,
+  "tris": 4316,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2202
+ },
+ {
+  "bodyHeightOverLength": 1.173,
+  "bodyLengthM": 0.3154,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.0
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 1.18,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.0
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.63,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.0
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.5,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.0
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_StormRay.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "c267c8a8df3d3e16",
+  "name": "StormRay",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 1,
+   "eyeIslands": 12,
+   "eyes": 4,
+   "finPlates": 0,
+   "islands": 14
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0,
+    "meanDelta": 0.0
+   },
+   "Fat": {
+    "maxDelta": 0.0769,
+    "meanDelta": 0.0124
+   },
+   "Long": {
+    "maxDelta": 0.1073,
+    "meanDelta": 0.0429
+   },
+   "Stubby": {
+    "maxDelta": 0.0757,
+    "meanDelta": 0.0306
+   }
+  },
+  "skinLayer": 24,
+  "tris": 4246,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2155
+ },
+ {
+  "bodyHeightOverLength": 0.257,
+  "bodyLengthM": 0.2747,
+  "checks": {
+   "BigFin": {
+    "eyeDepthChange_mm": 0.0,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.05
+   },
+   "Fat": {
+    "eyeDepthChange_mm": 0.94,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.08
+   },
+   "Long": {
+    "eyeDepthChange_mm": 0.84,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": 0.1
+   },
+   "Stubby": {
+    "eyeDepthChange_mm": 0.41,
+    "eyeSideFlip": false,
+    "plateGapChange_mm": -0.03
+   }
+  },
+  "exportResult": "kept",
+  "file": "Fish_Lanternfish.fbx",
+  "material": "M_Toon_Fish",
+  "meshHash": "da2236e591149aa5",
+  "name": "Lanternfish",
+  "notes": "uv3 (Pat) holds the pattern-mask frame; eyes map to (0.975, 0.975), which every mask keeps at 0",
+  "parts": {
+   "extras": 7,
+   "eyeIslands": 6,
+   "eyes": 2,
+   "finPlates": 5,
+   "islands": 19
+  },
+  "patFlatProjection": false,
+  "shapeKeys": [
+   "Fat",
+   "Long",
+   "BigFin",
+   "Stubby"
+  ],
+  "shapeStats": {
+   "BigFin": {
+    "maxDelta": 0.0433,
+    "meanDelta": 0.0017
+   },
+   "Fat": {
+    "maxDelta": 0.014,
+    "meanDelta": 0.007
+   },
+   "Long": {
+    "maxDelta": 0.1034,
+    "meanDelta": 0.0386
+   },
+   "Stubby": {
+    "maxDelta": 0.073,
+    "meanDelta": 0.0273
+   }
+  },
+  "skinLayer": 25,
+  "tris": 3976,
+  "uvSets": [
+   "UVMap",
+   "Layer",
+   "Pat"
+  ],
+  "vertices": 2029
+ }
+]
