@@ -1,78 +1,59 @@
-# harbour-villagers: the harbour's 11 villager models (10 villagers, the Garys are two)
+# harbour-villagers: the harbour's 11 villagers as PLACEHOLDER proxies + outfits + props
 
-Branch `harbour-villagers`, cut from `origin/character-fisher` (d153e17, the redesigned fisher). Blender 5.2.2 headless, no Unity.
-Script: `Art/Blender/fg_villagers.py` (imports `fg_fisher.py` for its builders; that file is untouched).
+Branch `harbour-villagers` (from `origin/character-fisher` d153e17, then reworked on the orchestrator's 2026-10-17 scope change; the earlier fisher-style commits stay in history).
+Script: `Art/Blender/fg_villagers.py` (Blender 5.2.2 headless). It no longer imports `fg_fisher.py`: the few generic metaball/lathe helpers are copied into it, and nothing of the fisher's head, face or body is used.
 
-## What was built
-Static A-pose adults in the fisher's family look: true-sphere head with flat painted face decals (big white eyes, tiny dot pupils, heavy brows,
-big nose), chunky metaball body parts that are voxel-remeshed and decimated, the same landmark ladder (head / shoulder / chest / belly / hip /
-knee / ankle) scaled per person, and the pupils as separate objects so a rig can slide them (REPO side-eye). Each has its own silhouette:
-Doug tall and narrow, Marge short and wide, Lorraine thin with a beehive, Fenwick a bulky yellow oilskin with a wide hat brim, Ambrose small and
-stooped with huge ears, and so on. Tone 2.1: grown-up goofy, worn and tacky, nothing cute. Not rigged; the topology is the fisher's (voxel remesh
-+ decimate), which the fisher rig skins too. Heights 1.49-2.06 m including hair/hats; feet on y = 0, pivot at the base centre.
+## What is a placeholder and what is not
+The player-character look is unsettled (the fisher base was rejected; settled direction: faces painted into the head texture, toon shading with outlines, a PEAK-style body, Schedule 1 tone).
+- **Placeholder: `<Name>_Proxy_Body`.** One smooth skin object (plain sphere head, torso, arms, mitts, legs, feet), no face, ears or nose. It fixes each villager's height, build and posture
+  (heights 1.49-2.06 m incl. hair/hats; Doug tall and narrow, Marge short and wide, Lorraine thin, Fenwick bulky, Ambrose small and stooped), so the 11 read apart at 20 m. Replace it when the base is settled.
+- **Refittable: `<Name>_Outfit_<Piece>`.** Clothes and head gear, each its own object. They are built from the proxy's parameters (`torso_profile`, `arm_geom`, head sphere), so changing a spec's
+  height/width/belly/hunch regenerates a fitted set; for the settled base, refit the same builders to its measurements.
+- **Kept as is: `<Name>_Prop_<Thing>`.** Signature props, separate objects. `ReadingGlasses` (Doug) and `LuckyHat` (Wendell) are the lost wish items (`lost: true` in the manifest), lying on the ground beside them: hide until found.
+- Not in the files: eyes, pupils, brows, nose, ears, mouth (see the face briefs).
 
-| Villager | File | Tris | Height m | Role | Signature props (separate objects) |
-|---|---|---|---|---|---|
-| Doug Pellow | Doug_Pellow.fbx | 8932 | 2.02 | Harbourmaster | Lanyard, Clipboard, ReadingGlasses (LOST) |
-| Marge Tackleby | Marge_Tackleby.fbx | 7998 | 1.66 | Bait shop owner, retired roller-derby champion | - |
-| Gary Nettle (neat comb-over) | Gary_Nettle_Neat.fbx | 7026 | 1.75 | Net-mender (twin) | - |
-| Gary Nettle (wild hair) | Gary_Nettle_Wild.fbx | 7050 | 1.82 | Net-mender (twin) | - |
-| Wendell Krill | Wendell_Krill.fbx | 7798 | 1.58 | Smokehouse | LuckyHat (LOST) |
-| Ines Varga | Ines_Varga.fbx | 8422 | 1.76 | Boatwright | WeldingGoggles |
-| Dr. Penny Hollis | Penny_Hollis.fbx | 9898 | 1.84 | Marine biologist "between universities" | Spectacles, Lanyard |
-| Lorraine Bass | Lorraine_Bass.fbx | 7462 | 2.06 | Cafe owner | CoffeePot |
-| Reverend Gil | Reverend_Gil.fbx | 6770 | 1.80 | Chapel | BingoDauber, Sunglasses |
-| Mr. Fenwick | Mr_Fenwick.fbx | 8799 | 1.73 | Gull Bar hermit | TinfoilBrim |
-| Ambrose Lock | Ambrose_Lock.fbx | 6858 | 1.49 | Lock-keeper | PocketWatch |
+| Villager | File | Tris | Height m | Outfit and prop objects |
+|---|---|---|---|---|
+| Doug Pellow | Doug_Pellow.fbx | 8588 | 2.02 | Outfit_Hair, Outfit_Shirt, Outfit_HiVisVest, Outfit_Trousers, Outfit_Shoes, Prop_Lanyard, Prop_Clipboard, Prop_ReadingGlasses |
+| Marge Tackleby | Marge_Tackleby.fbx | 7490 | 1.66 | Outfit_Hair, Outfit_Sweatband, Outfit_Tank, Outfit_Apron, Outfit_WristGuards, Outfit_Shorts, Outfit_Sneakers, Prop_KneePads |
+| Gary Nettle (neat comb-over) | Gary_Nettle_Neat.fbx | 7322 | 1.75 | Outfit_Hair, Outfit_Jumper, Outfit_Trousers, Outfit_Shoes |
+| Gary Nettle (wild hair) | Gary_Nettle_Wild.fbx | 7346 | 1.82 | Outfit_Hair, Outfit_Jumper, Outfit_Trousers, Outfit_Shoes |
+| Wendell Krill | Wendell_Krill.fbx | 7226 | 1.58 | Outfit_Cap, Outfit_Shirt, Outfit_Apron, Outfit_Trousers, Outfit_Boots, Prop_LuckyHat |
+| Ines Varga | Ines_Varga.fbx | 8048 | 1.76 | Outfit_Hair, Outfit_Tee, Outfit_Overalls, Outfit_Boots, Prop_WeldingGoggles |
+| Dr. Penny Hollis | Penny_Hollis.fbx | 9942 | 1.84 | Outfit_Hair, Outfit_Blouse, Outfit_Waders, Outfit_Cardigan, Prop_Spectacles, Prop_Lanyard |
+| Lorraine Bass | Lorraine_Bass.fbx | 7294 | 2.06 | Outfit_Hair, Outfit_Blouse, Outfit_Apron, Outfit_Slacks, Outfit_Shoes, Prop_CoffeePot |
+| Reverend Gil | Reverend_Gil.fbx | 7142 | 1.80 | Outfit_Hair, Outfit_Clerical, Outfit_Collar, Outfit_Stole, Outfit_Trousers, Outfit_Shoes, Prop_BingoDauber, Prop_Sunglasses |
+| Mr. Fenwick | Mr_Fenwick.fbx | 9157 | 1.73 | Outfit_Beard, Outfit_Souwester, Outfit_Jumper, Outfit_LongCoat, Outfit_Jacket, Outfit_Trousers, Outfit_Wellies, Prop_TinfoilBrim |
+| Ambrose Lock | Ambrose_Lock.fbx | 6946 | 1.46 | Outfit_Hair, Outfit_Waistcoat, Outfit_Cardigan, Outfit_Trousers, Prop_Slippers, Prop_PocketWatch |
 
-Budget 6-10k each: all within (6.8k-9.9k). `tris` is the sum over every object in the file (props included); `tris_by_object` is in the manifest.
+Budget 6-10k tris each, all within (props included). Per-object triangles and kinds are in `villagers_manifest.json` (`objects`).
+Outfit pieces: Doug HiVisVest + lanyard + clipboard; Marge Apron, Tank, Shorts, WristGuards, Sweatband, KneePads (prop); Garys Jumper, Trousers, Hair (neat comb-over / wild spikes; jumper colours swapped);
+Wendell Apron, Cap, Shirt; Ines Overalls, Tee, Boots, goggles (prop); Hollis Cardigan, Waders, Blouse, lanyard + spectacles (props); Lorraine Apron, Hair (beehive), coffee pot (prop);
+Gil Clerical, Collar, Stole, dauber and sunglasses (props); Fenwick Beard, Souwester, LongCoat, Jacket, Wellies, tinfoil brim (prop); Ambrose Cardigan, Waistcoat, slippers + pocket watch (props).
 
-Signature features: Doug (hi-vis vest + reflective bands, lanyard with badge, clipboard, squint), Marge (bait-stained apron with two stain colours,
-knee pads, wrist guards, sweatband), the Garys (same body and jumpers in swapped colours: Neat = comb-over, red jumper/blue trim; Wild = spiky ginger hair,
-blue jumper/red trim; their eyes look at each other), Wendell (flat cap, droopy moustache, long soot-smeared apron, stoop), Ines (denim overalls with a patch
-pocket, thick arms, welding goggles on the forehead, scowl), Dr. Hollis (mustard cardigan with elbow patches, waders, lanyard with a crest badge, messy bun
-with a pencil, round spectacles), Lorraine (beehive, half-lidded deadpan, cafe apron, coffee pot), Reverend Gil (clerical black, dog collar, purple stole,
-sunglasses, bingo dauber in the breast pocket), Mr. Fenwick (beard, three layers of oilskin, sou'wester with a tinfoil-lined brim), Ambrose (cardigan over a
-waistcoat, pocket watch on a chain, slippers, white tufts).
+## Shared palette (no per-model palettes, no character texture layers)
+UV1 `Layer` = (palette slot, 0). Slots used: 17 Bronze, 18 Steel, 19 Iron, 20 GlassGreen, 23 GlassClear, 24 Gold, 25 Paper, 29 Khaki, 30 White, 31 Navy, 72 CharSkin, 73 CharCloth, 74 CharDark, 75 CharBright, 76 CharRubber, 77 CharHair, 78 CharLeather, 79 CharAccent.
+- Fixed slots reused from harbour-props by name: Iron 19, Steel 18, Gold 24, Paper 25, Khaki 29, White 30, Navy 31, GlassClear 23, GlassGreen 20, Bronze 17 (use the palette colour).
+- New slots in the villagers' range 72-79, all TINTABLE: 72 CharSkin, 73 CharCloth, 74 CharDark, 75 CharBright, 76 CharRubber, 77 CharHair, 78 CharLeather, 79 CharAccent.
+  Eight slots cannot hold every skin tone and garment colour, so the colour of a 72-79 vertex = the slot colour x the per-key `tint` in `models[].palette` (`key`, `slot`, `slot_name`, `tint`), applied by the builder as a per-object colour/MaterialPropertyBlock. The manifest top level lists both groups.
+- The character texture layers 20-27 were dropped.
 
-## Files
-- `Art/Blender/fg_villagers.py` (generator), `Art/Export/Villagers/<Name>.fbx` x11 and `Art/Export/Villagers/villagers_manifest.json`.
-- Previews (Eevee, software GL): `Art/Previews/Villagers/villagers_front.png`, `villagers_three_quarter.png` (two-row lineups, 1280x720), `villagers_faces.png` (11 face close-ups).
-- No new textures (see Textures below), so no `Art/Textures/Villagers` and no SOURCES.md.
+## Encoding
+UV0 `UVMap` in metres (box projection per face); UV1 `Layer` as above; vertex colour `Col` = 0.5 x (0.5 + 0.5 x baked AO); smooth normals; no materials exported; objects at the origin, identity transform, pivot at the base centre; facing +Z.
+Export settings and `export_if_changed` as in `fg_harbour.py` (the unchanged-FBX check ignores Blender's unstable index-array order). Static A-pose, not rigged; the proxy topology is voxel-remesh + decimate.
 
-## FBX objects per file
-`<Name>_Body` (clothes, limbs, hands, feet), `<Name>_Head` (head sphere, ears, nose, hair, hats), `<Name>_Face` (eye whites, lids, brows, mouth, wrinkles; decals lifted
-1.5-4 mm off the head), `<Name>_Pupil_L` / `_Pupil_R`, and `<Name>_Prop_<Thing>`. Props named `LOST` in the table are the villager's missing wish items
-(ReadingGlasses, LuckyHat): they are placed on the ground beside the villager, 0.55 m to the right (Doug) / left (Wendell); hide them until found, then show them
-on the villager's forehead or head. Other props are worn or carried at their rest place (clipboard in the left hand, coffee pot in the right, goggles on the forehead).
-`TinfoilBrim` is a separate ring of faceted foil on the sou'wester brim.
+## Previews (`Art/Previews/Villagers/`, Eevee on software GL)
+`villagers_front.png`, `villagers_three_quarter.png` (dressed lineups) and `villagers_proxy_front.png` (placeholders only, the silhouette read). The old face close-up sheet is removed (faces no longer exist in the models).
 
-## Encoding (the harbour's, with two villager-specific notes)
-UV0 `UVMap` in metres (box projection per face); UV1 `Layer` = (palette slot, texture layer) per corner; vertex colour `Col` = 0.5 x (0.5 + 0.5 x baked AO) (28 rays, 0.35 m, a ground plane
-as occluder, back faces passed through); smooth normals; no materials exported; objects at the origin with an identity transform; export settings and `export_if_changed` as in `fg_harbour.py`
-(the unchanged-FBX check ignores the index-array order that Blender does not emit stably: three repeat runs in a row kept all 11 files).
-- **Palette slot** indexes the per-model `palette` list in the manifest (display colours, the same sRGB-ish values the fisher uses). It does NOT index the harbour's `S` table: a villager has far more
-  colours than the harbour has slots. Gary Neat and Gary Wild use the same keys (`jumper`, `trim`, `hair`) with swapped colours.
-- **Texture layer** is a new character range, `CHAR_LAYERS` (20 skin, 21 shirt, 22 vest, 23 hat, 24 cargo, 25 sock, 26 leather, 27 webbing, 0 none), mapping to `Art/Textures/Fisher/<name>_detail.png`.
-  Nothing in the harbour's 0-14 layer range was renumbered.
-
-## Textures
-Not rebuilt: the fisher's greyscale detail maps (Poly Haven CC0, see `Art/Textures/Fisher/SOURCES.md` on `origin/character-fisher-tex`) are used as the layers above; colour comes from the palette
-(colour = tint x detail x 2, as in the fisher). That folder is not on this branch, so merge `character-fisher-tex` first (or copy the eight `*_detail.png` files).
-The fisher weave was tuned for one tile per 0.16 m; UV0 here is in metres, so set the tiling to about 6.25 per UV unit.
+## Face briefs
+`docs/superpowers/handoff/art/harbour-villagers-face-briefs.md`: expression, eye shape, brows, mouth, wrinkles, stubble and one line of attitude per villager, for the painted-face texture.
 
 ## Unverified
-- Nothing was imported into Unity: the FBX import, the UV1 / `Col` read by `M_Toon_Base` (or a character material), the 6.25 tiling, and the layer-to-texture lookup are untested. The re-import into Blender shows 2 UV maps, a `Col` attribute and no materials on every object.
-- AO is baked per vertex in the A-pose; clothes with the character in a different pose (arms down) will show some wrong occlusion.
-- The topology is voxel-remeshed and decimated (triangulated, no edge loops): fine for the fisher rig's auto-weights, not hand-weighted deformation.
-- Previews use Eevee on software GL with a flat colour per palette entry; the game's toon shader and the detail maps will look different.
-- Where a Unity Asset Store pack on the user's PC would fit better: NPC-style clothes and hair are fine as built; a purchased/free character-hair pack could replace the lathe/cone hair of Lorraine (beehive), Gary Wild and Ambrose (tufts), which are the weakest-looking parts.
+Nothing was imported into Unity (FBX import, `uv2` slot read, the tint property, `Col` as AO). The tint mechanism needs a builder-side material/MPB. Outfit fit against the settled base is untested by definition.
+The hair of Lorraine (beehive), Gary Wild and Ambrose is lathe/cone placeholder geometry.
 
 ## Exact steps for the PC
-1. Merge `harbour-villagers` (and `character-fisher-tex` for the detail maps) and let Unity import `Art/Export/Villagers/*.fbx`; move/copy them under the project content folder the harbour FBX use (the harbour copies live under `Assets/_Project/Content/Models/Harbour/`).
-2. Import settings: scale factor 1, no material import (the FBX has none), generate colliders off, keep the objects as separate renderers, normals from the file, read UV1 as `uv2`, `Col` as vertex colour.
-3. Build a villager material (or extend `M_Toon_Base`) that reads `uv2` = (palette slot, texture layer): colour = the villager's palette[slot] (from `villagers_manifest.json`; the builder can write it as a
-   per-villager colour array / MaterialPropertyBlock), detail = the greyscale map for the layer (21 shirt ... 27 webbing), tiled about 6.25 per metre, vertex colour `Col` x 2 as AO.
-4. Placement: stand each villager at its building (`building` in the manifest); the model faces +Z. `Pupil_L/R` rotate about the head centre (the `Head` object's bounds centre; head radius 0.23-0.27 m, see the manifest heights).
-5. Hide `Prop_ReadingGlasses` and `Prop_LuckyHat` until the wish item is returned.
-6. Regenerate with: `FG_ROOT=$PWD blender -b --factory-startup --python Art/Blender/fg_villagers.py -- model` (add ids to build one) and `... -- preview <outdir>`.
+1. Merge the branch; import `Art/Export/Villagers/*.fbx` beside the harbour FBX (no materials in the files).
+2. Read `uv2` = (slot, 0) for the shared palette; for slots 72-79 multiply by the per-key tint from `villagers_manifest.json`; `Col` x 2 is AO.
+3. Hide `Prop_ReadingGlasses` and `Prop_LuckyHat` until their wish items are returned; `Pupil_*`, `Face`, `Head`, `Body` objects of the previous commit no longer exist.
+4. Regenerate: `FG_ROOT=$PWD blender -b --factory-startup --python Art/Blender/fg_villagers.py -- model` (optionally ids) and `... -- preview <outdir>`.

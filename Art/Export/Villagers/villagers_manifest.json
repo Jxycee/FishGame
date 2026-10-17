@@ -1,239 +1,352 @@
 {
- "note": "Villager FBX files (static A-pose, not rigged). See docs/superpowers/handoff/art/harbour-villagers.md.",
+ "note": "Villager FBX files: PLACEHOLDER proxy bodies with separate outfit and prop objects (static A-pose, no faces, not rigged). See docs/superpowers/handoff/art/harbour-villagers.md.",
  "encoding": {
   "uv0": "UVMap, metres, box projection per face",
-  "uv1": "Layer = (palette slot, texture layer); slot indexes models[].palette, layer = CHAR_LAYERS",
+  "uv1": "Layer = (palette slot, 0): shared palette slots, no character texture layers",
   "col": "Col = 0.5 x (0.5 + 0.5 x AO)",
-  "char_layers": {
-   "none": 0,
-   "skin": 20,
-   "shirt": 21,
-   "vest": 22,
-   "hat": 23,
-   "cargo": 24,
-   "sock": 25,
-   "leather": 26,
-   "webbing": 27
-  },
-  "layer_textures": {
-   "20": "Art/Textures/Fisher/skin_detail.png",
-   "21": "Art/Textures/Fisher/shirt_detail.png",
-   "22": "Art/Textures/Fisher/vest_detail.png",
-   "23": "Art/Textures/Fisher/hat_detail.png",
-   "24": "Art/Textures/Fisher/cargo_detail.png",
-   "25": "Art/Textures/Fisher/sock_detail.png",
-   "26": "Art/Textures/Fisher/leather_detail.png",
-   "27": "Art/Textures/Fisher/webbing_detail.png"
-  },
   "axes": "Unity metres, feet on y=0, facing +z, pivot at the base centre"
  },
+ "palette": {
+  "fixed_reused": {
+   "Brass": {
+    "slot": 16,
+    "colour": [
+     0.78,
+     0.6,
+     0.22
+    ]
+   },
+   "Bronze": {
+    "slot": 17,
+    "colour": [
+     0.58,
+     0.38,
+     0.2
+    ]
+   },
+   "Steel": {
+    "slot": 18,
+    "colour": [
+     0.52,
+     0.56,
+     0.6
+    ]
+   },
+   "Iron": {
+    "slot": 19,
+    "colour": [
+     0.24,
+     0.25,
+     0.28
+    ]
+   },
+   "GlassGreen": {
+    "slot": 20,
+    "colour": [
+     0.28,
+     0.58,
+     0.4
+    ]
+   },
+   "GlassClear": {
+    "slot": 23,
+    "colour": [
+     0.8,
+     0.89,
+     0.9
+    ]
+   },
+   "Gold": {
+    "slot": 24,
+    "colour": [
+     0.93,
+     0.74,
+     0.2
+    ]
+   },
+   "Paper": {
+    "slot": 25,
+    "colour": [
+     0.92,
+     0.86,
+     0.68
+    ]
+   },
+   "Khaki": {
+    "slot": 29,
+    "colour": [
+     0.66,
+     0.58,
+     0.4
+    ]
+   },
+   "White": {
+    "slot": 30,
+    "colour": [
+     0.95,
+     0.96,
+     0.98
+    ]
+   },
+   "Navy": {
+    "slot": 31,
+    "colour": [
+     0.16,
+     0.24,
+     0.38
+    ]
+   }
+  },
+  "new_tintable": {
+   "CharSkin": {
+    "slot": 72,
+    "colour": [
+     0.9,
+     0.68,
+     0.54
+    ]
+   },
+   "CharCloth": {
+    "slot": 73,
+    "colour": [
+     0.85,
+     0.82,
+     0.74
+    ]
+   },
+   "CharDark": {
+    "slot": 74,
+    "colour": [
+     0.18,
+     0.18,
+     0.2
+    ]
+   },
+   "CharBright": {
+    "slot": 75,
+    "colour": [
+     0.95,
+     0.7,
+     0.12
+    ]
+   },
+   "CharRubber": {
+    "slot": 76,
+    "colour": [
+     0.3,
+     0.38,
+     0.22
+    ]
+   },
+   "CharHair": {
+    "slot": 77,
+    "colour": [
+     0.65,
+     0.62,
+     0.58
+    ]
+   },
+   "CharLeather": {
+    "slot": 78,
+    "colour": [
+     0.4,
+     0.26,
+     0.14
+    ]
+   },
+   "CharAccent": {
+    "slot": 79,
+    "colour": [
+     0.8,
+     0.15,
+     0.18
+    ]
+   }
+  },
+  "note": "Fixed slots (16-31) are harbour-props slots reused by name: use the palette colour. New slots 72-79 (villagers range) are TINTABLE: colour = slot colour x the per-key tint in models[].palette (a MaterialPropertyBlock colour per object/key)."
+ },
+ "placeholders": [
+  "*_Proxy_Body (whole body: plain head, torso, arms, mitts, legs, feet)",
+  "hands (mitts)",
+  "no eyes, nose, ears, brows or mouth anywhere"
+ ],
  "models": [
   {
    "name": "Doug Pellow",
    "id": "Doug_Pellow",
    "file": "Art/Export/Villagers/Doug_Pellow.fbx",
-   "tris": 8932,
-   "tris_by_object": {
-    "Doug_Pellow_Body": 5352,
-    "Doug_Pellow_Head": 1958,
-    "Doug_Pellow_Face": 610,
-    "Doug_Pellow_Pupil_L": 36,
-    "Doug_Pellow_Pupil_R": 36,
-    "Doug_Pellow_Prop_Lanyard": 276,
-    "Doug_Pellow_Prop_Clipboard": 324,
-    "Doug_Pellow_Prop_ReadingGlasses": 340
-   },
+   "tris": 8588,
+   "objects": [
+    {
+     "object": "Doug_Pellow_Proxy_Body",
+     "kind": "proxy",
+     "tris": 2888
+    },
+    {
+     "object": "Doug_Pellow_Outfit_Hair",
+     "kind": "outfit",
+     "tris": 468
+    },
+    {
+     "object": "Doug_Pellow_Outfit_Shirt",
+     "kind": "outfit",
+     "tris": 1370
+    },
+    {
+     "object": "Doug_Pellow_Outfit_HiVisVest",
+     "kind": "outfit",
+     "tris": 1354
+    },
+    {
+     "object": "Doug_Pellow_Outfit_Trousers",
+     "kind": "outfit",
+     "tris": 800
+    },
+    {
+     "object": "Doug_Pellow_Outfit_Shoes",
+     "kind": "outfit",
+     "tris": 768
+    },
+    {
+     "object": "Doug_Pellow_Prop_Lanyard",
+     "kind": "prop",
+     "tris": 276
+    },
+    {
+     "object": "Doug_Pellow_Prop_Clipboard",
+     "kind": "prop",
+     "tris": 324
+    },
+    {
+     "object": "Doug_Pellow_Prop_ReadingGlasses",
+     "kind": "prop",
+     "tris": 340
+    }
+   ],
    "material": "M_Toon_Base",
    "height_m": 2.023,
    "palette": [
     {
      "key": "skin",
-     "rgb": [
+     "slot": 72,
+     "slot_name": "CharSkin",
+     "tint": [
       0.94,
       0.76,
       0.62
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "nose",
-     "rgb": [
-      0.978,
-      0.654,
-      0.558
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "eye",
-     "rgb": [
-      1.0,
-      1.0,
-      0.97
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "pupil",
-     "rgb": [
-      0.03,
-      0.03,
-      0.04
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "brow",
-     "rgb": [
-      0.55,
-      0.55,
-      0.57
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "wrinkle",
-     "rgb": [
-      0.696,
-      0.562,
-      0.459
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "mouth",
-     "rgb": [
-      0.25,
-      0.08,
-      0.08
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "hair",
-     "rgb": [
+     "slot": 77,
+     "slot_name": "CharHair",
+     "tint": [
       0.55,
       0.55,
       0.57
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "shirt",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.9,
       0.92,
       0.95
-     ],
-     "layer": "shirt"
+     ]
     },
     {
      "key": "hivis",
-     "rgb": [
+     "slot": 75,
+     "slot_name": "CharBright",
+     "tint": [
       0.98,
       0.62,
       0.05
-     ],
-     "layer": "vest"
+     ]
     },
     {
      "key": "reflect",
-     "rgb": [
-      0.8,
-      0.82,
-      0.78
-     ],
-     "layer": "none"
+     "slot": 30,
+     "slot_name": "White",
+     "tint": null
     },
     {
      "key": "navy",
-     "rgb": [
-      0.12,
-      0.17,
-      0.3
-     ],
-     "layer": "cargo"
+     "slot": 31,
+     "slot_name": "Navy",
+     "tint": null
     },
     {
      "key": "blackshoe",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.1,
       0.1,
       0.11
-     ],
-     "layer": "leather"
+     ]
     },
     {
      "key": "sole",
-     "rgb": [
-      0.06,
-      0.06,
-      0.06
-     ],
-     "layer": "leather"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     },
     {
      "key": "lan_cord",
-     "rgb": [
+     "slot": 79,
+     "slot_name": "CharAccent",
+     "tint": [
       0.1,
       0.2,
       0.55
-     ],
-     "layer": "webbing"
+     ]
     },
     {
      "key": "badge",
-     "rgb": [
-      0.92,
-      0.92,
-      0.9
-     ],
-     "layer": "none"
+     "slot": 30,
+     "slot_name": "White",
+     "tint": null
     },
     {
      "key": "badge_face",
-     "rgb": [
+     "slot": 79,
+     "slot_name": "CharAccent",
+     "tint": [
       0.25,
       0.45,
       0.8
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "board",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.55,
       0.38,
       0.2
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "paper",
-     "rgb": [
-      0.97,
-      0.97,
-      0.94
-     ],
-     "layer": "none"
+     "slot": 25,
+     "slot_name": "Paper",
+     "tint": null
     },
     {
      "key": "metal",
-     "rgb": [
-      0.75,
-      0.75,
-      0.72
-     ],
-     "layer": "none"
+     "slot": 18,
+     "slot_name": "Steel",
+     "tint": null
     },
     {
      "key": "frame",
-     "rgb": [
-      0.1,
-      0.1,
-      0.12
-     ],
-     "layer": "none"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     }
    ],
    "role": "Harbourmaster",
@@ -252,7 +365,7 @@
     {
      "object": "Doug_Pellow_Prop_ReadingGlasses",
      "lost": true,
-     "note": "His lost reading glasses (wish item, fished up under the T-head). Shown lying beside him; hide until found, then show on his forehead/hand. Origin = ground under the lenses."
+     "note": "His lost reading glasses (wish item, fished up under the T-head). Lying beside him; hide until found, then show on his forehead. Origin = ground under the lenses."
     }
    ],
    "building": "dock office (fixed)",
@@ -264,192 +377,181 @@
    "name": "Marge Tackleby",
    "id": "Marge_Tackleby",
    "file": "Art/Export/Villagers/Marge_Tackleby.fbx",
-   "tris": 7998,
-   "tris_by_object": {
-    "Marge_Tackleby_Body": 5440,
-    "Marge_Tackleby_Head": 2170,
-    "Marge_Tackleby_Face": 316,
-    "Marge_Tackleby_Pupil_L": 36,
-    "Marge_Tackleby_Pupil_R": 36
-   },
+   "tris": 7490,
+   "objects": [
+    {
+     "object": "Marge_Tackleby_Proxy_Body",
+     "kind": "proxy",
+     "tris": 2890
+    },
+    {
+     "object": "Marge_Tackleby_Outfit_Hair",
+     "kind": "outfit",
+     "tris": 512
+    },
+    {
+     "object": "Marge_Tackleby_Outfit_Sweatband",
+     "kind": "outfit",
+     "tris": 168
+    },
+    {
+     "object": "Marge_Tackleby_Outfit_Tank",
+     "kind": "outfit",
+     "tris": 1000
+    },
+    {
+     "object": "Marge_Tackleby_Outfit_Apron",
+     "kind": "outfit",
+     "tris": 1090
+    },
+    {
+     "object": "Marge_Tackleby_Outfit_WristGuards",
+     "kind": "outfit",
+     "tris": 200
+    },
+    {
+     "object": "Marge_Tackleby_Outfit_Shorts",
+     "kind": "outfit",
+     "tris": 440
+    },
+    {
+     "object": "Marge_Tackleby_Outfit_Sneakers",
+     "kind": "outfit",
+     "tris": 770
+    },
+    {
+     "object": "Marge_Tackleby_Prop_KneePads",
+     "kind": "prop",
+     "tris": 420
+    }
+   ],
    "material": "M_Toon_Base",
    "height_m": 1.664,
    "palette": [
     {
      "key": "skin",
-     "rgb": [
+     "slot": 72,
+     "slot_name": "CharSkin",
+     "tint": [
       0.93,
       0.66,
       0.54
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "nose",
-     "rgb": [
-      0.967,
-      0.568,
-      0.486
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "eye",
-     "rgb": [
-      1.0,
-      1.0,
-      0.97
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "pupil",
-     "rgb": [
-      0.03,
-      0.03,
-      0.04
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "brow",
-     "rgb": [
-      0.7,
-      0.7,
-      0.72
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "mouth",
-     "rgb": [
-      0.25,
-      0.08,
-      0.08
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "teeth",
-     "rgb": [
-      0.96,
-      0.95,
-      0.9
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "hair",
-     "rgb": [
+     "slot": 77,
+     "slot_name": "CharHair",
+     "tint": [
       0.7,
       0.7,
       0.72
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "headband",
-     "rgb": [
+     "slot": 79,
+     "slot_name": "CharAccent",
+     "tint": [
       0.95,
       0.35,
       0.6
-     ],
-     "layer": "sock"
+     ]
     },
     {
      "key": "tank",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.78,
       0.1,
       0.12
-     ],
-     "layer": "shirt"
+     ]
     },
     {
      "key": "apron",
-     "rgb": [
-      0.72,
-      0.64,
-      0.44
-     ],
-     "layer": "webbing"
+     "slot": 29,
+     "slot_name": "Khaki",
+     "tint": null
     },
     {
      "key": "apron_tie",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.45,
       0.33,
       0.2
-     ],
-     "layer": "webbing"
+     ]
     },
     {
      "key": "stain_bait",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.38,
       0.26,
       0.14
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "stain_fish",
-     "rgb": [
-      0.62,
-      0.72,
-      0.72
-     ],
-     "layer": "none"
+     "slot": 18,
+     "slot_name": "Steel",
+     "tint": null
     },
     {
      "key": "pad",
-     "rgb": [
+     "slot": 74,
+     "slot_name": "CharDark",
+     "tint": [
       0.13,
       0.13,
       0.15
-     ],
-     "layer": "leather"
+     ]
     },
     {
      "key": "derby_shorts",
-     "rgb": [
+     "slot": 74,
+     "slot_name": "CharDark",
+     "tint": [
       0.1,
       0.12,
       0.35
-     ],
-     "layer": "cargo"
+     ]
     },
     {
      "key": "sneaker",
-     "rgb": [
-      0.92,
-      0.92,
-      0.9
-     ],
-     "layer": "leather"
+     "slot": 30,
+     "slot_name": "White",
+     "tint": null
     },
     {
      "key": "sole_white",
-     "rgb": [
-      0.85,
-      0.85,
-      0.82
-     ],
-     "layer": "leather"
+     "slot": 30,
+     "slot_name": "White",
+     "tint": null
     },
     {
      "key": "padcap",
-     "rgb": [
+     "slot": 79,
+     "slot_name": "CharAccent",
+     "tint": [
       0.95,
       0.35,
       0.6
-     ],
-     "layer": "leather"
+     ]
     }
    ],
    "role": "Bait shop owner, retired roller-derby champion",
    "notes": "Stocky, huge arms, bait-stained apron with stains in two colours, knee pads over bare knees, wrist guards, sweatband.",
-   "props": [],
+   "props": [
+    {
+     "object": "Marge_Tackleby_Prop_KneePads",
+     "lost": false,
+     "note": "strapped over both knees"
+    }
+   ],
    "building": "bait shop (fixed)",
    "placement": {
     "note": "stand at the building; Unity builder places, yaw faces the player/door"
@@ -459,133 +561,102 @@
    "name": "Gary Nettle (neat comb-over)",
    "id": "Gary_Nettle_Neat",
    "file": "Art/Export/Villagers/Gary_Nettle_Neat.fbx",
-   "tris": 7026,
-   "tris_by_object": {
-    "Gary_Nettle_Neat_Body": 4104,
-    "Gary_Nettle_Neat_Head": 2456,
-    "Gary_Nettle_Neat_Face": 394,
-    "Gary_Nettle_Neat_Pupil_L": 36,
-    "Gary_Nettle_Neat_Pupil_R": 36
-   },
+   "tris": 7322,
+   "objects": [
+    {
+     "object": "Gary_Nettle_Neat_Proxy_Body",
+     "kind": "proxy",
+     "tris": 2890
+    },
+    {
+     "object": "Gary_Nettle_Neat_Outfit_Hair",
+     "kind": "outfit",
+     "tris": 968
+    },
+    {
+     "object": "Gary_Nettle_Neat_Outfit_Jumper",
+     "kind": "outfit",
+     "tris": 1894
+    },
+    {
+     "object": "Gary_Nettle_Neat_Outfit_Trousers",
+     "kind": "outfit",
+     "tris": 800
+    },
+    {
+     "object": "Gary_Nettle_Neat_Outfit_Shoes",
+     "kind": "outfit",
+     "tris": 770
+    }
+   ],
    "material": "M_Toon_Base",
    "height_m": 1.755,
    "palette": [
     {
      "key": "skin",
-     "rgb": [
+     "slot": 72,
+     "slot_name": "CharSkin",
+     "tint": [
       0.93,
       0.66,
       0.54
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "nose",
-     "rgb": [
-      0.967,
-      0.568,
-      0.486
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "eye",
-     "rgb": [
-      1.0,
-      1.0,
-      0.97
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "pupil",
-     "rgb": [
-      0.03,
-      0.03,
-      0.04
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "wrinkle",
-     "rgb": [
-      0.688,
-      0.488,
-      0.4
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "brow",
-     "rgb": [
-      0.36,
-      0.3,
-      0.27
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "mouth",
-     "rgb": [
-      0.25,
-      0.08,
-      0.08
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "hair",
-     "rgb": [
+     "slot": 77,
+     "slot_name": "CharHair",
+     "tint": [
       0.36,
       0.3,
       0.27
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "jumper",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.78,
       0.12,
       0.12
-     ],
-     "layer": "sock"
+     ]
     },
     {
      "key": "trim",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.18,
       0.32,
       0.72
-     ],
-     "layer": "sock"
+     ]
     },
     {
      "key": "slacks",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.4,
       0.33,
       0.24
-     ],
-     "layer": "cargo"
+     ]
     },
     {
      "key": "brown_shoe",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.34,
       0.2,
       0.11
-     ],
-     "layer": "leather"
+     ]
     },
     {
      "key": "sole",
-     "rgb": [
-      0.12,
-      0.09,
-      0.07
-     ],
-     "layer": "leather"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     }
    ],
    "role": "Net-mender (twin)",
@@ -600,133 +671,102 @@
    "name": "Gary Nettle (wild hair)",
    "id": "Gary_Nettle_Wild",
    "file": "Art/Export/Villagers/Gary_Nettle_Wild.fbx",
-   "tris": 7050,
-   "tris_by_object": {
-    "Gary_Nettle_Wild_Body": 4104,
-    "Gary_Nettle_Wild_Head": 2480,
-    "Gary_Nettle_Wild_Face": 394,
-    "Gary_Nettle_Wild_Pupil_L": 36,
-    "Gary_Nettle_Wild_Pupil_R": 36
-   },
+   "tris": 7346,
+   "objects": [
+    {
+     "object": "Gary_Nettle_Wild_Proxy_Body",
+     "kind": "proxy",
+     "tris": 2890
+    },
+    {
+     "object": "Gary_Nettle_Wild_Outfit_Hair",
+     "kind": "outfit",
+     "tris": 992
+    },
+    {
+     "object": "Gary_Nettle_Wild_Outfit_Jumper",
+     "kind": "outfit",
+     "tris": 1894
+    },
+    {
+     "object": "Gary_Nettle_Wild_Outfit_Trousers",
+     "kind": "outfit",
+     "tris": 800
+    },
+    {
+     "object": "Gary_Nettle_Wild_Outfit_Shoes",
+     "kind": "outfit",
+     "tris": 770
+    }
+   ],
    "material": "M_Toon_Base",
    "height_m": 1.816,
    "palette": [
     {
      "key": "skin",
-     "rgb": [
+     "slot": 72,
+     "slot_name": "CharSkin",
+     "tint": [
       0.93,
       0.66,
       0.54
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "nose",
-     "rgb": [
-      0.967,
-      0.568,
-      0.486
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "eye",
-     "rgb": [
-      1.0,
-      1.0,
-      0.97
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "pupil",
-     "rgb": [
-      0.03,
-      0.03,
-      0.04
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "wrinkle",
-     "rgb": [
-      0.688,
-      0.488,
-      0.4
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "brow",
-     "rgb": [
-      0.78,
-      0.38,
-      0.12
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "mouth",
-     "rgb": [
-      0.25,
-      0.08,
-      0.08
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "hair",
-     "rgb": [
+     "slot": 77,
+     "slot_name": "CharHair",
+     "tint": [
       0.78,
       0.38,
       0.12
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "jumper",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.18,
       0.32,
       0.72
-     ],
-     "layer": "sock"
+     ]
     },
     {
      "key": "trim",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.78,
       0.12,
       0.12
-     ],
-     "layer": "sock"
+     ]
     },
     {
      "key": "slacks",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.4,
       0.33,
       0.24
-     ],
-     "layer": "cargo"
+     ]
     },
     {
      "key": "brown_shoe",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.34,
       0.2,
       0.11
-     ],
-     "layer": "leather"
+     ]
     },
     {
      "key": "sole",
-     "rgb": [
-      0.12,
-      0.09,
-      0.07
-     ],
-     "layer": "leather"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     }
    ],
    "role": "Net-mender (twin)",
@@ -741,179 +781,148 @@
    "name": "Wendell Krill",
    "id": "Wendell_Krill",
    "file": "Art/Export/Villagers/Wendell_Krill.fbx",
-   "tris": 7798,
-   "tris_by_object": {
-    "Wendell_Krill_Body": 4794,
-    "Wendell_Krill_Head": 2078,
-    "Wendell_Krill_Face": 600,
-    "Wendell_Krill_Pupil_L": 36,
-    "Wendell_Krill_Pupil_R": 36,
-    "Wendell_Krill_Prop_LuckyHat": 254
-   },
+   "tris": 7226,
+   "objects": [
+    {
+     "object": "Wendell_Krill_Proxy_Body",
+     "kind": "proxy",
+     "tris": 2890
+    },
+    {
+     "object": "Wendell_Krill_Outfit_Cap",
+     "kind": "outfit",
+     "tris": 288
+    },
+    {
+     "object": "Wendell_Krill_Outfit_Shirt",
+     "kind": "outfit",
+     "tris": 1320
+    },
+    {
+     "object": "Wendell_Krill_Outfit_Apron",
+     "kind": "outfit",
+     "tris": 946
+    },
+    {
+     "object": "Wendell_Krill_Outfit_Trousers",
+     "kind": "outfit",
+     "tris": 760
+    },
+    {
+     "object": "Wendell_Krill_Outfit_Boots",
+     "kind": "outfit",
+     "tris": 768
+    },
+    {
+     "object": "Wendell_Krill_Prop_LuckyHat",
+     "kind": "prop",
+     "tris": 254
+    }
+   ],
    "material": "M_Toon_Base",
    "height_m": 1.583,
    "palette": [
     {
      "key": "skin",
-     "rgb": [
+     "slot": 72,
+     "slot_name": "CharSkin",
+     "tint": [
       0.86,
       0.62,
       0.46
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "nose",
-     "rgb": [
-      0.894,
-      0.533,
-      0.414
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "eye",
-     "rgb": [
-      1.0,
-      1.0,
-      0.97
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "pupil",
-     "rgb": [
-      0.03,
-      0.03,
-      0.04
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "brow",
-     "rgb": [
-      0.62,
-      0.62,
-      0.6
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "wrinkle",
-     "rgb": [
-      0.636,
-      0.459,
-      0.34
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "moustache",
-     "rgb": [
-      0.75,
-      0.75,
-      0.72
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "mouth",
-     "rgb": [
-      0.25,
-      0.08,
-      0.08
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "cap",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.34,
       0.34,
       0.3
-     ],
-     "layer": "hat"
+     ]
     },
     {
      "key": "shirt",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.45,
       0.5,
       0.42
-     ],
-     "layer": "shirt"
+     ]
     },
     {
      "key": "apron",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.33,
       0.24,
       0.17
-     ],
-     "layer": "webbing"
+     ]
     },
     {
      "key": "apron_tie",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.2,
       0.16,
       0.12
-     ],
-     "layer": "webbing"
+     ]
     },
     {
      "key": "soot",
-     "rgb": [
+     "slot": 74,
+     "slot_name": "CharDark",
+     "tint": [
       0.1,
       0.08,
       0.07
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "baggy",
-     "rgb": [
+     "slot": 74,
+     "slot_name": "CharDark",
+     "tint": [
       0.3,
       0.3,
       0.28
-     ],
-     "layer": "cargo"
+     ]
     },
     {
      "key": "boot",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.2,
       0.14,
       0.1
-     ],
-     "layer": "leather"
+     ]
     },
     {
      "key": "sole",
-     "rgb": [
-      0.08,
-      0.07,
-      0.06
-     ],
-     "layer": "leather"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     },
     {
      "key": "lucky",
-     "rgb": [
+     "slot": 79,
+     "slot_name": "CharAccent",
+     "tint": [
       0.55,
       0.1,
       0.12
-     ],
-     "layer": "hat"
+     ]
     },
     {
      "key": "lucky_gold",
-     "rgb": [
-      0.9,
-      0.72,
-      0.2
-     ],
-     "layer": "none"
+     "slot": 24,
+     "slot_name": "Gold",
+     "tint": null
     }
    ],
    "role": "Smokehouse",
@@ -922,7 +931,7 @@
     {
      "object": "Wendell_Krill_Prop_LuckyHat",
      "lost": true,
-     "note": "His lucky smoking hat (wish item, gull nest on the sea arch). Shown on the ground beside him; hide until returned, then show it on his head instead of the flat cap."
+     "note": "His lucky smoking hat (wish item, gull nest on the sea arch). On the ground beside him; hide until returned, then show it on his head instead of the flat cap."
     }
    ],
    "building": "smokehouse (fixed)",
@@ -934,143 +943,119 @@
    "name": "Ines Varga",
    "id": "Ines_Varga",
    "file": "Art/Export/Villagers/Ines_Varga.fbx",
-   "tris": 8422,
-   "tris_by_object": {
-    "Ines_Varga_Body": 5390,
-    "Ines_Varga_Head": 2142,
-    "Ines_Varga_Face": 442,
-    "Ines_Varga_Pupil_L": 36,
-    "Ines_Varga_Pupil_R": 36,
-    "Ines_Varga_Prop_WeldingGoggles": 376
-   },
+   "tris": 8048,
+   "objects": [
+    {
+     "object": "Ines_Varga_Proxy_Body",
+     "kind": "proxy",
+     "tris": 2890
+    },
+    {
+     "object": "Ines_Varga_Outfit_Hair",
+     "kind": "outfit",
+     "tris": 652
+    },
+    {
+     "object": "Ines_Varga_Outfit_Tee",
+     "kind": "outfit",
+     "tris": 1300
+    },
+    {
+     "object": "Ines_Varga_Outfit_Overalls",
+     "kind": "outfit",
+     "tris": 1910
+    },
+    {
+     "object": "Ines_Varga_Outfit_Boots",
+     "kind": "outfit",
+     "tris": 920
+    },
+    {
+     "object": "Ines_Varga_Prop_WeldingGoggles",
+     "kind": "prop",
+     "tris": 376
+    }
+   ],
    "material": "M_Toon_Base",
    "height_m": 1.761,
    "palette": [
     {
      "key": "skin",
-     "rgb": [
+     "slot": 72,
+     "slot_name": "CharSkin",
+     "tint": [
       0.8,
       0.62,
       0.45
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "nose",
-     "rgb": [
-      0.832,
-      0.533,
-      0.405
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "eye",
-     "rgb": [
-      1.0,
-      1.0,
-      0.97
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "pupil",
-     "rgb": [
-      0.03,
-      0.03,
-      0.04
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "brow",
-     "rgb": [
-      0.1,
-      0.08,
-      0.08
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "mouth",
-     "rgb": [
-      0.25,
-      0.08,
-      0.08
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "hair",
-     "rgb": [
+     "slot": 77,
+     "slot_name": "CharHair",
+     "tint": [
       0.1,
       0.08,
       0.08
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "tee",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.82,
       0.82,
       0.78
-     ],
-     "layer": "shirt"
+     ]
     },
     {
      "key": "denim",
-     "rgb": [
+     "slot": 74,
+     "slot_name": "CharDark",
+     "tint": [
       0.2,
       0.34,
       0.58
-     ],
-     "layer": "cargo"
+     ]
     },
     {
      "key": "denim_dark",
-     "rgb": [
+     "slot": 74,
+     "slot_name": "CharDark",
+     "tint": [
       0.13,
       0.22,
       0.4
-     ],
-     "layer": "cargo"
+     ]
     },
     {
      "key": "work_boot",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.42,
       0.3,
       0.16
-     ],
-     "layer": "leather"
+     ]
     },
     {
      "key": "sole",
-     "rgb": [
-      0.08,
-      0.07,
-      0.06
-     ],
-     "layer": "leather"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     },
     {
      "key": "rubber",
-     "rgb": [
-      0.12,
-      0.12,
-      0.12
-     ],
-     "layer": "none"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     },
     {
      "key": "weldglass",
-     "rgb": [
-      0.08,
-      0.22,
-      0.12
-     ],
-     "layer": "none"
+     "slot": 20,
+     "slot_name": "GlassGreen",
+     "tint": null
     }
    ],
    "role": "Boatwright",
@@ -1091,189 +1076,164 @@
    "name": "Dr. Penny Hollis",
    "id": "Penny_Hollis",
    "file": "Art/Export/Villagers/Penny_Hollis.fbx",
-   "tris": 9898,
-   "tris_by_object": {
-    "Penny_Hollis_Body": 5790,
-    "Penny_Hollis_Head": 3038,
-    "Penny_Hollis_Face": 394,
-    "Penny_Hollis_Pupil_L": 36,
-    "Penny_Hollis_Pupil_R": 36,
-    "Penny_Hollis_Prop_Spectacles": 328,
-    "Penny_Hollis_Prop_Lanyard": 276
-   },
+   "tris": 9942,
+   "objects": [
+    {
+     "object": "Penny_Hollis_Proxy_Body",
+     "kind": "proxy",
+     "tris": 2890
+    },
+    {
+     "object": "Penny_Hollis_Outfit_Hair",
+     "kind": "outfit",
+     "tris": 1548
+    },
+    {
+     "object": "Penny_Hollis_Outfit_Blouse",
+     "kind": "outfit",
+     "tris": 950
+    },
+    {
+     "object": "Penny_Hollis_Outfit_Waders",
+     "kind": "outfit",
+     "tris": 2180
+    },
+    {
+     "object": "Penny_Hollis_Outfit_Cardigan",
+     "kind": "outfit",
+     "tris": 1770
+    },
+    {
+     "object": "Penny_Hollis_Prop_Spectacles",
+     "kind": "prop",
+     "tris": 328
+    },
+    {
+     "object": "Penny_Hollis_Prop_Lanyard",
+     "kind": "prop",
+     "tris": 276
+    }
+   ],
    "material": "M_Toon_Base",
    "height_m": 1.838,
    "palette": [
     {
      "key": "skin",
-     "rgb": [
+     "slot": 72,
+     "slot_name": "CharSkin",
+     "tint": [
       0.94,
       0.76,
       0.62
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "nose",
-     "rgb": [
-      0.978,
-      0.654,
-      0.558
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "eye",
-     "rgb": [
-      1.0,
-      1.0,
-      0.97
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "pupil",
-     "rgb": [
-      0.03,
-      0.03,
-      0.04
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "wrinkle",
-     "rgb": [
-      0.696,
-      0.562,
-      0.459
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "brow",
-     "rgb": [
-      0.55,
-      0.26,
-      0.12
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "mouth",
-     "rgb": [
-      0.25,
-      0.08,
-      0.08
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "hair",
-     "rgb": [
+     "slot": 77,
+     "slot_name": "CharHair",
+     "tint": [
       0.55,
       0.26,
       0.12
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "pencil",
-     "rgb": [
+     "slot": 75,
+     "slot_name": "CharBright",
+     "tint": [
       0.95,
       0.8,
       0.15
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "frame",
-     "rgb": [
-      0.2,
-      0.14,
-      0.1
-     ],
-     "layer": "none"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     },
     {
      "key": "blouse",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.92,
       0.88,
       0.8
-     ],
-     "layer": "shirt"
+     ]
     },
     {
      "key": "waders",
-     "rgb": [
+     "slot": 76,
+     "slot_name": "CharRubber",
+     "tint": [
       0.34,
       0.42,
       0.2
-     ],
-     "layer": "leather"
-    },
-    {
-     "key": "cardigan",
-     "rgb": [
-      0.86,
-      0.62,
-      0.12
-     ],
-     "layer": "sock"
-    },
-    {
-     "key": "patch",
-     "rgb": [
-      0.4,
-      0.25,
-      0.12
-     ],
-     "layer": "leather"
+     ]
     },
     {
      "key": "wader_boot",
-     "rgb": [
+     "slot": 76,
+     "slot_name": "CharRubber",
+     "tint": [
       0.26,
       0.32,
       0.15
-     ],
-     "layer": "leather"
+     ]
     },
     {
      "key": "sole",
-     "rgb": [
-      0.08,
-      0.07,
-      0.06
-     ],
-     "layer": "leather"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
+    },
+    {
+     "key": "cardigan",
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
+      0.86,
+      0.62,
+      0.12
+     ]
+    },
+    {
+     "key": "patch",
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
+      0.4,
+      0.25,
+      0.12
+     ]
     },
     {
      "key": "lan_cord",
-     "rgb": [
+     "slot": 79,
+     "slot_name": "CharAccent",
+     "tint": [
       0.45,
       0.07,
       0.1
-     ],
-     "layer": "webbing"
+     ]
     },
     {
      "key": "badge",
-     "rgb": [
-      0.92,
-      0.92,
-      0.88
-     ],
-     "layer": "none"
+     "slot": 30,
+     "slot_name": "White",
+     "tint": null
     },
     {
      "key": "crest",
-     "rgb": [
+     "slot": 79,
+     "slot_name": "CharAccent",
+     "tint": [
       0.45,
       0.07,
       0.1
-     ],
-     "layer": "none"
+     ]
     }
    ],
    "role": "Marine biologist \"between universities\"",
@@ -1299,170 +1259,144 @@
    "name": "Lorraine Bass",
    "id": "Lorraine_Bass",
    "file": "Art/Export/Villagers/Lorraine_Bass.fbx",
-   "tris": 7462,
-   "tris_by_object": {
-    "Lorraine_Bass_Body": 4066,
-    "Lorraine_Bass_Head": 2582,
-    "Lorraine_Bass_Face": 526,
-    "Lorraine_Bass_Pupil_L": 36,
-    "Lorraine_Bass_Pupil_R": 36,
-    "Lorraine_Bass_Prop_CoffeePot": 216
-   },
+   "tris": 7294,
+   "objects": [
+    {
+     "object": "Lorraine_Bass_Proxy_Body",
+     "kind": "proxy",
+     "tris": 2890
+    },
+    {
+     "object": "Lorraine_Bass_Outfit_Hair",
+     "kind": "outfit",
+     "tris": 1092
+    },
+    {
+     "object": "Lorraine_Bass_Outfit_Blouse",
+     "kind": "outfit",
+     "tris": 1150
+    },
+    {
+     "object": "Lorraine_Bass_Outfit_Apron",
+     "kind": "outfit",
+     "tris": 476
+    },
+    {
+     "object": "Lorraine_Bass_Outfit_Slacks",
+     "kind": "outfit",
+     "tris": 700
+    },
+    {
+     "object": "Lorraine_Bass_Outfit_Shoes",
+     "kind": "outfit",
+     "tris": 770
+    },
+    {
+     "object": "Lorraine_Bass_Prop_CoffeePot",
+     "kind": "prop",
+     "tris": 216
+    }
+   ],
    "material": "M_Toon_Base",
    "height_m": 2.062,
    "palette": [
     {
      "key": "skin",
-     "rgb": [
+     "slot": 72,
+     "slot_name": "CharSkin",
+     "tint": [
       0.94,
       0.76,
       0.62
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "nose",
-     "rgb": [
-      0.978,
-      0.654,
-      0.558
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "eye",
-     "rgb": [
-      1.0,
-      1.0,
-      0.97
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "pupil",
-     "rgb": [
-      0.03,
-      0.03,
-      0.04
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "brow",
-     "rgb": [
-      0.6,
-      0.34,
-      0.18
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "wrinkle",
-     "rgb": [
-      0.696,
-      0.562,
-      0.459
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "mouth",
-     "rgb": [
-      0.25,
-      0.08,
-      0.08
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "hair",
-     "rgb": [
+     "slot": 77,
+     "slot_name": "CharHair",
+     "tint": [
       0.6,
       0.34,
       0.18
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "blouse",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.12,
       0.52,
       0.55
-     ],
-     "layer": "shirt"
+     ]
     },
     {
      "key": "apron",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.93,
       0.9,
       0.8
-     ],
-     "layer": "webbing"
+     ]
     },
     {
      "key": "apron_stripe",
-     "rgb": [
+     "slot": 79,
+     "slot_name": "CharAccent",
+     "tint": [
       0.78,
       0.18,
       0.18
-     ],
-     "layer": "webbing"
+     ]
     },
     {
      "key": "slacks",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.2,
       0.2,
       0.24
-     ],
-     "layer": "cargo"
+     ]
     },
     {
      "key": "flat_shoe",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.12,
       0.12,
       0.14
-     ],
-     "layer": "leather"
+     ]
     },
     {
      "key": "sole",
-     "rgb": [
-      0.08,
-      0.07,
-      0.06
-     ],
-     "layer": "leather"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     },
     {
      "key": "glass",
-     "rgb": [
-      0.7,
-      0.82,
-      0.84
-     ],
-     "layer": "none"
+     "slot": 23,
+     "slot_name": "GlassClear",
+     "tint": null
     },
     {
      "key": "coffee",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.16,
       0.08,
       0.04
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "blk",
-     "rgb": [
-      0.07,
-      0.07,
-      0.08
-     ],
-     "layer": "none"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     }
    ],
    "role": "Cafe owner",
@@ -1483,189 +1417,170 @@
    "name": "Reverend Gil",
    "id": "Reverend_Gil",
    "file": "Art/Export/Villagers/Reverend_Gil.fbx",
-   "tris": 6770,
-   "tris_by_object": {
-    "Reverend_Gil_Body": 4108,
-    "Reverend_Gil_Head": 1950,
-    "Reverend_Gil_Face": 316,
-    "Reverend_Gil_Pupil_L": 36,
-    "Reverend_Gil_Pupil_R": 36,
-    "Reverend_Gil_Prop_BingoDauber": 172,
-    "Reverend_Gil_Prop_Sunglasses": 152
-   },
+   "tris": 7142,
+   "objects": [
+    {
+     "object": "Reverend_Gil_Proxy_Body",
+     "kind": "proxy",
+     "tris": 2890
+    },
+    {
+     "object": "Reverend_Gil_Outfit_Hair",
+     "kind": "outfit",
+     "tris": 460
+    },
+    {
+     "object": "Reverend_Gil_Outfit_Clerical",
+     "kind": "outfit",
+     "tris": 1678
+    },
+    {
+     "object": "Reverend_Gil_Outfit_Collar",
+     "kind": "outfit",
+     "tris": 164
+    },
+    {
+     "object": "Reverend_Gil_Outfit_Stole",
+     "kind": "outfit",
+     "tris": 96
+    },
+    {
+     "object": "Reverend_Gil_Outfit_Trousers",
+     "kind": "outfit",
+     "tris": 760
+    },
+    {
+     "object": "Reverend_Gil_Outfit_Shoes",
+     "kind": "outfit",
+     "tris": 770
+    },
+    {
+     "object": "Reverend_Gil_Prop_BingoDauber",
+     "kind": "prop",
+     "tris": 172
+    },
+    {
+     "object": "Reverend_Gil_Prop_Sunglasses",
+     "kind": "prop",
+     "tris": 152
+    }
+   ],
    "material": "M_Toon_Base",
    "height_m": 1.802,
    "palette": [
     {
      "key": "skin",
-     "rgb": [
+     "slot": 72,
+     "slot_name": "CharSkin",
+     "tint": [
       0.62,
       0.42,
       0.3
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "nose",
-     "rgb": [
-      0.645,
-      0.361,
-      0.27
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "eye",
-     "rgb": [
-      1.0,
-      1.0,
-      0.97
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "pupil",
-     "rgb": [
-      0.03,
-      0.03,
-      0.04
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "brow",
-     "rgb": [
-      0.78,
-      0.78,
-      0.8
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "mouth",
-     "rgb": [
-      0.25,
-      0.08,
-      0.08
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "teeth",
-     "rgb": [
-      0.96,
-      0.95,
-      0.9
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "hair",
-     "rgb": [
+     "slot": 77,
+     "slot_name": "CharHair",
+     "tint": [
       0.78,
       0.78,
       0.8
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "clerical",
-     "rgb": [
+     "slot": 74,
+     "slot_name": "CharDark",
+     "tint": [
       0.1,
       0.1,
       0.12
-     ],
-     "layer": "shirt"
-    },
-    {
-     "key": "collar",
-     "rgb": [
-      0.96,
-      0.96,
-      0.94
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "stole",
-     "rgb": [
-      0.5,
-      0.18,
-      0.62
-     ],
-     "layer": "sock"
+     ]
     },
     {
      "key": "clerical2",
-     "rgb": [
+     "slot": 74,
+     "slot_name": "CharDark",
+     "tint": [
       0.15,
       0.15,
       0.18
-     ],
-     "layer": "shirt"
+     ]
+    },
+    {
+     "key": "collar",
+     "slot": 30,
+     "slot_name": "White",
+     "tint": null
+    },
+    {
+     "key": "stole",
+     "slot": 75,
+     "slot_name": "CharBright",
+     "tint": [
+      0.5,
+      0.18,
+      0.62
+     ]
     },
     {
      "key": "black_trousers",
-     "rgb": [
+     "slot": 74,
+     "slot_name": "CharDark",
+     "tint": [
       0.09,
       0.09,
       0.1
-     ],
-     "layer": "cargo"
+     ]
     },
     {
      "key": "dress_shoe",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.07,
       0.07,
       0.08
-     ],
-     "layer": "leather"
+     ]
     },
     {
      "key": "sole",
-     "rgb": [
-      0.05,
-      0.05,
-      0.05
-     ],
-     "layer": "leather"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     },
     {
      "key": "dauber",
-     "rgb": [
+     "slot": 79,
+     "slot_name": "CharAccent",
+     "tint": [
       0.95,
       0.2,
       0.55
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "dauber_dark",
-     "rgb": [
-      0.15,
-      0.15,
-      0.18
-     ],
-     "layer": "none"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     },
     {
      "key": "dauber_ink",
-     "rgb": [
+     "slot": 79,
+     "slot_name": "CharAccent",
+     "tint": [
       0.6,
       0.05,
       0.35
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "shade",
-     "rgb": [
-      0.04,
-      0.04,
-      0.05
-     ],
-     "layer": "none"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     }
    ],
    "role": "Chapel",
@@ -1679,7 +1594,7 @@
     {
      "object": "Reverend_Gil_Prop_Sunglasses",
      "lost": false,
-     "note": "worn indoors; the eyes underneath are modelled so they can come off"
+     "note": "worn indoors; sit over the painted eyes"
     }
    ],
    "building": "chapel (fixed)",
@@ -1691,134 +1606,138 @@
    "name": "Mr. Fenwick",
    "id": "Mr_Fenwick",
    "file": "Art/Export/Villagers/Mr_Fenwick.fbx",
-   "tris": 8799,
-   "tris_by_object": {
-    "Mr_Fenwick_Body": 5718,
-    "Mr_Fenwick_Head": 2590,
-    "Mr_Fenwick_Face": 328,
-    "Mr_Fenwick_Pupil_L": 36,
-    "Mr_Fenwick_Pupil_R": 36,
-    "Mr_Fenwick_Prop_TinfoilBrim": 91
-   },
+   "tris": 9157,
+   "objects": [
+    {
+     "object": "Mr_Fenwick_Proxy_Body",
+     "kind": "proxy",
+     "tris": 2888
+    },
+    {
+     "object": "Mr_Fenwick_Outfit_Beard",
+     "kind": "outfit",
+     "tris": 700
+    },
+    {
+     "object": "Mr_Fenwick_Outfit_Souwester",
+     "kind": "outfit",
+     "tris": 400
+    },
+    {
+     "object": "Mr_Fenwick_Outfit_Jumper",
+     "kind": "outfit",
+     "tris": 700
+    },
+    {
+     "object": "Mr_Fenwick_Outfit_LongCoat",
+     "kind": "outfit",
+     "tris": 1350
+    },
+    {
+     "object": "Mr_Fenwick_Outfit_Jacket",
+     "kind": "outfit",
+     "tris": 1668
+    },
+    {
+     "object": "Mr_Fenwick_Outfit_Trousers",
+     "kind": "outfit",
+     "tris": 620
+    },
+    {
+     "object": "Mr_Fenwick_Outfit_Wellies",
+     "kind": "outfit",
+     "tris": 740
+    },
+    {
+     "object": "Mr_Fenwick_Prop_TinfoilBrim",
+     "kind": "prop",
+     "tris": 91
+    }
+   ],
    "material": "M_Toon_Base",
    "height_m": 1.728,
    "palette": [
     {
      "key": "skin",
-     "rgb": [
+     "slot": 72,
+     "slot_name": "CharSkin",
+     "tint": [
       0.93,
       0.66,
       0.54
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "nose",
-     "rgb": [
-      0.9,
-      0.5,
-      0.42
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "eye",
-     "rgb": [
-      1.0,
-      1.0,
-      0.97
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "pupil",
-     "rgb": [
-      0.03,
-      0.03,
-      0.04
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "wrinkle",
-     "rgb": [
-      0.688,
-      0.488,
-      0.4
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "beard",
-     "rgb": [
+     "slot": 77,
+     "slot_name": "CharHair",
+     "tint": [
       0.74,
       0.74,
       0.72
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "oil_yellow",
-     "rgb": [
+     "slot": 75,
+     "slot_name": "CharBright",
+     "tint": [
       0.95,
       0.76,
       0.1
-     ],
-     "layer": "vest"
+     ]
     },
     {
      "key": "foil",
-     "rgb": [
-      0.82,
-      0.84,
-      0.86
-     ],
-     "layer": "none"
+     "slot": 18,
+     "slot_name": "Steel",
+     "tint": null
     },
     {
      "key": "sack",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.5,
       0.4,
       0.26
-     ],
-     "layer": "webbing"
+     ]
     },
     {
      "key": "oil_green",
-     "rgb": [
+     "slot": 76,
+     "slot_name": "CharRubber",
+     "tint": [
       0.22,
       0.34,
       0.18
-     ],
-     "layer": "vest"
+     ]
     },
     {
      "key": "rope",
-     "rgb": [
+     "slot": 78,
+     "slot_name": "CharLeather",
+     "tint": [
       0.6,
       0.48,
       0.3
-     ],
-     "layer": "webbing"
+     ]
     },
     {
      "key": "welly",
-     "rgb": [
+     "slot": 76,
+     "slot_name": "CharRubber",
+     "tint": [
       0.07,
       0.07,
       0.08
-     ],
-     "layer": "leather"
+     ]
     },
     {
      "key": "sole",
-     "rgb": [
-      0.05,
-      0.05,
-      0.05
-     ],
-     "layer": "leather"
+     "slot": 19,
+     "slot_name": "Iron",
+     "tint": null
     }
    ],
    "role": "Gull Bar hermit",
@@ -1827,7 +1746,7 @@
     {
      "object": "Mr_Fenwick_Prop_TinfoilBrim",
      "lost": false,
-     "note": "a tinfoil lining wrapped round the sou'wester brim; it is part of his hat, left as an object so it can be swapped for a plain brim"
+     "note": "a faceted tinfoil lining wrapped round the sou'wester brim; swap for a plain brim if wanted"
     }
    ],
    "building": "stilt shack on Gull Bar",
@@ -1839,157 +1758,134 @@
    "name": "Ambrose Lock",
    "id": "Ambrose_Lock",
    "file": "Art/Export/Villagers/Ambrose_Lock.fbx",
-   "tris": 6858,
-   "tris_by_object": {
-    "Ambrose_Lock_Body": 4328,
-    "Ambrose_Lock_Head": 1650,
-    "Ambrose_Lock_Face": 600,
-    "Ambrose_Lock_Pupil_L": 36,
-    "Ambrose_Lock_Pupil_R": 36,
-    "Ambrose_Lock_Prop_PocketWatch": 208
-   },
+   "tris": 6946,
+   "objects": [
+    {
+     "object": "Ambrose_Lock_Proxy_Body",
+     "kind": "proxy",
+     "tris": 2890
+    },
+    {
+     "object": "Ambrose_Lock_Outfit_Hair",
+     "kind": "outfit",
+     "tris": 160
+    },
+    {
+     "object": "Ambrose_Lock_Outfit_Waistcoat",
+     "kind": "outfit",
+     "tris": 700
+    },
+    {
+     "object": "Ambrose_Lock_Outfit_Cardigan",
+     "kind": "outfit",
+     "tris": 1838
+    },
+    {
+     "object": "Ambrose_Lock_Outfit_Trousers",
+     "kind": "outfit",
+     "tris": 700
+    },
+    {
+     "object": "Ambrose_Lock_Prop_Slippers",
+     "kind": "prop",
+     "tris": 450
+    },
+    {
+     "object": "Ambrose_Lock_Prop_PocketWatch",
+     "kind": "prop",
+     "tris": 208
+    }
+   ],
    "material": "M_Toon_Base",
-   "height_m": 1.488,
+   "height_m": 1.463,
    "palette": [
     {
      "key": "skin",
-     "rgb": [
+     "slot": 72,
+     "slot_name": "CharSkin",
+     "tint": [
       0.94,
       0.76,
       0.62
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "nose",
-     "rgb": [
-      0.978,
-      0.654,
-      0.558
-     ],
-     "layer": "skin"
-    },
-    {
-     "key": "eye",
-     "rgb": [
-      1.0,
-      1.0,
-      0.97
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "pupil",
-     "rgb": [
-      0.03,
-      0.03,
-      0.04
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "brow",
-     "rgb": [
-      0.92,
-      0.92,
-      0.92
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "wrinkle",
-     "rgb": [
-      0.696,
-      0.562,
-      0.459
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "white_hair",
-     "rgb": [
+     "slot": 77,
+     "slot_name": "CharHair",
+     "tint": [
       0.92,
       0.92,
       0.92
-     ],
-     "layer": "none"
-    },
-    {
-     "key": "mouth",
-     "rgb": [
-      0.25,
-      0.08,
-      0.08
-     ],
-     "layer": "none"
+     ]
     },
     {
      "key": "waistcoat",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.42,
       0.28,
       0.26
-     ],
-     "layer": "vest"
+     ]
     },
     {
      "key": "cardigan",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.4,
       0.52,
       0.42
-     ],
-     "layer": "sock"
+     ]
     },
     {
      "key": "button",
-     "rgb": [
-      0.3,
-      0.2,
-      0.12
-     ],
-     "layer": "none"
+     "slot": 17,
+     "slot_name": "Bronze",
+     "tint": null
     },
     {
      "key": "highwaist",
-     "rgb": [
+     "slot": 74,
+     "slot_name": "CharDark",
+     "tint": [
       0.4,
       0.4,
       0.42
-     ],
-     "layer": "cargo"
+     ]
     },
     {
      "key": "slipper",
-     "rgb": [
+     "slot": 73,
+     "slot_name": "CharCloth",
+     "tint": [
       0.36,
       0.17,
       0.14
-     ],
-     "layer": "sock"
+     ]
     },
     {
      "key": "gold",
-     "rgb": [
-      0.92,
-      0.75,
-      0.25
-     ],
-     "layer": "none"
+     "slot": 24,
+     "slot_name": "Gold",
+     "tint": null
     },
     {
      "key": "watch_face",
-     "rgb": [
-      0.95,
-      0.94,
-      0.88
-     ],
-     "layer": "none"
+     "slot": 30,
+     "slot_name": "White",
+     "tint": null
     }
    ],
    "role": "Lock-keeper",
    "notes": "Very old and frail, cardigan over a waistcoat, high-waisted trousers, slippers, a pocket watch on a chain (separate prop), big ears, white tufts, eleven years of waiting in the eyelids.",
    "props": [
+    {
+     "object": "Ambrose_Lock_Prop_Slippers",
+     "lost": false,
+     "note": "soft tartan slippers over the proxy feet"
+    },
     {
      "object": "Ambrose_Lock_Prop_PocketWatch",
      "lost": false,

@@ -1,47 +1,153 @@
 # FishGame harbour villagers (design 5.3, tone 2.1), built from text so they are reproducible.
 #
+# PLACEHOLDER SET (orchestrator scope change 2026-10-17): the player-character look is not settled (the fisher base was rejected,
+# the settled direction is faces painted into the head texture, toon shading with outlines, a PEAK-style body). So nothing here
+# carries a face: each villager is
+#   <Name>_Proxy_Body        one smooth skin-coloured proxy (plain sphere head, torso, arms, mitts, legs, feet): stands in until the
+#                            settled base arrives; it fixes the silhouette (height, build, posture) so the 11 read apart at 20 m.
+#   <Name>_Outfit_<Piece>    clothing and head gear (hair, caps, beards), each its own object, fitted to the proxy's torso ladder
+#                            (torso_profile / arm_geom / head sphere), so they can be refitted when the base is settled.
+#   <Name>_Prop_<Thing>      signature props (clipboard, lanyard, knee pads, goggles, coffee pot, dauber, tinfoil brim, pocket watch,
+#                            slippers...), separate objects. The lost wish items (Doug's glasses, Wendell's lucky hat) are props too.
+# No eyes, pupils, nose, ears, brows or mouth: the face briefs (docs/superpowers/handoff/art/harbour-villagers-face-briefs.md) are for
+# the painted-face texture. The builders below are generic geometry helpers; nothing is imported from fg_fisher.py (the few
+# helpers needed are copied from it, marked below).
+#
 # Run (headless, Blender 5.2):
 #   FG_ROOT=$PWD blender -b --factory-startup --python Art/Blender/fg_villagers.py -- model [only_id ...]
-#       builds every villager, bakes AO, exports Art/Export/Villagers/<Name>.fbx + villagers_manifest.json
 #   FG_ROOT=$PWD blender -b --factory-startup --python Art/Blender/fg_villagers.py -- preview <outdir>
-#       lineup (front, 3/4) and face close-ups into outdir (Art/Previews/Villagers)
 #
-# Same family as the fisher (Art/Blender/fg_fisher.py, imported here: it is side-effect free): a true sphere head
-# with flat painted face decals (big white eyes, tiny dot pupils, heavy brows, a big nose), chunky metaball body parts
-# that are voxel remeshed and decimated, the same landmark ladder (head / shoulder / chest / belly / hip / knee / ankle)
-# scaled per person. Adults, not mascots: tone 2.1 (grown-up goofy, Schedule 1, nothing cute). Static A-pose, not rigged;
-# the topology is voxel-remeshed and decimated like the fisher's, which is what the fisher rig skins too.
+# Authoring axes: Blender Z up, the character faces -Y, feet on z = 0, metres, pivot at the base centre. The FBX export (-Z forward,
+# Y up, bake_space_transform) gives Unity's Y up, facing +Z (the harbour's mapping, Unity = (-bx, bz, -by)). Left is Blender +x.
 #
-# Authoring axes are the fisher's: Blender Z up, the character faces -Y, feet on z = 0, metres, pivot at the base centre.
-# The FBX export (-Z forward, Y up, bake_space_transform) turns that into Unity's Y up, facing +Z (the harbour's mapping,
-# Unity = (-bx, bz, -by)). Character left is Blender +x (Unity -x).
-#
-# Encoding (the harbour's, see fg_harbour.py header): UV0 "UVMap" in metres (box projection per face); UV1 "Layer" = (palette
-# slot, texture layer) on every corner; vertex colour "Col" = 0.5 x baked AO; smooth normals; no materials exported.
-# Villager specifics: the palette slot indexes the per-model colour list in villagers_manifest.json (not the harbour's S table),
-# and the texture layer is a NEW character range (CHAR_LAYERS, 20+) that maps to the greyscale detail maps in
-# Art/Textures/Fisher (colour comes from the palette, detail * 2 * tint as in the fisher). Nothing in the harbour range is renumbered.
-#
-# Export objects per villager: <Name>_Body (clothes, limbs, hands, feet), <Name>_Head (head sphere, ears, nose, hair, hat),
-# <Name>_Face (eye whites, lids, brows, mouth, wrinkles; decals on the head), <Name>_Pupil_L / _Pupil_R (separate so a rig can
-# slide them over the eye whites), and signature props as their own objects: <Name>_Prop_<Thing>. Props named *_Lost_* are the
-# villager's missing wish items (hidden until the crew finds them); the rest are carried or worn.
-import bpy, bmesh, math, os, sys, json, zlib, random
+# Encoding (the harbour's, see fg_harbour.py header): UV0 "UVMap" in metres (box projection per face); UV1 "Layer" = (palette slot, 0)
+# on every corner (no character texture layers: those belong to the settled base); vertex colour "Col" = 0.5 x (0.5 + 0.5 x baked AO);
+# smooth normals; no materials exported. Palette: the SHARED palette. Fixed slots are reused by name from harbour-props (16-31:
+# Brass, Bronze, Steel, Iron, GlassGreen, GlassClear, Gold, Paper, Khaki, White, Navy); new character slots are 72-79, which are TINTABLE
+# (colour = slot colour x the per-key tint listed in villagers_manifest.json), because people need many more colours than 8 slots.
+import bpy, bmesh, math, os, sys, json, zlib, random, types
 from mathutils import Vector, Matrix, Euler
 from mathutils.bvhtree import BVHTree
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-import fg_fisher as F   # borrowed: material, ball, capsule, mirror_x, lathe, decal, ellipse, stroke, ctx_select, sphere_point
+
+# ---- generic metaball / lathe helpers, COPIED from Art/Blender/fg_fisher.py (builders only: no face, head or body code) ----
+SURF = 0.575   # metaball surface radius / element radius at stiffness 2, threshold 0.6
+F = types.SimpleNamespace(HEAD_C=(0.0, 0.0, 1.4), HEAD_R=0.25)
+
+
+def _reset():
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    sc = bpy.context.scene
+    sc.unit_settings.system = 'METRIC'
+    sc.unit_settings.scale_length = 1.0
+
+
+def _material(name, rgb, rough=0.75):
+    m = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+    m.use_nodes = True
+    bsdf = m.node_tree.nodes['Principled BSDF']
+    bsdf.inputs['Base Color'].default_value = (*rgb, 1.0)
+    bsdf.inputs['Roughness'].default_value = rough
+    return m
+
+
+def _ball(c, r, s=(1, 1, 1), rot=(0, 0, 0)):
+    """An element whose *surface* is an ellipsoid of radius r scaled by s (rot in degrees, XYZ)."""
+    return ('ELLIPSOID', Vector(c), r / SURF, Vector(s), Euler([math.radians(a) for a in rot]).to_quaternion())
+
+
+def _capsule(a, b, r):
+    a, b = Vector(a), Vector(b)
+    d = b - a
+    q = Vector((1, 0, 0)).rotation_difference(d.normalized())
+    return ('CAPSULE', (a + b) / 2, r / SURF, Vector((d.length / 2, 1, 1)), q)
+
+
+def _ctx_select(ob):
+    for o in bpy.context.selected_objects:
+        o.select_set(False)
+    ob.select_set(True)
+    bpy.context.view_layer.objects.active = ob
+
+
+def _mirror_x(elems):
+    out = list(elems)
+    for kind, co, rad, size, q in elems:
+        if abs(co.x) < 1e-6:
+            continue
+        c = Vector((-co.x, co.y, co.z))
+        e = q.to_euler()
+        out.append((kind, c, rad, size, Euler((e.x, -e.y, -e.z)).to_quaternion()))
+    return out
+
+
+def _lathe(name, profile, mat, segs=48):
+    """Revolve a (radius, z) profile around Z (the top is capped)."""
+    bm = bmesh.new()
+    rings = []
+    for r, z in profile:
+        rings.append([bm.verts.new((r * math.cos(2 * math.pi * i / segs), r * math.sin(2 * math.pi * i / segs), z)) for i in range(segs)])
+    for a, b in zip(rings, rings[1:]):
+        for i in range(segs):
+            j = (i + 1) % segs
+            bm.faces.new((a[i], a[j], b[j], b[i]))
+    c = bm.verts.new((0, 0, profile[-1][1]))
+    for i in range(segs):
+        bm.faces.new((rings[-1][i], rings[-1][(i + 1) % segs], c))
+    me = bpy.data.meshes.new(name)
+    bm.normal_update()
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    for p in me.polygons:
+        p.use_smooth = True
+    me.materials.append(mat)
+    return ob
+
+
+def _sphere_point(u, v, lift=0.0):
+    """A point on the head sphere, u/v metres right/up of the face centre (which faces -Y), lifted off it."""
+    R = F.HEAD_R
+    yaw, pitch = u / R, v / R
+    d = Vector((math.sin(yaw) * math.cos(pitch), -math.cos(yaw) * math.cos(pitch), math.sin(pitch)))
+    return Vector(F.HEAD_C) + d * (R + lift)
+
+
+F.reset, F.material, F.ball, F.capsule, F.ctx_select, F.mirror_x, F.lathe, F.sphere_point = (
+    _reset, _material, _ball, _capsule, _ctx_select, _mirror_x, _lathe, _sphere_point)
 
 ROOT = os.environ.get('FG_ROOT') or os.path.abspath(os.path.join(HERE, '..', '..'))
 EXPORT_DIR = os.path.join(ROOT, 'Art', 'Export', 'Villagers')
 MANIFEST = os.path.join(EXPORT_DIR, 'villagers_manifest.json')
 SEED = 0xF15ED0C5
 
-# New character texture layers (greyscale detail maps from the fisher, Art/Textures/Fisher/<name>_detail.png).
-CHAR_LAYERS = dict(none=0, skin=20, shirt=21, vest=22, hat=23, cargo=24, sock=25, leather=26, webbing=27)
-FISHER_REF = dict(fisher_head_r=0.262, fisher_head_z=1.37, fisher_shoulder=1.05, fisher_hip=0.56)
+# Shared palette. Fixed slots reused by name/value from harbour-props (fg_props.py P / PAL); (slot, preview sRGB).
+FIXED = dict(Brass=(16, (0.78, 0.60, 0.22)), Bronze=(17, (0.58, 0.38, 0.20)), Steel=(18, (0.52, 0.56, 0.60)), Iron=(19, (0.24, 0.25, 0.28)),
+             GlassGreen=(20, (0.28, 0.58, 0.40)), GlassClear=(23, (0.80, 0.89, 0.90)), Gold=(24, (0.93, 0.74, 0.20)), Paper=(25, (0.92, 0.86, 0.68)),
+             Khaki=(29, (0.66, 0.58, 0.40)), White=(30, (0.95, 0.96, 0.98)), Navy=(31, (0.16, 0.24, 0.38)))
+# New slots (villagers' range 72-79): tintable, with their default colour.
+TINTED = dict(CharSkin=(72, (0.90, 0.68, 0.54)), CharCloth=(73, (0.85, 0.82, 0.74)), CharDark=(74, (0.18, 0.18, 0.20)), CharBright=(75, (0.95, 0.70, 0.12)),
+              CharRubber=(76, (0.30, 0.38, 0.22)), CharHair=(77, (0.65, 0.62, 0.58)), CharLeather=(78, (0.40, 0.26, 0.14)), CharAccent=(79, (0.80, 0.15, 0.18)))
+# Colour key -> slot name. Unlisted keys fall back to CharDark (luminance < 0.25) or CharCloth.
+KEYSLOT = dict(
+    skin='CharSkin', nose='CharSkin',
+    hair='CharHair', beard='CharHair', moustache='CharHair', white_hair='CharHair',
+    shirt='CharCloth', tee='CharCloth', blouse='CharCloth', tank='CharCloth', jumper='CharCloth', trim='CharCloth', cardigan='CharCloth', waistcoat='CharCloth',
+    sack='CharCloth', slacks='CharCloth', apron='CharCloth', cap='CharCloth', slipper='CharCloth',
+    clerical='CharDark', clerical2='CharDark', black_trousers='CharDark', baggy='CharDark', highwaist='CharDark', derby_shorts='CharDark', denim='CharDark',
+    denim_dark='CharDark', soot='CharDark', pad='CharDark',
+    navy='Navy', hivis='CharBright', oil_yellow='CharBright', stole='CharBright', pencil='CharBright',
+    oil_green='CharRubber', waders='CharRubber', wader_boot='CharRubber', welly='CharRubber', rubber='Iron', sole='Iron', sole_white='White',
+    blackshoe='CharLeather', brown_shoe='CharLeather', work_boot='CharLeather', boot='CharLeather', flat_shoe='CharLeather', dress_shoe='CharLeather',
+    sneaker='White', board='CharLeather', apron_tie='CharLeather', patch='CharLeather', coffee='CharLeather', rope='CharLeather', stain_bait='CharLeather',
+    stain_fish='Steel', reflect='White', lan_cord='CharAccent', badge='White', badge_face='CharAccent', crest='CharAccent', apron_stripe='CharAccent',
+    headband='CharAccent', padcap='CharAccent', dauber='CharAccent', dauber_ink='CharAccent', lucky='CharAccent',
+    metal='Steel', foil='Steel', frame='Iron', blk='Iron', shade='Iron', dauber_dark='Iron', paper='Paper', glass='GlassClear', weldglass='GlassGreen',
+    collar='White', watch_face='White', button='Bronze', gold='Gold', lucky_gold='Gold')
+SLOT_OVERRIDES = {'Marge_Tackleby': dict(apron='Khaki')}
+FISHER_REF = dict(fisher_head_r=0.262, fisher_head_z=1.37, fisher_shoulder=1.05, fisher_hip=0.56)   # the landmark ladder the proxies keep
 
 
 def rng(stream):
@@ -227,7 +333,8 @@ class Build:
     def __init__(self, spec):
         self.s = spec
         self.id = spec['id']
-        self.slots = []        # [{key, rgb, layer}] -> palette slot = index
+        self.slots = []        # [{key, slot, slot_name, tint}]
+        self.cur = None
         self.matcache = {}
         self.groups = {}       # group name -> [objects]
         self.props = []        # [{name, group, lost, note}]
@@ -249,21 +356,34 @@ class Build:
         F.HEAD_R = self.hr
 
     # ---- palette / materials
-    def mat(self, key, rgb=None, layer=None):
-        """Material for a colour key. The first call with rgb defines the palette entry (slot = order of definition)."""
+    def mat(self, key):
+        """Material for a colour key: shared slot by KEYSLOT (fixed palette colour, or the per-villager tint on a 72-79 slot)."""
         if key in self.matcache:
             return self.matcache[key]
-        if rgb is None:
-            rgb, layer = self.s['pal'][key][0], self.s['pal'][key][1]
-        slot = len(self.slots)
-        self.slots.append(dict(key=key, rgb=[round(c, 3) for c in rgb], layer=layer or 'none'))
+        tint = self.s['pal'][key][0]
+        name = SLOT_OVERRIDES.get(self.id, {}).get(key) or KEYSLOT.get(key)
+        if name is None:
+            name = 'CharDark' if (0.299 * tint[0] + 0.587 * tint[1] + 0.114 * tint[2]) < 0.25 else 'CharCloth'
+        if name in FIXED:
+            slot, rgb = FIXED[name]
+            rec = dict(key=key, slot=slot, slot_name=name, tint=None)
+        else:
+            slot, _ = TINTED[name]
+            rgb = tint
+            rec = dict(key=key, slot=slot, slot_name=name, tint=[round(c, 3) for c in tint])
+        self.slots.append(rec)
         m = F.material('%s_%s' % (self.id, key), rgb, rough=0.8)
         m['fg_slot'] = slot
-        m['fg_layer'] = CHAR_LAYERS[layer or 'none']
         self.matcache[key] = m
         return m
 
+    def g(self, name):
+        """Set the garment (export object) that body/head pieces built next belong to."""
+        self.cur = name
+
     def put(self, group, ob):
+        if group in ('body', 'head'):
+            group = 'outfit_' + (self.cur or 'Misc')
         self.groups.setdefault(group, []).append(ob)
         return ob
 
@@ -341,7 +461,8 @@ class Build:
         el = F.mirror_x(self.torso_elems(grow, **kw) + list(extra))
         return self.put(group, meta(self.id + '_' + name, el, self.pal(key), tris=tris, smooth_iter=3))
 
-    def build_legs(self, trouser, shoe, sole, long=1.0, tris=900, skin='skin', tw=1.0, flare=0.0, boot_top=0.07, shoe_tris=550):
+    def build_legs(self, trouser, shoe, sole, long=1.0, tris=900, skin=None, tw=1.0, flare=0.0, boot_top=0.07, shoe_tris=550, shoe_g='Shoes'):
+        """Trousers or shorts (current garment) and, when given, shoes + soles (garment shoe_g). The legs themselves are the proxy's."""
         s = self.s
         lw = s.get('lw', s.get('w', 1.0))
         x = 0.105 * lw
@@ -356,8 +477,7 @@ class Build:
             hem = hip - (hip - kn) * 2.0 * long * 0.9   # shorts hem, fraction of the thigh
             el = [F.capsule((x, 0, hip + 0.03), (x, -0.003, max(hem, kn)), r1)]
             self.put('body', meta(self.id + '_Shorts', F.mirror_x(el), self.pal(trouser), tris=tris * 0.55, smooth_iter=3))
-            skin_el = [F.capsule((x, 0, max(hem, kn) + 0.02), (x, 0, an + 0.07), r2 * 0.97)]
-            self.put('body', meta(self.id + '_LegSkin', F.mirror_x(skin_el), self.pal(skin), tris=tris * 0.45, smooth_iter=3))
+        self.g(shoe_g)
         sk = s.get('shoe_len', 1.0)
         if shoe:
             ft = [F.ball((x, -0.045 * sk, 0.075), 0.098, (1.0, 1.55 * sk, 0.78)), F.capsule((x, 0, 0.08), (x, 0, an + boot_top), 0.095 * (0.5 + 0.5 * tw) if boot_top > 0.2 else 0.095)]
@@ -366,36 +486,52 @@ class Build:
             so = [F.ball((x, -0.045 * sk, 0.022), 0.10, (1.05, 1.6 * sk, 0.25))]
             self.put('body', meta(self.id + '_Soles', F.mirror_x(so), self.pal(sole), tris=220, smooth_iter=2, voxel=0.009))
 
-    def build_arms(self, sleeve, sleeve_key, skin='skin', tris_arm=420, tris_sleeve=420, cuff=None, glove=None):
-        """sleeve = fraction of the arm covered (0 none .. 1 to the wrist)."""
-        s = self.s
-        th = s.get('thick', 1.0)
-        elA, elS, elH = [], [], []
+    def build_arms(self, sleeve, sleeve_key, skin=None, tris_arm=None, tris_sleeve=420, cuff=None, glove=None):
+        """Sleeves only (current garment); sleeve = fraction of the arm covered (0 none .. 1 to the wrist). Arms and hands are the proxy's."""
+        th = self.s.get('thick', 1.0)
+        elS = []
+        for sign in (1, -1):
+            S, d, L = self.arm_geom(sign)
+            if sleeve > 0:
+                e = S + d * (L * min(sleeve, 1.0) + (0.01 if sleeve < 1 else 0.03))
+                elS.append(F.capsule(S - d * 0.02, e, 0.060 * th + 0.024 * (1.0 if sleeve < 1 else 0.7)))
+        if elS:
+            self.put('body', meta(self.id + '_Sleeves', elS, self.pal(sleeve_key), tris=tris_sleeve, smooth_iter=3, voxel=0.009))
+
+    def build_proxy(self, skin='skin'):
+        """The proxy body: plain sphere head, torso, arms, mitts, legs and feet in one skin object. No face, no ears, no nose."""
+        hr, th, s = self.hr, self.s.get('thick', 1.0), self.s
+        mat = self.pal(skin)
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=16, radius=hr, location=F.HEAD_C)
+        head = bpy.context.active_object
+        head.name = self.id + '_ProxyHead'
+        bpy.ops.object.transform_apply(location=True)
+        finish(head, mat, voxel=0)
+        parts = [head]
+        parts.append(meta(self.id + '_ProxyTorso', F.mirror_x(self.torso_elems(-0.012)), mat, tris=650, smooth_iter=3))
+        elA, elH = [], []
         for sign in (1, -1):
             S, d, L = self.arm_geom(sign)
             wr = S + d * L
-            ar = 0.060 * th
-            if sleeve < 1.0:
-                a0 = S + d * (L * max(sleeve, 0.0) - 0.03)
-                elA.append(F.capsule(a0, wr, ar))
-            if sleeve > 0:
-                e = S + d * (L * min(sleeve, 1.0) + (0.01 if sleeve < 1 else 0.03))
-                elS.append(F.capsule(S - d * 0.02, e, ar + 0.024 * (1.0 if sleeve < 1 else 0.7)))
-            # hand: palm + fingers + thumb, fingers along the arm direction
+            elA.append(F.capsule(S - d * 0.02, wr, 0.060 * th))
             hc = wr + d * 0.05
-            elH.append(F.ball(hc, 0.07 * th, (0.72, 0.95, 1.0), rot=(0, 0, 0)))
-            for off in (-0.032, 0.0, 0.032):
-                a = hc + d * 0.035 + V(0, -off, 0)
-                elH.append(F.capsule(a, a + d * (0.085 - abs(off) * 0.4), 0.026 * th))
+            elH.append(F.ball(hc, 0.07 * th, (0.72, 0.95, 1.0)))
+            elH.append(F.capsule(hc + d * 0.035, hc + d * 0.12, 0.032 * th))
             tb = hc + V(0, -0.05, 0.0)
             elH.append(F.capsule(tb, tb + V(sign * 0.012, -0.025, -0.06), 0.025 * th))
-        if elA:
-            self.put('body', meta(self.id + '_Arms', elA, self.pal(skin), tris=tris_arm, smooth_iter=3, voxel=0.009))
-        if elS:
-            self.put('body', meta(self.id + '_Sleeves', elS, self.pal(sleeve_key), tris=tris_sleeve, smooth_iter=3, voxel=0.009))
-        hk = glove or skin
-        self.put('body', meta(self.id + '_Hands', elH, self.pal(hk), tris=640, smooth_iter=2, voxel=0.006, res=0.010))
-        self.hands = {sign: (self.arm_geom(sign)[0] + self.arm_geom(sign)[1] * self.arm_geom(sign)[2]) for sign in (1, -1)}
+        parts.append(meta(self.id + '_ProxyArms', elA, mat, tris=300, smooth_iter=3, voxel=0.009))
+        parts.append(meta(self.id + '_ProxyHands', elH, mat, tris=360, smooth_iter=2, voxel=0.007, res=0.011))
+        lw = s.get('lw', s.get('w', 1.0))
+        x = 0.105 * lw
+        r1, r2 = 0.115 * s.get('tw', 1.0) - 0.016, 0.092 * s.get('tw', 1.0) - 0.016
+        legs = [F.capsule((x, 0, self.hip + 0.03), (x, -0.005, self.knee), r1), F.capsule((x, -0.005, self.knee), (x, 0.0, self.ankle + 0.06), r2)]
+        parts.append(meta(self.id + '_ProxyLegs', F.mirror_x(legs), mat, tris=420, smooth_iter=3))
+        sk = s.get('shoe_len', 1.0)
+        feet = [F.ball((x, -0.045 * sk, 0.062), 0.085, (1.0, 1.5 * sk, 0.7))]
+        parts.append(meta(self.id + '_ProxyFeet', F.mirror_x(feet), mat, tris=200, smooth_iter=2, voxel=0.009))
+        ob = self._join(self.id + '_ProxyBody', parts)
+        self.groups.setdefault('proxy', []).append(ob)
+        return ob
 
     def hand_pos(self, sign):
         S, d, L = self.arm_geom(sign)
@@ -618,127 +754,6 @@ class Build:
         return self.shell(part, key, grow, neck=0, sleeves=True, thick=thick, tris=tris, group=group, lower=(z0 if z0 < self.hip else None), boxes=boxes)
 
 
-    # ---- the head
-    def build_head(self, skin='skin', ear_scale=1.0, seg=32, ring=16):
-        hr, k = self.hr, self.k
-        bpy.ops.mesh.primitive_uv_sphere_add(segments=seg, ring_count=ring, radius=hr, location=F.HEAD_C)
-        head = bpy.context.active_object
-        head.name = self.id + '_HeadSphere'
-        bpy.ops.object.transform_apply(location=True)
-        finish(head, self.pal(skin), voxel=0)
-        self.put('head', head)
-        ears = F.mirror_x([F.ball((hr * 0.97, 0.01 * k + self.hy * 0, self.hz - 0.02 * k), 0.045 * k * ear_scale, (0.5, 0.85, 1.0))])
-        self.put('head', meta(self.id + '_Ears', ears, self.pal(skin), tris=170, voxel=0.006, res=0.01, smooth_iter=2))
-
-    def nose(self, key='nose', r=0.05, sx=1.08, sy=0.9, sz=0.95, v=-0.098, droop=0.0, tris=360):
-        k = self.k
-        p = F.sphere_point(0, v * k)
-        d = (p - Vector(F.HEAD_C)).normalized()
-        r *= k
-        el = [F.ball(p + d * r * 0.35, r, (sx, sy, sz)),
-              F.ball(p + d * r * 0.1 + V(0, 0, 0.035 * k), r * 0.5, (0.8, 0.9, 1.3))]
-        if droop:
-            el.append(F.ball(p + d * r * 0.5 + V(0, 0, -droop * k), r * 0.55, (1.0, 0.9, 0.9)))
-        self.put('head', meta(self.id + '_Nose', el, self.pal(key), voxel=0.0045, res=0.008, tris=tris, smooth_iter=2))
-
-    # ---- face decals
-    def face(self, **o):
-        """Eyes, pupils, lids, brows, mouth, wrinkles. All lengths in fisher metres, scaled by the head size."""
-        k = self.k
-        eye_u, eye_v = o.get('eye_u', 0.078) * k, o.get('eye_v', -0.038) * k
-        eye_w, eye_h = o.get('eye_w', 0.110) * k, o.get('eye_h', 0.118) * k
-        prad = o.get('pupil_r', 0.0145) * k
-        gx, gy = o.get('gaze', (0.0, 0.0))
-        conv = o.get('converge', 0.004)
-        skin_dark = o.get('wrinkle_key', 'wrinkle')
-        n_eye = 16
-        for side, sx in (('L', 1), ('R', -1)):
-            u = sx * eye_u
-            ow = self.put('face', self.decal(self.id + '_EyeWhite_' + side, F.ellipse(u, eye_v, eye_w, eye_h, n=n_eye), 'eye', 0.0015, 3))
-            pu = u + gx * k - sx * conv * k
-            pv = eye_v + (-0.006 + gy) * k
-            pu = max(min(pu, u + eye_w * 0.34), u - eye_w * 0.34)
-            pob = self.decal(self.id + '_Pupil_' + side, F.ellipse(pu, pv, prad * 2, prad * 2.1, n=12), 'pupil', 0.0030, 2)
-            self.put('pupil_' + side, pob)
-            if o.get('lid_top', 0) > 0:
-                self.put('face', self.lid(u, eye_v, eye_w, eye_h, o['lid_top'], True, o.get('lid_key', 'skin')))
-            if o.get('lid_bot', 0) > 0:
-                self.put('face', self.lid(u, eye_v, eye_w, eye_h, o['lid_bot'], False, o.get('lid_key', 'skin')))
-            if o.get('bags'):
-                self.put('face', self.decal(self.id + '_Bag_' + side, F.ellipse(u, eye_v - eye_h * 0.56, eye_w * 0.95, 0.022 * k, n=14),
-                                            skin_dark, 0.0011, 2))
-            # brow
-            b = o.get('brow', {})
-            bw, bt = b.get('w', 0.100) * k, b.get('thick', 0.020) * k
-            inner, outer, arch, bv = b.get('inner', 0.0), b.get('outer', -0.012), b.get('arch', 0.006), b.get('v', 0.036) * k
-            if sx < 0 and 'raise_R' in b:
-                bv += b['raise_R'] * k
-            if sx > 0 and 'raise_L' in b:
-                bv += b['raise_L'] * k
-            pts = []
-            for i in range(7):
-                t = i / 6 * 2 - 1
-                tt = (t + 1) / 2
-                pts.append((u + sx * t * bw / 2, bv + arch * k * (1 - t * t) + (inner + (outer - inner) * tt) * k))
-            self.put('face', self.decal(self.id + '_Brow_' + side, F.stroke(pts, bt), b.get('key', 'brow'), 0.0025, 2))
-            # wrinkles (crow's feet)
-            if o.get('wrinkles', 0):
-                for i in range(o['wrinkles']):
-                    a = math.radians(-20 + 22 * i)
-                    p0 = (u + sx * (eye_w / 2 + 0.006 * k), eye_v)
-                    p1 = (p0[0] + sx * math.cos(a) * 0.028 * k, p0[1] + math.sin(a) * 0.028 * k)
-                    self.put('face', self.decal(self.id + '_Crow_%s%d' % (side, i), F.stroke([p0, p1], 0.0042 * k), skin_dark, 0.0012, 1))
-        # mouth
-        m = o.get('mouth', {})
-        mv, mw = m.get('v', -0.166) * k, m.get('w', 0.085) * k
-        style = m.get('style', 'smirk')
-        mu = m.get('u', 0.0) * k
-        if style in ('smirk', 'flat', 'frown', 'scowl', 'pursed'):
-            curve, tilt = dict(smirk=(0.010, 0.010), flat=(0.0, 0.0), frown=(-0.020, 0.0), scowl=(-0.016, -0.004), pursed=(0.004, 0.0))[style]
-            curve, tilt = m.get('curve', curve), m.get('tilt', tilt)
-            if style == 'pursed':
-                mw *= 0.5
-            pts = [(mu + t * mw / 2, mv + curve * k * t * t + tilt * k * t) for t in [i / 10 * 2 - 1 for i in range(11)]]
-            self.put('face', self.decal(self.id + '_Mouth', F.stroke(pts, m.get('thick', 0.011) * k), 'mouth', 0.0015, 2))
-        elif style == 'grin':
-            self.put('face', self.decal(self.id + '_Mouth', F.ellipse(mu, mv - 0.004 * k, mw * 1.35, 0.052 * k, n=18, squash_top=0.5), 'mouth', 0.0015, 2))
-            self.put('face', self.decal(self.id + '_Teeth', [(mu - mw * 0.6 + i / 8 * mw * 1.2, mv + 0.020 * k - 0.004 * k * (1 - abs(i - 4) / 4)) for i in range(9)]
-                                        + [(mu + mw * 0.58 - i / 8 * mw * 1.16, mv + 0.0 * k) for i in range(9)], 'teeth', 0.0021, 1))
-        elif style == 'none':
-            pass
-        elif style == 'o':
-            self.put('face', self.decal(self.id + '_Mouth', F.ellipse(mu, mv, 0.03 * k, 0.034 * k, n=12), 'mouth', 0.0015, 2))
-        # forehead / cheek wrinkles
-        for i in range(o.get('brow_lines', 0)):
-            v = 0.078 * k + i * 0.016 * k
-            pts = [(t * 0.07 * k, v + 0.006 * k * (1 - t * t)) for t in [j / 4 * 2 - 1 for j in range(5)]]
-            self.put('face', self.decal(self.id + '_Line%d' % i, F.stroke(pts, 0.004 * k), skin_dark, 0.0012, 1))
-        if o.get('cheek_lines'):
-            for sx in (1, -1):
-                pts = [(sx * (0.045 + 0.012 * t) * k, (-0.105 - 0.045 * t) * k) for t in [j / 4 for j in range(5)]]
-                self.put('face', self.decal(self.id + '_Cheek%d' % sx, F.stroke(pts, 0.0045 * k), skin_dark, 0.0012, 1))
-        if o.get('stubble'):
-            self.put('face', self.decal(self.id + '_Stubble', F.ellipse(0, -0.165 * k, 0.30 * k, 0.165 * k, n=24, squash_top=0.35), 'stubble', 0.0008, 3))
-
-    def decal(self, name, outline, key, lift, rings):
-        ob = F.decal(name, outline, self.pal(key), lift=lift, rings=rings)
-        return ob
-
-    def lid(self, u, v, w, h, frac, top, key):
-        """A skin-coloured lid over the top (or bottom) `frac` of an eye, with a dark lid line."""
-        w2, h2 = w * 1.10, h * 1.10
-        ycut = v + h / 2 - frac * h if top else v - h / 2 + frac * h
-        pts = []
-        for i in range(20):
-            a = 2 * math.pi * i / 20
-            y = v + math.sin(a) * h2 / 2
-            if (top and y < ycut) or (not top and y > ycut):
-                y = ycut
-            pts.append((u + math.cos(a) * w2 / 2, y))
-        lid = self.decal(self.id + '_Lid', pts, key, 0.0036, 2)
-        line = self.decal(self.id + '_LidLine', F.stroke([(u - w / 2 * 1.02, ycut), (u, ycut), (u + w / 2 * 1.02, ycut)], 0.005 * self.k), 'brow', 0.0040, 1)
-        return self._join(self.id + '_LidJoin', [lid, line])
-
     def _join(self, name, objs):
         if len(objs) == 1:
             return objs[0]
@@ -786,7 +801,7 @@ def prepare(ob):
             print('NONE MATERIAL on', ob.name)
             slotinfo.append((0, 0))
             continue
-        slotinfo.append((m.get('fg_slot', 0), m.get('fg_layer', 0)))
+        slotinfo.append((m.get('fg_slot', 0), 0))
     for p in me.polygons:
         slot, layer = slotinfo[p.material_index] if p.material_index < len(slotinfo) else (0, 0)
         for li in p.loop_indices:
@@ -917,48 +932,60 @@ def export_if_changed(objs, path):
 
 def ground_feet(b):
     """Feet on z = 0 exactly (the metaball soles overshoot by a couple of centimetres): shift every object of this villager."""
-    body = [o for o in b.groups.get('body', []) if o.name.startswith(b.id + '_Soles') or o.name.startswith(b.id + '_Shoes')]
-    low = min(v.co.z for o in body for v in o.data.vertices)
+    low = min(v.co.z for g, obs in b.groups.items() if not g.startswith('prop_') for o in obs for v in o.data.vertices)
     for obs in b.groups.values():
         for o in obs:
             o.data.transform(Matrix.Translation((0, 0, -low)))
     b.hz -= low
 
 
+def export_name(g):
+    if g == 'proxy':
+        return 'Proxy_Body'
+    if g.startswith('outfit_'):
+        return 'Outfit_' + g[7:]
+    if g.startswith('prop_'):
+        return 'Prop_' + g[5:]
+    return g
+
+
 def finalize(b):
-    """Join each group into one object per export name, then UVs, colours, AO. Returns [(export name, object, group)]."""
+    """Join each group into one object per export name. Returns [(group, object)] in order: proxy, outfits, props."""
     ground_feet(b)
     out = []
-    order = ['body', 'head', 'face', 'pupil_L', 'pupil_R']
-    names = dict(body='Body', head='Head', face='Face', pupil_L='Pupil_L', pupil_R='Pupil_R')
-    for g in order + [g for g in b.groups if g not in order]:
+    order = ['proxy'] + [g for g in b.groups if g.startswith('outfit_')] + [g for g in b.groups if g.startswith('prop_')]
+    for g in order:
         objs = b.groups.get(g)
         if not objs:
             continue
         for o in objs:
             if not o.data.materials or None in list(o.data.materials):
                 print('NOMAT', o.name, list(o.data.materials))
-            for p in o.data.polygons:
-                p.use_smooth = True
-        nm = names.get(g) or ('Prop_' + g[5:] if g.startswith('prop_') else g)
-        ob = b._join(b.id + '_' + nm, objs) if len(objs) > 1 else objs[0]
-        if len(objs) == 1:
-            ob.name = b.id + '_' + nm
+        ob = b._join(b.id + '_' + export_name(g), objs) if len(objs) > 1 else objs[0]
+        ob.name = b.id + '_' + export_name(g)
         out.append((g, ob))
     for g, ob in out:
         F.ctx_select(ob)
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+        for p in ob.data.polygons:
+            p.use_smooth = True
     return out
 
 
 def model(only=None):
     os.makedirs(EXPORT_DIR, exist_ok=True)
-    manifest = dict(note='Villager FBX files (static A-pose, not rigged). See docs/superpowers/handoff/art/harbour-villagers.md.',
-                    encoding=dict(uv0='UVMap, metres, box projection per face', uv1='Layer = (palette slot, texture layer); slot indexes models[].palette, layer = CHAR_LAYERS',
-                                  col='Col = 0.5 x (0.5 + 0.5 x AO)', char_layers=CHAR_LAYERS,
-                                  layer_textures={str(v): 'Art/Textures/Fisher/%s_detail.png' % k for k, v in CHAR_LAYERS.items() if v},
-                                  axes='Unity metres, feet on y=0, facing +z, pivot at the base centre'),
-                    models=[])
+    manifest = dict(
+        note='Villager FBX files: PLACEHOLDER proxy bodies with separate outfit and prop objects (static A-pose, no faces, not rigged). '
+             'See docs/superpowers/handoff/art/harbour-villagers.md.',
+        encoding=dict(uv0='UVMap, metres, box projection per face', uv1='Layer = (palette slot, 0): shared palette slots, no character texture layers',
+                      col='Col = 0.5 x (0.5 + 0.5 x AO)', axes='Unity metres, feet on y=0, facing +z, pivot at the base centre'),
+        palette=dict(
+            fixed_reused={n: dict(slot=v[0], colour=list(v[1])) for n, v in FIXED.items()},
+            new_tintable={n: dict(slot=v[0], colour=list(v[1])) for n, v in TINTED.items()},
+            note='Fixed slots (16-31) are harbour-props slots reused by name: use the palette colour. New slots 72-79 (villagers range) are TINTABLE: '
+                 'colour = slot colour x the per-key tint in models[].palette (a MaterialPropertyBlock colour per object/key).'),
+        placeholders=['*_Proxy_Body (whole body: plain head, torso, arms, mitts, legs, feet)', 'hands (mitts)', 'no eyes, nose, ears, brows or mouth anywhere'],
+        models=[])
     for spec in SPECS:
         if only and spec['id'] not in only:
             continue
@@ -972,20 +999,19 @@ def model(only=None):
             prepare(ob)
             write_col(ob, ao)
             ob.data.materials.clear()
-        for ob in objs:
-            for p in ob.data.polygons:
-                p.use_smooth = True
         path = os.path.join(EXPORT_DIR, spec['file'] + '.fbx')
         res = export_if_changed(objs, path)
         tris = {ob.name: tri_count(ob) for ob in objs}
         total = sum(tris.values())
+        kinds = {g: ('proxy' if g == 'proxy' else 'outfit' if g.startswith('outfit_') else 'prop') for g, _ in parts}
         xs = [v.co for ob in objs for v in ob.data.vertices]
-        ent = dict(name=spec['name'], id=spec['id'], file='Art/Export/Villagers/%s.fbx' % spec['file'], tris=total, tris_by_object=tris,
-                   material='M_Toon_Base', height_m=round(max(v.z for v in xs), 3), palette=b.slots, role=spec['role'], notes=spec['notes'],
+        ent = dict(name=spec['name'], id=spec['id'], file='Art/Export/Villagers/%s.fbx' % spec['file'], tris=total,
+                   objects=[dict(object=ob.name, kind=kinds[g], tris=tris[ob.name]) for g, ob in parts],
+                   material='M_Toon_Base', height_m=round(max(v.z for v in xs if True), 3), palette=b.slots, role=spec['role'], notes=spec['notes'],
                    props=[dict(object='%s_Prop_%s' % (b.id, p['name']), lost=p['lost'], note=p['note']) for p in b.props],
                    building=spec.get('building'), placement=dict(note='stand at the building; Unity builder places, yaw faces the player/door'))
         manifest['models'].append(ent)
-        print('VILLAGER %-18s tris=%5d (%s) %s' % (spec['name'], total, ', '.join('%s %d' % (k.split('_', 1)[-1], v) for k, v in tris.items()), res))
+        print('VILLAGER %-18s tris=%5d objects=%d %s' % (spec['name'], total, len(objs), res))
     old = {}
     if only and os.path.exists(MANIFEST):
         with open(MANIFEST) as fh:
@@ -993,7 +1019,7 @@ def model(only=None):
     if only:
         for m in manifest['models']:
             old[m['id']] = m
-        manifest['models'] = [old[s['id']] for s in SPECS if s['id'] in old]
+        manifest['models'] = [old[s_['id']] for s_ in SPECS if s_['id'] in old]
     with open(MANIFEST, 'w') as fh:
         json.dump(manifest, fh, indent=1)
     print('MODEL OK', len(manifest['models']))
@@ -1092,20 +1118,17 @@ def preview(outdir, only=None):
         return
     shoot('villagers_front.png', 0)
     shoot('villagers_three_quarter.png', -35)
-    if os.environ.get('FG_LINEUP_ONLY'):
-        return
+    # the placeholder bodies alone (outfits and props hidden): the silhouette read
     for spec, b, pivot in figs:
-        pivot.rotation_euler = (0, 0, math.radians(-15))
-    sc.render.resolution_x = sc.render.resolution_y = 400
+        for g, obs in b.groups.items():
+            for o in obs:
+                o.hide_render = g != 'proxy'
+    shoot('villagers_proxy_front.png', 0)
     for spec, b, pivot in figs:
-        for s2, b2, p2 in figs:
-            for o in p2.children:
-                o.hide_render = (p2 is not pivot)
-        aim(cam, (pivot.location.x, pivot.location.y, b.hz + 0.02), 0, 0.78 * b.hr / 0.25)
-        sc.render.filepath = os.path.join(outdir, 'face_%s.png' % spec['id'])
-        bpy.ops.render.render(write_still=True)
+        for obs in b.groups.values():
+            for o in obs:
+                o.hide_render = False
     print('PREVIEW', outdir)
-
 
 
 # ================================================================ the villagers: specs + per-person builders
@@ -1149,15 +1172,17 @@ def glasses_prop(b, loc, name, key, lens=None, rot_z=20):
 # ---- Doug Pellow
 def doug(b):
     s = b.s
-    b.build_head(ear_scale=1.15)
-    b.nose(**s['nose'])
-    b.face(**s['face'])
+    b.build_proxy()
+    b.g('Hair')
     b.hair('hair', zfront=0.74, back=-0.2, grow=0.008)
+    b.g('Shirt')
     b.build_torso('shirt', tris=950)
+    b.build_arms(0.38, 'shirt')
+    b.g('HiVisVest')
     b.shell('Vest', 'hivis', 0.024, slit=(b.hip + 0.02, b.sh + 0.12, 0.012, 0.085), hem=b.hip + 0.06, neck=0.125, tris=1250)
     b.band('reflect', b.ch + 0.01, 0.045, grow=0.029, gap=0.03, name='BandA')
     b.band('reflect', b.be - 0.01, 0.045, grow=0.029, gap=0.03, name='BandB')
-    b.build_arms(0.38, 'shirt')
+    b.g('Trousers')
     b.build_legs('navy', 'blackshoe', 'sole', long=1.0, tris=800)
     b.lanyard('lan_cord', 'badge', card_key='badge_face')
     hp, d = b.hand_pos(1)
@@ -1166,20 +1191,21 @@ def doug(b):
             box_ob('Clip_Clip', V(hp.x - 0.095, -0.16, hp.z + 0.205), (0.07, 0.01, 0.03), b.pal('metal'), bevel=0.004)]
     b.prop('Clipboard', objs, note='held in the left hand; a harbour log with a single entry')
     b.prop('ReadingGlasses', glasses_prop(b, V(0.55, -0.1, -0.02), 'g', 'frame'), lost=True,
-           note='His lost reading glasses (wish item, fished up under the T-head). Shown lying beside him; hide until found, then show on his forehead/hand. Origin = ground under the lenses.')
+           note='His lost reading glasses (wish item, fished up under the T-head). Lying beside him; hide until found, then show on his forehead. Origin = ground under the lenses.')
 
 
 # ---- Marge Tackleby
 def marge(b):
     s = b.s
-    b.build_head()
-    b.nose(**s['nose'])
-    b.face(**s['face'])
+    b.build_proxy()
+    b.g('Hair')
     b.hair('hair', zfront=0.66, back=-0.45, grow=0.009)
+    b.g('Sweatband')
     b.put('head', b.head_ring('headband', 0.58, 0.055, out=0.016, name='Sweatband'))
+    b.g('Tank')
     b.build_torso('tank', tris=1000)
     fy = b.front_y
-    # bait-stained canvas apron: bib + skirt, a waist tie, neck strap, and stains in two colours
+    b.g('Apron')
     b.panel('ApronBib', 'apron', b.ch - 0.05, b.sh - 0.02, halfw=0.14, grow=0.03, tris=300)
     b.panel('ApronSkirt', 'apron', b.hip - 0.1, b.ch - 0.02, halfw=0.215, grow=0.03, tris=420)
     b.band('apron_tie', b.hip + 0.075, 0.04, grow=0.034, name='ApronTie')
@@ -1191,31 +1217,30 @@ def marge(b):
                        b.pal('stain_bait'), tris=150, voxel=0.006, res=0.01, smooth_iter=1))
     b.put('body', meta(b.id + '_StainsB', [F.ball((-0.03, fy(b.ch) - 0.045, b.ch - 0.02), 0.03, (1.2, 0.3, 1.0)), F.ball((0.09, fy(b.ch + 0.04) - 0.045, b.ch + 0.04), 0.022, (1, 0.3, 1))],
                        b.pal('stain_fish'), tris=90, voxel=0.006, res=0.01, smooth_iter=1))
-    b.build_arms(0.0, 'tank', tris_arm=520)
-    # wrist guards
+    b.g('WristGuards')
     el = []
     for sign in (1, -1):
         S, d, L = b.arm_geom(sign)
         wr = S + d * L
         el.append(F.capsule(wr - d * 0.085, wr - d * 0.005, 0.060 * s['thick'] + 0.012))
     b.put('body', meta(b.id + '_WristGuards', el, b.pal('pad'), tris=200, voxel=0.007, res=0.011, smooth_iter=2))
-    b.build_legs('derby_shorts', 'sneaker', 'sole_white', long=0.45, tris=800, skin='skin')
-    # knee pads over the bare knees
+    b.g('Shorts')
+    b.build_legs('derby_shorts', 'sneaker', 'sole_white', long=0.45, tris=800, shoe_g='Sneakers')
+    # knee pads over the bare knees: a prop (separate object)
     lx = 0.105 * s['lw']
     pads, caps = [], []
     for sx in (1, -1):
         pads.append(F.ball((sx * lx, -0.065, b.knee), 0.105, (1.0, 0.62, 1.0)))
         caps.append(F.ball((sx * lx, -0.118, b.knee), 0.062, (1.0, 0.4, 1.0)))
-    b.put('body', meta(b.id + '_KneePads', pads, b.pal('pad'), tris=260, voxel=0.007, res=0.011, smooth_iter=2))
-    b.put('body', meta(b.id + '_KneeCaps', caps, b.pal('padcap'), tris=160, voxel=0.007, res=0.011, smooth_iter=2))
+    b.prop('KneePads', [meta(b.id + '_KneePads', pads, b.pal('pad'), tris=260, voxel=0.007, res=0.011, smooth_iter=2),
+                        meta(b.id + '_KneeCaps', caps, b.pal('padcap'), tris=160, voxel=0.007, res=0.011, smooth_iter=2)], note='strapped over both knees')
 
 
 # ---- Gary and Gary Nettle
 def gary(b):
     s = b.s
-    b.build_head(ear_scale=1.2)
-    b.nose(**s['nose'])
-    b.face(**s['face'])
+    b.build_proxy()
+    b.g('Hair')
     if s['variant'] == 'neat':
         # one neat comb-over: long strands combed across a bald crown (great-circle arcs lying on the head), side tufts over the ears
         hr = b.hr
@@ -1231,6 +1256,7 @@ def gary(b):
     else:
         b.hair('hair', zfront=0.62, back=-0.5, grow=0.006)
         b.spikes('hair', 24, 0.13, 0.03, zmin=0.1, tag='WildHair')
+    b.g('Jumper')
     jk = 'jumper'
     b.build_torso(jk, tris=1000, extra=[])
     b.band('trim', b.hip + 0.035, 0.07, grow=0.016, name='Hem')
@@ -1243,32 +1269,26 @@ def gary(b):
         wr = S + d * L
         el.append(F.capsule(wr - d * 0.07, wr, 0.060 * s['thick'] + 0.03))
     b.put('body', meta(b.id + '_Cuffs', el, b.pal('trim'), tris=190, voxel=0.007, res=0.011, smooth_iter=2))
-    b.build_legs('slacks', 'brown_shoe', 'sole', long=1.0, tris=800)
     b.band('trim', b.sh + 0.005, 0.05, grow=0.012, name='Collar')
+    b.g('Trousers')
+    b.build_legs('slacks', 'brown_shoe', 'sole', long=1.0, tris=800)
 
 
 # ---- Wendell Krill
 def wendell(b):
     s = b.s
     hr, k = b.hr, b.k
-    b.build_head(ear_scale=1.3)
-    b.nose(**s['nose'])
-    b.face(**s['face'])
-    # drooping moustache
-    mu = []
-    for sx in (1, -1):
-        p0 = F.sphere_point(sx * 0.01 * k, -0.128 * k, 0.034 * k)
-        p1 = F.sphere_point(sx * 0.07 * k, -0.15 * k, 0.03 * k) + V(0, 0, -0.035)
-        p2 = F.sphere_point(sx * 0.098 * k, -0.19 * k, 0.012 * k) + V(0, 0, -0.04)
-        mu += [F.capsule(p0, p1, 0.026 * k), F.capsule(p1, p2, 0.019 * k)]
-    b.put('head', meta(b.id + '_Moustache', mu, b.pal('moustache'), tris=300, voxel=0.005, res=0.008, smooth_iter=2))
-    # flat cap
+    b.build_proxy()
+    b.g('Cap')
     c = Vector(F.HEAD_C)
     prof = [(1.0 * hr, 0.42 * hr), (1.10 * hr, 0.62 * hr), (1.16 * hr, 0.80 * hr), (0.96 * hr, 0.93 * hr), (0.5 * hr, 0.98 * hr)]
     b.put('head', lathe(b.id + '_Cap', prof, b.pal('cap'), c=c, scale=(1.0, 1.08, 1.0), segs=20))
     b.put('head', box_ob(b.id + '_Peak', c + V(0, -1.02 * hr, 0.58 * hr), (0.78 * hr, 0.55 * hr, 0.026), b.pal('cap'), bevel=0.01, rot=(-14, 0, 0)))
+    b.g('Shirt')
     b.build_torso('shirt', tris=900)
+    b.build_arms(0.62, 'shirt')
     # long, smoke-darkened apron with soot smears and ties
+    b.g('Apron')
     b.panel('Apron', 'apron', b.knee + 0.12, b.sh - 0.03, halfw=0.2, grow=0.03, tris=620)
     b.band('apron_tie', b.hip + 0.06, 0.04, grow=0.036, name='ApronTie')
     b.put('body', meta(b.id + '_Soot', [F.ball((0.06, b.front_y(b.be) - 0.046, b.be + 0.0), 0.05, (1.0, 0.3, 1.5)), F.ball((-0.07, b.front_y(b.hip) - 0.05, b.hip - 0.12), 0.06, (1.0, 0.3, 1.2))],
@@ -1276,35 +1296,36 @@ def wendell(b):
     for sx in (1, -1):
         b.put('body', meta(b.id + '_ApronStrap', [F.capsule((sx * 0.10, b.front_y(b.sh - 0.03) - 0.03, b.sh - 0.03), (sx * 0.065, -0.01 - 0.0, b.sh + 0.045), 0.011)], b.pal('apron_tie'),
                            tris=70, voxel=0.005, res=0.008, smooth_iter=1))
-    b.build_arms(0.62, 'shirt', tris_arm=360)
-    b.build_legs('baggy', 'boot', 'sole', long=1.0, tris=760, tw=1.05)
+    b.g('Trousers')
+    b.build_legs('baggy', 'boot', 'sole', long=1.0, tris=760, tw=1.05, shoe_g='Boots')
     # the missing lucky smoking hat: a tasselled fez-style smoking cap
     loc = V(-0.55, -0.1, -0.02)
     cap = lathe(b.id + '_LuckyHat', [(0.095, 0.0), (0.098, 0.012), (0.075, 0.1), (0.06, 0.125), (0.0, 0.13)], b.pal('lucky'), c=loc, segs=14)
     band = lathe(b.id + '_LuckyBand', [(0.0955, 0.0), (0.0985, 0.0), (0.0985, 0.025), (0.0955, 0.025)], b.pal('lucky_gold'), c=loc, segs=14)
     tas = tube_ob(b.id + '_Tassel', [loc + V(0, 0, 0.13), loc + V(0.03, 0, 0.14), loc + V(0.07, 0, 0.12), loc + V(0.075, 0, 0.085)], 0.008, b.pal('lucky_gold'), seg=5)
-    b.prop('LuckyHat', [cap, band, tas], lost=True, note='His lucky smoking hat (wish item, gull nest on the sea arch). Shown on the ground beside him; hide until returned, then show it on his head instead of the flat cap.')
+    b.prop('LuckyHat', [cap, band, tas], lost=True, note='His lucky smoking hat (wish item, gull nest on the sea arch). On the ground beside him; hide until returned, then show it on his head instead of the flat cap.')
 
 
 # ---- Ines Varga
 def ines(b):
     s = b.s
     hr, k = b.hr, b.k
-    b.build_head()
-    b.nose(**s['nose'])
-    b.face(**s['face'])
+    b.build_proxy()
+    b.g('Hair')
     b.hair('hair', zfront=0.8, back=-0.2, grow=0.006)
     b.put('head', prim_ob(b.id + '_Bun', 'sphere', b.pal('hair'), V(0, b.hy + 0.9 * hr, b.hz + 0.55 * hr), (0.085, 0.085, 0.075), seg=14, ring=8))
+    b.g('Tee')
     b.build_torso('tee', tris=1000)
-    # overalls: denim bib + straps + patch pocket
+    b.build_arms(0.28, 'tee', tris_sleeve=300)
+    # overalls: denim bib + straps + patch pocket + legs
+    b.g('Overalls')
     b.panel('Bib', 'denim', b.ch - 0.06, b.sh - 0.07, halfw=0.14, grow=0.026, tris=300)
     b.panel('Waist', 'denim', b.hip - 0.02, b.ch + 0.0, grow=0.016, tris=600, front=False)
     b.put('body', meta(b.id + '_Pocket', [F.ball((0, b.front_y(b.ch - 0.0) - 0.05, b.ch - 0.0), 0.05, (1.0, 0.25, 0.85))], b.pal('denim_dark'), tris=100, voxel=0.005, res=0.008, smooth_iter=1))
     for sx in (1, -1):
         b.put('body', meta(b.id + '_Strap', [F.capsule((sx * 0.1, b.front_y(b.sh - 0.08) - 0.03, b.sh - 0.08), (sx * 0.15, 0.0, b.sh + 0.02), 0.018)], b.pal('denim'), tris=90, voxel=0.005,
                            res=0.008, smooth_iter=1))
-    b.build_arms(0.28, 'tee', tris_arm=620, tris_sleeve=300)
-    b.build_legs('denim', 'work_boot', 'sole', long=1.0, tris=820, tw=1.0, shoe_tris=700)
+    b.build_legs('denim', 'work_boot', 'sole', long=1.0, tris=820, tw=1.0, shoe_tris=700, shoe_g='Boots')
     # welding goggles pushed up on the forehead
     objs = []
     for sx in (1, -1):
@@ -1320,10 +1341,9 @@ def ines(b):
 def penny(b):
     s = b.s
     hr, k = b.hr, b.k
-    b.build_head()
-    b.nose(**s['nose'])
-    b.face(**s['face'])
+    b.build_proxy()
     # messy hair: a cap, a high bun of curls and a pencil stuck through it
+    b.g('Hair')
     b.hair('hair', zfront=0.7, back=-0.4, grow=0.008)
     r = rng(b.id + 'curls')
     curls = []
@@ -1344,21 +1364,24 @@ def penny(b):
         objs.append(tube_ob(b.id + '_SpecArm', [c + a * sx * 0.054 * k, c + a * sx * 0.054 * k + n * -0.03, ear], 0.0035, b.pal('frame'), seg=4))
     objs.append(tube_ob(b.id + '_SpecBridge', [F.sphere_point(0.026 * k, -0.03 * k, 0.014 * k), F.sphere_point(0, -0.022 * k, 0.018 * k), F.sphere_point(-0.026 * k, -0.03 * k, 0.014 * k)], 0.0035, b.pal('frame'), seg=4))
     b.prop('Spectacles', objs, note='round wire spectacles, worn')
+    b.g('Blouse')
     b.build_torso('blouse', tris=950)
     # waders: olive rubber trousers with a chest bib
+    b.g('Waders')
     b.panel('WaderBib', 'waders', b.hip - 0.05, b.ch + 0.04, grow=0.026, tris=520, front=False)
     for sx in (1, -1):
         b.put('body', meta(b.id + '_WaderBrace', [F.capsule((sx * 0.11, b.front_y(b.ch + 0.03) - 0.03, b.ch + 0.03), (sx * 0.12, 0.0, b.sh + 0.02), 0.014)], b.pal('waders'), tris=90,
                            voxel=0.005, res=0.008, smooth_iter=1))
+    b.build_legs('waders', 'wader_boot', 'sole', long=1.0, tris=760, tw=1.2, flare=0.02, shoe_tris=500, shoe_g='Waders')
     # long mustard cardigan with elbow patches
-    b.shell('Cardigan', 'cardigan', 0.03, slit=(b.hip - 0.05, b.sh + 0.12, 0.02, 0.09), hem=b.hip - 0.2, neck=0.12, sleeves=True, tris=1350, lower=b.hip - 0.2)
+    b.g('Cardigan')
+    b.shell('Cardigan', 'cardigan', 0.03, slit=(b.hip - 0.05, b.sh + 0.12, 0.02, 0.09), hem=b.hip - 0.2, neck=0.12, sleeves=True, tris=1100, lower=b.hip - 0.2)
     b.build_arms(1.0, 'cardigan', tris_sleeve=560)
     el = []
     for sign in (1, -1):
         S, d, L = b.arm_geom(sign)
         el.append(F.ball(S + d * L * 0.5 + V(0, 0.04, 0), 0.04, (1.0, 0.4, 1.2)))
     b.put('body', meta(b.id + '_ElbowPatches', el, b.pal('patch'), tris=110, voxel=0.006, res=0.01, smooth_iter=1))
-    b.build_legs('waders', 'wader_boot', 'sole', long=1.0, tris=760, tw=1.2, flare=0.02, shoe_tris=500)
     b.lanyard('lan_cord', 'badge', card_key='crest')
 
 
@@ -1366,26 +1389,27 @@ def penny(b):
 def lorraine(b):
     s = b.s
     hr, k = b.hr, b.k
-    b.build_head()
-    b.nose(**s['nose'])
-    b.face(**s['face'])
+    b.build_proxy()
     # the beehive: a tall lathe with scalloped swirls
+    b.g('Hair')
     prof = []
     steps = 14
     for i in range(steps + 1):
         t = i / steps
-        base = math.sin(t * math.pi * 0.52 + 0.35) if t > 0 else 0.6
         rr = hr * (0.92 + 0.42 * math.sin(min(1.0, t * 1.2) * math.pi * 0.55) - 0.95 * t * t) * (1 + 0.045 * math.sin(i * 2.2))
         prof.append((max(0.0, rr), hr * (0.35 + 1.75 * t)))
     prof[-1] = (0.02, prof[-1][1])
     c = V(0, b.hy + 0.05, b.hz)
     b.put('head', lathe(b.id + '_Beehive', prof, b.pal('hair'), c=c, scale=(1.0, 1.05, 1.0), segs=20))
     b.hair('hair', zfront=0.62, back=-0.5, grow=0.008)
+    b.g('Blouse')
     b.build_torso('blouse', tris=850)
-    b.build_arms(0.52, 'blouse', tris_arm=330, tris_sleeve=300)
-    # waist apron with a pocket and a stripe
+    b.build_arms(0.52, 'blouse', tris_sleeve=300)
+    # waist apron with a stripe
+    b.g('Apron')
     b.panel('Apron', 'apron', b.hip - 0.22, b.hip + 0.12, halfw=0.19, grow=0.026, tris=420)
     b.band('apron_stripe', b.hip + 0.12, 0.035, grow=0.034, name='ApronBand')
+    b.g('Slacks')
     b.build_legs('slacks', 'flat_shoe', 'sole', long=1.0, tris=700, tw=0.85)
     # coffee pot, hanging from the right hand: glass jug, coffee, black lid and handle
     hp, d = b.hand_pos(-1)
@@ -1401,20 +1425,23 @@ def lorraine(b):
 def gil(b):
     s = b.s
     hr, k = b.hr, b.k
-    b.build_head()
-    b.nose(**s['nose'])
-    b.face(**s['face'])
+    b.build_proxy()
+    b.g('Hair')
     b.hair('hair', zfront=0.8, back=-0.3, grow=0.007)
+    b.g('Clerical')
     b.build_torso('clerical', tris=1050)
+    b.build_arms(1.0, 'clerical', tris_sleeve=520)
     fy = b.front_y
+    b.put('body', box_ob(b.id + '_Pocket', V(-0.115, fy(b.ch) - 0.014, b.ch - 0.0), (0.085, 0.02, 0.075), b.pal('clerical2'), bevel=0.008))
+    b.g('Collar')
     b.band('collar', b.sh + 0.012, 0.045, grow=0.02, name='DogCollar')
     b.put('body', box_ob(b.id + '_CollarTab', V(0, fy(b.sh - 0.01) - 0.036, b.sh - 0.004), (0.045, 0.016, 0.06), b.pal('collar'), bevel=0.006))
     # purple stole hanging down the front from both shoulders
+    b.g('Stole')
     for sx in (1, -1):
         pts = [V(sx * 0.075, b.body_hit(sx * 0.075, b.sh) - 0.015, b.sh + 0.005)] + [V(sx * (0.085 + 0.01 * i / 4), b.body_hit(sx * 0.085, z) - 0.016, z) for i, z in enumerate([b.ch, b.be, b.hip + 0.1, b.hip - 0.12])]
         b.put('body', tube_ob(b.id + '_Stole', pts, 0.02, b.pal('stole'), seg=6))
-    b.put('body', box_ob(b.id + '_Pocket', V(-0.115, fy(b.ch) - 0.014, b.ch - 0.0), (0.085, 0.02, 0.075), b.pal('clerical2'), bevel=0.008))
-    b.build_arms(1.0, 'clerical', tris_sleeve=520)
+    b.g('Trousers')
     b.build_legs('black_trousers', 'dress_shoe', 'sole', long=1.0, tris=760)
     pc = V(-0.115, fy(b.ch) - 0.018, b.ch + 0.02)
     dd = V(-0.12, -0.12, 1.0).normalized()
@@ -1430,17 +1457,16 @@ def gil(b):
         objs.append(b._oriented('cyl', b.pal('shade'), c, n, 0.058 * k, 0.014, seg=14, ry=0.052 * k))
         objs.append(tube_ob(b.id + '_ShadeArm', [c + V(sx * 0.057 * k, 0.0, 0.0), V(sx * hr * 0.97, -0.05, b.hz + 0.0), V(sx * hr * 0.97, 0.0, b.hz)], 0.0045, b.pal('shade'), seg=4))
     objs.append(tube_ob(b.id + '_ShadeBridge', [F.sphere_point(0.02 * k, -0.03 * k, 0.016 * k), F.sphere_point(0, -0.022 * k, 0.02 * k), F.sphere_point(-0.02 * k, -0.03 * k, 0.016 * k)], 0.0045, b.pal('shade'), seg=4))
-    b.prop('Sunglasses', objs, note='worn indoors; the eyes underneath are modelled so they can come off')
+    b.prop('Sunglasses', objs, note='worn indoors; sit over the painted eyes')
 
 
 # ---- Mr. Fenwick
 def fenwick(b):
     s = b.s
     hr, k = b.hr, b.k
-    b.build_head()
-    b.nose(**s['nose'])
-    b.face(**s['face'])
-    # the beard: cheeks, chin and a long fall onto the chest
+    b.build_proxy()
+    # the beard: cheeks, chin and a long fall onto the chest (a volume, so it is geometry; the mouth is painted under it)
+    b.g('Beard')
     el = []
     for sx in (1, -1):
         el.append(F.ball(F.sphere_point(sx * 0.12 * k, -0.115 * k, 0.03 * k), 0.058 * k, (1.0, 1.0, 1.25)))
@@ -1451,6 +1477,7 @@ def fenwick(b):
     el.append(F.ball(ctr + V(0, -0.62 * hr, -1.65 * hr), 0.06 * k, (0.9, 0.8, 1.8)))
     b.put('head', meta(b.id + '_Beard', el, b.pal('beard'), tris=700, voxel=0.007, res=0.011, smooth_iter=3))
     # sou'wester: tall crown, wide brim, longer at the back
+    b.g('Souwester')
     prof = [(1.02 * hr, 0.35 * hr), (1.1 * hr, 0.55 * hr), (1.06 * hr, 0.9 * hr), (0.9 * hr, 1.05 * hr), (0.5 * hr, 1.12 * hr)]
     b.put('head', lathe(b.id + '_Souwester', prof, b.pal('oil_yellow'), c=Vector(F.HEAD_C), scale=(1.0, 1.04, 1.0), segs=20))
     brim = lathe(b.id + '_Brim', [(1.0 * hr, 0.32 * hr), (1.55 * hr, 0.25 * hr), (1.78 * hr, 0.18 * hr), (1.78 * hr, 0.15 * hr), (1.5 * hr, 0.22 * hr), (1.0 * hr, 0.3 * hr)],
@@ -1458,25 +1485,27 @@ def fenwick(b):
     b.put('head', brim)
     foil = lathe(b.id + '_Foil', [(1.62 * hr, 0.205 * hr), (1.82 * hr, 0.16 * hr), (1.82 * hr, 0.13 * hr), (1.62 * hr, 0.17 * hr)],
                  b.pal('foil'), c=Vector(F.HEAD_C) + V(0, 0.18 * hr, 0), scale=(1.0, 1.12, 1.0), segs=13)
-    b.prop('TinfoilBrim', [foil], note='a tinfoil lining wrapped round the sou\'wester brim; it is part of his hat, left as an object so it can be swapped for a plain brim')
+    b.prop('TinfoilBrim', [foil], note="a faceted tinfoil lining wrapped round the sou'wester brim; swap for a plain brim if wanted")
     # layers: sack jumper, long green oilskin, short yellow oilskin
-    hipx = [F.ball((0, 0, b.hip - 0.08), b.R, (1.15, 0.9, 1.3)), F.ball((0, 0, b.hip - 0.2), b.R, (1.2, 0.95, 1.1))]
+    b.g('Jumper')
     b.build_torso('sack', tris=700)
+    b.g('LongCoat')
     b.shell('LongCoat', 'oil_green', 0.05, slit=(b.knee + 0.12, b.sh + 0.1, 0.02, 0.07), hem=b.knee + 0.1, neck=0.13, sleeves=True, tris=1350, lower=b.knee + 0.1)
+    b.g('Jacket')
     b.shell('Jacket', 'oil_yellow', 0.085, slit=(b.hip + 0.0, b.sh + 0.1, 0.02, 0.09), hem=b.hip + 0.0, neck=0.14, sleeves=True, tris=1000)
     b.build_arms(1.0, 'oil_yellow', tris_sleeve=560)
     b.put('body', box_ob(b.id + '_Toggle', V(0.0, b.body_hit(0, b.be) - 0.014, b.be), (0.07, 0.02, 0.025), b.pal('rope'), bevel=0.008))
-    b.build_legs('oil_green', 'welly', 'sole', long=1.0, tris=620, boot_top=0.2, shoe_tris=520, tw=1.1)
+    b.g('Trousers')
+    b.build_legs('oil_green', 'welly', 'sole', long=1.0, tris=620, boot_top=0.2, shoe_tris=520, tw=1.1, shoe_g='Wellies')
 
 
 # ---- Ambrose Lock
 def ambrose(b):
     s = b.s
     hr, k = b.hr, b.k
-    b.build_head(ear_scale=1.7)
-    b.nose(**s['nose'])
-    b.face(**s['face'])
+    b.build_proxy()
     # wispy white tufts over the ears
+    b.g('Hair')
     r = rng(b.id + 'tufts')
     objs = []
     for sx in (1, -1):
@@ -1484,13 +1513,20 @@ def ambrose(b):
             objs.append(b._oriented('cone', b.pal('white_hair'), V(sx * hr * 0.95, b.hy + 0.012 * i, b.hz + 0.05 * k + 0.012 * i),
                                     V(sx * r.uniform(0.7, 1.2), r.uniform(-0.2, 0.5), r.uniform(0.0, 0.7)).normalized(), 0.016, 0.12 + 0.02 * i, seg=5))
     b.put('head', b._join(b.id + '_Tufts', objs))
+    b.g('Waistcoat')
     b.build_torso('waistcoat', tris=700)
+    b.g('Cardigan')
     b.shell('Cardigan', 'cardigan', 0.032, slit=(b.hip - 0.12, b.sh + 0.12, 0.03, 0.1), hem=b.hip - 0.14, neck=0.12, sleeves=True, tris=1250, lower=b.hip - 0.14)
-    fy = b.front_y
     for i, z in enumerate((b.be - 0.08, b.be + 0.04, b.ch - 0.02)):
         b.put('body', b._oriented('cyl', b.pal('button'), V(0.028, b.body_hit(0.028, z) - 0.004, z), V(0, -1, 0), 0.015, 0.014, seg=10))
     b.build_arms(1.0, 'cardigan', tris_sleeve=480)
-    b.build_legs('highwaist', 'slipper', None, long=1.0, tris=700, shoe_tris=450, tw=1.1)
+    b.g('Trousers')
+    b.build_legs('highwaist', None, None, long=1.0, tris=700, tw=1.1)
+    # slippers: a prop
+    lw = s.get('lw', 1.0)
+    x = 0.105 * lw
+    sl = [F.ball((x, -0.05, 0.062), 0.098, (1.0, 1.45, 0.72)), F.capsule((x, 0.02, 0.08), (x, 0.02, b.ankle + 0.05), 0.08)]
+    b.prop('Slippers', [meta(b.id + '_Slippers', F.mirror_x(sl), b.pal('slipper'), tris=450, smooth_iter=3, voxel=0.010)], note='soft tartan slippers over the proxy feet')
     # pocket watch on a chain
     wp = V(-0.085, b.body_hit(-0.085, b.be + 0.02) - 0.02, b.be + 0.02)
     chain = tube_ob(b.id + '_Chain', [V(0.03, b.body_hit(0.03, b.ch - 0.04) - 0.02, b.ch - 0.04), V(0.0, b.body_hit(0.0, b.be + 0.12) - 0.026, b.be + 0.1),
