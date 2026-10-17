@@ -1,0 +1,3239 @@
+{
+ "generator": "Art/Blender/fg_props.py",
+ "axes": "Unity metres, authored in Unity axes (x right, y up, z forward); Blender = (-x, -z, y); the FBX export is the harbour's (-Z forward, Y up, bake_space_transform). Every FBX object sits at the origin with an identity transform: the Unity builder parents it to the item/prefab root. The front of a prop faces +z. Pivot = base centre or the grip (see each entry).",
+ "encoding": {
+  "uv0": "UVMap in metres",
+  "uv1": "Layer = (palette slot, texture layer) per corner; no uv1.z in the FBX; all props use M_Toon_Base",
+  "colour": "Col = 0.5 x ao x tint: a per-vertex BVH ray-cast AO bake (40 rays, distance 0.35 x size clamped 0.04-0.45 m, self occlusion plus a ground plane at y = 0 for ground props); fished-up variants multiply by 0.60 (the wet tint)",
+  "normals": "smooth / analytic",
+  "materials": "none exported"
+ },
+ "palette": {
+  "reused_harbour_slots": {
+   "Grass": 0,
+   "Foliage": 1,
+   "FoliageDark": 2,
+   "Wood": 3,
+   "WoodDark": 4,
+   "Sand": 5,
+   "Rock": 6,
+   "Reed": 7,
+   "Dock": 8,
+   "Roof": 9,
+   "Accent": 10
+  },
+  "new_slots_16_to_31": {
+   "Brass": 16,
+   "Bronze": 17,
+   "Steel": 18,
+   "Iron": 19,
+   "GlassGreen": 20,
+   "GlassBrown": 21,
+   "GlassBlue": 22,
+   "GlassClear": 23,
+   "Gold": 24,
+   "Paper": 25,
+   "ShellPink": 26,
+   "ShellCream": 27,
+   "Ice": 28,
+   "Khaki": 29,
+   "White": 30,
+   "Navy": 31
+  },
+  "preview_colours_srgb": {
+   "Brass": [
+    0.78,
+    0.6,
+    0.22
+   ],
+   "Bronze": [
+    0.58,
+    0.38,
+    0.2
+   ],
+   "Steel": [
+    0.52,
+    0.56,
+    0.6
+   ],
+   "Iron": [
+    0.24,
+    0.25,
+    0.28
+   ],
+   "GlassGreen": [
+    0.28,
+    0.58,
+    0.4
+   ],
+   "GlassBrown": [
+    0.55,
+    0.33,
+    0.14
+   ],
+   "GlassBlue": [
+    0.33,
+    0.55,
+    0.78
+   ],
+   "GlassClear": [
+    0.8,
+    0.89,
+    0.9
+   ],
+   "Gold": [
+    0.93,
+    0.74,
+    0.2
+   ],
+   "Paper": [
+    0.92,
+    0.86,
+    0.68
+   ],
+   "ShellPink": [
+    0.88,
+    0.6,
+    0.56
+   ],
+   "ShellCream": [
+    0.92,
+    0.85,
+    0.7
+   ],
+   "Ice": [
+    0.72,
+    0.88,
+    0.95
+   ],
+   "Khaki": [
+    0.66,
+    0.58,
+    0.4
+   ],
+   "White": [
+    0.95,
+    0.96,
+    0.98
+   ],
+   "Navy": [
+    0.16,
+    0.24,
+    0.38
+   ]
+  },
+  "note": "Slots 16-31 are NEW: the Unity palette texture (and the 16 -> 32 wide slot lookup in the shader) must be extended on the PC. Slots 11-15 (harbour preview-only) are not used."
+ },
+ "layers": {
+  "none": 0,
+  "Grass": 1,
+  "Foliage": 2,
+  "Wood": 3,
+  "Bark": 4,
+  "Sand": 5,
+  "Rock": 6,
+  "Cloth": 7,
+  "CliffRock": 9,
+  "StoneWall": 10,
+  "Plaster": 11,
+  "Dirt": 12,
+  "Meadow": 13,
+  "RoofTile": 14
+ },
+ "wet_tint": 0.6,
+ "fbx": [
+  {
+   "name": "Prop_ReadingGlasses",
+   "file": "Art/Export/Props/Prop_ReadingGlasses.fbx",
+   "triangles": 302,
+   "vertices": 282,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "plain",
+   "base_model": "Prop_ReadingGlasses",
+   "pivot": "base: on the ground between the temple tips",
+   "description": "Doug Pellow's reading glasses (navy frames, standing open).",
+   "owner_or_source": "Doug Pellow (under the T-head)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0695,
+    0.0029,
+    -0.1507
+   ],
+   "bounds_max": [
+    0.0695,
+    0.0637,
+    0.0055
+   ],
+   "size_m": [
+    0.139,
+    0.061,
+    0.156
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Brass",
+    "GlassClear",
+    "Navy"
+   ],
+   "layers": [
+    "none"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_ReadingGlasses_Fished",
+   "file": "Art/Export/Props/Prop_ReadingGlasses_Fished.fbx",
+   "triangles": 422,
+   "vertices": 406,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "fished-up",
+   "base_model": "Prop_ReadingGlasses",
+   "pivot": "base: on the ground between the temple tips",
+   "description": "Doug Pellow's reading glasses (navy frames, standing open).",
+   "owner_or_source": "Doug Pellow (under the T-head)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0695,
+    -0.0358,
+    -0.1507
+   ],
+   "bounds_max": [
+    0.0695,
+    0.0672,
+    0.0112
+   ],
+   "size_m": [
+    0.139,
+    0.103,
+    0.162
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Sand",
+    "Reed",
+    "Brass",
+    "GlassClear",
+    "ShellCream",
+    "Navy"
+   ],
+   "layers": [
+    "none",
+    "Foliage"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Teapot",
+   "file": "Art/Export/Props/Prop_Teapot.fbx",
+   "triangles": 517,
+   "vertices": 335,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "plain",
+   "base_model": "Prop_Teapot",
+   "pivot": "base centre",
+   "description": "Lorraine Bass's grandmother's teapot: cream porcelain with a red band and gold trim.",
+   "owner_or_source": "Lorraine Bass (pier)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.1197,
+    0.0,
+    -0.1053
+   ],
+   "bounds_max": [
+    0.1921,
+    0.203,
+    0.1053
+   ],
+   "size_m": [
+    0.312,
+    0.203,
+    0.211
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Roof",
+    "Gold",
+    "ShellCream"
+   ],
+   "layers": [
+    "none"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Teapot_Fished",
+   "file": "Art/Export/Props/Prop_Teapot_Fished.fbx",
+   "triangles": 697,
+   "vertices": 531,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "fished-up",
+   "base_model": "Prop_Teapot",
+   "pivot": "base centre",
+   "description": "Lorraine Bass's grandmother's teapot: cream porcelain with a red band and gold trim.",
+   "owner_or_source": "Lorraine Bass (pier)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.1197,
+    0.0,
+    -0.1053
+   ],
+   "bounds_max": [
+    0.1921,
+    0.203,
+    0.1053
+   ],
+   "size_m": [
+    0.312,
+    0.203,
+    0.211
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "FoliageDark",
+    "Sand",
+    "Reed",
+    "Roof",
+    "Gold",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_ChapelBell",
+   "file": "Art/Export/Props/Prop_ChapelBell.fbx",
+   "triangles": 956,
+   "vertices": 700,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "plain",
+   "base_model": "Prop_ChapelBell",
+   "pivot": "base: centre of the mouth, mouth down on the ground",
+   "description": "The chapel bell: ~0.8 m, heavy, bronze, on a carrying beam.",
+   "owner_or_source": "Reverend Gil (reef wreck)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.475,
+    -0.006,
+    -0.3909
+   ],
+   "bounds_max": [
+    0.475,
+    0.915,
+    0.3909
+   ],
+   "size_m": [
+    0.95,
+    0.921,
+    0.782
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Wood",
+    "WoodDark",
+    "Brass",
+    "Bronze",
+    "Iron"
+   ],
+   "layers": [
+    "none",
+    "Wood"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_ChapelBell_Fished",
+   "file": "Art/Export/Props/Prop_ChapelBell_Fished.fbx",
+   "triangles": 1316,
+   "vertices": 1092,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "fished-up",
+   "base_model": "Prop_ChapelBell",
+   "pivot": "base: centre of the mouth, mouth down on the ground",
+   "description": "The chapel bell: ~0.8 m, heavy, bronze, on a carrying beam.",
+   "owner_or_source": "Reverend Gil (reef wreck)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.6271,
+    -0.0398,
+    -0.3909
+   ],
+   "bounds_max": [
+    0.475,
+    0.915,
+    0.3909
+   ],
+   "size_m": [
+    1.102,
+    0.955,
+    0.782
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Wood",
+    "WoodDark",
+    "Sand",
+    "Reed",
+    "Brass",
+    "Bronze",
+    "Iron",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Wood"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_TacklebySign",
+   "file": "Art/Export/Props/Prop_TacklebySign.fbx",
+   "triangles": 1216,
+   "vertices": 3392,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "plain",
+   "base_model": "Prop_TacklebySign",
+   "pivot": "base centre of the two feet; faces +z",
+   "description": "The bait shop sign: TACKLEBY'S / BAIT, TACKLE, OPINIONS on a tilted board.",
+   "owner_or_source": "Marge Tackleby (lagoon)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.8077,
+    0.0,
+    -0.08
+   ],
+   "bounds_max": [
+    0.8077,
+    0.8337,
+    0.12
+   ],
+   "size_m": [
+    1.615,
+    0.834,
+    0.2
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "WoodDark",
+    "Dock",
+    "Roof",
+    "Iron",
+    "Navy"
+   ],
+   "layers": [
+    "none",
+    "Wood"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_TacklebySign_Fished",
+   "file": "Art/Export/Props/Prop_TacklebySign_Fished.fbx",
+   "triangles": 1636,
+   "vertices": 3856,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "fished-up",
+   "base_model": "Prop_TacklebySign",
+   "pivot": "base centre of the two feet; faces +z",
+   "description": "The bait shop sign: TACKLEBY'S / BAIT, TACKLE, OPINIONS on a tilted board.",
+   "owner_or_source": "Marge Tackleby (lagoon)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.8077,
+    -0.3604,
+    -0.08
+   ],
+   "bounds_max": [
+    0.9047,
+    0.8337,
+    0.2941
+   ],
+   "size_m": [
+    1.712,
+    1.194,
+    0.374
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "WoodDark",
+    "Sand",
+    "Reed",
+    "Dock",
+    "Roof",
+    "Iron",
+    "ShellCream",
+    "Navy"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Wood"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_LostNetBundle",
+   "file": "Art/Export/Props/Prop_LostNetBundle.fbx",
+   "triangles": 850,
+   "vertices": 566,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "plain",
+   "base_model": "Prop_LostNetBundle",
+   "pivot": "base centre of the heap",
+   "description": "The Nettle twins' lost net: a tangled heap with floats, lead weights and a trailing rope.",
+   "owner_or_source": "Gary and Gary Nettle (reef)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.3142,
+    -0.028,
+    -0.2437
+   ],
+   "bounds_max": [
+    0.7651,
+    0.2512,
+    0.2624
+   ],
+   "size_m": [
+    1.079,
+    0.279,
+    0.506
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Sand",
+    "Accent",
+    "Iron"
+   ],
+   "layers": [
+    "none",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_LostNetBundle_Fished",
+   "file": "Art/Export/Props/Prop_LostNetBundle_Fished.fbx",
+   "triangles": 1210,
+   "vertices": 938,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "fished-up",
+   "base_model": "Prop_LostNetBundle",
+   "pivot": "base centre of the heap",
+   "description": "The Nettle twins' lost net: a tangled heap with floats, lead weights and a trailing rope.",
+   "owner_or_source": "Gary and Gary Nettle (reef)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.3154,
+    -0.3507,
+    -0.4155
+   ],
+   "bounds_max": [
+    0.7651,
+    0.2512,
+    0.4788
+   ],
+   "size_m": [
+    1.081,
+    0.602,
+    0.894
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Reed",
+    "Accent",
+    "Iron",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Cloth"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_BrassPropeller",
+   "file": "Art/Export/Props/Prop_BrassPropeller.fbx",
+   "triangles": 514,
+   "vertices": 317,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "plain",
+   "base_model": "Prop_BrassPropeller",
+   "pivot": "base: the lowest blade tips rest on y = 0, hub on the axis; axis along z",
+   "description": "Ines Varga's sunken brass propeller: three blades, bore and key.",
+   "owner_or_source": "Ines Varga (wreck, low tide)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.2656,
+    -0.0133,
+    -0.084
+   ],
+   "bounds_max": [
+    0.2695,
+    0.4691,
+    0.11
+   ],
+   "size_m": [
+    0.535,
+    0.482,
+    0.194
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Brass",
+    "Iron"
+   ],
+   "layers": [
+    "none"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_BrassPropeller_Fished",
+   "file": "Art/Export/Props/Prop_BrassPropeller_Fished.fbx",
+   "triangles": 1024,
+   "vertices": 879,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "fished-up",
+   "base_model": "Prop_BrassPropeller",
+   "pivot": "base: the lowest blade tips rest on y = 0, hub on the axis; axis along z",
+   "description": "Ines Varga's sunken brass propeller: three blades, bore and key.",
+   "owner_or_source": "Ines Varga (wreck, low tide)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.2656,
+    -0.032,
+    -0.133
+   ],
+   "bounds_max": [
+    0.2695,
+    0.4746,
+    0.1251
+   ],
+   "size_m": [
+    0.535,
+    0.507,
+    0.258
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Reed",
+    "Brass",
+    "Iron",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_CrankHandle",
+   "file": "Art/Export/Props/Prop_CrankHandle.fbx",
+   "triangles": 302,
+   "vertices": 226,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "plain",
+   "base_model": "Prop_CrankHandle",
+   "pivot": "grip: centre of the wooden handle; the axle points +z",
+   "description": "Ambrose Lock's lock crank: iron arm, square axle end, worn wooden grip.",
+   "owner_or_source": "Ambrose Lock (creek mouth)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.034,
+    -0.344,
+    -0.07
+   ],
+   "bounds_max": [
+    0.034,
+    0.0219,
+    0.325
+   ],
+   "size_m": [
+    0.068,
+    0.366,
+    0.395
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Wood",
+    "Iron"
+   ],
+   "layers": [
+    "none",
+    "Wood"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_CrankHandle_Fished",
+   "file": "Art/Export/Props/Prop_CrankHandle_Fished.fbx",
+   "triangles": 482,
+   "vertices": 422,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "fished-up",
+   "base_model": "Prop_CrankHandle",
+   "pivot": "grip: centre of the wooden handle; the axle points +z",
+   "description": "Ambrose Lock's lock crank: iron arm, square axle end, worn wooden grip.",
+   "owner_or_source": "Ambrose Lock (creek mouth)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0462,
+    -0.3443,
+    -0.07
+   ],
+   "bounds_max": [
+    0.0972,
+    0.0224,
+    0.325
+   ],
+   "size_m": [
+    0.143,
+    0.367,
+    0.395
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Wood",
+    "Sand",
+    "Reed",
+    "Iron",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Wood"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_SmokingHat",
+   "file": "Art/Export/Props/Prop_SmokingHat.fbx",
+   "triangles": 514,
+   "vertices": 372,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "plain",
+   "base_model": "Prop_SmokingHat",
+   "pivot": "base centre of the brim, hat standing",
+   "description": "Wendell Krill's lucky smoking hat: battered canvas hat, fish pin and a corncob pipe in the band.",
+   "owner_or_source": "Wendell Krill (gull nest, sea arch)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.215,
+    -0.007,
+    -0.215
+   ],
+   "bounds_max": [
+    0.215,
+    0.1412,
+    0.2173
+   ],
+   "size_m": [
+    0.43,
+    0.148,
+    0.432
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "WoodDark",
+    "Dock",
+    "Accent",
+    "Khaki",
+    "Navy"
+   ],
+   "layers": [
+    "none",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_SmokingHat_Fished",
+   "file": "Art/Export/Props/Prop_SmokingHat_Fished.fbx",
+   "triangles": 664,
+   "vertices": 522,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "fished-up",
+   "base_model": "Prop_SmokingHat",
+   "pivot": "base centre of the brim, hat standing",
+   "description": "Wendell Krill's lucky smoking hat: battered canvas hat, fish pin and a corncob pipe in the band.",
+   "owner_or_source": "Wendell Krill (gull nest, sea arch)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.215,
+    -0.0674,
+    -0.215
+   ],
+   "bounds_max": [
+    0.215,
+    0.1429,
+    0.2292
+   ],
+   "size_m": [
+    0.43,
+    0.21,
+    0.444
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "WoodDark",
+    "Sand",
+    "Reed",
+    "Dock",
+    "Accent",
+    "ShellCream",
+    "Khaki",
+    "Navy"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_FieldNotebook",
+   "file": "Art/Export/Props/Prop_FieldNotebook.fbx",
+   "triangles": 580,
+   "vertices": 1274,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "plain",
+   "base_model": "Prop_FieldNotebook",
+   "pivot": "base centre, lying flat; spine toward -x",
+   "description": "Dr. Penny Hollis's field notebook: navy cover, elastic band, pencil and a fish sticker.",
+   "owner_or_source": "Dr. Penny Hollis (lagoon)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.087,
+    -0.0015,
+    -0.1204
+   ],
+   "bounds_max": [
+    0.087,
+    0.0385,
+    0.118
+   ],
+   "size_m": [
+    0.174,
+    0.04,
+    0.238
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "WoodDark",
+    "Roof",
+    "Accent",
+    "Brass",
+    "Gold",
+    "Paper",
+    "Navy"
+   ],
+   "layers": [
+    "none",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_FieldNotebook_Fished",
+   "file": "Art/Export/Props/Prop_FieldNotebook_Fished.fbx",
+   "triangles": 760,
+   "vertices": 1470,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "fished-up",
+   "base_model": "Prop_FieldNotebook",
+   "pivot": "base centre, lying flat; spine toward -x",
+   "description": "Dr. Penny Hollis's field notebook: navy cover, elastic band, pencil and a fish sticker.",
+   "owner_or_source": "Dr. Penny Hollis (lagoon)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.087,
+    -0.0892,
+    -0.1204
+   ],
+   "bounds_max": [
+    0.087,
+    0.0407,
+    0.1334
+   ],
+   "size_m": [
+    0.174,
+    0.13,
+    0.254
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "WoodDark",
+    "Sand",
+    "Roof",
+    "Accent",
+    "Brass",
+    "Gold",
+    "Paper",
+    "ShellCream",
+    "Navy"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_BingoBottle",
+   "file": "Art/Export/Props/Prop_BingoBottle.fbx",
+   "triangles": 474,
+   "vertices": 550,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "plain",
+   "base_model": "Prop_BingoBottle",
+   "pivot": "base centre, standing",
+   "description": "Reverend Gil's bingo-ball message bottle: a B-7 ball for a stopper and a paper tag on the neck.",
+   "owner_or_source": "Reverend Gil (bottles around the harbour)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0445,
+    0.0,
+    -0.0423
+   ],
+   "bounds_max": [
+    0.0445,
+    0.284,
+    0.0423
+   ],
+   "size_m": [
+    0.089,
+    0.284,
+    0.085
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Sand",
+    "Roof",
+    "GlassClear",
+    "Paper",
+    "White"
+   ],
+   "layers": [
+    "none",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_BingoBottle_Fished",
+   "file": "Art/Export/Props/Prop_BingoBottle_Fished.fbx",
+   "triangles": 654,
+   "vertices": 746,
+   "material": "M_Toon_Base",
+   "group": "villager",
+   "variant": "fished-up",
+   "base_model": "Prop_BingoBottle",
+   "pivot": "base centre, standing",
+   "description": "Reverend Gil's bingo-ball message bottle: a B-7 ball for a stopper and a paper tag on the neck.",
+   "owner_or_source": "Reverend Gil (bottles around the harbour)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0445,
+    -0.0052,
+    -0.0423
+   ],
+   "bounds_max": [
+    0.055,
+    0.284,
+    0.0475
+   ],
+   "size_m": [
+    0.1,
+    0.289,
+    0.09
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Roof",
+    "GlassClear",
+    "Paper",
+    "ShellCream",
+    "White"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Cloth"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Bottle_A",
+   "file": "Art/Export/Props/Prop_Bottle_A.fbx",
+   "triangles": 340,
+   "vertices": 232,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Bottle_A",
+   "pivot": "base centre, standing",
+   "description": "Message bottle A: green wine bottle, the scroll sticks out of the neck.",
+   "owner_or_source": "bottles around the harbour",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0455,
+    0.0,
+    -0.0455
+   ],
+   "bounds_max": [
+    0.0455,
+    0.3371,
+    0.0455
+   ],
+   "size_m": [
+    0.091,
+    0.337,
+    0.091
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Roof",
+    "GlassGreen",
+    "Paper"
+   ],
+   "layers": [
+    "none",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Bottle_A_Fished",
+   "file": "Art/Export/Props/Prop_Bottle_A_Fished.fbx",
+   "triangles": 520,
+   "vertices": 428,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Bottle_A",
+   "pivot": "base centre, standing",
+   "description": "Message bottle A: green wine bottle, the scroll sticks out of the neck.",
+   "owner_or_source": "bottles around the harbour",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0455,
+    0.0,
+    -0.0483
+   ],
+   "bounds_max": [
+    0.0546,
+    0.3406,
+    0.1136
+   ],
+   "size_m": [
+    0.1,
+    0.341,
+    0.162
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Reed",
+    "Roof",
+    "GlassGreen",
+    "Paper",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Cloth"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Bottle_B",
+   "file": "Art/Export/Props/Prop_Bottle_B.fbx",
+   "triangles": 506,
+   "vertices": 325,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Bottle_B",
+   "pivot": "base centre, standing",
+   "description": "Message bottle B: squat brown flask, corked and sealed with red wax, paper tag on a string.",
+   "owner_or_source": "bottles around the harbour",
+   "held_axis": null,
+   "bounds_min": [
+    -0.082,
+    0.0,
+    -0.082
+   ],
+   "bounds_max": [
+    0.082,
+    0.2247,
+    0.0862
+   ],
+   "size_m": [
+    0.164,
+    0.225,
+    0.168
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Sand",
+    "Roof",
+    "GlassBrown",
+    "Paper"
+   ],
+   "layers": [
+    "none",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Bottle_B_Fished",
+   "file": "Art/Export/Props/Prop_Bottle_B_Fished.fbx",
+   "triangles": 686,
+   "vertices": 521,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Bottle_B",
+   "pivot": "base centre, standing",
+   "description": "Message bottle B: squat brown flask, corked and sealed with red wax, paper tag on a string.",
+   "owner_or_source": "bottles around the harbour",
+   "held_axis": null,
+   "bounds_min": [
+    -0.082,
+    0.0,
+    -0.082
+   ],
+   "bounds_max": [
+    0.082,
+    0.2247,
+    0.0862
+   ],
+   "size_m": [
+    0.164,
+    0.225,
+    0.168
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Reed",
+    "Roof",
+    "GlassBrown",
+    "Paper",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Bottle_C",
+   "file": "Art/Export/Props/Prop_Bottle_C.fbx",
+   "triangles": 446,
+   "vertices": 290,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Bottle_C",
+   "pivot": "base centre, lying on its side along z (neck toward +z)",
+   "description": "Message bottle C: long blue flask lying down, cork with string, a paper strip in the neck.",
+   "owner_or_source": "bottles around the harbour",
+   "held_axis": null,
+   "bounds_min": [
+    -0.05,
+    0.0,
+    -0.17
+   ],
+   "bounds_max": [
+    0.05,
+    0.1,
+    0.22
+   ],
+   "size_m": [
+    0.1,
+    0.1,
+    0.39
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Sand",
+    "Roof",
+    "GlassBlue",
+    "Paper"
+   ],
+   "layers": [
+    "none",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Bottle_C_Fished",
+   "file": "Art/Export/Props/Prop_Bottle_C_Fished.fbx",
+   "triangles": 626,
+   "vertices": 486,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Bottle_C",
+   "pivot": "base centre, lying on its side along z (neck toward +z)",
+   "description": "Message bottle C: long blue flask lying down, cork with string, a paper strip in the neck.",
+   "owner_or_source": "bottles around the harbour",
+   "held_axis": null,
+   "bounds_min": [
+    -0.051,
+    -0.1328,
+    -0.1754
+   ],
+   "bounds_max": [
+    0.0825,
+    0.1,
+    0.231
+   ],
+   "size_m": [
+    0.134,
+    0.233,
+    0.406
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Roof",
+    "GlassBlue",
+    "Paper",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Shell_Scallop",
+   "file": "Art/Export/Props/Prop_Shell_Scallop.fbx",
+   "triangles": 560,
+   "vertices": 318,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Shell_Scallop",
+   "pivot": "base centre, lying on its curved back",
+   "description": "Scallop: fan of 11 ribs with two ears, cream with a pink flush.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.1026,
+    0.008,
+    -0.0495
+   ],
+   "bounds_max": [
+    0.1026,
+    0.064,
+    0.0823
+   ],
+   "size_m": [
+    0.205,
+    0.056,
+    0.132
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "ShellPink",
+    "ShellCream"
+   ],
+   "layers": [
+    "Rock"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Shell_Scallop_Fished",
+   "file": "Art/Export/Props/Prop_Shell_Scallop_Fished.fbx",
+   "triangles": 800,
+   "vertices": 586,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Shell_Scallop",
+   "pivot": "base centre, lying on its curved back",
+   "description": "Scallop: fan of 11 ribs with two ears, cream with a pink flush.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.1026,
+    -0.0287,
+    -0.0533
+   ],
+   "bounds_max": [
+    0.1026,
+    0.064,
+    0.0874
+   ],
+   "size_m": [
+    0.205,
+    0.093,
+    0.141
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Reed",
+    "ShellPink",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Rock"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Shell_Whelk",
+   "file": "Art/Export/Props/Prop_Shell_Whelk.fbx",
+   "triangles": 464,
+   "vertices": 272,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Shell_Whelk",
+   "pivot": "base centre, lying on its side",
+   "description": "Whelk: spiral shell with a flared mouth and a short canal.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0698,
+    -0.0736,
+    -0.0794
+   ],
+   "bounds_max": [
+    0.088,
+    0.1235,
+    0.0978
+   ],
+   "size_m": [
+    0.158,
+    0.197,
+    0.177
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Sand",
+    "ShellCream"
+   ],
+   "layers": [
+    "Rock"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Shell_Whelk_Fished",
+   "file": "Art/Export/Props/Prop_Shell_Whelk_Fished.fbx",
+   "triangles": 704,
+   "vertices": 540,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Shell_Whelk",
+   "pivot": "base centre, lying on its side",
+   "description": "Whelk: spiral shell with a flared mouth and a short canal.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0698,
+    -0.0736,
+    -0.0794
+   ],
+   "bounds_max": [
+    0.0916,
+    0.1235,
+    0.1204
+   ],
+   "size_m": [
+    0.161,
+    0.197,
+    0.2
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Rock"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Shell_Cowrie",
+   "file": "Art/Export/Props/Prop_Shell_Cowrie.fbx",
+   "triangles": 280,
+   "vertices": 156,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Shell_Cowrie",
+   "pivot": "base centre, aperture down",
+   "description": "Cowrie: glossy humped shell with a toothed slit, speckled.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0304,
+    -0.004,
+    -0.054
+   ],
+   "bounds_max": [
+    0.0304,
+    0.0672,
+    0.054
+   ],
+   "size_m": [
+    0.061,
+    0.071,
+    0.108
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Dock",
+    "ShellPink",
+    "ShellCream"
+   ],
+   "layers": [
+    "none"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Shell_Cowrie_Fished",
+   "file": "Art/Export/Props/Prop_Shell_Cowrie_Fished.fbx",
+   "triangles": 430,
+   "vertices": 326,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Shell_Cowrie",
+   "pivot": "base centre, aperture down",
+   "description": "Cowrie: glossy humped shell with a toothed slit, speckled.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0385,
+    -0.004,
+    -0.054
+   ],
+   "bounds_max": [
+    0.0304,
+    0.0697,
+    0.054
+   ],
+   "size_m": [
+    0.069,
+    0.074,
+    0.108
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Dock",
+    "ShellPink",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Shell_Clam",
+   "file": "Art/Export/Props/Prop_Shell_Clam.fbx",
+   "triangles": 532,
+   "vertices": 330,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Shell_Clam",
+   "pivot": "base centre, hinge toward -z",
+   "description": "Clam: two ridged valves, the top one ajar over a pink inside.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0716,
+    -0.0021,
+    -0.1075
+   ],
+   "bounds_max": [
+    0.0716,
+    0.0845,
+    0.0643
+   ],
+   "size_m": [
+    0.143,
+    0.087,
+    0.172
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "ShellPink",
+    "ShellCream"
+   ],
+   "layers": [
+    "Rock"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Shell_Clam_Fished",
+   "file": "Art/Export/Props/Prop_Shell_Clam_Fished.fbx",
+   "triangles": 772,
+   "vertices": 598,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Shell_Clam",
+   "pivot": "base centre, hinge toward -z",
+   "description": "Clam: two ridged valves, the top one ajar over a pink inside.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0742,
+    -0.0307,
+    -0.113
+   ],
+   "bounds_max": [
+    0.1024,
+    0.0894,
+    0.0643
+   ],
+   "size_m": [
+    0.177,
+    0.12,
+    0.177
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Reed",
+    "ShellPink",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Rock"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Shell_SandDollar",
+   "file": "Art/Export/Props/Prop_Shell_SandDollar.fbx",
+   "triangles": 246,
+   "vertices": 162,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Shell_SandDollar",
+   "pivot": "base centre, lying flat",
+   "description": "Sand dollar: flat domed disc with a five-petal star.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.062,
+    0.0,
+    -0.0604
+   ],
+   "bounds_max": [
+    0.062,
+    0.0336,
+    0.0604
+   ],
+   "size_m": [
+    0.124,
+    0.034,
+    0.121
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Dock",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Rock"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Shell_SandDollar_Fished",
+   "file": "Art/Export/Props/Prop_Shell_SandDollar_Fished.fbx",
+   "triangles": 396,
+   "vertices": 332,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Shell_SandDollar",
+   "pivot": "base centre, lying flat",
+   "description": "Sand dollar: flat domed disc with a five-petal star.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.062,
+    -0.03,
+    -0.0741
+   ],
+   "bounds_max": [
+    0.062,
+    0.0336,
+    0.0646
+   ],
+   "size_m": [
+    0.124,
+    0.064,
+    0.139
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "FoliageDark",
+    "Sand",
+    "Reed",
+    "Dock",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Rock"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Shell_Razor",
+   "file": "Art/Export/Props/Prop_Shell_Razor.fbx",
+   "triangles": 336,
+   "vertices": 227,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Shell_Razor",
+   "pivot": "base centre, lying along x",
+   "description": "Razor clam: long, slightly curved shell with growth bands.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0742,
+    -0.0068,
+    -0.0105
+   ],
+   "bounds_max": [
+    0.0742,
+    0.0216,
+    0.0257
+   ],
+   "size_m": [
+    0.148,
+    0.028,
+    0.036
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Dock",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Rock"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Shell_Razor_Fished",
+   "file": "Art/Export/Props/Prop_Shell_Razor_Fished.fbx",
+   "triangles": 486,
+   "vertices": 397,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Shell_Razor",
+   "pivot": "base centre, lying along x",
+   "description": "Razor clam: long, slightly curved shell with growth bands.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0742,
+    -0.0403,
+    -0.0105
+   ],
+   "bounds_max": [
+    0.0742,
+    0.032,
+    0.0257
+   ],
+   "size_m": [
+    0.148,
+    0.072,
+    0.036
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Dock",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Rock"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Shell_MoonSnail",
+   "file": "Art/Export/Props/Prop_Shell_MoonSnail.fbx",
+   "triangles": 392,
+   "vertices": 215,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Shell_MoonSnail",
+   "pivot": "base centre",
+   "description": "Moon snail: round coiled shell, pink mouth and a pale navel.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0495,
+    0.0008,
+    -0.052
+   ],
+   "bounds_max": [
+    0.0505,
+    0.14,
+    0.0535
+   ],
+   "size_m": [
+    0.1,
+    0.139,
+    0.105
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Dock",
+    "ShellPink",
+    "ShellCream"
+   ],
+   "layers": [
+    "none"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Shell_MoonSnail_Fished",
+   "file": "Art/Export/Props/Prop_Shell_MoonSnail_Fished.fbx",
+   "triangles": 632,
+   "vertices": 483,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Shell_MoonSnail",
+   "pivot": "base centre",
+   "description": "Moon snail: round coiled shell, pink mouth and a pale navel.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0495,
+    -0.0023,
+    -0.052
+   ],
+   "bounds_max": [
+    0.0505,
+    0.14,
+    0.0573
+   ],
+   "size_m": [
+    0.1,
+    0.142,
+    0.109
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Dock",
+    "ShellPink",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Shell_Turret",
+   "file": "Art/Export/Props/Prop_Shell_Turret.fbx",
+   "triangles": 362,
+   "vertices": 222,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Shell_Turret",
+   "pivot": "base centre, resting on its side",
+   "description": "Turret shell: tall ridged spire.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.1007,
+    -0.0117,
+    -0.0512
+   ],
+   "bounds_max": [
+    0.0696,
+    0.0886,
+    0.0512
+   ],
+   "size_m": [
+    0.17,
+    0.1,
+    0.102
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "ShellPink",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Rock"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Shell_Turret_Fished",
+   "file": "Art/Export/Props/Prop_Shell_Turret_Fished.fbx",
+   "triangles": 572,
+   "vertices": 464,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Shell_Turret",
+   "pivot": "base centre, resting on its side",
+   "description": "Turret shell: tall ridged spire.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.1007,
+    -0.034,
+    -0.0512
+   ],
+   "bounds_max": [
+    0.0696,
+    0.0886,
+    0.0512
+   ],
+   "size_m": [
+    0.17,
+    0.123,
+    0.102
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "FoliageDark",
+    "Sand",
+    "ShellPink",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Rock"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_SeaGlass_Green",
+   "file": "Art/Export/Props/Prop_SeaGlass_Green.fbx",
+   "triangles": 80,
+   "vertices": 42,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_SeaGlass_Green",
+   "pivot": "base centre",
+   "description": "Sea glass, green: frosted rounded pebble.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.026,
+    0.0008,
+    -0.0206
+   ],
+   "bounds_max": [
+    0.0247,
+    0.0243,
+    0.0217
+   ],
+   "size_m": [
+    0.051,
+    0.024,
+    0.042
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "GlassGreen"
+   ],
+   "layers": [
+    "none"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_SeaGlass_Green_Fished",
+   "file": "Art/Export/Props/Prop_SeaGlass_Green_Fished.fbx",
+   "triangles": 110,
+   "vertices": 68,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_SeaGlass_Green",
+   "pivot": "base centre",
+   "description": "Sea glass, green: frosted rounded pebble.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.026,
+    -0.0314,
+    -0.0407
+   ],
+   "bounds_max": [
+    0.0308,
+    0.0243,
+    0.0217
+   ],
+   "size_m": [
+    0.057,
+    0.056,
+    0.062
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "GlassGreen"
+   ],
+   "layers": [
+    "none",
+    "Foliage"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_SeaGlass_Brown",
+   "file": "Art/Export/Props/Prop_SeaGlass_Brown.fbx",
+   "triangles": 80,
+   "vertices": 42,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_SeaGlass_Brown",
+   "pivot": "base centre",
+   "description": "Sea glass, brown: a flat shard worn smooth.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0337,
+    0.0007,
+    -0.0205
+   ],
+   "bounds_max": [
+    0.0334,
+    0.0197,
+    0.0208
+   ],
+   "size_m": [
+    0.067,
+    0.019,
+    0.041
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "GlassBrown"
+   ],
+   "layers": [
+    "none"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_SeaGlass_Brown_Fished",
+   "file": "Art/Export/Props/Prop_SeaGlass_Brown_Fished.fbx",
+   "triangles": 110,
+   "vertices": 68,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_SeaGlass_Brown",
+   "pivot": "base centre",
+   "description": "Sea glass, brown: a flat shard worn smooth.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0541,
+    -0.0364,
+    -0.0205
+   ],
+   "bounds_max": [
+    0.0334,
+    0.0197,
+    0.0208
+   ],
+   "size_m": [
+    0.087,
+    0.056,
+    0.041
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "GlassBrown"
+   ],
+   "layers": [
+    "none",
+    "Foliage"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_SeaGlass_Blue",
+   "file": "Art/Export/Props/Prop_SeaGlass_Blue.fbx",
+   "triangles": 100,
+   "vertices": 54,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_SeaGlass_Blue",
+   "pivot": "base centre",
+   "description": "Sea glass, blue: a lumpy chunk.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0234,
+    -0.003,
+    -0.0211
+   ],
+   "bounds_max": [
+    0.0307,
+    0.0327,
+    0.0234
+   ],
+   "size_m": [
+    0.054,
+    0.036,
+    0.044
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "GlassBlue"
+   ],
+   "layers": [
+    "none"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_SeaGlass_Blue_Fished",
+   "file": "Art/Export/Props/Prop_SeaGlass_Blue_Fished.fbx",
+   "triangles": 130,
+   "vertices": 80,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_SeaGlass_Blue",
+   "pivot": "base centre",
+   "description": "Sea glass, blue: a lumpy chunk.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0243,
+    -0.034,
+    -0.0211
+   ],
+   "bounds_max": [
+    0.0307,
+    0.0327,
+    0.0234
+   ],
+   "size_m": [
+    0.055,
+    0.067,
+    0.044
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "GlassBlue"
+   ],
+   "layers": [
+    "none",
+    "Foliage"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_SeaGlass_Clear",
+   "file": "Art/Export/Props/Prop_SeaGlass_Clear.fbx",
+   "triangles": 164,
+   "vertices": 103,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_SeaGlass_Clear",
+   "pivot": "base centre",
+   "description": "Sea glass, white: a worn bottle-neck ring.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0311,
+    0.0,
+    -0.0311
+   ],
+   "bounds_max": [
+    0.0369,
+    0.021,
+    0.0311
+   ],
+   "size_m": [
+    0.068,
+    0.021,
+    0.062
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "GlassClear"
+   ],
+   "layers": [
+    "none"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_SeaGlass_Clear_Fished",
+   "file": "Art/Export/Props/Prop_SeaGlass_Clear_Fished.fbx",
+   "triangles": 194,
+   "vertices": 129,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_SeaGlass_Clear",
+   "pivot": "base centre",
+   "description": "Sea glass, white: a worn bottle-neck ring.",
+   "owner_or_source": "beach",
+   "held_axis": null,
+   "bounds_min": [
+    -0.0311,
+    -0.032,
+    -0.0311
+   ],
+   "bounds_max": [
+    0.0369,
+    0.0248,
+    0.0311
+   ],
+   "size_m": [
+    0.068,
+    0.057,
+    0.062
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Reed",
+    "GlassClear"
+   ],
+   "layers": [
+    "none",
+    "Foliage"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Chest_Closed",
+   "file": "Art/Export/Props/Prop_Chest_Closed.fbx",
+   "triangles": 652,
+   "vertices": 468,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Chest_Closed",
+   "pivot": "base centre, lid closed; faces +z",
+   "description": "Treasure chest, closed: planked body, iron straps, brass lock.",
+   "owner_or_source": "dig and wrecks",
+   "held_axis": null,
+   "bounds_min": [
+    -0.29,
+    -0.005,
+    -0.18
+   ],
+   "bounds_max": [
+    0.29,
+    0.3706,
+    0.1945
+   ],
+   "size_m": [
+    0.58,
+    0.376,
+    0.374
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Wood",
+    "WoodDark",
+    "Brass",
+    "Iron"
+   ],
+   "layers": [
+    "none",
+    "Wood"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Chest_Closed_Fished",
+   "file": "Art/Export/Props/Prop_Chest_Closed_Fished.fbx",
+   "triangles": 1072,
+   "vertices": 932,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Chest_Closed",
+   "pivot": "base centre, lid closed; faces +z",
+   "description": "Treasure chest, closed: planked body, iron straps, brass lock.",
+   "owner_or_source": "dig and wrecks",
+   "held_axis": null,
+   "bounds_min": [
+    -0.341,
+    -0.0691,
+    -0.3056
+   ],
+   "bounds_max": [
+    0.3154,
+    0.3747,
+    0.3005
+   ],
+   "size_m": [
+    0.656,
+    0.444,
+    0.606
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Wood",
+    "WoodDark",
+    "Sand",
+    "Brass",
+    "Iron",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Wood"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_Chest_Open",
+   "file": "Art/Export/Props/Prop_Chest_Open.fbx",
+   "triangles": 1024,
+   "vertices": 785,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_Chest_Open",
+   "pivot": "base centre, lid thrown back; faces +z",
+   "description": "Treasure chest, open: lid up, coins and a ruby inside.",
+   "owner_or_source": "dig and wrecks",
+   "held_axis": null,
+   "bounds_min": [
+    -0.29,
+    -0.005,
+    -0.3963
+   ],
+   "bounds_max": [
+    0.29,
+    0.5637,
+    0.18
+   ],
+   "size_m": [
+    0.58,
+    0.569,
+    0.576
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Wood",
+    "WoodDark",
+    "Roof",
+    "Brass",
+    "Iron",
+    "Gold",
+    "White"
+   ],
+   "layers": [
+    "none",
+    "Wood"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Chest_Open_Fished",
+   "file": "Art/Export/Props/Prop_Chest_Open_Fished.fbx",
+   "triangles": 1444,
+   "vertices": 1249,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "fished-up",
+   "base_model": "Prop_Chest_Open",
+   "pivot": "base centre, lid thrown back; faces +z",
+   "description": "Treasure chest, open: lid up, coins and a ruby inside.",
+   "owner_or_source": "dig and wrecks",
+   "held_axis": null,
+   "bounds_min": [
+    -0.3347,
+    -0.0327,
+    -0.4357
+   ],
+   "bounds_max": [
+    0.3022,
+    0.58,
+    0.2113
+   ],
+   "size_m": [
+    0.637,
+    0.613,
+    0.647
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Wood",
+    "WoodDark",
+    "Sand",
+    "Reed",
+    "Roof",
+    "Brass",
+    "Iron",
+    "Gold",
+    "ShellCream",
+    "White"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Wood"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_DigMound",
+   "file": "Art/Export/Props/Prop_DigMound.fbx",
+   "triangles": 524,
+   "vertices": 282,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_DigMound",
+   "pivot": "base centre on the ground",
+   "description": "A fresh dig mound: loose earth heap with clods, a pebble and a spade mark.",
+   "owner_or_source": "dig spots (low tide beach)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.2553,
+    -0.0393,
+    -0.2332
+   ],
+   "bounds_max": [
+    0.2584,
+    0.1241,
+    0.226
+   ],
+   "size_m": [
+    0.514,
+    0.163,
+    0.459
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "WoodDark",
+    "Rock",
+    "Dock"
+   ],
+   "layers": [
+    "Rock",
+    "Dirt"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_DugHole",
+   "file": "Art/Export/Props/Prop_DugHole.fbx",
+   "triangles": 324,
+   "vertices": 210,
+   "material": "M_Toon_Base",
+   "group": "collectible",
+   "variant": "plain",
+   "base_model": "Prop_DugHole",
+   "pivot": "rim centre at ground level (y = 0); the hole is 0.16 m deep below it",
+   "description": "A dug hole: lipped crater with a dark floor and spoil lumps.",
+   "owner_or_source": "dig spots (low tide beach)",
+   "held_axis": null,
+   "bounds_min": [
+    -0.4083,
+    -0.16,
+    -0.4161
+   ],
+   "bounds_max": [
+    0.4151,
+    0.0531,
+    0.4015
+   ],
+   "size_m": [
+    0.823,
+    0.213,
+    0.818
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "WoodDark",
+    "Iron"
+   ],
+   "layers": [
+    "Dirt"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_JigLure",
+   "file": "Art/Export/Props/Prop_JigLure.fbx",
+   "triangles": 428,
+   "vertices": 289,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_JigLure",
+   "pivot": "grip: the line eye at the top; hangs along -y",
+   "description": "Jig lure: painted lead head, feather tail, upturned hook.",
+   "owner_or_source": null,
+   "held_axis": "hangs down from the eye on the line (-y)",
+   "bounds_min": [
+    -0.0454,
+    -0.1551,
+    -0.0458
+   ],
+   "bounds_max": [
+    0.044,
+    0.0138,
+    0.0429
+   ],
+   "size_m": [
+    0.089,
+    0.169,
+    0.089
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Roof",
+    "Accent",
+    "Steel",
+    "White",
+    "Navy"
+   ],
+   "layers": [
+    "none"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_TrollingLure",
+   "file": "Art/Export/Props/Prop_TrollingLure.fbx",
+   "triangles": 520,
+   "vertices": 386,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_TrollingLure",
+   "pivot": "grip: the line eye on the nose; trails along -z",
+   "description": "Trolling lure: bullet head with eyes and a skirt of 12 strands.",
+   "owner_or_source": null,
+   "held_axis": "nose at the pivot, trails behind along -z",
+   "bounds_min": [
+    -0.0389,
+    -0.0588,
+    -0.2968
+   ],
+   "bounds_max": [
+    0.0389,
+    0.0338,
+    0.003
+   ],
+   "size_m": [
+    0.078,
+    0.093,
+    0.3
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Roof",
+    "Accent",
+    "Steel",
+    "White",
+    "Navy"
+   ],
+   "layers": [
+    "none"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_CastNet_Folded",
+   "file": "Art/Export/Props/Prop_CastNet_Folded.fbx",
+   "triangles": 650,
+   "vertices": 436,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_CastNet_Folded",
+   "pivot": "grip: the hand loop at the cord end; the bundle lies along +z",
+   "description": "Cast net, folded: corded bundle with a lead-weighted hem, ready to throw.",
+   "owner_or_source": null,
+   "held_axis": "bundle hangs from the hand loop along +z",
+   "bounds_min": [
+    -0.1265,
+    -0.2179,
+    -0.007
+   ],
+   "bounds_max": [
+    0.1265,
+    0.0447,
+    0.5832
+   ],
+   "size_m": [
+    0.253,
+    0.263,
+    0.59
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Sand",
+    "Dock",
+    "Accent",
+    "Iron"
+   ],
+   "layers": [
+    "none",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_CastNet_Folded_Fished",
+   "file": "Art/Export/Props/Prop_CastNet_Folded_Fished.fbx",
+   "triangles": 920,
+   "vertices": 710,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "fished-up",
+   "base_model": "Prop_CastNet_Folded",
+   "pivot": "grip: the hand loop at the cord end; the bundle lies along +z",
+   "description": "Cast net, folded: corded bundle with a lead-weighted hem, ready to throw.",
+   "owner_or_source": null,
+   "held_axis": "bundle hangs from the hand loop along +z",
+   "bounds_min": [
+    -0.1994,
+    -0.4156,
+    -0.2029
+   ],
+   "bounds_max": [
+    0.1726,
+    0.0447,
+    0.5832
+   ],
+   "size_m": [
+    0.372,
+    0.46,
+    0.786
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Reed",
+    "Dock",
+    "Accent",
+    "Iron",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Cloth"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_CastNet_Spread",
+   "file": "Art/Export/Props/Prop_CastNet_Spread.fbx",
+   "triangles": 968,
+   "vertices": 584,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_CastNet_Spread",
+   "pivot": "grip: the hand loop at the apex, net hangs below; apex at y = 0",
+   "description": "Cast net, spread: a 2.6 m circle with scalloped hem, radial cords and a lead ring.",
+   "owner_or_source": null,
+   "held_axis": "apex at the pivot; net opens downward (-y), 1.3 m radius",
+   "bounds_min": [
+    -1.3257,
+    -0.5306,
+    -1.3275
+   ],
+   "bounds_max": [
+    1.3257,
+    0.0552,
+    1.3275
+   ],
+   "size_m": [
+    2.651,
+    0.586,
+    2.655
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Sand",
+    "Dock",
+    "Iron"
+   ],
+   "layers": [
+    "none",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_CastNet_Spread_Fished",
+   "file": "Art/Export/Props/Prop_CastNet_Spread_Fished.fbx",
+   "triangles": 1268,
+   "vertices": 884,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "fished-up",
+   "base_model": "Prop_CastNet_Spread",
+   "pivot": "grip: the hand loop at the apex, net hangs below; apex at y = 0",
+   "description": "Cast net, spread: a 2.6 m circle with scalloped hem, radial cords and a lead ring.",
+   "owner_or_source": null,
+   "held_axis": "apex at the pivot; net opens downward (-y), 1.3 m radius",
+   "bounds_min": [
+    -1.3257,
+    -1.0847,
+    -1.3389
+   ],
+   "bounds_max": [
+    1.3257,
+    0.0834,
+    1.3275
+   ],
+   "size_m": [
+    2.651,
+    1.168,
+    2.666
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Sand",
+    "Reed",
+    "Dock",
+    "Iron",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Cloth"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_CrabPot",
+   "file": "Art/Export/Props/Prop_CrabPot.fbx",
+   "triangles": 1118,
+   "vertices": 739,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_CrabPot",
+   "pivot": "base centre of the pot; rope and buoy lie beside it on +x",
+   "description": "Crab pot with buoy and rope: the harbour LobsterPot (same build) plus a funnel mouth, hatch, bait cage, rope and a buoy.",
+   "owner_or_source": null,
+   "held_axis": "stands on the ground; carried by the top hoop",
+   "bounds_min": [
+    -0.24,
+    -0.1364,
+    -0.36
+   ],
+   "bounds_max": [
+    0.91,
+    0.347,
+    0.36
+   ],
+   "size_m": [
+    1.15,
+    0.483,
+    0.72
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Wood",
+    "WoodDark",
+    "Sand",
+    "Accent",
+    "Steel",
+    "Iron",
+    "White"
+   ],
+   "layers": [
+    "none",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_CrabPot_Fished",
+   "file": "Art/Export/Props/Prop_CrabPot_Fished.fbx",
+   "triangles": 1538,
+   "vertices": 1183,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "fished-up",
+   "base_model": "Prop_CrabPot",
+   "pivot": "base centre of the pot; rope and buoy lie beside it on +x",
+   "description": "Crab pot with buoy and rope: the harbour LobsterPot (same build) plus a funnel mouth, hatch, bait cage, rope and a buoy.",
+   "owner_or_source": null,
+   "held_axis": "stands on the ground; carried by the top hoop",
+   "bounds_min": [
+    -0.2607,
+    -0.5443,
+    -0.5735
+   ],
+   "bounds_max": [
+    0.9587,
+    0.347,
+    0.5668
+   ],
+   "size_m": [
+    1.219,
+    0.891,
+    1.14
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Wood",
+    "WoodDark",
+    "Sand",
+    "Reed",
+    "Accent",
+    "Steel",
+    "Iron",
+    "ShellCream",
+    "White"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_LanternRig",
+   "file": "Art/Export/Props/Prop_LanternRig.fbx",
+   "triangles": 562,
+   "vertices": 487,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_LanternRig",
+   "pivot": "grip: hand grip on the pole; the pole points along +z, tilted up 6 degrees",
+   "description": "Lantern-fishing rig: 1.5 m pole, hanging cage lantern with a glowing core, a weighted drop line with a hook.",
+   "owner_or_source": null,
+   "held_axis": "pole along +z; lantern hangs 0.3 m below the tip",
+   "bounds_min": [
+    -0.075,
+    -0.778,
+    -0.102
+   ],
+   "bounds_max": [
+    0.075,
+    0.2325,
+    1.5631
+   ],
+   "size_m": [
+    0.15,
+    1.01,
+    1.665
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Wood",
+    "WoodDark",
+    "Sand",
+    "Accent",
+    "Brass",
+    "Steel",
+    "Iron"
+   ],
+   "layers": [
+    "none",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_LanternRig_Fished",
+   "file": "Art/Export/Props/Prop_LanternRig_Fished.fbx",
+   "triangles": 772,
+   "vertices": 709,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "fished-up",
+   "base_model": "Prop_LanternRig",
+   "pivot": "grip: hand grip on the pole; the pole points along +z, tilted up 6 degrees",
+   "description": "Lantern-fishing rig: 1.5 m pole, hanging cage lantern with a glowing core, a weighted drop line with a hook.",
+   "owner_or_source": null,
+   "held_axis": "pole along +z; lantern hangs 0.3 m below the tip",
+   "bounds_min": [
+    -0.1822,
+    -0.8649,
+    -0.102
+   ],
+   "bounds_max": [
+    0.3214,
+    0.2325,
+    1.7694
+   ],
+   "size_m": [
+    0.504,
+    1.097,
+    1.871
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Foliage",
+    "FoliageDark",
+    "Wood",
+    "WoodDark",
+    "Sand",
+    "Reed",
+    "Accent",
+    "Brass",
+    "Steel",
+    "Iron",
+    "ShellCream"
+   ],
+   "layers": [
+    "none",
+    "Foliage",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 0.6
+  },
+  {
+   "name": "Prop_FightingRod",
+   "file": "Art/Export/Props/Prop_FightingRod.fbx",
+   "triangles": 921,
+   "vertices": 714,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_FightingRod",
+   "pivot": "grip: the foregrip centre; rod along +z, butt at z = -0.45, tip at z = +1.35",
+   "description": "Heavy fighting rod: 1.8 m stout blank, rubber grips, gimbal butt, big conventional reel and seven guides.",
+   "owner_or_source": null,
+   "held_axis": "along +z, tip bent up 0.2 m",
+   "bounds_min": [
+    -0.055,
+    -0.0355,
+    -0.494
+   ],
+   "bounds_max": [
+    0.1102,
+    0.2374,
+    1.3535
+   ],
+   "size_m": [
+    0.165,
+    0.273,
+    1.847
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Sand",
+    "Roof",
+    "Accent",
+    "Brass",
+    "Steel",
+    "Iron"
+   ],
+   "layers": [
+    "none",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_IceAuger",
+   "file": "Art/Export/Props/Prop_IceAuger.fbx",
+   "triangles": 472,
+   "vertices": 387,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_IceAuger",
+   "pivot": "grip: centre of the T-handle crossbar; the auger points down -y",
+   "description": "Ice auger: T-handle with wooden grips, orange shaft collar, steel helical flight and two cutting blades.",
+   "owner_or_source": null,
+   "held_axis": "vertical: handle at the pivot, blades 1.0 m below (-y)",
+   "bounds_min": [
+    -0.2,
+    -1.05,
+    -0.0594
+   ],
+   "bounds_max": [
+    0.2,
+    0.026,
+    0.0584
+   ],
+   "size_m": [
+    0.4,
+    1.076,
+    0.118
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Wood",
+    "Accent",
+    "Steel",
+    "Iron"
+   ],
+   "layers": [
+    "none",
+    "Wood"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_IceHoleRim",
+   "file": "Art/Export/Props/Prop_IceHoleRim.fbx",
+   "triangles": 368,
+   "vertices": 269,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_IceHoleRim",
+   "pivot": "rim centre at ground level (y = 0); the water is 0.05 m below",
+   "description": "Ice-hole rim: chunky lipped ice ring around a dark hole with loose chips.",
+   "owner_or_source": null,
+   "held_axis": "placed on the ice surface",
+   "bounds_min": [
+    -0.5876,
+    -0.08,
+    -0.6062
+   ],
+   "bounds_max": [
+    0.6013,
+    0.0864,
+    0.6105
+   ],
+   "size_m": [
+    1.189,
+    0.166,
+    1.217
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Ice",
+    "Navy"
+   ],
+   "layers": [
+    "none"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_FlyRod",
+   "file": "Art/Export/Props/Prop_FlyRod.fbx",
+   "triangles": 845,
+   "vertices": 661,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_FlyRod",
+   "pivot": "grip: centre of the cork grip; rod along +z, reel under the butt",
+   "description": "Fly rod and reel: 2.7 m olive blank, cork grip, brass reel seat, fly reel and nine snake guides.",
+   "owner_or_source": null,
+   "held_axis": "along +z, tip bent up 0.25 m",
+   "bounds_min": [
+    -0.0202,
+    -0.12,
+    -0.2937
+   ],
+   "bounds_max": [
+    0.0589,
+    0.3027,
+    2.701
+   ],
+   "size_m": [
+    0.079,
+    0.423,
+    2.995
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "FoliageDark",
+    "Wood",
+    "Dock",
+    "Brass",
+    "Steel",
+    "Iron",
+    "Paper"
+   ],
+   "layers": [
+    "none",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_MetalDetector",
+   "file": "Art/Export/Props/Prop_MetalDetector.fbx",
+   "triangles": 874,
+   "vertices": 655,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_MetalDetector",
+   "pivot": "grip: centre of the hand grip; shaft runs forward-down along +z, coil at the end",
+   "description": "Metal detector: grip with arm cuff, control box with dial, telescoping shaft with cam locks and a search coil.",
+   "owner_or_source": null,
+   "held_axis": "grip at the pivot, search coil 0.95 m forward and 0.55 m down",
+   "bounds_min": [
+    -0.14,
+    -0.6248,
+    -0.43
+   ],
+   "bounds_max": [
+    0.14,
+    0.162,
+    1.196
+   ],
+   "size_m": [
+    0.28,
+    0.787,
+    1.626
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Roof",
+    "Accent",
+    "Brass",
+    "Steel",
+    "Iron",
+    "GlassGreen"
+   ],
+   "layers": [
+    "none",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_Shovel",
+   "file": "Art/Export/Props/Prop_Shovel.fbx",
+   "triangles": 384,
+   "vertices": 240,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_Shovel",
+   "pivot": "grip: the D-handle centre; the shovel points down -y",
+   "description": "Shovel: ash shaft with a D-handle and a steel blade with a rolled step.",
+   "owner_or_source": null,
+   "held_axis": "vertical: D-handle at the pivot, blade 1.0 m below (-y)",
+   "bounds_min": [
+    -0.11,
+    -1.0584,
+    -0.04
+   ],
+   "bounds_max": [
+    0.11,
+    0.09,
+    0.03
+   ],
+   "size_m": [
+    0.22,
+    1.148,
+    0.07
+   ],
+   "rests_on_ground": false,
+   "slots": [
+    "Wood",
+    "Steel",
+    "Iron"
+   ],
+   "layers": [
+    "none",
+    "Wood"
+   ],
+   "wet_tint": 1.0
+  },
+  {
+   "name": "Prop_HandCart",
+   "file": "Art/Export/Props/Prop_HandCart.fbx",
+   "triangles": 960,
+   "vertices": 940,
+   "material": "M_Toon_Base",
+   "group": "gear",
+   "variant": "plain",
+   "base_model": "Prop_HandCart",
+   "pivot": "base centre between the wheels, wheels on y = 0; faces +z, handles toward -z",
+   "description": "Hand cart for solo hauling: two spoked wheels, slatted bed with a rope strap, two long handles and a prop foot.",
+   "owner_or_source": null,
+   "held_axis": "pushed/pulled by the handles; bed 1.0 x 0.62 m",
+   "bounds_min": [
+    -0.462,
+    -0.0008,
+    -1.2826
+   ],
+   "bounds_max": [
+    0.462,
+    0.8069,
+    0.58
+   ],
+   "size_m": [
+    0.924,
+    0.808,
+    1.863
+   ],
+   "rests_on_ground": true,
+   "slots": [
+    "Wood",
+    "WoodDark",
+    "Dock",
+    "Roof",
+    "Accent",
+    "Steel",
+    "Iron"
+   ],
+   "layers": [
+    "none",
+    "Wood",
+    "Cloth"
+   ],
+   "wet_tint": 1.0
+  }
+ ],
+ "total_triangles": 45754,
+ "models": 73
+}
