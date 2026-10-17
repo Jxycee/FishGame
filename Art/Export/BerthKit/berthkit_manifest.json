@@ -1,0 +1,2777 @@
+{
+ "generator": "Art/Blender/fg_berthkit.py (imports fg_harbour.py for geometry helpers; does not modify it)",
+ "area": "BerthKit",
+ "branch": "harbour-berth-kit",
+ "date": "2026-10-17",
+ "axes": "Unity metres, authored in Unity axes (Blender = (-x, -z, y)); FBX settings and encoding as fg_harbour.py. Each FBX object is at the origin with an identity transform.",
+ "encoding": {
+  "uv0": "UVMap: metres",
+  "uv1": "Layer: (palette slot, texture layer)",
+  "colour": "Col = 0.5 x baked AO (per vertex, floor 0.22-0.62 per part)",
+  "normals": "smooth / analytic",
+  "materials": "none exported; M_Toon_Base for every model (no _Tri models in this kit)"
+ },
+ "slots": {
+  "Grass": 0,
+  "Foliage": 1,
+  "FoliageDark": 2,
+  "Wood": 3,
+  "WoodDark": 4,
+  "Sand": 5,
+  "Rock": 6,
+  "Reed": 7,
+  "Dock": 8,
+  "Roof": 9,
+  "Accent": 10
+ },
+ "layers": {
+  "none": 0,
+  "Grass": 1,
+  "Foliage": 2,
+  "Wood": 3,
+  "Bark": 4,
+  "Sand": 5,
+  "Rock": 6,
+  "Cloth": 7,
+  "CliffRock": 9,
+  "StoneWall": 10,
+  "Plaster": 11,
+  "Dirt": 12,
+  "Meadow": 13,
+  "RoofTile": 14
+ },
+ "palette_note": "Palette slots (FishingSeedData.PaletteSeasons): only 0 Grass, 1 Foliage, 2 FoliageDark, 7 Reed, 14 Blossom and 15 FoliageAlt change with the season. Slot 11 (\"Snow\", 0.95/0.96/0.98) is white all year: plastic, enamel, sign paint, teeth, eyes. Slot 9 Roof (brick red) stands in for flamingo pink (no pink slot exists; Blossom is pink only in spring); slot 10 Accent (orange) is the neon, the bait bucket and the hammock stripes. Reed (7, bamboo) and Foliage (1, bass and shrubs) follow the season on purpose.",
+ "grid": {
+  "cell_m": 1.0,
+  "origin": "cell corners on integer Unity x, z; a 1 x 1 piece pivots on (n + 0.5, m + 0.5); a 1 x 2 / 2 x 1 piece pivots on the middle of its two cells",
+  "yaw": "multiples of 90 degrees; pieces face +z (stairs and ramps rise toward +z, rails/trim/roof posts sit on the +z edge or +x,+z corner)",
+  "datum": "y = 0 in every Berth_ model is the walking surface. Placement y = datum_y. Tiles hang to -0.16, pilings from -N to -0.17.",
+  "datum_levels": "datum_y(n) = 1.25 + n x 1.0 (n = -1 .. 3): 0.25 (beach landing), 1.25 (TUG DECK, the default), 2.25, 3.25, 4.25",
+  "vertical_pieces": {
+   "stair_rise": 1.0,
+   "stair_run": 2.0,
+   "ramp_rise": 1.0,
+   "ramp_run": 4.0,
+   "rail_top": 1.0,
+   "rail_post": 1.12,
+   "roof_post": 2.5,
+   "roof_flat_y": 2.5,
+   "roof_pitched_y": [
+    2.5,
+    3.0
+   ],
+   "ridge_y": 3.0,
+   "string_light_hook_y": 2.3,
+   "wall_height": 2.4,
+   "bench_seat": 0.45,
+   "table_top": 0.92
+  },
+  "piling_rule": "world piling base = datum_y - N; choose the shortest N in (2,3,4,5,6,7) with N >= datum_y - ground_y + 0.3",
+  "camps": "same 1 m steps from the camp's own base level; structural pieces snap, decor is free inside the plot"
+ },
+ "site": {
+  "location": "east basin, south shore, between the lookout (x 34.7-39.5, z -51.2..-47.6) and the East Ledge jetty (x 54.4-57, z -51..-34)",
+  "coast": "COAST_Z -45 (BeachY above, SeabedY = -0.25 (z + 45) below); ground at the plot: z -47 -> 0.24, z -45 -> 0.0, z -30 -> -3.75, z -28 -> -4.25",
+  "plot": {
+   "x0": 41.0,
+   "x1": 53.0,
+   "z0": -47.0,
+   "z1": -28.0
+  },
+  "buildable": {
+   "x0": 41.0,
+   "x1": 53.0,
+   "z0": -47.0,
+   "z1": -30.0,
+   "note": "the plot minus the fixed pontoon strip"
+  },
+  "water_level_y": 0.0,
+  "mooring_line": {
+   "z": -28.0,
+   "pontoon": {
+    "x0": 41.0,
+    "x1": 53.0,
+    "z0": -30.0,
+    "z1": -28.0
+   },
+   "top_y": 1.25,
+   "bollards": [
+    [
+     41.5,
+     1.25,
+     -28.45
+    ],
+    [
+     44.5,
+     1.25,
+     -28.45
+    ],
+    [
+     47.5,
+     1.25,
+     -28.45
+    ],
+    [
+     50.0,
+     1.25,
+     -28.45
+    ]
+   ],
+   "fender_x": [
+    41.9,
+    43.4,
+    44.9,
+    46.4,
+    47.9,
+    49.4,
+    50.9
+   ],
+   "gangway_landing": [
+    52.5,
+    1.25,
+    -28.0
+   ],
+   "model": "Site_MooringLine",
+   "depth_guarantee": "seabed is 3.75 m below the water at the pontoon (SeabedY at z -30) and 4.25 m at its edge: the tug keel is 1.5 m below the waterline"
+  },
+  "tug": {
+   "position": [
+    45.5,
+    0.0,
+    -25.2
+   ],
+   "yaw": 270.0,
+   "deck_y": 1.25,
+   "length_m": 15.5,
+   "beam_m": 5.0,
+   "local_extent_z": [
+    -7.5,
+    8.0
+   ],
+   "gangway_local_z": -7.0,
+   "gangway_side": "port",
+   "note": "bow west (yaw 270) so the tug's PORT side (the gangway side, local -x) faces the pontoon (south). Its centre line is at z -25.2: 0.3 m of fender gap to the pontoon edge z -28.0 for half the beam TUG_B 5.0 (the brief said about 4 m; fg_harbour.py has TUG_B = 5.0, which this uses). Hull spans world x 37.5 .. 53.0, z -27.7 .. -22.7; stern gangway lands at x 52.5.",
+   "envelope": {
+    "x0": 37.5,
+    "x1": 53.0,
+    "z0": -27.7,
+    "z1": -22.7
+   }
+  },
+  "approach_lane": {
+   "rect": {
+    "x0": 33.0,
+    "x1": 57.0,
+    "z0": -28.0,
+    "z1": -15.0
+   },
+   "note": "KEEP CLEAR. No placed piece or camp item may intersect this rectangle, nor the tug envelope above; the host validates a placement against it. It opens onto the open basin (north); the mole is at z about -10. The plot ends at z -28, so only a piece pushed beyond the plot could block it.",
+   "buoys": [
+    {
+     "x": 33.0,
+     "z": -16.0,
+     "model": "Site_LaneBuoy_Port",
+     "y": 0.0
+    },
+    {
+     "x": 33.0,
+     "z": -21.0,
+     "model": "Site_LaneBuoy_Port",
+     "y": 0.0
+    },
+    {
+     "x": 33.0,
+     "z": -26.0,
+     "model": "Site_LaneBuoy_Port",
+     "y": 0.0
+    },
+    {
+     "x": 57.0,
+     "z": -16.0,
+     "model": "Site_LaneBuoy_Starboard",
+     "y": 0.0
+    },
+    {
+     "x": 57.0,
+     "z": -21.0,
+     "model": "Site_LaneBuoy_Starboard",
+     "y": 0.0
+    },
+    {
+     "x": 57.0,
+     "z": -26.0,
+     "model": "Site_LaneBuoy_Starboard",
+     "y": 0.0
+    }
+   ]
+  },
+  "starter_landing": {
+   "note": "Default placements (kit model, centre x, y, centre z, yaw). Pilings were sized from fg_harbour.land_y. All are removable build pieces.",
+   "placements": [
+    {
+     "model": "Berth_Stair_1m",
+     "position": [
+      51.5,
+      1.25,
+      -46.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Stair_1m",
+     "position": [
+      52.5,
+      1.25,
+      -46.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      51.5,
+      1.25,
+      -44.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      51.5,
+      1.25,
+      -42.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      51.5,
+      1.25,
+      -40.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      51.5,
+      1.25,
+      -38.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      51.5,
+      1.25,
+      -36.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      51.5,
+      1.25,
+      -34.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      51.5,
+      1.25,
+      -32.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x1",
+     "position": [
+      51.5,
+      1.25,
+      -30.5
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      52.5,
+      1.25,
+      -44.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      52.5,
+      1.25,
+      -42.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      52.5,
+      1.25,
+      -40.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      52.5,
+      1.25,
+      -38.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      52.5,
+      1.25,
+      -36.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      52.5,
+      1.25,
+      -34.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      52.5,
+      1.25,
+      -32.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x1",
+     "position": [
+      52.5,
+      1.25,
+      -30.5
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      48.5,
+      1.25,
+      -34.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      48.5,
+      1.25,
+      -32.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x1",
+     "position": [
+      48.5,
+      1.25,
+      -30.5
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      49.5,
+      1.25,
+      -34.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      49.5,
+      1.25,
+      -32.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x1",
+     "position": [
+      49.5,
+      1.25,
+      -30.5
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      50.5,
+      1.25,
+      -34.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x2",
+     "position": [
+      50.5,
+      1.25,
+      -32.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_DeckTile_1x1",
+     "position": [
+      50.5,
+      1.25,
+      -30.5
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_2m",
+     "position": [
+      51.0,
+      1.25,
+      -44.6
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_2m",
+     "position": [
+      53.0,
+      1.25,
+      -44.6
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_3m",
+     "position": [
+      51.0,
+      1.25,
+      -41.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_3m",
+     "position": [
+      53.0,
+      1.25,
+      -41.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_4m",
+     "position": [
+      51.0,
+      1.25,
+      -37.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_4m",
+     "position": [
+      53.0,
+      1.25,
+      -37.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_5m",
+     "position": [
+      51.0,
+      1.25,
+      -33.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_5m",
+     "position": [
+      53.0,
+      1.25,
+      -33.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_5m",
+     "position": [
+      48.1,
+      1.25,
+      -34.9
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_5m",
+     "position": [
+      48.1,
+      1.25,
+      -31.2
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_5m",
+     "position": [
+      50.0,
+      1.25,
+      -34.9
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_5m",
+     "position": [
+      50.0,
+      1.25,
+      -31.2
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_6m",
+     "position": [
+      51.0,
+      1.25,
+      -30.7
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Piling_6m",
+     "position": [
+      53.0,
+      1.25,
+      -30.7
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -44.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -43.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -42.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -41.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -40.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -39.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -38.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -37.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -36.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -35.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -34.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -33.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Rail_1m",
+     "position": [
+      51.5,
+      1.25,
+      -32.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_RailPost",
+     "position": [
+      51.5,
+      1.25,
+      -44.5
+     ],
+     "yaw": 270.0
+    },
+    {
+     "model": "Berth_Bench_2m",
+     "position": [
+      49.0,
+      1.25,
+      -34.5
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_RodRack",
+     "position": [
+      48.5,
+      1.25,
+      -31.5
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Berth_Cleat",
+     "position": [
+      49.5,
+      1.25,
+      -31.2
+     ],
+     "yaw": 90.0
+    },
+    {
+     "model": "Berth_NameSign",
+     "position": [
+      49.5,
+      0.168,
+      -46.4
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Stand_Lantern",
+     "position": [
+      51.2,
+      1.25,
+      -44.3
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Stand_Lantern",
+     "position": [
+      50.7,
+      1.25,
+      -31.35
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Stand_Lantern",
+     "position": [
+      52.4,
+      1.25,
+      -29.4
+     ],
+     "yaw": 0.0
+    },
+    {
+     "model": "Stand_RopeCoil",
+     "position": [
+      44.6,
+      1.25,
+      -29.0
+     ],
+     "yaw": 0.0
+    }
+   ]
+  }
+ },
+ "total_triangles": 21511,
+ "fbx": [
+  {
+   "name": "Stand_RodHolder",
+   "file": "Art/Export/BerthKit/Stand_RodHolder.fbx",
+   "family": "stand",
+   "triangles": 328,
+   "vertices": 227,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.1874,
+    -0.25,
+    -0.1524
+   ],
+   "bounds_max": [
+    0.1874,
+    0.8217,
+    0.15
+   ],
+   "slots": [
+    3,
+    4,
+    6,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    3
+   ],
+   "pivot": "base centre",
+   "notes": "Stand dressing: place within ~1 m of a fishing spot, facing the water. Two rod sleeves."
+  },
+  {
+   "name": "Stand_BaitBucket",
+   "file": "Art/Export/BerthKit/Stand_BaitBucket.fbx",
+   "family": "stand",
+   "triangles": 316,
+   "vertices": 256,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.2116,
+    0.0,
+    -0.1997
+   ],
+   "bounds_max": [
+    0.2116,
+    0.512,
+    0.209
+   ],
+   "slots": [
+    6,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "base centre"
+  },
+  {
+   "name": "Stand_CrateSeat",
+   "file": "Art/Export/BerthKit/Stand_CrateSeat.fbx",
+   "family": "stand",
+   "triangles": 200,
+   "vertices": 336,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.26,
+    0.0,
+    -0.23
+   ],
+   "bounds_max": [
+    0.26,
+    0.375,
+    0.23
+   ],
+   "slots": [
+    3,
+    4,
+    8,
+    10
+   ],
+   "layers": [
+    3,
+    7
+   ],
+   "pivot": "base centre"
+  },
+  {
+   "name": "Stand_TackleBox",
+   "file": "Art/Export/BerthKit/Stand_TackleBox.fbx",
+   "family": "stand",
+   "triangles": 192,
+   "vertices": 192,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.23,
+    0.01,
+    -0.12
+   ],
+   "bounds_max": [
+    0.23,
+    0.29,
+    0.1305
+   ],
+   "slots": [
+    5,
+    6,
+    9
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "base centre"
+  },
+  {
+   "name": "Stand_Lantern",
+   "file": "Art/Export/BerthKit/Stand_Lantern.fbx",
+   "family": "stand",
+   "triangles": 410,
+   "vertices": 296,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.125,
+    0.0,
+    -0.1189
+   ],
+   "bounds_max": [
+    0.125,
+    0.549,
+    0.1189
+   ],
+   "slots": [
+    6
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "base centre",
+   "emissive_companion": "Stand_Lantern_Glow",
+   "light_points": [
+    {
+     "name": "LanternLight",
+     "position": [
+      0.0,
+      0.2,
+      0.0
+     ],
+     "color": [
+      1.0,
+      0.72,
+      0.38
+     ],
+     "range": 14.0,
+     "intensity": 1.3,
+     "note": "warm point light; flicker 3-5 percent at 8 Hz; at night the stand must read from 10 m"
+    }
+   ],
+   "notes": "Place on the stand/deck. Add a Point Light at light_points[0] (warm, range 14, flicker); Stand_Lantern_Glow is the emissive glass (same pivot, own object, own emissive material)."
+  },
+  {
+   "name": "Stand_Lantern_Glow",
+   "file": "Art/Export/BerthKit/Stand_Lantern_Glow.fbx",
+   "family": "stand",
+   "triangles": 80,
+   "vertices": 55,
+   "material": "M_Toon_Base + emissive (set the material to emit; palette slot is in uv1)",
+   "bounds_min": [
+    -0.092,
+    0.012,
+    -0.0875
+   ],
+   "bounds_max": [
+    0.092,
+    0.336,
+    0.0875
+   ],
+   "slots": [
+    10
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "base centre",
+   "emissive": true,
+   "companion_of": "Stand_Lantern"
+  },
+  {
+   "name": "Stand_RopeCoil",
+   "file": "Art/Export/BerthKit/Stand_RopeCoil.fbx",
+   "family": "stand",
+   "triangles": 590,
+   "vertices": 360,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.2507,
+    0.0042,
+    -0.2632
+   ],
+   "bounds_max": [
+    0.4674,
+    0.105,
+    0.2382
+   ],
+   "slots": [
+    5
+   ],
+   "layers": [
+    7
+   ],
+   "pivot": "base centre",
+   "notes": "Low prop, no collider needed."
+  },
+  {
+   "name": "Berth_Piling_2m",
+   "file": "Art/Export/BerthKit/Berth_Piling_2m.fbx",
+   "family": "berth",
+   "triangles": 208,
+   "vertices": 144,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.158,
+    -2.0,
+    -0.158
+   ],
+   "bounds_max": [
+    0.158,
+    -0.17,
+    0.158
+   ],
+   "slots": [
+    3,
+    4,
+    6
+   ],
+   "layers": [
+    0,
+    4
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "Piling lengths 2-7 m. Pivot = the DECK DATUM (walking surface); the body runs from y = -N up to -0.17 (tile underside). World base = datum_y - N; pick the shortest N with N >= datum_y - ground_y + 0.3. Cylinder collider (r 0.15) is enough."
+  },
+  {
+   "name": "Berth_Piling_3m",
+   "file": "Art/Export/BerthKit/Berth_Piling_3m.fbx",
+   "family": "berth",
+   "triangles": 208,
+   "vertices": 144,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.158,
+    -3.0,
+    -0.158
+   ],
+   "bounds_max": [
+    0.158,
+    -0.17,
+    0.158
+   ],
+   "slots": [
+    3,
+    4,
+    6
+   ],
+   "layers": [
+    0,
+    4
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ]
+  },
+  {
+   "name": "Berth_Piling_4m",
+   "file": "Art/Export/BerthKit/Berth_Piling_4m.fbx",
+   "family": "berth",
+   "triangles": 208,
+   "vertices": 144,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.158,
+    -4.0,
+    -0.158
+   ],
+   "bounds_max": [
+    0.158,
+    -0.17,
+    0.158
+   ],
+   "slots": [
+    3,
+    4,
+    6
+   ],
+   "layers": [
+    0,
+    4
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ]
+  },
+  {
+   "name": "Berth_Piling_5m",
+   "file": "Art/Export/BerthKit/Berth_Piling_5m.fbx",
+   "family": "berth",
+   "triangles": 224,
+   "vertices": 153,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.158,
+    -5.0,
+    -0.158
+   ],
+   "bounds_max": [
+    0.158,
+    -0.17,
+    0.158
+   ],
+   "slots": [
+    3,
+    4,
+    6
+   ],
+   "layers": [
+    0,
+    4
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ]
+  },
+  {
+   "name": "Berth_Piling_6m",
+   "file": "Art/Export/BerthKit/Berth_Piling_6m.fbx",
+   "family": "berth",
+   "triangles": 224,
+   "vertices": 153,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.158,
+    -6.0,
+    -0.158
+   ],
+   "bounds_max": [
+    0.158,
+    -0.17,
+    0.158
+   ],
+   "slots": [
+    3,
+    4,
+    6
+   ],
+   "layers": [
+    0,
+    4
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ]
+  },
+  {
+   "name": "Berth_Piling_7m",
+   "file": "Art/Export/BerthKit/Berth_Piling_7m.fbx",
+   "family": "berth",
+   "triangles": 240,
+   "vertices": 162,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.158,
+    -7.0,
+    -0.158
+   ],
+   "bounds_max": [
+    0.158,
+    -0.17,
+    0.158
+   ],
+   "slots": [
+    3,
+    4,
+    6
+   ],
+   "layers": [
+    0,
+    4
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ]
+  },
+  {
+   "name": "Berth_DeckTile_1x1",
+   "file": "Art/Export/BerthKit/Berth_DeckTile_1x1.fbx",
+   "family": "berth",
+   "triangles": 128,
+   "vertices": 144,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.495,
+    -0.16,
+    -0.497
+   ],
+   "bounds_max": [
+    0.495,
+    0.0,
+    0.497
+   ],
+   "slots": [
+    3,
+    4
+   ],
+   "layers": [
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "Walking surface at y = 0 (datum); 0.16 m deep. Box collider = bounds. Boards run along local z."
+  },
+  {
+   "name": "Berth_DeckTile_1x2",
+   "file": "Art/Export/BerthKit/Berth_DeckTile_1x2.fbx",
+   "family": "berth",
+   "triangles": 140,
+   "vertices": 168,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.495,
+    -0.16,
+    -0.997
+   ],
+   "bounds_max": [
+    0.495,
+    0.0,
+    0.997
+   ],
+   "slots": [
+    3,
+    4,
+    8
+   ],
+   "layers": [
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    2
+   ],
+   "notes": "As the 1x1; 1 m (x) by 2 m (z). Pivot is the middle of the two cells."
+  },
+  {
+   "name": "Berth_DeckTrim_1m",
+   "file": "Art/Export/BerthKit/Berth_DeckTrim_1m.fbx",
+   "family": "berth",
+   "triangles": 88,
+   "vertices": 48,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.5,
+    -0.3,
+    0.4625
+   ],
+   "bounds_max": [
+    0.5,
+    0.027,
+    0.5495
+   ],
+   "slots": [
+    3,
+    8
+   ],
+   "layers": [
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "Fascia for the +z cell edge, proud by 0.045 m; hangs 0.30 m below the surface. Yaw it onto other edges."
+  },
+  {
+   "name": "Berth_Stair_1m",
+   "file": "Art/Export/BerthKit/Berth_Stair_1m.fbx",
+   "family": "berth",
+   "triangles": 172,
+   "vertices": 188,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.5,
+    -1.0,
+    -1.035
+   ],
+   "bounds_max": [
+    0.5,
+    0.0,
+    1.005
+   ],
+   "slots": [
+    3,
+    4,
+    8
+   ],
+   "layers": [
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    2
+   ],
+   "notes": "Rise exactly 1.0 m over 2.0 m: top tread flush with the datum at local z +1 end, foot on a surface 1.0 m below the datum at local z -1. Ramp collider (or 4 step boxes) from the bounds."
+  },
+  {
+   "name": "Berth_Ramp_1m",
+   "file": "Art/Export/BerthKit/Berth_Ramp_1m.fbx",
+   "family": "berth",
+   "triangles": 388,
+   "vertices": 216,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.4925,
+    -1.1431,
+    -2.0
+   ],
+   "bounds_max": [
+    0.4925,
+    0.0,
+    2.034
+   ],
+   "slots": [
+    3,
+    4,
+    8
+   ],
+   "layers": [
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    4
+   ],
+   "notes": "Rise 1.0 m over 4.0 m (slope 14 deg), high end (datum) at local z +2. Use a slope (wedge) collider."
+  },
+  {
+   "name": "Berth_Rail_1m",
+   "file": "Art/Export/BerthKit/Berth_Rail_1m.fbx",
+   "family": "berth",
+   "triangles": 180,
+   "vertices": 168,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.5,
+    -0.13,
+    0.41
+   ],
+   "bounds_max": [
+    0.5,
+    1.07,
+    0.5
+   ],
+   "slots": [
+    3,
+    4,
+    8
+   ],
+   "layers": [
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "Rail on the +z edge, inboard 0.045; top 1.0 m; the model includes its +x end post. A run of N cells needs N of these plus one Berth_RailPost at the start (set the post at the -x end by yaw). Collider: one thin box 1.0 x 1.0 x 0.1 per rail."
+  },
+  {
+   "name": "Berth_RailPost",
+   "file": "Art/Export/BerthKit/Berth_RailPost.fbx",
+   "family": "berth",
+   "triangles": 44,
+   "vertices": 24,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.5,
+    -0.13,
+    0.41
+   ],
+   "bounds_max": [
+    -0.41,
+    1.07,
+    0.5
+   ],
+   "slots": [
+    4
+   ],
+   "layers": [
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "Start post for a rail run (at the cell's -x,+z corner)."
+  },
+  {
+   "name": "Berth_RoofPost",
+   "file": "Art/Export/BerthKit/Berth_RoofPost.fbx",
+   "family": "berth",
+   "triangles": 144,
+   "vertices": 96,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    0.1094,
+    -0.18,
+    0.1094
+   ],
+   "bounds_max": [
+    0.5,
+    2.52,
+    0.5
+   ],
+   "slots": [
+    3,
+    4,
+    6
+   ],
+   "layers": [
+    0,
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "2.5 m post at the cell's +x,+z corner; yaw 90/180/270 for the other corners. Roof panels sit on its top (y 2.5)."
+  },
+  {
+   "name": "Berth_RoofPanel_Flat",
+   "file": "Art/Export/BerthKit/Berth_RoofPanel_Flat.fbx",
+   "family": "berth",
+   "triangles": 92,
+   "vertices": 84,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.5,
+    2.47,
+    -0.5
+   ],
+   "bounds_max": [
+    0.5,
+    2.516,
+    0.5
+   ],
+   "slots": [
+    6,
+    9
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "Corrugated sheet at y +2.5 built in (pivot is still the cell centre at the datum). No collider."
+  },
+  {
+   "name": "Berth_RoofPanel_Pitched",
+   "file": "Art/Export/BerthKit/Berth_RoofPanel_Pitched.fbx",
+   "family": "berth",
+   "triangles": 68,
+   "vertices": 36,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.5,
+    2.4857,
+    -0.5072
+   ],
+   "bounds_max": [
+    0.5,
+    3.0143,
+    0.5072
+   ],
+   "slots": [
+    9
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "Rises toward +z from +2.5 to +3.0. Put a second one yawed 180 in the next cell (z + 1) to make a gable; cover the join with Berth_RoofRidge_1m at the cell boundary (its pivot is the boundary line at the datum)."
+  },
+  {
+   "name": "Berth_RoofRidge_1m",
+   "file": "Art/Export/BerthKit/Berth_RoofRidge_1m.fbx",
+   "family": "berth",
+   "triangles": 20,
+   "vertices": 12,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.5,
+    2.9,
+    -0.2
+   ],
+   "bounds_max": [
+    0.5,
+    3.0,
+    0.2
+   ],
+   "slots": [
+    6
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "Ridge cap, apex at +3.0, centred on the boundary line between the two cells of a gable (place it with the lower cell's x and z + 0.5)."
+  },
+  {
+   "name": "Berth_Bench_2m",
+   "file": "Art/Export/BerthKit/Berth_Bench_2m.fbx",
+   "family": "berth",
+   "triangles": 284,
+   "vertices": 300,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.9,
+    0.0,
+    -0.486
+   ],
+   "bounds_max": [
+    0.9,
+    0.95,
+    0.195
+   ],
+   "slots": [
+    3,
+    4,
+    8
+   ],
+   "layers": [
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "notes": "2 x 1 footprint, faces +z, back at the -z side. Seat height 0.45 m (sit point at local (0, 0.45, 0.0))."
+  },
+  {
+   "name": "Berth_CleaningTable",
+   "file": "Art/Export/BerthKit/Berth_CleaningTable.fbx",
+   "family": "berth",
+   "triangles": 444,
+   "vertices": 533,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.85,
+    0.0,
+    -0.375
+   ],
+   "bounds_max": [
+    0.85,
+    1.7,
+    0.375
+   ],
+   "slots": [
+    3,
+    4,
+    6,
+    8
+   ],
+   "layers": [
+    0,
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "notes": "2 x 1, work height 0.92 m. Interaction: gut/fillet fish here (design: dockside cleaning)."
+  },
+  {
+   "name": "Berth_Smoker",
+   "file": "Art/Export/BerthKit/Berth_Smoker.fbx",
+   "family": "berth",
+   "triangles": 608,
+   "vertices": 505,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.335,
+    0.0,
+    -0.335
+   ],
+   "bounds_max": [
+    0.335,
+    1.53,
+    0.355
+   ],
+   "slots": [
+    4,
+    5,
+    6,
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "1 x 1 drum smoker, 1.5 m tall. Interaction: smoke fish (design: smoker multiplies value)."
+  },
+  {
+   "name": "Berth_CrabPotRack",
+   "file": "Art/Export/BerthKit/Berth_CrabPotRack.fbx",
+   "family": "berth",
+   "triangles": 534,
+   "vertices": 561,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.5,
+    0.0,
+    -0.43
+   ],
+   "bounds_max": [
+    0.5,
+    1.55,
+    0.43
+   ],
+   "slots": [
+    3,
+    4,
+    6,
+    10
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "1 x 1 rack with three pots; ~1.4 m tall. Interaction: pots (design 3.8)."
+  },
+  {
+   "name": "Berth_RodRack",
+   "file": "Art/Export/BerthKit/Berth_RodRack.fbx",
+   "family": "berth",
+   "triangles": 545,
+   "vertices": 495,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.46,
+    0.0,
+    -0.2819
+   ],
+   "bounds_max": [
+    0.46,
+    1.9591,
+    0.16
+   ],
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "1 x 1; five rods in the rack; holds rods the crew is not using."
+  },
+  {
+   "name": "Berth_NameSign",
+   "file": "Art/Export/BerthKit/Berth_NameSign.fbx",
+   "family": "berth",
+   "triangles": 384,
+   "vertices": 280,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.96,
+    -0.05,
+    -0.1
+   ],
+   "bounds_max": [
+    0.96,
+    2.05,
+    0.1
+   ],
+   "slots": [
+    4,
+    5,
+    6,
+    8
+   ],
+   "layers": [
+    0,
+    3,
+    11
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "text_surface": {
+    "center": [
+     0.0,
+     1.4,
+     0.0405
+    ],
+    "size": [
+     1.56,
+     0.52
+    ],
+    "normal": [
+     0,
+     0,
+     1
+    ],
+    "note": "blank painted board; put the crew name (UI text, TMP) on this rectangle"
+   },
+   "notes": "text_surface in the manifest is the blank painted board: put the crew name (UI text) on that rectangle, facing +z. 2 x 1."
+  },
+  {
+   "name": "Berth_StringLights_2m",
+   "file": "Art/Export/BerthKit/Berth_StringLights_2m.fbx",
+   "family": "berth",
+   "triangles": 220,
+   "vertices": 233,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -1.025,
+    1.96,
+    -0.015
+   ],
+   "bounds_max": [
+    1.025,
+    2.3217,
+    0.035
+   ],
+   "slots": [
+    4,
+    6
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "emissive_companion": "Berth_StringLights_2m_Glow",
+   "light_points": [
+    {
+     "name": "StringLightsA",
+     "position": [
+      -0.4,
+      1.965,
+      0.0
+     ],
+     "color": [
+      1.0,
+      0.85,
+      0.55
+     ],
+     "range": 7.0,
+     "intensity": 0.9
+    },
+    {
+     "name": "StringLightsB",
+     "position": [
+      0.4,
+      1.965,
+      0.0
+     ],
+     "color": [
+      1.0,
+      0.85,
+      0.55
+     ],
+     "range": 7.0,
+     "intensity": 0.9
+    }
+   ],
+   "endpoints": [
+    [
+     -1.0,
+     2.3,
+     0.0
+    ],
+    [
+     1.0,
+     2.3,
+     0.0
+    ]
+   ],
+   "notes": "2 m span between hooks at (-1, 2.3, 0) and (1, 2.3, 0) (sag 0.28). Chain pieces end to end. Bulbs are Berth_StringLights_2m_Glow (emissive); two point lights in light_points."
+  },
+  {
+   "name": "Berth_StringLights_2m_Glow",
+   "file": "Art/Export/BerthKit/Berth_StringLights_2m_Glow.fbx",
+   "family": "berth",
+   "triangles": 240,
+   "vertices": 175,
+   "material": "M_Toon_Base + emissive (set the material to emit; palette slot is in uv1)",
+   "bounds_min": [
+    -0.846,
+    1.905,
+    -0.0398
+   ],
+   "bounds_max": [
+    0.846,
+    2.1742,
+    0.0398
+   ],
+   "slots": [
+    5,
+    10
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "emissive": true,
+   "companion_of": "Berth_StringLights_2m"
+  },
+  {
+   "name": "Berth_Bollard",
+   "file": "Art/Export/BerthKit/Berth_Bollard.fbx",
+   "family": "berth",
+   "triangles": 160,
+   "vertices": 99,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.22,
+    0.0,
+    -0.2092
+   ],
+   "bounds_max": [
+    0.22,
+    0.52,
+    0.2092
+   ],
+   "slots": [
+    4,
+    6
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "Cast bollard, 0.52 m tall. The fixed mooring line uses it; the crew may add more."
+  },
+  {
+   "name": "Berth_Cleat",
+   "file": "Art/Export/BerthKit/Berth_Cleat.fbx",
+   "family": "berth",
+   "triangles": 80,
+   "vertices": 96,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.225,
+    0.0,
+    -0.05
+   ],
+   "bounds_max": [
+    0.225,
+    0.2,
+    0.05
+   ],
+   "slots": [
+    6
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "Horn cleat; yaw so its long axis follows the rope."
+  },
+  {
+   "name": "Berth_TyreFender",
+   "file": "Art/Export/BerthKit/Berth_TyreFender.fbx",
+   "family": "berth",
+   "triangles": 236,
+   "vertices": 146,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.32,
+    -0.762,
+    0.4952
+   ],
+   "bounds_max": [
+    0.32,
+    0.0336,
+    0.7175
+   ],
+   "slots": [
+    5,
+    6
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "Pivot is the cell's +z edge midpoint at the datum; the tyre hangs 0.45 m down and 0.12 m proud of the edge."
+  },
+  {
+   "name": "Berth_Pontoon_2x2",
+   "file": "Art/Export/BerthKit/Berth_Pontoon_2x2.fbx",
+   "family": "berth",
+   "triangles": 396,
+   "vertices": 312,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.997,
+    -1.595,
+    -0.994
+   ],
+   "bounds_max": [
+    0.997,
+    0.0,
+    1.08
+   ],
+   "slots": [
+    3,
+    4,
+    6,
+    8
+   ],
+   "layers": [
+    0,
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    2,
+    2
+   ],
+   "notes": "Heavy pontoon section: deck at the datum, floats from -0.2 to -1.7 (waterline is at y -1.25 for datum 1.25). The mooring line is six of these."
+  },
+  {
+   "name": "Berth_Wall_1m",
+   "file": "Art/Export/BerthKit/Berth_Wall_1m.fbx",
+   "family": "berth",
+   "triangles": 204,
+   "vertices": 216,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.5,
+    -0.1,
+    -0.5
+   ],
+   "bounds_max": [
+    0.5,
+    2.4,
+    -0.4
+   ],
+   "slots": [
+    3,
+    4,
+    8
+   ],
+   "layers": [
+    3
+   ],
+   "pivot": "footprint centre at the walking-surface datum (y 0 = where feet stand)",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "notes": "Shed wall on the cell's -z edge, 2.4 m high. Wall decor pivots at the wall face: place it at z = cell_z - 0.40, at the wanted height."
+  },
+  {
+   "name": "Decor_Flamingo",
+   "file": "Art/Export/BerthKit/Decor_Flamingo.fbx",
+   "family": "decor",
+   "triangles": 544,
+   "vertices": 398,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.14,
+    -0.3,
+    -0.3367
+   ],
+   "bounds_max": [
+    0.14,
+    1.578,
+    0.5642
+   ],
+   "slots": [
+    5,
+    6,
+    9
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "base centre",
+   "notes": "Plastic lawn flamingo with sunglasses (coral palette slot Roof). Wants a PINK palette slot: see the report."
+  },
+  {
+   "name": "Decor_BassPlaque",
+   "file": "Art/Export/BerthKit/Decor_BassPlaque.fbx",
+   "family": "decor",
+   "triangles": 636,
+   "vertices": 434,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.34,
+    0.0,
+    -0.0
+   ],
+   "bounds_max": [
+    0.4259,
+    0.8,
+    0.13
+   ],
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    9,
+    11
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    7
+   ],
+   "pivot": "back face, bottom centre; stands out toward +z",
+   "notes": "Wall piece (pivot back-bottom-centre). The singing mechanic is up to Unity: the red button is at local (0.2, 0.17, 0.08)."
+  },
+  {
+   "name": "Decor_InflatableShark",
+   "file": "Art/Export/BerthKit/Decor_InflatableShark.fbx",
+   "family": "decor",
+   "triangles": 960,
+   "vertices": 640,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.3722,
+    0.01,
+    -0.85
+   ],
+   "bounds_max": [
+    0.3722,
+    0.9413,
+    0.86
+   ],
+   "slots": [
+    5,
+    6,
+    9,
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "base centre",
+   "notes": "Sits on the ground/deck; 1.7 m long, faces +z. Could be pushed around by physics."
+  },
+  {
+   "name": "Decor_TikiTorch",
+   "file": "Art/Export/BerthKit/Decor_TikiTorch.fbx",
+   "family": "decor",
+   "triangles": 384,
+   "vertices": 242,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.0766,
+    -0.3,
+    -0.0829
+   ],
+   "bounds_max": [
+    0.085,
+    1.88,
+    0.0829
+   ],
+   "slots": [
+    4,
+    5,
+    7
+   ],
+   "layers": [
+    0,
+    4,
+    7
+   ],
+   "pivot": "base centre",
+   "emissive_companion": "Decor_TikiTorch_Flame",
+   "light_points": [
+    {
+     "name": "TikiFlame",
+     "position": [
+      0.0,
+      1.95,
+      0.0
+     ],
+     "color": [
+      1.0,
+      0.55,
+      0.2
+     ],
+     "range": 9.0,
+     "intensity": 1.0,
+     "note": "flicker; casts the mackerel-orange pool"
+    }
+   ],
+   "notes": "Light point at the cup; Decor_TikiTorch_Flame is the emissive flame (animate scale/flicker)."
+  },
+  {
+   "name": "Decor_TikiTorch_Flame",
+   "file": "Art/Export/BerthKit/Decor_TikiTorch_Flame.fbx",
+   "family": "decor",
+   "triangles": 70,
+   "vertices": 48,
+   "material": "M_Toon_Base + emissive (set the material to emit; palette slot is in uv1)",
+   "bounds_min": [
+    -0.0496,
+    1.82,
+    -0.0536
+   ],
+   "bounds_max": [
+    0.055,
+    2.09,
+    0.0536
+   ],
+   "slots": [
+    10
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "base centre",
+   "emissive": true,
+   "companion_of": "Decor_TikiTorch"
+  },
+  {
+   "name": "Decor_BeerCooler",
+   "file": "Art/Export/BerthKit/Decor_BeerCooler.fbx",
+   "family": "decor",
+   "triangles": 354,
+   "vertices": 249,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.4129,
+    0.0,
+    -0.2
+   ],
+   "bounds_max": [
+    0.4129,
+    0.4906,
+    0.21
+   ],
+   "slots": [
+    1,
+    5,
+    6,
+    9,
+    11
+   ],
+   "layers": [
+    0,
+    7
+   ],
+   "pivot": "base centre",
+   "notes": "Lid is part of the mesh (closed); a can and a lime on top."
+  },
+  {
+   "name": "Decor_PatioChair",
+   "file": "Art/Export/BerthKit/Decor_PatioChair.fbx",
+   "family": "decor",
+   "triangles": 416,
+   "vertices": 400,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.26,
+    0.0,
+    -0.3141
+   ],
+   "bounds_max": [
+    0.26,
+    0.975,
+    0.22
+   ],
+   "slots": [
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "base centre",
+   "notes": "White resin chair (slot 11)."
+  },
+  {
+   "name": "Decor_PatioChairStack",
+   "file": "Art/Export/BerthKit/Decor_PatioChairStack.fbx",
+   "family": "decor",
+   "triangles": 1248,
+   "vertices": 1200,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.26,
+    0.0,
+    -0.3441
+   ],
+   "bounds_max": [
+    0.26,
+    1.175,
+    0.22
+   ],
+   "slots": [
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "base centre",
+   "notes": "Three stacked chairs, same family."
+  },
+  {
+   "name": "Decor_Hammock",
+   "file": "Art/Export/BerthKit/Decor_Hammock.fbx",
+   "family": "decor",
+   "triangles": 412,
+   "vertices": 274,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -1.57,
+    0.0,
+    -0.5253
+   ],
+   "bounds_max": [
+    1.57,
+    1.9,
+    0.5253
+   ],
+   "slots": [
+    4,
+    5,
+    6,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "pivot": "base centre",
+   "notes": "3 x 1 including its two posts; the fabric is double sided in the mesh (two layers). Sit/lie interaction is up to Unity."
+  },
+  {
+   "name": "Decor_NoFishingSign",
+   "file": "Art/Export/BerthKit/Decor_NoFishingSign.fbx",
+   "family": "decor",
+   "triangles": 672,
+   "vertices": 1500,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.47,
+    0.0,
+    -0.05
+   ],
+   "bounds_max": [
+    0.47,
+    1.9,
+    0.113
+   ],
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    9,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    11
+   ],
+   "pivot": "base centre",
+   "notes": "NO FISHING with NO painted over: it reads FISHING."
+  },
+  {
+   "name": "Decor_NeonBait",
+   "file": "Art/Export/BerthKit/Decor_NeonBait.fbx",
+   "family": "decor",
+   "triangles": 212,
+   "vertices": 184,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.53,
+    0.0,
+    0.0
+   ],
+   "bounds_max": [
+    0.53,
+    0.54,
+    0.135
+   ],
+   "slots": [
+    4,
+    5,
+    6
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "back face, bottom centre; stands out toward +z",
+   "emissive_companion": "Decor_NeonBait_Glow",
+   "light_points": [
+    {
+     "name": "NeonBait",
+     "position": [
+      0.0,
+      0.3,
+      0.3
+     ],
+     "color": [
+      1.0,
+      0.25,
+      0.3
+     ],
+     "range": 6.0,
+     "intensity": 0.8,
+     "note": "flickers like a dying ballast; drop to 0 on ~1 percent of nights"
+    }
+   ],
+   "notes": "Wall sign (pivot back-bottom-centre); Decor_NeonBait_Glow is the emissive tube set (letters + worm); light point in the manifest."
+  },
+  {
+   "name": "Decor_NeonBait_Glow",
+   "file": "Art/Export/BerthKit/Decor_NeonBait_Glow.fbx",
+   "family": "decor",
+   "triangles": 282,
+   "vertices": 632,
+   "material": "M_Toon_Base + emissive (set the material to emit; palette slot is in uv1)",
+   "bounds_min": [
+    -0.4042,
+    0.0619,
+    0.105
+   ],
+   "bounds_max": [
+    0.4042,
+    0.4242,
+    0.165
+   ],
+   "slots": [
+    9,
+    10
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "back face, bottom centre; stands out toward +z",
+   "emissive": true,
+   "companion_of": "Decor_NeonBait"
+  },
+  {
+   "name": "Decor_BathtubPlanter",
+   "file": "Art/Export/BerthKit/Decor_BathtubPlanter.fbx",
+   "family": "decor",
+   "triangles": 870,
+   "vertices": 596,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.768,
+    0.0,
+    -0.4679
+   ],
+   "bounds_max": [
+    0.805,
+    0.9078,
+    0.4679
+   ],
+   "slots": [
+    1,
+    2,
+    4,
+    6,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    2,
+    12
+   ],
+   "pivot": "base centre",
+   "notes": "1 x 2, rim 0.6 m; soil, shrubs and plastic flowers."
+  },
+  {
+   "name": "Site_MooringLine",
+   "file": "Art/Export/BerthKit/Site_MooringLine.fbx",
+   "family": "site",
+   "triangles": 4808,
+   "vertices": 3506,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    41.003,
+    -0.345,
+    -29.994
+   ],
+   "bounds_max": [
+    53.27,
+    1.77,
+    -27.7825
+   ],
+   "slots": [
+    3,
+    4,
+    5,
+    6,
+    8
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "pivot": "world origin (authored at world coordinates)",
+   "notes": "FIXED, authored in world coordinates: place the FBX at the Unity origin. Items list every pontoon section, bollard and fender. Colliders: a box over the pontoon (x 41..53, y 0.9..1.25, z -30..-28) plus a cylinder per bollard.",
+   "items": [
+    {
+     "name": "PontoonSection0",
+     "position": [
+      42.0,
+      1.25,
+      -29.0
+     ],
+     "yaw": 0.0,
+     "kind": "pontoon",
+     "footprint": [
+      2,
+      2
+     ]
+    },
+    {
+     "name": "PontoonSection1",
+     "position": [
+      44.0,
+      1.25,
+      -29.0
+     ],
+     "yaw": 0.0,
+     "kind": "pontoon",
+     "footprint": [
+      2,
+      2
+     ]
+    },
+    {
+     "name": "PontoonSection2",
+     "position": [
+      46.0,
+      1.25,
+      -29.0
+     ],
+     "yaw": 0.0,
+     "kind": "pontoon",
+     "footprint": [
+      2,
+      2
+     ]
+    },
+    {
+     "name": "PontoonSection3",
+     "position": [
+      48.0,
+      1.25,
+      -29.0
+     ],
+     "yaw": 0.0,
+     "kind": "pontoon",
+     "footprint": [
+      2,
+      2
+     ]
+    },
+    {
+     "name": "PontoonSection4",
+     "position": [
+      50.0,
+      1.25,
+      -29.0
+     ],
+     "yaw": 0.0,
+     "kind": "pontoon",
+     "footprint": [
+      2,
+      2
+     ]
+    },
+    {
+     "name": "PontoonSection5",
+     "position": [
+      52.0,
+      1.25,
+      -29.0
+     ],
+     "yaw": 0.0,
+     "kind": "pontoon",
+     "footprint": [
+      2,
+      2
+     ]
+    },
+    {
+     "name": "Bollard0",
+     "position": [
+      41.5,
+      1.25,
+      -28.45
+     ],
+     "yaw": 0.0,
+     "kind": "bollard"
+    },
+    {
+     "name": "Bollard1",
+     "position": [
+      44.5,
+      1.25,
+      -28.45
+     ],
+     "yaw": 0.0,
+     "kind": "bollard"
+    },
+    {
+     "name": "Bollard2",
+     "position": [
+      47.5,
+      1.25,
+      -28.45
+     ],
+     "yaw": 0.0,
+     "kind": "bollard"
+    },
+    {
+     "name": "Bollard3",
+     "position": [
+      50.0,
+      1.25,
+      -28.45
+     ],
+     "yaw": 0.0,
+     "kind": "bollard"
+    },
+    {
+     "name": "Fender0",
+     "position": [
+      41.9,
+      1.25,
+      -28.5
+     ],
+     "yaw": 0.0,
+     "kind": "fender"
+    },
+    {
+     "name": "Fender1",
+     "position": [
+      43.4,
+      1.25,
+      -28.5
+     ],
+     "yaw": 0.0,
+     "kind": "fender"
+    },
+    {
+     "name": "Fender2",
+     "position": [
+      44.9,
+      1.25,
+      -28.5
+     ],
+     "yaw": 0.0,
+     "kind": "fender"
+    },
+    {
+     "name": "Fender3",
+     "position": [
+      46.4,
+      1.25,
+      -28.5
+     ],
+     "yaw": 0.0,
+     "kind": "fender"
+    },
+    {
+     "name": "Fender4",
+     "position": [
+      47.9,
+      1.25,
+      -28.5
+     ],
+     "yaw": 0.0,
+     "kind": "fender"
+    },
+    {
+     "name": "Fender5",
+     "position": [
+      49.4,
+      1.25,
+      -28.5
+     ],
+     "yaw": 0.0,
+     "kind": "fender"
+    },
+    {
+     "name": "Fender6",
+     "position": [
+      50.9,
+      1.25,
+      -28.5
+     ],
+     "yaw": 0.0,
+     "kind": "fender"
+    },
+    {
+     "name": "LandingCleat",
+     "position": [
+      51.0,
+      1.25,
+      -28.6
+     ],
+     "yaw": 90.0,
+     "kind": "cleat"
+    },
+    {
+     "name": "MooringLine",
+     "kind": "info",
+     "pontoon": {
+      "x0": 41.0,
+      "x1": 53.0,
+      "z0": -30.0,
+      "z1": -28.0
+     },
+     "bollards": [
+      [
+       41.5,
+       1.25,
+       -28.45
+      ],
+      [
+       44.5,
+       1.25,
+       -28.45
+      ],
+      [
+       47.5,
+       1.25,
+       -28.45
+      ],
+      [
+       50.0,
+       1.25,
+       -28.45
+      ]
+     ],
+     "gangway_landing": [
+      52.5,
+      1.25,
+      -28.0
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Site_LaneBuoy_Port",
+   "file": "Art/Export/BerthKit/Site_LaneBuoy_Port.fbx",
+   "family": "site",
+   "triangles": 208,
+   "vertices": 135,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.35,
+    -0.45,
+    -0.3329
+   ],
+   "bounds_max": [
+    0.35,
+    1.3,
+    0.3329
+   ],
+   "slots": [
+    9,
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "world origin (authored at world coordinates)",
+   "notes": "Floating marker for the approach lane (west edge). Pivot at the waterline; bob in Unity."
+  },
+  {
+   "name": "Site_LaneBuoy_Starboard",
+   "file": "Art/Export/BerthKit/Site_LaneBuoy_Starboard.fbx",
+   "family": "site",
+   "triangles": 208,
+   "vertices": 135,
+   "material": "M_Toon_Base",
+   "bounds_min": [
+    -0.35,
+    -0.45,
+    -0.3329
+   ],
+   "bounds_max": [
+    0.35,
+    1.3,
+    0.3329
+   ],
+   "slots": [
+    1,
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "pivot": "world origin (authored at world coordinates)",
+   "notes": "Floating marker for the approach lane (east edge)."
+  }
+ ]
+}
