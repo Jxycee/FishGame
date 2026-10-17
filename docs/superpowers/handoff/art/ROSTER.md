@@ -32,3 +32,8 @@ Orchestrator: session_01H1ZV7xiNZCUURUzwXrnHEZ (branch design/open-world-pivot).
 - **harbour-village-states:** done, 9e8287b. 6 run-down overlays, scaffold kits, the river lock (broken and repaired; tug fit measured), and the lock-keeper's hut. The default state leaves every harbour export unchanged.
   - **Important for every branch:** Blender 5.2.2 on Linux does NOT reproduce the committed Harbour FBX bytes; 92 of 112 files are rewritten even when nothing changed. Cloud branches must not commit regenerated `Art/Export/Harbour` files. The PC regenerates them.
   - The follow-ups (stand-14 jetty, tug lettering, bow stripe) are requested as script-only commits.
+- **harbour-tug-upgrades:** done, 1599137. 24 modules in the tug's local space, all clearance-checked.
+  - The sonar dome adds 0.34 m of draft. The lock still clears it, by 0.47 m under the keel.
+  - The live well is a raised box, not a hatch.
+  - The tug smoker reuses the berth kit's smoker.
+  - The fighting chair and the stern fishing spot can both stay.
