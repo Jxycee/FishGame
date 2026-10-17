@@ -270,7 +270,7 @@
     "surface": "main deck, aft starboard of the chair",
     "footprint_xz": [
      0.55,
-     -5.7700000000000005,
+     -5.77,
      1.29,
      -5.13
     ]
@@ -718,7 +718,7 @@
     "position": [
      0.0,
      1.97,
-     -5.760000000000001
+     -5.76
     ],
     "yaw_deg": 180.0,
     "surface": "front edge of Tug_FightingChair seat"
@@ -844,7 +844,7 @@
     "yaw_deg": 90.0,
     "surface": "main deck, starboard stern quarter",
     "footprint_xz": [
-     0.8300000000000001,
+     0.83,
      -7.17,
      1.27,
      -6.73
@@ -895,13 +895,13 @@
    ],
    "clearance": {
     "status": "ok",
-    "min_clearance_m": 0.061,
+    "min_clearance_m": 0.071,
     "nearest": [
      {
       "part": "winch",
       "obstacle": "bulwark (inner face)",
       "kind": "bulwark",
-      "gap_m": 0.061,
+      "gap_m": 0.071,
       "overlap": false,
       "allowed": false
      },
@@ -1057,8 +1057,8 @@
     "surface": "transom bulwark cap, starboard of the stern spot",
     "footprint_xz": [
      0.53,
-     -7.550000000000001,
-     0.9099999999999999,
+     -7.55,
+     0.91,
      -7.28
     ]
    },
@@ -1148,7 +1148,7 @@
     "surface": "hull bottom, on the keel line (underwater)",
     "footprint_xz": [
      -0.36,
-     0.6499999999999999,
+     0.65,
      0.36,
      1.75
     ]
@@ -1435,7 +1435,7 @@
    "bounds_min": [
     -0.35,
     4.6,
-    2.791
+    2.7993
    ],
    "bounds_max": [
     0.55,
@@ -1445,7 +1445,7 @@
    "footprint": [
     0.9,
     0.55,
-    0.279
+    0.271
    ],
    "mount": {
     "position": [
@@ -1520,7 +1520,7 @@
       "part": "dash",
       "obstacle": "helm wheel",
       "kind": "box",
-      "gap_m": 0.171,
+      "gap_m": 0.179,
       "overlap": false,
       "allowed": false
      },
@@ -1543,7 +1543,7 @@
    "file": "Art/Export/TugUpgrades/Tug_Dash_Upgraded.fbx",
    "upgrade": "dash",
    "state": null,
-   "triangles": 891,
+   "triangles": 859,
    "vertices": 1368,
    "material": "M_Toon_Base",
    "bounds_min": [
@@ -1553,12 +1553,12 @@
    ],
    "bounds_max": [
     0.55,
-    5.115,
+    5.1474,
     3.07
    ],
    "footprint": [
     0.9,
-    0.515,
+    0.547,
     0.35
    ],
    "mount": {
@@ -1657,15 +1657,15 @@
    "screen_quad": {
     "center": [
      0.22,
-     4.879,
-     2.945
+     4.869,
+     2.936
     ],
     "size": [
-     0.29,
-     0.17
+     0.25,
+     0.15
     ],
     "yaw_deg": 180.0,
-    "note": "chartplotter"
+    "note": "chartplotter, tilted 65 deg back"
    }
   },
   {
@@ -1702,7 +1702,7 @@
     "footprint_xz": [
      -0.81,
      0.99,
-     -0.29000000000000004,
+     -0.29,
      1.51
     ]
    },
@@ -1846,7 +1846,7 @@
    "mount": {
     "position": [
      -0.55,
-     6.489999999999999,
+     6.49,
      1.25
     ],
     "yaw_deg": 0.0,
@@ -1966,7 +1966,7 @@
     "surface": "outside of the upper-deck rail posts, both sides, z 1.43",
     "footprint_xz": [
      -1.94,
-     1.3130000000000002,
+     1.313,
      1.94,
      1.553
     ]
@@ -2111,7 +2111,7 @@
     "surface": "outside of the upper-deck rail posts, both sides, z 1.43",
     "footprint_xz": [
      -1.94,
-     1.3130000000000002,
+     1.313,
      1.94,
      1.553
     ]
@@ -2248,7 +2248,7 @@
    ],
    "mount": {
     "position": [
-     -1.0499999999999998,
+     -1.05,
      1.25,
      -1.0
     ],
@@ -2440,7 +2440,7 @@
    ],
    "mount": {
     "position": [
-     0.24999999999999997,
+     0.25,
      1.25,
      3.005
     ],
@@ -2450,7 +2450,7 @@
      -0.45,
      2.73,
      0.95,
-     3.6799999999999997
+     3.68
     ]
    },
    "pivot": null,
@@ -2593,7 +2593,7 @@
      "position": [
       0.52,
       3.12,
-      3.2399999999999998
+      3.24
      ],
      "stand_at": [
       0.52,
@@ -2635,14 +2635,14 @@
    ],
    "mount": {
     "position": [
-     -0.010000000000000009,
+     -0.01,
      2.29,
      3.0
     ],
     "yaw_deg": 180.0,
     "surface": "right burner of the Tug_Galley stove",
     "footprint_xz": [
-     -0.21000000000000002,
+     -0.21,
      2.85,
      0.19,
      3.15
@@ -2650,7 +2650,7 @@
    },
    "pivot": {
     "position": [
-     -0.010000000000000009,
+     -0.01,
      2.29,
      3.0
     ],
@@ -2768,7 +2768,7 @@
      1.0,
      0.0,
      1.42,
-     1.2000000000000002
+     1.2
     ]
    },
    "pivot": null,
@@ -2822,7 +2822,7 @@
    ],
    "clearance": {
     "status": "ok",
-    "min_clearance_m": 0.02,
+    "min_clearance_m": 0.126,
     "nearest": [
      {
       "part": "tank",
@@ -2831,14 +2831,6 @@
       "gap_m": 0.0,
       "overlap": true,
       "allowed": true
-     },
-     {
-      "part": "tank",
-      "obstacle": "fishing spot StarboardRail",
-      "kind": "cyl",
-      "gap_m": 0.02,
-      "overlap": false,
-      "allowed": false
      },
      {
       "part": "tank",
@@ -2869,6 +2861,14 @@
       "obstacle": "shelves high (starboard)",
       "kind": "box",
       "gap_m": 0.508,
+      "overlap": false,
+      "allowed": false
+     },
+     {
+      "part": "tank",
+      "obstacle": "nameboard stbd",
+      "kind": "soft",
+      "gap_m": 0.534,
       "overlap": false,
       "allowed": false
      }
@@ -2904,7 +2904,7 @@
      0.05
     ],
     "max": [
-     1.3699999999999999,
+     1.37,
      2.27,
      1.05
     ]
@@ -2997,7 +2997,7 @@
     "footprint_xz": [
      -1.51,
      4.0,
-     -0.8899999999999999,
+     -0.89,
      4.9
     ]
    },
@@ -3232,7 +3232,7 @@
    ]
   }
  ],
- "total_triangles": 19526,
+ "total_triangles": 19494,
  "export_status": {
   "Tug_LiveWell": "kept",
   "Tug_LiveWell_Lid": "kept",

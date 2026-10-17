@@ -420,7 +420,7 @@ def build_davit():
     text(g, '*ISH', 0.028, (px - 0.1, D + 0.915, pz + 0.102), ry(-20), S['WoodDark'])
     # rust streaks (a darker strip) on the boom
     tape(g, tuple(piv + d * 0.35 + Vector((0, 0.075, 0))), (0.3, 0.004, 0.05), basis(d))
-    g.solids += [('pedestal', [px - 0.22, D, pz - 0.22], [px + 0.22, D + 1.76, pz + 0.22]), ('winch', [px - 0.14, wy - 0.14, pz - 0.3], [px + 0.14, wy + 0.2, pz + 0.14])]
+    g.solids += [('pedestal', [px - 0.22, D, pz - 0.22], [px + 0.22, D + 1.76, pz + 0.22]), ('winch', [px - 0.14, wy - 0.14, pz - 0.29], [px + 0.14, wy + 0.2, pz + 0.14])]
     for k in range(4):                                         # the boom in four chunks (a long diagonal AABB would mean nothing)
         a = piv + d * (ln * k / 4.0 - 0.1)
         b = piv + d * (ln * (k + 1) / 4.0)
@@ -652,18 +652,21 @@ def build_sonar_screen():
 # ---------------------------------------------------------------------------------------------------------------------------------------
 DASH_O = (0.1, 4.6, 3.07)
 
-def gauge(f, c, r=0.05, cracked=False, needle=0.0, tilt=rx(-40)):
-    f.lat(c, [(0.0, r + 0.012), (0.012, r + 0.012)], S['Accent'], L['none'], 0.5, sides=12, rot=tilt, cap0=True)               # the rim
-    f.lat((c[0], c[1], c[2]), [(0.0, r), (0.016, r)], S['Sand'], L['none'], 0.55, sides=12, rot=tilt, cap0=True)                 # the face
-    ndl = tilt @ Vector((0.0, 0.0, 1.0))
+def gauge(f, c, nrot, r=0.05, cracked=False, needle=0.0):
+    # a round gauge lying on a slope: nrot turns +y onto the slope's normal; c is the point on the slope
+    n = nrot @ Vector((0.0, 1.0, 0.0))
+    up = nrot @ Vector((0.0, 0.0, -1.0))
+    c = Vector(c)
+    f.lat(tuple(c + n * 0.001), [(0.0, r + 0.012), (0.012, r + 0.012)], S['Accent'], L['none'], 0.5, sides=12, rot=nrot, cap0=True)               # the rim
+    f.lat(tuple(c + n * 0.006), [(0.0, r), (0.012, r)], S['Sand'], L['none'], 0.55, sides=12, rot=nrot, cap0=True)                                 # the face
     a = math.radians(needle)
-    d = tilt @ Vector((math.sin(a), math.cos(a), 0.0))
-    base = Vector(c) + ndl * 0.02
+    d = up * math.cos(a) + Vector((1.0, 0.0, 0.0)) * math.sin(a)
+    base = c + n * 0.021
     f.seg(tuple(base), tuple(base + d * r * 0.8), 0.004, S['WoodDark'], L['none'], 0.5, 4)
-    f.lat(tuple(base), [(0.0, 0.009), (0.008, 0.009)], S['Rock'], L['none'], 0.5, sides=6, rot=tilt, cap0=True)
+    f.lat(tuple(base), [(0.0, 0.009), (0.006, 0.009)], S['Rock'], L['none'], 0.5, sides=6, rot=nrot, cap0=True)
     if cracked:
-        f.tape(tuple(base + ndl * 0.003), (0.011, r * 1.8, 0.002), tilt @ rz(35))
-        f.tape(tuple(base + ndl * 0.003), (0.011, r * 1.8, 0.002), tilt @ rz(-35))
+        for ang in (35, -35):
+            f.tape(tuple(base + n * 0.003), (0.011, 0.002, r * 1.8), nrot @ ry(ang))
 
 def build_dash_stock():
     g = M('Tug_Dash_Stock', dict(position=list(DASH_O), yaw_deg=180.0, surface='wheelhouse console top, front edge', footprint_xz=[-0.35, 2.8, 0.55, 3.07]),
@@ -673,24 +676,24 @@ def build_dash_stock():
     f = Frame(g, DASH_O, 180.0)
     poly = [(0.0, 0.0), (0.27, 0.0), (0.27, 0.06), (0.05, 0.2), (0.0, 0.2)]
     g.add(xform(H.prism(poly, 0.9, 0.012), f.p(0.0, 0.0, 0.0), f.R), S['WoodDark'], L['Wood'], 0.5)
-    tilt = rx(-48)
-    gauge(f, (-0.27, 0.115, 0.145), 0.05, False, -50.0, tilt)
-    gauge(f, (-0.14, 0.135, 0.12), 0.05, True, 15.0, tilt)
-    gauge(f, (0.0, 0.135, 0.12), 0.05, False, 70.0, tilt)
-    # four toggle switches and a key on the lower slope
-    for k in range(4):
-        f.lat((0.11 + 0.055 * k - 0.0, 0.07, 0.215), [(0.0, 0.012), (0.04, 0.007)], S['Rock'], L['none'], 0.5, sides=6, rot=rx(-30), cap0=True)
-    f.lat((-0.27, 0.07, 0.215), [(0.0, 0.02), (0.015, 0.02)], S['Rock'], L['none'], 0.5, sides=8, rot=rx(-48), cap0=True)
-    f.bx((-0.27, 0.087, 0.225), (0.012, 0.045, 0.006), 0.002, S['Accent'], L['none'], 0.5, rx(-48))
-    # the VHF in its cradle (right end), antenna, an orange button, a sticker
-    f.bx((0.34, 0.22, 0.04), (0.1, 0.05, 0.06), 0.012, S['WoodDark'], L['none'], 0.5)
-    f.bx((0.34, 0.29, 0.04), (0.07, 0.17, 0.04), 0.015, S['Sand'], L['none'], 0.55)
-    f.lat((0.34, 0.37, 0.04), [(0.0, 0.006), (0.18, 0.003)], S['Rock'], L['none'], 0.5, sides=5, cap1=True)
-    f.bx((0.34, 0.31, 0.062), (0.045, 0.05, 0.006), 0.002, S['FoliageDark'], L['none'], 0.5, tint=0.7)
-    f.lat((0.36, 0.265, 0.062), [(0.0, 0.01), (0.008, 0.01)], S['Accent'], L['none'], 0.5, sides=6, rot=rx(90), cap0=True)
-    # label-maker strip along the edge
-    f.bx((-0.05, 0.035, 0.272), (0.34, 0.025, 0.004), 0.001, S['Sand'], L['none'], 0.6)
-    f.text('FUEL?', 0.02, (-0.05, 0.035, 0.275), S['WoodDark'])
+    k = 0.14 / 0.22                                                   # slope: y = 0.06 + k (0.27 - z)
+    nr = rx(math.degrees(math.atan2(k, 1.0)))                         # +y onto the slope normal
+    on = lambda x, z, off=0.0: (x, 0.06 + k * (0.27 - z) + off * math.cos(math.atan2(k, 1.0)), z + off * math.sin(math.atan2(k, 1.0)))
+    for x, cr, nd in ((-0.28, False, -50.0), (-0.13, True, 15.0), (0.02, False, 70.0)):
+        gauge(f, on(x, 0.15), nr, 0.05, cr, nd)
+    for i in range(4):                                                # four toggle switches and a key on the lower slope
+        f.lat(on(0.12 + 0.05 * i, 0.235), [(0.0, 0.012), (0.04, 0.007)], S['Rock'], L['none'], 0.5, sides=6, rot=nr, cap0=True)
+    f.lat(on(-0.28, 0.235), [(0.0, 0.02), (0.015, 0.02)], S['Rock'], L['none'], 0.5, sides=8, rot=nr, cap0=True)
+    f.bx(on(-0.28, 0.235, 0.022), (0.012, 0.006, 0.045), 0.002, S['Accent'], L['none'], 0.5, nr)
+    # the VHF in its cradle on the flat top (right end), antenna, an orange button
+    f.bx((0.34, 0.22, 0.03), (0.1, 0.05, 0.06), 0.012, S['WoodDark'], L['none'], 0.5)
+    f.bx((0.34, 0.29, 0.03), (0.07, 0.17, 0.04), 0.015, S['Sand'], L['none'], 0.55)
+    f.lat((0.34, 0.37, 0.03), [(0.0, 0.006), (0.18, 0.003)], S['Rock'], L['none'], 0.5, sides=5, cap1=True)
+    f.bx((0.34, 0.31, 0.052), (0.045, 0.05, 0.006), 0.002, S['FoliageDark'], L['none'], 0.5, tint=0.7)
+    f.lat((0.36, 0.265, 0.052), [(0.0, 0.01), (0.008, 0.01)], S['Accent'], L['none'], 0.5, sides=6, rot=rx(90), cap0=True)
+    # label-maker strip along the lower edge of the slope
+    f.bx(on(-0.05, 0.258, 0.002), (0.34, 0.004, 0.025), 0.001, S['Sand'], L['none'], 0.6, nr)
+    f.text('FUEL?', 0.02, on(-0.05, 0.258, 0.005), S['WoodDark'], rx(-(90 - math.degrees(math.atan2(k, 1.0)))))
     g.sol('dash')
     return g
 
@@ -703,43 +706,49 @@ def build_dash_upgraded():
     f = Frame(g, O, 180.0)
     poly = [(0.0, 0.0), (0.35, 0.0), (0.35, 0.05), (0.18, 0.12), (0.05, 0.4), (0.0, 0.4)]
     g.add(xform(H.prism(poly, 0.9, 0.014), f.p(0.0, 0.0, 0.0), f.R), S['Rock'], L['none'], 0.5)
-    # replacement panel on the right: orange, its own screws, a sticker
-    f.bx((0.3, 0.2, 0.145), (0.24, 0.22, 0.012), 0.004, S['Accent'], L['none'], 0.5, rx(-48) @ Matrix.Identity(3))
-    tilt = rx(-62)
-    # the chartplotter: a tablet in a bumper case, glass with a coast and a route
-    f.bx((-0.12, 0.275, 0.115), (0.3, 0.22, 0.025), 0.02, S['Roof'], L['none'], 0.55, tilt)
-    f.bx((-0.12, 0.279, 0.12), (0.25, 0.17, 0.01), 0.008, S['FoliageDark'], L['none'], 0.5, tilt, tint=0.7)
-    for k in range(5):
-        a = k * 0.5
-        f.bx((-0.22 + 0.048 * k, 0.262 + 0.02 * math.sin(a) + 0.005, 0.125 + 0.0), (0.045, 0.012, 0.004), 0.001, S['Sand'], L['none'], 1.0, tilt @ rz(10 * k - 20))
-    f.bx((-0.08, 0.29, 0.128), (0.012, 0.012, 0.004), 0.001, S['Accent'], L['none'], 1.0, tilt)
-    f.tape((-0.2, 0.29, 0.12), (0.03, 0.05, 0.003), tilt @ rz(30))                    # the crack
+    # face normals: upper (y 0.42, z 0.906) -> rx(65); lower (y 0.93, z 0.377) -> rx(22)
+    TU, TL = 65.0, 22.1
+    cu, su = math.cos(math.radians(TU)), math.sin(math.radians(TU))
+    cl, sl = math.cos(math.radians(TL)), math.sin(math.radians(TL))
+    yu = lambda z: 0.4 - (0.28 / 0.13) * (z - 0.05)
+    yl = lambda z: 0.12 - (0.07 / 0.17) * (z - 0.18)
+    onu = lambda x, z, off=0.0: (x, yu(z) + off * cu, z + off * su)
+    onl = lambda x, z, off=0.0: (x, yl(z) + off * cl, z + off * sl)
+    rU, rL = rx(TU), rx(TL)
     # depth read-out (red LED bars) on the left, labelled
-    f.bx((-0.365, 0.17, 0.155), (0.17, 0.07, 0.03), 0.01, S['WoodDark'], L['none'], 0.5, rx(-48))
-    for k in range(3):
-        f.bx((-0.41 + 0.045 * k, 0.172, 0.176), (0.03, 0.045, 0.004), 0.001, S['Roof'], L['none'], 1.0, rx(-48))
-    f.text('DEPTH', 0.016, (-0.365, 0.115, 0.19), S['Sand'], rx(-48))
-    # autopilot knob (big, black) with a pointer, three rocker switches
-    f.lat((0.05, 0.205, 0.0 + 0.1), [(0.0, 0.05), (0.03, 0.045), (0.035, 0.04)], S['WoodDark'], L['none'], 0.5, sides=12, rot=rx(-62), cap0=True)
-    f.bx((0.05, 0.226, 0.082), (0.01, 0.045, 0.006), 0.002, S['Sand'], L['none'], 0.5, rx(-62))
-    for k, sl in enumerate((S['Roof'], S['Foliage'], S['Sand'])):
-        f.bx((-0.15 + 0.06 * k, 0.07, 0.272), (0.04, 0.045, 0.02), 0.008, sl, L['none'], 0.5, rx(-25))
-    # right panel: odd screws, a sticker, two toggles
-    for sx in (0.2, 0.4):
-        for sy in (0.12, 0.26):
-            f.lat((sx, sy, 0.122 if sy < 0.2 else 0.17), [(0.0, 0.011), (0.006, 0.009)], S['Sand'] if sx > 0.3 else S['Rock'], L['none'], 0.5, sides=6, rot=rx(-48), cap0=True)
-    f.bx((0.3, 0.215, 0.165), (0.12, 0.05, 0.004), 0.001, S['Sand'], L['none'], 0.6, rx(-48))
-    f.text('NOT SINKING', 0.018, (0.3, 0.22, 0.171), S['WoodDark'], rx(-48))
-    for k in range(2):
-        f.lat((0.26 + 0.09 * k, 0.15, 0.165), [(0.0, 0.012), (0.045, 0.007)], S['Rock'], L['none'], 0.5, sides=6, rot=rx(-25), cap0=True)
-    # a USB fan on a gooseneck at the top-left corner
-    f.seg((-0.4, 0.35, 0.02), (-0.38, 0.46, 0.04), 0.008, S['Rock'], L['none'], 0.5, 5)
-    f.lat((-0.38, 0.46, 0.04), [(0.0, 0.055), (0.02, 0.055)], S['Foliage'], L['none'], 0.5, sides=10, rot=rx(80), cap0=True)
-    for k in range(3):
-        a = k * 2 * math.pi / 3
-        f.bx((-0.38 + 0.025 * math.cos(a), 0.46 + 0.025 * math.sin(a), 0.07), (0.05, 0.02, 0.004), 0.002, S['Sand'], L['none'], 0.5, rz(math.degrees(a)))
+    f.bx(onu(-0.365, 0.11, 0.008), (0.17, 0.016, 0.1), 0.006, S['WoodDark'], L['none'], 0.5, rU)
+    for i in range(3):
+        f.bx(onu(-0.41 + 0.045 * i, 0.11, 0.018), (0.03, 0.004, 0.05), 0.001, S['Roof'], L['none'], 1.0, rU)
+    f.text('DEPTH', 0.016, onu(-0.365, 0.172, 0.004), S['Sand'], rx(-(90 - TU)))
+    # the chartplotter: a tablet in a bumper case, glass with a coast and a route, cracked
+    f.bx(onu(-0.12, 0.115, 0.008), (0.3, 0.016, 0.2), 0.012, S['Roof'], L['none'], 0.55, rU)
+    f.bx(onu(-0.12, 0.115, 0.017), (0.25, 0.006, 0.15), 0.004, S['FoliageDark'], L['none'], 0.5, rU, tint=0.7)
+    for i in range(5):
+        f.bx(onu(-0.22 + 0.048 * i, 0.115 + 0.022 * math.sin(i * 0.9), 0.021), (0.045, 0.003, 0.012), 0.001, S['Sand'], L['none'], 1.0, rU @ ry(10 * i - 20))
+    f.bx(onu(-0.08, 0.1, 0.022), (0.012, 0.003, 0.012), 0.001, S['Accent'], L['none'], 1.0, rU)
+    f.tape(onu(-0.2, 0.115, 0.022), (0.03, 0.003, 0.1), rU @ ry(30))
+    # autopilot knob (big, black) with a pointer; three rocker switches on the lower face
+    f.lat(onu(0.1, 0.115), [(0.0, 0.05), (0.03, 0.045), (0.035, 0.04)], S['WoodDark'], L['none'], 0.5, sides=12, rot=rU, cap0=True)
+    f.bx(onu(0.1, 0.1, 0.037), (0.01, 0.006, 0.045), 0.002, S['Sand'], L['none'], 0.5, rU)
+    for i, sl_ in enumerate((S['Roof'], S['Foliage'], S['Sand'])):
+        f.bx(onl(-0.15 + 0.06 * i, 0.27, 0.012), (0.04, 0.02, 0.045), 0.008, sl_, L['none'], 0.5, rL)
+    # the replacement panel on the right: another orange, odd screws, a sticker, two toggles
+    f.bx(onu(0.3, 0.115, 0.006), (0.24, 0.012, 0.2), 0.004, S['Accent'], L['none'], 0.5, rU)
+    for x in (0.2, 0.4):
+        for z in (0.07, 0.16):
+            f.lat(onu(x, z, 0.012), [(0.0, 0.011), (0.006, 0.009)], S['Sand'] if x > 0.3 else S['Rock'], L['none'], 0.5, sides=6, rot=rU, cap0=True)
+    f.bx(onu(0.3, 0.095, 0.013), (0.13, 0.004, 0.05), 0.001, S['Sand'], L['none'], 0.6, rU)
+    f.text('NOT SINKING', 0.017, onu(0.3, 0.095, 0.016), S['WoodDark'], rx(-(90 - TU)))
+    for i in range(2):
+        f.lat(onu(0.26 + 0.08 * i, 0.145, 0.012), [(0.0, 0.012), (0.045, 0.007)], S['Rock'], L['none'], 0.5, sides=6, rot=rU, cap0=True)
+    # a USB fan on a gooseneck on the flat top, left end (it really does move air)
+    f.seg((-0.4, 0.4, 0.022), (-0.385, 0.49, 0.05), 0.012, S['Rock'], L['none'], 0.5, 5)
+    f.lat((-0.385, 0.49, 0.05), [(0.0, 0.058), (0.018, 0.058)], S['Foliage'], L['none'], 0.5, sides=10, rot=rx(80), cap0=True)
+    for i in range(3):
+        a = i * 2 * math.pi / 3
+        f.bx((-0.385 + 0.03 * math.cos(a), 0.49 + 0.03 * math.sin(a), 0.082), (0.055, 0.02, 0.004), 0.002, S['Sand'], L['none'], 0.5, rz(math.degrees(a)))
     g.sol('dash')
-    g.mod['screen_quad'] = dict(center=[round(v, 3) for v in f.p(-0.12, 0.279, 0.125)], size=[0.29, 0.17], yaw_deg=180.0, note='chartplotter')
+    g.mod['screen_quad'] = dict(center=[round(v, 3) for v in f.p(*onu(-0.12, 0.115, 0.021))], size=[0.25, 0.15], yaw_deg=180.0, note='chartplotter, tilted 65 deg back')
     return g
 
 # ---------------------------------------------------------------------------------------------------------------------------------------
@@ -1431,7 +1440,7 @@ def allowed(mod, label, obst):
     return any(m == mod and (l == '*' or label.startswith(l)) and o == obst for m, l, o in ALLOWED)
 
 def inside_deckhouse(lo, hi):
-    return lo[0] > -1.43 and hi[0] < 1.43 and lo[2] > -2.48 and hi[2] < 3.28 and hi[1] < 3.46
+    return lo[0] > -1.44 and hi[0] < 1.44 and lo[2] > -2.49 and hi[2] < 3.29 and hi[1] < 3.46
 
 def clearance_report(mods):
     obs = stock_obstacles()
@@ -1528,16 +1537,26 @@ def objects_for(mods, tug, bake=True):
             H.write_ao2(ob, g, raw)
     return tug_ob, obs
 
+def rnd(v, n=3):
+    # round every float in a nested structure (the builders compute positions in floating point; the manifest should read like numbers a person typed)
+    if isinstance(v, float):
+        return round(v, n)
+    if isinstance(v, (list, tuple)):
+        return [rnd(x, n) for x in v]
+    if isinstance(v, dict):
+        return {k: rnd(x, n) for k, x in v.items()}
+    return v
+
 def manifest_entry(g, clear):
     lo, hi = H.u_bounds(g)
     used = sorted(set(l for _, l in g.SL)); slots = sorted(set(s for s, _ in g.SL))
     d = dict(name=g.name, file='Art/Export/TugUpgrades/%s.fbx' % g.name, upgrade=g.mod.get('upgrade'), state=g.state, triangles=g.tris(), vertices=len(g.V),
              material=g.material or 'M_Toon_Base', bounds_min=lo, bounds_max=hi, footprint=[round(hi[i] - lo[i], 3) for i in range(3)],
-             mount=g.mount, pivot=g.pivot, requires=g.mod['requires'], replaces=g.mod['replaces'], animHint=g.anim, slots=slots, layers=used, note=g.note,
+             mount=rnd(g.mount), pivot=rnd(g.pivot), requires=g.mod['requires'], replaces=g.mod['replaces'], animHint=g.anim, slots=slots, layers=used, note=g.note,
              colliders=g.items, clearance=clear.get(g.name))
     for k, v in g.mod.items():
         if k not in ('requires', 'replaces', 'upgrade'):
-            d[k] = v
+            d[k] = rnd(v)
     return d
 
 def build_manifest(mods, clear, problems, status):
@@ -1597,9 +1616,9 @@ def tank_water_material():
         return m
     m = bpy.data.materials.new('FG_Preview_TankWater'); m.use_nodes = True
     bsdf = next(n for n in m.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
-    bsdf.inputs['Base Color'].default_value = H.srgb_to_lin((0.25, 0.72, 0.74)) + (1,)
+    bsdf.inputs['Base Color'].default_value = H.srgb_to_lin((0.3, 0.64, 0.66)) + (1,)
     bsdf.inputs['Roughness'].default_value = 0.08
-    bsdf.inputs['Alpha'].default_value = 0.5
+    bsdf.inputs['Alpha'].default_value = 0.45
     try:
         m.surface_render_method = 'BLENDED'
     except Exception:
@@ -1699,10 +1718,10 @@ def render_shot(path, eye_u, target_u, lens=26, res=(1280, 720), samples=24):
     H.shrink_png(path, 48)
 
 SHOTS = {
-    'stock':     dict(eye=(15.0, 6.6, -17.0), tgt=(0.5, 2.2, -4.2), lens=32, vis='stock', res=(960, 540)),
-    'upgraded':  dict(eye=(15.0, 6.6, -17.0), tgt=(0.5, 2.2, -4.2), lens=32, vis='upgraded', res=(960, 540)),
+    'stock':     dict(eye=(8.0, 8.6, -23.5), tgt=(0.4, 1.9, -9.0), lens=32, vis='stock', res=(960, 540)),
+    'upgraded':  dict(eye=(8.0, 8.6, -23.5), tgt=(0.4, 1.9, -9.0), lens=32, vis='upgraded', res=(960, 540)),
     'aft':       dict(eye=(-3.3, 3.7, -9.9), tgt=(0.8, 1.9, -5.8), lens=34, vis='upgraded', hide=('Tug_Dinghy',), res=(1280, 720), lid_open_deg=100.0),
-    'galley':    dict(eye=(-0.35, 2.7, -2.3), tgt=(0.45, 2.25, 2.6), lens=24, vis='upgraded', res=(1280, 720), lights=[((0.0, 3.25, 1.0), 700.0), ((0.2, 3.0, 2.2), 250.0)]),
+    'galley':    dict(eye=(-0.1, 2.62, -2.35), tgt=(0.5, 2.25, 2.6), lens=23, vis='upgraded', res=(1280, 720), lights=[((0.0, 3.25, 1.0), 700.0), ((0.2, 3.0, 2.2), 250.0)]),
     'bunks':     dict(eye=(0.3, 2.7, 1.2), tgt=(-1.1, 2.0, -1.0), lens=24, vis='upgraded', res=(1280, 720), lights=[((0.0, 3.25, 0.4), 700.0)]),
     'dash_stock':    dict(eye=(0.15, 5.5, 1.5), tgt=(0.4, 4.8, 2.95), lens=30, vis='stock', res=(960, 540), lights=[((0.0, 5.65, 1.9), 500.0)], cut_wheel=True),
     'dash_upgraded': dict(eye=(0.15, 5.5, 1.5), tgt=(0.4, 4.8, 2.95), lens=30, vis='upgraded', hide=('Tug_Dinghy',), res=(960, 540), lights=[((0.0, 5.65, 1.9), 500.0)], cut_wheel=True),
@@ -1718,7 +1737,8 @@ def preview_main(shot, outdir):
     names = set(INSTALL_SETS[s['vis']]) - set(s.get('hide', ()))
     set_visible(mods, obs, rope, names)
     if s.get('cut_wheel'):
-        cut_region(tug_ob, (-0.55, 4.3, 2.2), (0.55, 5.4, 2.6))
+        cut_region(tug_ob, (-0.55, 4.3, 2.2), (0.55, 5.4, 2.62))      # the wheel ring and spokes
+        cut_region(tug_ob, (-0.52, 4.65, 2.2), (0.52, 5.4, 2.85))     # the hub
     if 'lid_open_deg' in s:
         pose_lid(obs, mods, s['lid_open_deg'])
     for i, (pos, en) in enumerate(s.get('lights', [])):
@@ -1729,7 +1749,38 @@ def preview_main(shot, outdir):
     os.makedirs(outdir, exist_ok=True)
     render_shot(os.path.join(outdir, 'shot_%s.png' % shot), s['eye'], s['tgt'], s['lens'], s['res'])
 
+def hstack_png(left, right, out):
+    import numpy as np
+    def load(path):
+        img = bpy.data.images.load(path, check_existing=False)
+        w, h = img.size
+        px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)
+        bpy.data.images.remove(img)
+        return px
+    a, b = load(left), load(right)
+    h = min(a.shape[0], b.shape[0])
+    gap = np.full((h, 6, 4), 1.0, dtype=np.float32)          # a thin white divider
+    px = np.concatenate([a[:h], gap, b[:h]], axis=1)
+    img = bpy.data.images.new('fg_compose', px.shape[1], px.shape[0], alpha=False)
+    img.pixels.foreach_set(px.reshape(-1))
+    img.filepath_raw = out
+    img.file_format = 'PNG'
+    img.save()
+    bpy.data.images.remove(img)
+
+def compose(shots_dir, out_dir):
+    os.makedirs(out_dir, exist_ok=True)
+    hstack_png(os.path.join(shots_dir, 'shot_stock.png'), os.path.join(shots_dir, 'shot_upgraded.png'), os.path.join(out_dir, 'tug_stock_vs_upgraded.png'))
+    hstack_png(os.path.join(shots_dir, 'shot_dash_stock.png'), os.path.join(shots_dir, 'shot_dash_upgraded.png'), os.path.join(out_dir, 'wheelhouse_dash_stock_vs_upgraded.png'))
+    import shutil
+    for a, b in (('shot_aft.png', 'aft_deck_closeup.png'), ('shot_galley.png', 'galley.png'), ('shot_hull.png', 'hull_sonar_underwater.png')):
+        if os.path.exists(os.path.join(shots_dir, a)):
+            shutil.copyfile(os.path.join(shots_dir, a), os.path.join(out_dir, b))
+
 if __name__ == '__main__':
+    if os.environ.get('FG_TUG_COMPOSE'):
+        compose(os.environ['FG_TUG_COMPOSE'], PREVIEW_DIR)
+        sys.exit(0)
     shot = os.environ.get('FG_TUG_SHOT')
     if shot:
         preview_main(shot, os.environ.get('FG_TUG_OUT', PREVIEW_DIR))
