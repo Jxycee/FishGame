@@ -29,3 +29,6 @@ Orchestrator: session_01H1ZV7xiNZCUURUzwXrnHEZ (branch design/open-world-pivot).
 - **harbour-berth-kit:** done. It adds slot 48 FlamingoPink. The tug's beam is 5 m. The berth's deep-water spot is the pontoon edge; the jetty perk goes to the camp plots.
 - **harbour-village-buildings:** done, af6ad44. 8 lots. Unity must suppress grass and hedges inside the lots.
 - **harbour-villagers:** reworked to proxy bodies, outfits and props at 45d31e1. The first pass on the rejected fisher base is superseded. Slots 72-79 are tintable, so Unity needs a per-object tint (a MaterialPropertyBlock). The face briefs are in `harbour-villagers-face-briefs.md`.
+- **harbour-village-states:** done, 9e8287b. 6 run-down overlays, scaffold kits, the river lock (broken and repaired; tug fit measured), and the lock-keeper's hut. The default state leaves every harbour export unchanged.
+  - **Important for every branch:** Blender 5.2.2 on Linux does NOT reproduce the committed Harbour FBX bytes; 92 of 112 files are rewritten even when nothing changed. Cloud branches must not commit regenerated `Art/Export/Harbour` files. The PC regenerates them.
+  - The follow-ups (stand-14 jetty, tug lettering, bow stripe) are requested as script-only commits.
