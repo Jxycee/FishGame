@@ -4,7 +4,9 @@
 
 This file lives on `main` only. The controller (Claude) rewrites it after every meaningful step (a task landed, a review, a user decision, a merge) and commits and pushes it straight to `main`. Feature branches never edit it.
 
-_Last updated: 2026-10-15._
+_Last updated: 2026-10-17._
+- **DIRECTION PIVOT (user, 2026-10-17, cloud session):** "a very big fishing game with lots of different aspects to it. Exploration/Relaxing/Still a lot of the same concepts as the last game minus the rush from the mafia chasing us / Lots of challenges needed to finish a map but a map can also offer near endless possibilities due to variations in fish, building, and other things." This supersedes R76 (mafia chase) and parts of R79 (frozen harbour town) once the design draft is approved. Draft in progress on branch `design/open-world-pivot` (cloud session). Next map work: build up Harbour Pier for this direction.
+- **Player character in progress (cloud, branch `character-fisher`):** `Art/Blender/fg_fisher.py` (chunky REPO+PEAK mix: REPO eyes on tracking bones, PEAK-style swappable face parts, fishing vest tinted by slot colour, bucket hat). Worker branches: `character-fisher-rig` (rig + anims), `-tex` (Poly Haven CC0 textures), `-parts` (face/hat customisation). Blender 4.5 runs headless in cloud containers (download from download.blender.org), so script-driven Blender work can run on cloud credits.
 - **Story and run loop: still in design with the user (not approved).** Agreed so far: the story premise (stolen tug, starfish god, upriver from Harbour Pier, mafia in cutscenes only), a hybrid journey + extraction direction, and modular river stretches. Don't plan M4 from the main spec's section 14 until the loop is approved. Trusted free asset/sound sites (e.g. the Poly Haven API) are now allowed (CLAUDE.md).
 - **Map identity review accepted** (user, spec R79): maps are built out from the water.
   - The harbour town is frozen as backdrop.
