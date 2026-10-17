@@ -19,12 +19,12 @@ No Unity and no Windows paths. Follow `docs/superpowers/handoff/cloud-environmen
 - Gameplay code under `Assets/_Project/`, split by assembly definition (see spec for the list). `ArchitectureTests` enforces the forbidden references.
 - Pure C# logic (tension model, spawn resolver, quota math) lives in classes with no MonoBehaviour dependency so EditMode tests cover it.
 - Host-authoritative networking. Every new networked system states its authority (host vs owner) in a class-level comment.
-- No anti-cheat (user): modded clients and trainers are welcome. Host authority keeps peers in sync; don't add cheat-proofing or report client exploits as findings.
-- Navigate C# with the LSP tool before reading whole files. In a worktree with no `.csproj`/`.slnx`, first run `Tools/sync-csproj.ps1` (gitignored output; never commit it).
+- No anti-cheat (user): modded clients and trainers (WeMod) are welcome, as in other friend-slop games. Host authority keeps peers in sync; don't add cheat-proofing or report client exploits as findings.
+- Navigate C# with the LSP tool before reading whole files. In a worktree with no `.csproj`/`.slnx`, first run `powershell -NoProfile -ExecutionPolicy Bypass -File C:\Dev\FishGame\Tools\sync-csproj.ps1` (copies Unity's generated project files; never commit them).
 - Art and asset rules (licences, art direction) live in `.claude/rules/art-assets.md` and load when you touch art.
 
 ## Git
-- Commit when the user asks or a plan step says to. Never force-push. Milestone work happens on a feature branch.
+- Commit when the user asks or a plan step says to. Never force-push. Milestone work happens on a feature branch (`m1-foundation`, `m2-fishing-core`, `m3-fish-ecology`, ...).
 - No pull requests (user): push branches and merge them yourself, including into `main`, once reviewed and a full `check` is green on the branch tip. Merge commits, never squash. Tell the user what was merged. Use the `fg-merge` skill.
 - Never commit `Library/`, `Temp/`, `Logs/`, `UserSettings/`, `.vscode/`, `*.csproj`, `*.slnx`.
 
