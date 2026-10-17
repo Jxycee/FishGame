@@ -1,0 +1,7799 @@
+{
+ "generator": "Art/Blender/fg_village_buildings.py (imports Art/Blender/fg_harbour.py)",
+ "area": "VillageBuildings",
+ "branch": "harbour-village-buildings (cut from harbour-art3)",
+ "axes": "Unity metres. Authored in Unity axes; Blender = (-x, -z, y); FBX export as the harbour (-Z forward, Y up, bake_space_transform). Each FBX object is at the origin with an identity transform. Every model is a LOCAL model: building origin = centre of its footprint at ground level, front/door = +z.",
+ "encoding": {
+  "uv0": "UVMap: metres",
+  "uv1": "Layer: (palette slot, texture layer) on every corner (no uv1.z in the FBX: the material gives the mapping)",
+  "colour": "Col: 0.5 x baked AO (per-vertex ray-cast bake per model, 1 m)",
+  "normals": "smooth / analytic rounded-box",
+  "materials": "none exported"
+ },
+ "slots": {
+  "Grass": 0,
+  "Foliage": 1,
+  "FoliageDark": 2,
+  "Wood": 3,
+  "WoodDark": 4,
+  "Sand": 5,
+  "Rock": 6,
+  "Reed": 7,
+  "Dock": 8,
+  "Roof": 9,
+  "Accent": 10
+ },
+ "slots2": {
+  "Snow": 11,
+  "PineLight": 12,
+  "PineDark": 13,
+  "Blossom": 14,
+  "FoliageAlt": 15
+ },
+ "layers": {
+  "none": 0,
+  "Grass": 1,
+  "Foliage": 2,
+  "Wood": 3,
+  "Bark": 4,
+  "Sand": 5,
+  "Rock": 6,
+  "Cloth": 7,
+  "CliffRock": 9,
+  "StoneWall": 10,
+  "Plaster": 11,
+  "Dirt": 12,
+  "Meadow": 13,
+  "RoofTile": 14
+ },
+ "material_default": "M_Toon_Base (every model; no triplanar objects here)",
+ "glass_and_water": "*_Glass objects want a transparent glass material, *_Water objects a water material (the toon shader is meant for everything else). A tank is three FBX files with the same origin: Village_X (body), Village_X_Glass, Village_X_Water; place all three at the same transform.",
+ "total_triangles": 73239,
+ "buildings": [
+  {
+   "name": "Village_Cottage_A",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_A.fbx",
+   "triangles": 5254,
+   "vertices": 4598,
+   "bounds_min": [
+    -3.8915,
+    -0.45,
+    -2.9
+   ],
+   "bounds_max": [
+    3.8,
+    5.17,
+    2.9
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    14
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    4,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -2.536,
+      1.277,
+      2.494
+     ],
+     "footprint": [
+      1.387,
+      2.553,
+      0.544
+     ],
+     "bounds_min": [
+      -3.23,
+      0.0,
+      2.222
+     ],
+     "bounds_max": [
+      -1.843,
+      2.553,
+      2.766
+     ]
+    }
+   ],
+   "note": "Cottage A (sand plaster, red roof, green trim, woodshed lean-to).",
+   "pad": {
+    "width_x": 7.6,
+    "depth_z": 5.8,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_CottageA",
+     "position": [
+      1.25,
+      5.25,
+      -0.5
+     ]
+    }
+   ],
+   "role": "cottage",
+   "variant": "A",
+   "state": "built",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.8915,
+     3.8
+    ],
+    "extent_z": [
+     -2.9,
+     2.9
+    ],
+    "width_x": 7.69,
+    "depth_z": 5.8,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -2.15,
+    "pad": {
+     "width_x": 7.6,
+     "depth_z": 5.8,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_A_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_A_Rundown.fbx",
+   "triangles": 3240,
+   "vertices": 2454,
+   "bounds_min": [
+    -4.0605,
+    -0.45,
+    -2.9
+   ],
+   "bounds_max": [
+    3.8,
+    5.17,
+    2.9
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    1,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.311,
+      2.53,
+      0.14
+     ],
+     "footprint": [
+      7.499,
+      5.28,
+      5.239
+     ],
+     "bounds_min": [
+      -4.061,
+      -0.11,
+      -2.479
+     ],
+     "bounds_max": [
+      3.438,
+      5.17,
+      2.76
+     ]
+    }
+   ],
+   "note": "Cottage A (sand plaster, red roof, green trim, woodshed lean-to).",
+   "pad": {
+    "width_x": 7.6,
+    "depth_z": 5.8,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "cottage",
+   "variant": "A",
+   "state": "rundown",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -4.0605,
+     3.8
+    ],
+    "extent_z": [
+     -2.9,
+     2.9
+    ],
+    "width_x": 7.86,
+    "depth_z": 5.8,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -2.15,
+    "pad": {
+     "width_x": 7.6,
+     "depth_z": 5.8,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_B",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_B.fbx",
+   "triangles": 4080,
+   "vertices": 3859,
+   "bounds_min": [
+    -3.7425,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.4,
+    5.27,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    6,
+    7,
+    10,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.582,
+      2.58,
+      -0.079
+     ],
+     "footprint": [
+      6.321,
+      5.38,
+      5.542
+     ],
+     "bounds_min": [
+      -3.742,
+      -0.11,
+      -2.85
+     ],
+     "bounds_max": [
+      2.579,
+      5.27,
+      2.692
+     ]
+    }
+   ],
+   "note": "Cottage B (weatherboard, slate roof, front gable with loft hoist).",
+   "pad": {
+    "width_x": 6.8,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_CottageB",
+     "position": [
+      1.3,
+      5.35,
+      -1.85
+     ]
+    }
+   ],
+   "role": "cottage",
+   "variant": "B",
+   "state": "built",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.7425,
+     3.4
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 7.14,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 0.0,
+    "pad": {
+     "width_x": 6.8,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_B_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_B_Rundown.fbx",
+   "triangles": 2124,
+   "vertices": 1952,
+   "bounds_min": [
+    -3.4,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.4,
+    5.27,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    1,
+    3,
+    6,
+    7,
+    10,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.271,
+      2.58,
+      -0.072
+     ],
+     "footprint": [
+      5.904,
+      5.38,
+      5.556
+     ],
+     "bounds_min": [
+      -3.223,
+      -0.11,
+      -2.85
+     ],
+     "bounds_max": [
+      2.681,
+      5.27,
+      2.706
+     ]
+    }
+   ],
+   "note": "Cottage B (weatherboard, slate roof, front gable with loft hoist).",
+   "pad": {
+    "width_x": 6.8,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "cottage",
+   "variant": "B",
+   "state": "rundown",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.4,
+     3.4
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 6.8,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 0.0,
+    "pad": {
+     "width_x": 6.8,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_C",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_C.fbx",
+   "triangles": 2612,
+   "vertices": 3367,
+   "bounds_min": [
+    -3.7,
+    -0.45,
+    -2.8
+   ],
+   "bounds_max": [
+    3.7,
+    4.78,
+    2.8
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    6,
+    8,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    4,
+    10,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.35,
+      2.335,
+      0.14
+     ],
+     "footprint": [
+      6.7,
+      4.89,
+      5.039
+     ],
+     "bounds_min": [
+      -3.7,
+      -0.11,
+      -2.379
+     ],
+     "bounds_max": [
+      3.0,
+      4.78,
+      2.66
+     ]
+    }
+   ],
+   "note": "Cottage C (rubble stone, mossy roof, porthole).",
+   "pad": {
+    "width_x": 7.4,
+    "depth_z": 5.6,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_CottageC",
+     "position": [
+      -2.9,
+      4.9,
+      0.2
+     ]
+    }
+   ],
+   "role": "cottage",
+   "variant": "C",
+   "state": "built",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.7,
+     3.7
+    ],
+    "extent_z": [
+     -2.8,
+     2.8
+    ],
+    "width_x": 7.4,
+    "depth_z": 5.6,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 1.5,
+    "pad": {
+     "width_x": 7.4,
+     "depth_z": 5.6,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_C_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_C_Rundown.fbx",
+   "triangles": 1652,
+   "vertices": 1564,
+   "bounds_min": [
+    -3.7064,
+    -0.45,
+    -2.8
+   ],
+   "bounds_max": [
+    3.7,
+    4.78,
+    2.9445
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    3,
+    4,
+    6,
+    7,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    1,
+    3,
+    7,
+    10,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.178,
+      2.335,
+      0.283
+     ],
+     "footprint": [
+      7.056,
+      4.89,
+      5.324
+     ],
+     "bounds_min": [
+      -3.706,
+      -0.11,
+      -2.379
+     ],
+     "bounds_max": [
+      3.35,
+      4.78,
+      2.944
+     ]
+    }
+   ],
+   "note": "Cottage C (rubble stone, mossy roof, porthole).",
+   "pad": {
+    "width_x": 7.4,
+    "depth_z": 5.6,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "cottage",
+   "variant": "C",
+   "state": "rundown",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.7064,
+     3.7
+    ],
+    "extent_z": [
+     -2.8,
+     2.9445
+    ],
+    "width_x": 7.41,
+    "depth_z": 5.74,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 1.5,
+    "pad": {
+     "width_x": 7.4,
+     "depth_z": 5.6,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_D",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_D.fbx",
+   "triangles": 3260,
+   "vertices": 3197,
+   "bounds_min": [
+    -3.2,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.2,
+    6.9,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    6,
+    7,
+    10,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      0.0,
+      3.395,
+      -0.082
+     ],
+     "footprint": [
+      4.6,
+      7.01,
+      5.694
+     ],
+     "bounds_min": [
+      -2.3,
+      -0.11,
+      -2.929
+     ],
+     "bounds_max": [
+      2.3,
+      6.9,
+      2.765
+     ]
+    }
+   ],
+   "note": "Cottage D (narrow two-storey, pistachio walls, balcony).",
+   "pad": {
+    "width_x": 6.4,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_CottageD",
+     "position": [
+      1.35,
+      6.8,
+      -0.75
+     ]
+    }
+   ],
+   "role": "cottage",
+   "variant": "D",
+   "state": "built",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.2,
+     3.2
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 6.4,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -0.75,
+    "pad": {
+     "width_x": 6.4,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_D_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_D_Rundown.fbx",
+   "triangles": 2670,
+   "vertices": 2286,
+   "bounds_min": [
+    -3.2,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.2,
+    6.72,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    3,
+    4,
+    6,
+    7,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    1,
+    3,
+    6,
+    7,
+    10,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.151,
+      3.305,
+      -0.08
+     ],
+     "footprint": [
+      5.39,
+      6.83,
+      5.699
+     ],
+     "bounds_min": [
+      -2.847,
+      -0.11,
+      -2.929
+     ],
+     "bounds_max": [
+      2.544,
+      6.72,
+      2.77
+     ]
+    }
+   ],
+   "note": "Cottage D (narrow two-storey, pistachio walls, balcony).",
+   "pad": {
+    "width_x": 6.4,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "cottage",
+   "variant": "D",
+   "state": "rundown",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.2,
+     3.2
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 6.4,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -0.75,
+    "pad": {
+     "width_x": 6.4,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Gary_Tidy",
+   "file": "Art/Export/VillageBuildings/Village_Gary_Tidy.fbx",
+   "triangles": 4662,
+   "vertices": 4646,
+   "bounds_min": [
+    -3.8789,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.6,
+    5.22,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -1.664,
+      1.377,
+      2.283
+     ],
+     "footprint": [
+      4.429,
+      2.755,
+      1.335
+     ],
+     "bounds_min": [
+      -3.879,
+      0.0,
+      1.615
+     ],
+     "bounds_max": [
+      0.55,
+      2.755,
+      2.95
+     ]
+    }
+   ],
+   "note": "The Garys' cottage plan (tidy: orange trim, red door and shutters).",
+   "pad": {
+    "width_x": 7.2,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_GaryTidy",
+     "position": [
+      -2.1,
+      5.3,
+      -1.0
+     ]
+    }
+   ],
+   "role": "cottage",
+   "variant": "GaryTidy",
+   "state": "built",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.8789,
+     3.6
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 7.48,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -0.6,
+    "pad": {
+     "width_x": 7.2,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height",
+   "jumper_slots": {
+    "orange": 10,
+    "red": 9
+   },
+   "trim_slot": 10,
+   "door_slot": 9
+  },
+  {
+   "name": "Village_Gary_Chaos",
+   "file": "Art/Export/VillageBuildings/Village_Gary_Chaos.fbx",
+   "triangles": 5424,
+   "vertices": 5483,
+   "bounds_min": [
+    -3.8667,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.6,
+    5.22,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.288,
+      2.555,
+      0.001
+     ],
+     "footprint": [
+      7.157,
+      5.33,
+      5.96
+     ],
+     "bounds_min": [
+      -3.867,
+      -0.11,
+      -2.979
+     ],
+     "bounds_max": [
+      3.29,
+      5.22,
+      2.981
+     ]
+    }
+   ],
+   "note": "The Garys' cottage plan (chaos: red trim, orange door and shutters, a boat on the roof).",
+   "pad": {
+    "width_x": 7.2,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_GaryChaos",
+     "position": [
+      -2.1,
+      5.3,
+      -1.0
+     ]
+    }
+   ],
+   "role": "cottage",
+   "variant": "GaryChaos",
+   "state": "built",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.8667,
+     3.6
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 7.47,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -0.6,
+    "pad": {
+     "width_x": 7.2,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height",
+   "jumper_slots": {
+    "orange": 10,
+    "red": 9
+   },
+   "trim_slot": 9,
+   "door_slot": 10
+  },
+  {
+   "name": "Village_Gary_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Gary_Rundown.fbx",
+   "triangles": 2404,
+   "vertices": 3438,
+   "bounds_min": [
+    -3.8818,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.6,
+    5.22,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    1,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.296,
+      2.555,
+      -0.308
+     ],
+     "footprint": [
+      7.172,
+      5.33,
+      5.342
+     ],
+     "bounds_min": [
+      -3.882,
+      -0.11,
+      -2.979
+     ],
+     "bounds_max": [
+      3.29,
+      5.22,
+      2.363
+     ]
+    }
+   ],
+   "note": "The Garys' cottage plan (run-down, shared by both).",
+   "pad": {
+    "width_x": 7.2,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "cottage",
+   "variant": "Gary",
+   "state": "rundown",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.8818,
+     3.6
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 7.48,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -0.6,
+    "pad": {
+     "width_x": 7.2,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cafe",
+   "file": "Art/Export/VillageBuildings/Village_Cafe.fbx",
+   "triangles": 7744,
+   "vertices": 14676,
+   "bounds_min": [
+    -4.7,
+    -0.45,
+    -3.179
+   ],
+   "bounds_max": [
+    4.7,
+    6.37,
+    3.1
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    13
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.225,
+      3.13,
+      -0.403
+     ],
+     "footprint": [
+      7.45,
+      6.48,
+      5.552
+     ],
+     "bounds_min": [
+      -3.95,
+      -0.11,
+      -3.179
+     ],
+     "bounds_max": [
+      3.5,
+      6.37,
+      2.373
+     ]
+    },
+    {
+     "name": "Table_0",
+     "collider": "box",
+     "position": [
+      -2.6,
+      0.475,
+      1.55
+     ],
+     "footprint": [
+      1.752,
+      0.95,
+      0.939
+     ],
+     "bounds_min": [
+      -3.476,
+      0.0,
+      1.08
+     ],
+     "bounds_max": [
+      -1.724,
+      0.95,
+      2.02
+     ]
+    },
+    {
+     "name": "Table_1",
+     "collider": "box",
+     "position": [
+      -0.5,
+      0.475,
+      1.6
+     ],
+     "footprint": [
+      1.744,
+      0.95,
+      0.931
+     ],
+     "bounds_min": [
+      -1.372,
+      0.0,
+      1.134
+     ],
+     "bounds_max": [
+      0.372,
+      0.95,
+      2.066
+     ]
+    },
+    {
+     "name": "Table_2",
+     "collider": "box",
+     "position": [
+      3.5,
+      1.29,
+      1.9
+     ],
+     "footprint": [
+      2.067,
+      2.58,
+      2.067
+     ],
+     "bounds_min": [
+      2.466,
+      0.0,
+      0.866
+     ],
+     "bounds_max": [
+      4.534,
+      2.58,
+      2.934
+     ]
+    },
+    {
+     "name": "Chalkboard",
+     "collider": "box",
+     "position": [
+      -4.026,
+      0.52,
+      2.392
+     ],
+     "footprint": [
+      0.72,
+      1.088,
+      0.496
+     ],
+     "bounds_min": [
+      -4.385,
+      -0.024,
+      2.144
+     ],
+     "bounds_max": [
+      -3.666,
+      1.064,
+      2.64
+     ]
+    },
+    {
+     "name": "Planter_0",
+     "collider": "box",
+     "position": [
+      1.3,
+      0.419,
+      1.307
+     ],
+     "footprint": [
+      0.52,
+      0.839,
+      0.509
+     ],
+     "bounds_min": [
+      1.04,
+      0.0,
+      1.053
+     ],
+     "bounds_max": [
+      1.56,
+      0.839,
+      1.561
+     ]
+    },
+    {
+     "name": "Planter_1",
+     "collider": "box",
+     "position": [
+      3.2,
+      0.418,
+      1.294
+     ],
+     "footprint": [
+      0.52,
+      0.835,
+      0.506
+     ],
+     "bounds_min": [
+      2.94,
+      0.0,
+      1.041
+     ],
+     "bounds_max": [
+      3.46,
+      0.835,
+      1.547
+     ]
+    }
+   ],
+   "note": "Lorraine's cafe (pistachio walls, striped awning, three tables, a chalkboard).",
+   "pad": {
+    "width_x": 9.4,
+    "depth_z": 6.2,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_Cafe",
+     "position": [
+      -2.4,
+      6.45,
+      -1.4
+     ]
+    }
+   ],
+   "role": "cafe",
+   "variant": "Cafe",
+   "state": "built",
+   "lot_class_min": "M",
+   "footprint": {
+    "extent_x": [
+     -4.7,
+     4.7
+    ],
+    "extent_z": [
+     -3.179,
+     3.1
+    ],
+    "width_x": 9.4,
+    "depth_z": 6.28,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 2.2,
+    "pad": {
+     "width_x": 9.4,
+     "depth_z": 6.2,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cafe_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Cafe_Rundown.fbx",
+   "triangles": 4242,
+   "vertices": 6181,
+   "bounds_min": [
+    -4.7,
+    -0.45,
+    -3.179
+   ],
+   "bounds_max": [
+    4.7,
+    6.37,
+    3.1087
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    13
+   ],
+   "layers": [
+    0,
+    1,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.22,
+      3.13,
+      -0.19
+     ],
+     "footprint": [
+      7.461,
+      6.48,
+      5.978
+     ],
+     "bounds_min": [
+      -3.95,
+      -0.11,
+      -3.179
+     ],
+     "bounds_max": [
+      3.511,
+      6.37,
+      2.799
+     ]
+    },
+    {
+     "name": "Table_1",
+     "collider": "box",
+     "position": [
+      -0.5,
+      0.475,
+      1.6
+     ],
+     "footprint": [
+      1.744,
+      0.95,
+      0.931
+     ],
+     "bounds_min": [
+      -1.372,
+      0.0,
+      1.134
+     ],
+     "bounds_max": [
+      0.372,
+      0.95,
+      2.066
+     ]
+    },
+    {
+     "name": "Chalkboard",
+     "collider": "box",
+     "position": [
+      -4.026,
+      0.52,
+      2.392
+     ],
+     "footprint": [
+      0.72,
+      1.088,
+      0.496
+     ],
+     "bounds_min": [
+      -4.385,
+      -0.024,
+      2.144
+     ],
+     "bounds_max": [
+      -3.666,
+      1.064,
+      2.64
+     ]
+    }
+   ],
+   "note": "Lorraine's cafe (pistachio walls, striped awning, three tables, a chalkboard).",
+   "pad": {
+    "width_x": 9.4,
+    "depth_z": 6.2,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "cafe",
+   "variant": "Cafe",
+   "state": "rundown",
+   "lot_class_min": "M",
+   "footprint": {
+    "extent_x": [
+     -4.7,
+     4.7
+    ],
+    "extent_z": [
+     -3.179,
+     3.1087
+    ],
+    "width_x": 9.4,
+    "depth_z": 6.29,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 2.2,
+    "pad": {
+     "width_x": 9.4,
+     "depth_z": 6.2,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Aquarium",
+   "file": "Art/Export/VillageBuildings/Village_Aquarium.fbx",
+   "triangles": 7373,
+   "vertices": 12788,
+   "bounds_min": [
+    -5.4,
+    -0.45,
+    -3.9284
+   ],
+   "bounds_max": [
+    5.4,
+    6.2,
+    3.9
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Planter_0",
+     "collider": "box",
+     "position": [
+      -1.157,
+      0.418,
+      1.685
+     ],
+     "footprint": [
+      0.533,
+      0.836,
+      0.525
+     ],
+     "bounds_min": [
+      -1.423,
+      0.0,
+      1.422
+     ],
+     "bounds_max": [
+      -0.89,
+      0.836,
+      1.947
+     ]
+    },
+    {
+     "name": "Planter_1",
+     "collider": "box",
+     "position": [
+      1.15,
+      0.417,
+      1.7
+     ],
+     "footprint": [
+      0.52,
+      0.835,
+      0.495
+     ],
+     "bounds_min": [
+      0.89,
+      0.0,
+      1.453
+     ],
+     "bounds_max": [
+      1.41,
+      0.835,
+      1.947
+     ]
+    },
+    {
+     "name": "ABoard",
+     "collider": "box",
+     "position": [
+      -2.279,
+      0.52,
+      2.643
+     ],
+     "footprint": [
+      0.717,
+      1.088,
+      0.43
+     ],
+     "bounds_min": [
+      -2.638,
+      -0.024,
+      2.428
+     ],
+     "bounds_max": [
+      -1.921,
+      1.064,
+      2.859
+     ]
+    },
+    {
+     "name": "ForecourtBench",
+     "collider": "box",
+     "position": [
+      -4.2,
+      0.529,
+      3.085
+     ],
+     "footprint": [
+      1.8,
+      0.997,
+      0.58
+     ],
+     "bounds_min": [
+      -5.1,
+      0.03,
+      2.795
+     ],
+     "bounds_max": [
+      -3.3,
+      1.027,
+      3.375
+     ]
+    },
+    {
+     "name": "WallBack",
+     "collider": "box",
+     "position": [
+      0.0,
+      1.85,
+      -3.575
+     ],
+     "footprint": [
+      10.2,
+      3.1,
+      0.25
+     ],
+     "bounds_min": [
+      -5.1,
+      0.3,
+      -3.7
+     ],
+     "bounds_max": [
+      5.1,
+      3.4,
+      -3.45
+     ],
+     "role": "wall"
+    },
+    {
+     "name": "WallWest",
+     "collider": "box",
+     "position": [
+      -4.975,
+      1.85,
+      -1.2
+     ],
+     "footprint": [
+      0.25,
+      3.1,
+      5.0
+     ],
+     "bounds_min": [
+      -5.1,
+      0.3,
+      -3.7
+     ],
+     "bounds_max": [
+      -4.85,
+      3.4,
+      1.3
+     ],
+     "role": "wall"
+    },
+    {
+     "name": "WallEast",
+     "collider": "box",
+     "position": [
+      4.975,
+      1.85,
+      -1.2
+     ],
+     "footprint": [
+      0.25,
+      3.1,
+      5.0
+     ],
+     "bounds_min": [
+      4.85,
+      0.3,
+      -3.7
+     ],
+     "bounds_max": [
+      5.1,
+      3.4,
+      1.3
+     ],
+     "role": "wall"
+    },
+    {
+     "name": "FrontWest",
+     "collider": "box",
+     "position": [
+      -2.875,
+      1.85,
+      1.15
+     ],
+     "footprint": [
+      4.45,
+      3.1,
+      0.3
+     ],
+     "bounds_min": [
+      -5.1,
+      0.3,
+      1.0
+     ],
+     "bounds_max": [
+      -0.65,
+      3.4,
+      1.3
+     ],
+     "role": "wall"
+    },
+    {
+     "name": "FrontEast",
+     "collider": "box",
+     "position": [
+      2.875,
+      1.85,
+      1.15
+     ],
+     "footprint": [
+      4.45,
+      3.1,
+      0.3
+     ],
+     "bounds_min": [
+      0.65,
+      0.3,
+      1.0
+     ],
+     "bounds_max": [
+      5.1,
+      3.4,
+      1.3
+     ],
+     "role": "wall"
+    },
+    {
+     "name": "RoofAndFalseFront",
+     "collider": "box",
+     "position": [
+      0.0,
+      4.375,
+      -1.35
+     ],
+     "footprint": [
+      10.6,
+      1.95,
+      5.5
+     ],
+     "bounds_min": [
+      -5.3,
+      3.4,
+      -4.1
+     ],
+     "bounds_max": [
+      5.3,
+      5.35,
+      1.4
+     ],
+     "role": "roof (not walkable)"
+    }
+   ],
+   "note": "Dr. Hollis's aquarium (glass frontage, painted false front, interior with three tank platforms).",
+   "pad": {
+    "width_x": 10.8,
+    "depth_z": 7.8,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [],
+   "tank_mounts": [
+    {
+     "name": "DisplayTank_0",
+     "prefab": "Village_DisplayTank (+_Glass, +_Water)",
+     "position": [
+      -3.6,
+      0.43,
+      -3.1
+     ],
+     "yaw_deg": 0.0
+    },
+    {
+     "name": "DisplayTank_1",
+     "prefab": "Village_DisplayTank (+_Glass, +_Water)",
+     "position": [
+      0.0,
+      0.43,
+      -3.1
+     ],
+     "yaw_deg": 0.0
+    },
+    {
+     "name": "DisplayTank_2",
+     "prefab": "Village_DisplayTank (+_Glass, +_Water)",
+     "position": [
+      3.6,
+      0.43,
+      -3.1
+     ],
+     "yaw_deg": 0.0
+    },
+    {
+     "name": "BreedingTank",
+     "prefab": "Village_BreedingTank (+_Glass, +_Water)",
+     "position": [
+      4.4,
+      0.43,
+      -1.0
+     ],
+     "yaw_deg": 270.0,
+     "note": "yaw 270: the tank front faces west into the hall; footprint 1.9 x 0.9 turned onto the 1.0 x 2.1 east platform"
+    },
+    {
+     "name": "TouchPool",
+     "prefab": "Village_TouchPool (+_Water)",
+     "position": [
+      3.2,
+      0.03,
+      2.55
+     ],
+     "yaw_deg": 0.0,
+     "note": "outdoors in the forecourt, east of the door; 3.0 x 1.8 m, the sign post stands 0.5 m east of it"
+    }
+   ],
+   "interior_floor_y": 0.31,
+   "doorway": {
+    "x0": -0.65,
+    "x1": 0.65,
+    "y1": 3.1,
+    "note": "open 1.3 m gap in the frontage; the door leaf stands open inside (mesh), glass in Village_Aquarium_Glass"
+   },
+   "role": "aquarium",
+   "variant": "Aquarium",
+   "state": "built",
+   "lot_class_min": "L",
+   "footprint": {
+    "extent_x": [
+     -5.4,
+     5.4
+    ],
+    "extent_z": [
+     -3.9284,
+     3.9
+    ],
+    "width_x": 10.8,
+    "depth_z": 7.83,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 0.0,
+    "pad": {
+     "width_x": 10.8,
+     "depth_z": 7.8,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height",
+   "companions": [
+    "Village_Aquarium_Glass"
+   ],
+   "companion_note": "same origin; place with the building. Glass: transparent glass material."
+  },
+  {
+   "name": "Village_Aquarium_Glass",
+   "file": "Art/Export/VillageBuildings/Village_Aquarium_Glass.fbx",
+   "triangles": 84,
+   "vertices": 168,
+   "bounds_min": [
+    -4.93,
+    0.65,
+    0.1427
+   ],
+   "bounds_max": [
+    4.93,
+    3.01,
+    1.215
+   ],
+   "material": "glass",
+   "slots": [
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "items": [],
+   "note": "Glass of the aquarium frontage (bay panes and the door pane): put the glass material on this object.",
+   "role": "glass companion of Village_Aquarium"
+  },
+  {
+   "name": "Village_Aquarium_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Aquarium_Rundown.fbx",
+   "triangles": 3786,
+   "vertices": 7678,
+   "bounds_min": [
+    -5.4,
+    -0.45,
+    -3.9284
+   ],
+   "bounds_max": [
+    5.4,
+    6.2,
+    3.9
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Hall",
+     "collider": "box",
+     "position": [
+      0.0,
+      3.045,
+      -0.129
+     ],
+     "footprint": [
+      10.7,
+      6.31,
+      7.598
+     ],
+     "bounds_min": [
+      -5.35,
+      -0.11,
+      -3.928
+     ],
+     "bounds_max": [
+      5.35,
+      6.2,
+      3.67
+     ]
+    }
+   ],
+   "note": "Dr. Hollis's aquarium, run-down: frontage boarded, sign faded, the mascot fish on the ground.",
+   "pad": {
+    "width_x": 10.8,
+    "depth_z": 7.8,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "aquarium",
+   "variant": "Aquarium",
+   "state": "rundown",
+   "lot_class_min": "L",
+   "footprint": {
+    "extent_x": [
+     -5.4,
+     5.4
+    ],
+    "extent_z": [
+     -3.9284,
+     3.9
+    ],
+    "width_x": 10.8,
+    "depth_z": 7.83,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 0.0,
+    "pad": {
+     "width_x": 10.8,
+     "depth_z": 7.8,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  }
+ ],
+ "props": [
+  {
+   "name": "Village_DisplayTank",
+   "file": "Art/Export/VillageBuildings/Village_DisplayTank.fbx",
+   "triangles": 1346,
+   "vertices": 2676,
+   "bounds_min": [
+    -1.35,
+    0.0,
+    -0.7057
+   ],
+   "bounds_max": [
+    1.4154,
+    2.08,
+    0.55
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    5,
+    6
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      0.033,
+      1.04,
+      -0.078
+     ],
+     "footprint": [
+      2.765,
+      2.08,
+      1.256
+     ],
+     "bounds_min": [
+      -1.35,
+      0.0,
+      -0.706
+     ],
+     "bounds_max": [
+      1.415,
+      2.08,
+      0.55
+     ]
+    }
+   ],
+   "note": "Aquarium display tank body (cabinet, frame, hood, gravel, rocks, kelp, a toy lighthouse). Glass and water are separate objects.",
+   "fish_mounts": [
+    {
+     "name": "FishMount_0",
+     "position": [
+      -0.95,
+      1.55,
+      -0.1
+     ],
+     "yaw_deg": 90.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_1",
+     "position": [
+      -0.5,
+      1.25,
+      0.15
+     ],
+     "yaw_deg": 270.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_2",
+     "position": [
+      0.0,
+      1.5,
+      -0.15
+     ],
+     "yaw_deg": 90.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_3",
+     "position": [
+      0.45,
+      1.2,
+      0.1
+     ],
+     "yaw_deg": 270.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_4",
+     "position": [
+      0.9,
+      1.45,
+      0.0
+     ],
+     "yaw_deg": 90.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_5",
+     "position": [
+      -0.7,
+      1.1,
+      0.2
+     ],
+     "yaw_deg": 270.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_6",
+     "position": [
+      0.2,
+      1.65,
+      0.05
+     ],
+     "yaw_deg": 90.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_7",
+     "position": [
+      0.75,
+      1.7,
+      -0.2
+     ],
+     "yaw_deg": 270.0,
+     "max_fish_length_m": 0.45
+    }
+   ],
+   "swim_volume": {
+    "min": [
+     -1.18,
+     1.0,
+     -0.38
+    ],
+    "max": [
+     1.18,
+     1.76,
+     0.38
+    ],
+    "note": "inside the water volume; keep fish centres 0.05 m inside"
+   },
+   "companions": [
+    "Village_DisplayTank_Glass",
+    "Village_DisplayTank_Water"
+   ],
+   "placement_note": "origin = base centre on the floor, front +z; footprint 2.7 x 1.0 m, height 2.08 m",
+   "role": "aquarium prop"
+  },
+  {
+   "name": "Village_DisplayTank_Glass",
+   "file": "Art/Export/VillageBuildings/Village_DisplayTank_Glass.fbx",
+   "triangles": 48,
+   "vertices": 96,
+   "bounds_min": [
+    -1.2725,
+    0.88,
+    -0.4625
+   ],
+   "bounds_max": [
+    1.2725,
+    1.88,
+    0.4625
+   ],
+   "material": "glass",
+   "slots": [
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "items": [],
+   "note": "Glass panes of the display tank: put the glass material on this object.",
+   "role": "glass companion"
+  },
+  {
+   "name": "Village_DisplayTank_Water",
+   "file": "Art/Export/VillageBuildings/Village_DisplayTank_Water.fbx",
+   "triangles": 12,
+   "vertices": 24,
+   "bounds_min": [
+    -1.2,
+    0.95,
+    -0.41
+   ],
+   "bounds_max": [
+    1.2,
+    1.79,
+    0.41
+   ],
+   "material": "water",
+   "slots": [
+    1
+   ],
+   "layers": [
+    0
+   ],
+   "items": [],
+   "note": "Water volume of the display tank: put the water material on this object.",
+   "role": "water companion"
+  },
+  {
+   "name": "Village_BreedingTank",
+   "file": "Art/Export/VillageBuildings/Village_BreedingTank.fbx",
+   "triangles": 1958,
+   "vertices": 4679,
+   "bounds_min": [
+    -0.95,
+    0.0,
+    -0.45
+   ],
+   "bounds_max": [
+    1.3,
+    1.7546,
+    0.49
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    11
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    5,
+    7
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      0.175,
+      0.877,
+      0.02
+     ],
+     "footprint": [
+      2.25,
+      1.755,
+      0.94
+     ],
+     "bounds_min": [
+      -0.95,
+      0.0,
+      -0.45
+     ],
+     "bounds_max": [
+      1.3,
+      1.755,
+      0.49
+     ]
+    }
+   ],
+   "note": "Breeding tank body: two compartments, a pump, air lines, a heater, a breeding trap.",
+   "fish_mounts": [
+    {
+     "name": "FishMount_0",
+     "position": [
+      -0.55,
+      1.1,
+      0.0
+     ],
+     "yaw_deg": 90.0,
+     "max_fish_length_m": 0.35,
+     "compartment": "A"
+    },
+    {
+     "name": "FishMount_1",
+     "position": [
+      -0.3,
+      1.3,
+      0.1
+     ],
+     "yaw_deg": 270.0,
+     "max_fish_length_m": 0.35,
+     "compartment": "A"
+    },
+    {
+     "name": "FishMount_2",
+     "position": [
+      0.3,
+      1.2,
+      -0.1
+     ],
+     "yaw_deg": 90.0,
+     "max_fish_length_m": 0.35,
+     "compartment": "B"
+    },
+    {
+     "name": "FishMount_3",
+     "position": [
+      0.55,
+      1.35,
+      0.05
+     ],
+     "yaw_deg": 270.0,
+     "max_fish_length_m": 0.35,
+     "compartment": "B"
+    }
+   ],
+   "swim_volume": {
+    "min": [
+     -0.78,
+     0.92,
+     -0.32
+    ],
+    "max": [
+     0.78,
+     1.5,
+     0.32
+    ],
+    "note": "two compartments split at x = 0 (A west, B east): keep a pair per side"
+   },
+   "companions": [
+    "Village_BreedingTank_Glass",
+    "Village_BreedingTank_Water"
+   ],
+   "placement_note": "origin = base centre on the floor, front +z; footprint 1.9 x 0.9 m (+0.4 m pump on the east side), height 1.72 m",
+   "role": "aquarium prop"
+  },
+  {
+   "name": "Village_BreedingTank_Glass",
+   "file": "Art/Export/VillageBuildings/Village_BreedingTank_Glass.fbx",
+   "triangles": 60,
+   "vertices": 120,
+   "bounds_min": [
+    -0.871,
+    0.78,
+    -0.411
+   ],
+   "bounds_max": [
+    0.871,
+    1.58,
+    0.411
+   ],
+   "material": "glass",
+   "slots": [
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "items": [],
+   "note": "Glass of the breeding tank (outer panes and the centre divider).",
+   "role": "glass companion"
+  },
+  {
+   "name": "Village_BreedingTank_Water",
+   "file": "Art/Export/VillageBuildings/Village_BreedingTank_Water.fbx",
+   "triangles": 24,
+   "vertices": 48,
+   "bounds_min": [
+    -0.81,
+    0.88,
+    -0.35
+   ],
+   "bounds_max": [
+    0.81,
+    1.52,
+    0.35
+   ],
+   "material": "water",
+   "slots": [
+    1
+   ],
+   "layers": [
+    0
+   ],
+   "items": [],
+   "note": "Water volumes of the breeding tank (one box per compartment).",
+   "role": "water companion"
+  },
+  {
+   "name": "Village_TouchPool",
+   "file": "Art/Export/VillageBuildings/Village_TouchPool.fbx",
+   "triangles": 1774,
+   "vertices": 3621,
+   "bounds_min": [
+    -1.5336,
+    0.0,
+    -0.9831
+   ],
+   "bounds_max": [
+    2.15,
+    1.21,
+    0.9978
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    2,
+    4,
+    5,
+    6,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    5,
+    6,
+    10
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      0.308,
+      0.605,
+      0.007
+     ],
+     "footprint": [
+      3.684,
+      1.21,
+      1.981
+     ],
+     "bounds_min": [
+      -1.534,
+      0.0,
+      -0.983
+     ],
+     "bounds_max": [
+      2.15,
+      1.21,
+      0.998
+     ]
+    }
+   ],
+   "note": "Touch pool: a low stone basin with a rock rim, seaweed, starfish and a sign. The water is a separate object.",
+   "fish_mounts": [
+    {
+     "name": "Starfish_0",
+     "position": [
+      0.1,
+      0.2,
+      -0.35
+     ],
+     "yaw_deg": 20.0,
+     "kind": "starfish",
+     "max_length_m": 0.35
+    },
+    {
+     "name": "Starfish_1",
+     "position": [
+      -0.3,
+      0.2,
+      0.4
+     ],
+     "yaw_deg": 60.0,
+     "kind": "starfish",
+     "max_length_m": 0.3
+    },
+    {
+     "name": "Crab_0",
+     "position": [
+      0.45,
+      0.4,
+      0.15
+     ],
+     "yaw_deg": 140.0,
+     "kind": "crab",
+     "max_length_m": 0.25
+    },
+    {
+     "name": "Crab_1",
+     "position": [
+      -0.55,
+      0.45,
+      -0.1
+     ],
+     "yaw_deg": 210.0,
+     "kind": "crab",
+     "max_length_m": 0.25
+    },
+    {
+     "name": "Fish_0",
+     "position": [
+      -0.8,
+      0.32,
+      0.1
+     ],
+     "yaw_deg": 90.0,
+     "kind": "fish",
+     "max_length_m": 0.3
+    },
+    {
+     "name": "Fish_1",
+     "position": [
+      0.85,
+      0.34,
+      -0.1
+     ],
+     "yaw_deg": 270.0,
+     "kind": "fish",
+     "max_length_m": 0.3
+    }
+   ],
+   "swim_volume": {
+    "min": [
+     -1.2,
+     0.2,
+     -0.65
+    ],
+    "max": [
+     1.2,
+     0.5,
+     0.65
+    ],
+    "note": "shallow: water surface y 0.5"
+   },
+   "companions": [
+    "Village_TouchPool_Water"
+   ],
+   "placement_note": "origin = base centre on the ground, front +z; basin 3.0 x 1.8 m, rim 0.62 m, water surface at y 0.5; the sign post stands 0.5 m east of the basin",
+   "role": "aquarium prop"
+  },
+  {
+   "name": "Village_TouchPool_Water",
+   "file": "Art/Export/VillageBuildings/Village_TouchPool_Water.fbx",
+   "triangles": 12,
+   "vertices": 24,
+   "bounds_min": [
+    -1.29,
+    0.16,
+    -0.69
+   ],
+   "bounds_max": [
+    1.29,
+    0.5,
+    0.69
+   ],
+   "material": "water",
+   "slots": [
+    1
+   ],
+   "layers": [
+    0
+   ],
+   "items": [],
+   "note": "Water surface of the touch pool: put the water material on this object.",
+   "role": "water companion"
+  }
+ ],
+ "lot_markers": [
+  {
+   "name": "Village_LotMarker_S",
+   "file": "Art/Export/VillageBuildings/Village_LotMarker_S.fbx",
+   "triangles": 2374,
+   "vertices": 4842,
+   "bounds_min": [
+    -4.6094,
+    -0.3,
+    -2.9558
+   ],
+   "bounds_max": [
+    4.4059,
+    1.6,
+    2.9639
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "items": [
+    {
+     "name": "Stake_0",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -4.442,
+      0.435,
+      -2.881
+     ],
+     "footprint": [
+      0.335,
+      1.469,
+      0.149
+     ],
+     "bounds_min": [
+      -4.609,
+      -0.3,
+      -2.956
+     ],
+     "bounds_max": [
+      -4.274,
+      1.169,
+      -2.807
+     ]
+    },
+    {
+     "name": "Stake_1",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      4.342,
+      0.435,
+      -2.721
+     ],
+     "footprint": [
+      0.127,
+      1.469,
+      0.345
+     ],
+     "bounds_min": [
+      4.278,
+      -0.3,
+      -2.893
+     ],
+     "bounds_max": [
+      4.406,
+      1.169,
+      -2.549
+     ]
+    },
+    {
+     "name": "Stake_2",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      4.34,
+      0.435,
+      2.725
+     ],
+     "footprint": [
+      0.12,
+      1.469,
+      0.337
+     ],
+     "bounds_min": [
+      4.28,
+      -0.3,
+      2.556
+     ],
+     "bounds_max": [
+      4.4,
+      1.169,
+      2.893
+     ]
+    },
+    {
+     "name": "Stake_3",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -4.217,
+      0.435,
+      2.885
+     ],
+     "footprint": [
+      0.366,
+      1.47,
+      0.157
+     ],
+     "bounds_min": [
+      -4.4,
+      -0.3,
+      2.807
+     ],
+     "bounds_max": [
+      -4.034,
+      1.17,
+      2.964
+     ]
+    },
+    {
+     "name": "Stake_4",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -0.002,
+      0.285,
+      -2.85
+     ],
+     "footprint": [
+      0.104,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -0.054,
+      -0.3,
+      -2.893
+     ],
+     "bounds_max": [
+      0.05,
+      0.87,
+      -2.807
+     ]
+    },
+    {
+     "name": "Stake_5",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      0.0,
+      0.285,
+      2.85
+     ],
+     "footprint": [
+      0.1,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -0.05,
+      -0.3,
+      2.807
+     ],
+     "bounds_max": [
+      0.05,
+      0.87,
+      2.893
+     ]
+    },
+    {
+     "name": "Sign",
+     "collider": "box",
+     "position": [
+      0.0,
+      0.725,
+      0.0
+     ],
+     "footprint": [
+      8.724,
+      1.75,
+      5.724
+     ],
+     "bounds_min": [
+      -4.362,
+      -0.15,
+      -2.862
+     ],
+     "bounds_max": [
+      4.362,
+      1.6,
+      2.862
+     ]
+    }
+   ],
+   "note": "Lot marker for a 9.0 x 6.0 m lot: stakes, rope, ribbons and the sign. Origin = lot centre at ground level.",
+   "placements": [
+    {
+     "lot": "Lot1",
+     "position": [
+      -54.0,
+      3.74,
+      -82.0
+     ],
+     "yaw_deg": 180.0
+    },
+    {
+     "lot": "Lot2",
+     "position": [
+      -17.5,
+      3.74,
+      -79.7
+     ],
+     "yaw_deg": 180.0
+    },
+    {
+     "lot": "Lot3",
+     "position": [
+      23.8,
+      3.74,
+      -79.5
+     ],
+     "yaw_deg": 180.0
+    },
+    {
+     "lot": "Lot4",
+     "position": [
+      47.4,
+      3.74,
+      -81.8
+     ],
+     "yaw_deg": 180.0
+    },
+    {
+     "lot": "Lot7",
+     "position": [
+      12.8,
+      3.74,
+      -79.3
+     ],
+     "yaw_deg": 180.0
+    }
+   ],
+   "role": "lot marker",
+   "lot_class": "S",
+   "lot_size": {
+    "width_x": 9.0,
+    "depth_z": 6.0
+   },
+   "placement": "origin on the lot centre at ground height, yaw = the lot yaw; stakes reach 0.3 m below ground, so the lot must be flat within ~0.1 m"
+  },
+  {
+   "name": "Village_LotMarker_M",
+   "file": "Art/Export/VillageBuildings/Village_LotMarker_M.fbx",
+   "triangles": 2374,
+   "vertices": 4842,
+   "bounds_min": [
+    -4.8865,
+    -0.3,
+    -3.2006
+   ],
+   "bounds_max": [
+    4.962,
+    1.6,
+    3.3473
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "items": [
+    {
+     "name": "Stake_0",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -4.743,
+      0.435,
+      -2.993
+     ],
+     "footprint": [
+      0.286,
+      1.47,
+      0.201
+     ],
+     "bounds_min": [
+      -4.886,
+      -0.3,
+      -3.093
+     ],
+     "bounds_max": [
+      -4.6,
+      1.17,
+      -2.892
+     ]
+    },
+    {
+     "name": "Stake_1",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      4.774,
+      0.435,
+      -3.104
+     ],
+     "footprint": [
+      0.349,
+      1.47,
+      0.194
+     ],
+     "bounds_min": [
+      4.6,
+      -0.3,
+      -3.201
+     ],
+     "bounds_max": [
+      4.949,
+      1.17,
+      -3.007
+     ]
+    },
+    {
+     "name": "Stake_2",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      4.78,
+      0.435,
+      3.009
+     ],
+     "footprint": [
+      0.363,
+      1.47,
+      0.168
+     ],
+     "bounds_min": [
+      4.599,
+      -0.3,
+      2.926
+     ],
+     "bounds_max": [
+      4.962,
+      1.17,
+      3.093
+     ]
+    },
+    {
+     "name": "Stake_3",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -4.65,
+      0.435,
+      3.177
+     ],
+     "footprint": [
+      0.1,
+      1.47,
+      0.341
+     ],
+     "bounds_min": [
+      -4.7,
+      -0.3,
+      3.007
+     ],
+     "bounds_max": [
+      -4.6,
+      1.17,
+      3.347
+     ]
+    },
+    {
+     "name": "Stake_4",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      0.0,
+      0.285,
+      -3.05
+     ],
+     "footprint": [
+      0.1,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -0.05,
+      -0.3,
+      -3.093
+     ],
+     "bounds_max": [
+      0.05,
+      0.87,
+      -3.007
+     ]
+    },
+    {
+     "name": "Stake_5",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      0.0,
+      0.285,
+      3.05
+     ],
+     "footprint": [
+      0.1,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -0.05,
+      -0.3,
+      3.007
+     ],
+     "bounds_max": [
+      0.05,
+      0.87,
+      3.093
+     ]
+    },
+    {
+     "name": "Sign",
+     "collider": "box",
+     "position": [
+      0.0,
+      0.725,
+      0.0
+     ],
+     "footprint": [
+      9.324,
+      1.75,
+      6.124
+     ],
+     "bounds_min": [
+      -4.662,
+      -0.15,
+      -3.062
+     ],
+     "bounds_max": [
+      4.662,
+      1.6,
+      3.062
+     ]
+    }
+   ],
+   "note": "Lot marker for a 9.6 x 6.4 m lot: stakes, rope, ribbons and the sign. Origin = lot centre at ground level.",
+   "placements": [
+    {
+     "lot": "Lot5",
+     "position": [
+      -4.2,
+      6.74,
+      -101.2
+     ],
+     "yaw_deg": 0.0
+    },
+    {
+     "lot": "Lot6",
+     "position": [
+      15.5,
+      6.74,
+      -101.2
+     ],
+     "yaw_deg": 0.0
+    }
+   ],
+   "role": "lot marker",
+   "lot_class": "M",
+   "lot_size": {
+    "width_x": 9.6,
+    "depth_z": 6.4
+   },
+   "placement": "origin on the lot centre at ground height, yaw = the lot yaw; stakes reach 0.3 m below ground, so the lot must be flat within ~0.1 m"
+  },
+  {
+   "name": "Village_LotMarker_L",
+   "file": "Art/Export/VillageBuildings/Village_LotMarker_L.fbx",
+   "triangles": 2646,
+   "vertices": 5056,
+   "bounds_min": [
+    -7.1207,
+    -0.3,
+    -3.8933
+   ],
+   "bounds_max": [
+    7.1144,
+    1.6,
+    3.8933
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "items": [
+    {
+     "name": "Stake_0",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -6.96,
+      0.435,
+      -3.85
+     ],
+     "footprint": [
+      0.321,
+      1.47,
+      0.087
+     ],
+     "bounds_min": [
+      -7.121,
+      -0.3,
+      -3.893
+     ],
+     "bounds_max": [
+      -6.8,
+      1.17,
+      -3.807
+     ]
+    },
+    {
+     "name": "Stake_1",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      6.74,
+      0.435,
+      -3.838
+     ],
+     "footprint": [
+      0.32,
+      1.47,
+      0.11
+     ],
+     "bounds_min": [
+      6.58,
+      -0.3,
+      -3.893
+     ],
+     "bounds_max": [
+      6.9,
+      1.17,
+      -3.784
+     ]
+    },
+    {
+     "name": "Stake_2",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      6.957,
+      0.435,
+      3.769
+     ],
+     "footprint": [
+      0.314,
+      1.47,
+      0.249
+     ],
+     "bounds_min": [
+      6.8,
+      -0.3,
+      3.644
+     ],
+     "bounds_max": [
+      7.114,
+      1.17,
+      3.893
+     ]
+    },
+    {
+     "name": "Stake_3",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -6.786,
+      0.435,
+      3.736
+     ],
+     "footprint": [
+      0.229,
+      1.47,
+      0.315
+     ],
+     "bounds_min": [
+      -6.9,
+      -0.3,
+      3.578
+     ],
+     "bounds_max": [
+      -6.671,
+      1.17,
+      3.893
+     ]
+    },
+    {
+     "name": "Stake_4",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -0.001,
+      0.285,
+      -3.85
+     ],
+     "footprint": [
+      0.103,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -0.053,
+      -0.3,
+      -3.893
+     ],
+     "bounds_max": [
+      0.05,
+      0.87,
+      -3.807
+     ]
+    },
+    {
+     "name": "Stake_5",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      6.85,
+      0.285,
+      0.0
+     ],
+     "footprint": [
+      0.1,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      6.8,
+      -0.3,
+      -0.043
+     ],
+     "bounds_max": [
+      6.9,
+      0.87,
+      0.043
+     ]
+    },
+    {
+     "name": "Stake_6",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      0.0,
+      0.285,
+      3.85
+     ],
+     "footprint": [
+      0.1,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -0.05,
+      -0.3,
+      3.807
+     ],
+     "bounds_max": [
+      0.05,
+      0.87,
+      3.893
+     ]
+    },
+    {
+     "name": "Stake_7",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -6.85,
+      0.285,
+      0.0
+     ],
+     "footprint": [
+      0.1,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -6.9,
+      -0.3,
+      -0.043
+     ],
+     "bounds_max": [
+      -6.8,
+      0.87,
+      0.043
+     ]
+    },
+    {
+     "name": "Sign",
+     "collider": "box",
+     "position": [
+      0.0,
+      0.725,
+      0.0
+     ],
+     "footprint": [
+      13.724,
+      1.75,
+      7.724
+     ],
+     "bounds_min": [
+      -6.862,
+      -0.15,
+      -3.862
+     ],
+     "bounds_max": [
+      6.862,
+      1.6,
+      3.862
+     ]
+    }
+   ],
+   "note": "Lot marker for a 14.0 x 8.0 m lot: stakes, rope, ribbons and the sign. Origin = lot centre at ground level.",
+   "placements": [
+    {
+     "lot": "Lot8",
+     "position": [
+      47.0,
+      1.2,
+      -59.0
+     ],
+     "yaw_deg": 0.0
+    }
+   ],
+   "role": "lot marker",
+   "lot_class": "L",
+   "lot_size": {
+    "width_x": 14.0,
+    "depth_z": 8.0
+   },
+   "placement": "origin on the lot centre at ground height, yaw = the lot yaw; stakes reach 0.3 m below ground, so the lot must be flat within ~0.1 m"
+  }
+ ],
+ "lots": [
+  {
+   "id": "Lot1",
+   "name": "Upper lane west",
+   "zone": "level 1, the upper lane, north row",
+   "lot_class": "S",
+   "centre": [
+    -54.0,
+    3.74,
+    -82.0
+   ],
+   "yaw_deg": 180.0,
+   "size": {
+    "width_x": 9.0,
+    "depth_z": 6.0,
+    "note": "metres, in the lot frame: x across, z = front (the door side at yaw)"
+   },
+   "rect_world": {
+    "x0": -58.5,
+    "x1": -49.5,
+    "z0": -85.0,
+    "z1": -79.0
+   },
+   "ground": {
+    "y_centre": 3.74,
+    "y_min": 3.74,
+    "y_max": 3.74,
+    "flat_within_m": 0.0
+   },
+   "allowed_yaws_deg": [
+    180.0,
+    0.0
+   ],
+   "accepts_building_classes": [
+    "S"
+   ],
+   "marker_model": "Village_LotMarker_S",
+   "marker_origin": "lot centre at ground height, yaw = the lot yaw",
+   "notes": "West end of the lane, beside stair B. Far end from Lot4: the Garys' \"as far apart as the lots allow\" pair.",
+   "clearances": {
+    "ground_y_centre": 3.74,
+    "ground_y_min": 3.74,
+    "ground_y_max": 3.74,
+    "flat_within_m": 0.0,
+    "min_gap_to_solid_m": 0.36,
+    "nearest_solid": "Harbour_Core_Story/LaundryPole_0",
+    "overlapping_solids": [],
+    "clear_of_stand_circles_and_cast_lanes_1m": true,
+    "stand_radius_STAND_R_m": 3.0,
+    "min_dist_to_any_stand_point_m": 37.8,
+    "min_dist_to_path_edge_m": 1.65,
+    "min_dist_to_lane_edge_m": 1.41,
+    "stairs_clear_0.5m": true,
+    "code_trees_min_dist_m": 12.9,
+    "pier_hit": false,
+    "other_lots_min_gap_m": 27.5,
+    "harbour_items_to_remove": [
+     "Harbour_Core_Buildings_Upper/Cottage_0",
+     "Harbour_Core_VillageLane/GardenFenceSide_0E",
+     "Harbour_Core_VillageLane/GardenFenceSide_0W",
+     "Harbour_Core_VillageLane/GardenFence_0E",
+     "Harbour_Core_VillageLane/GardenFence_0W"
+    ]
+   },
+   "replaces_upper_house_index": 0,
+   "replaces_upper_house": [
+    -54.0,
+    -82.0,
+    5.4,
+    4.4,
+    182.0
+   ]
+  },
+  {
+   "id": "Lot2",
+   "name": "Upper lane west-centre",
+   "zone": "level 1, the upper lane, north row",
+   "lot_class": "S",
+   "centre": [
+    -17.5,
+    3.74,
+    -79.7
+   ],
+   "yaw_deg": 180.0,
+   "size": {
+    "width_x": 9.0,
+    "depth_z": 6.0,
+    "note": "metres, in the lot frame: x across, z = front (the door side at yaw)"
+   },
+   "rect_world": {
+    "x0": -22.0,
+    "x1": -13.0,
+    "z0": -82.7,
+    "z1": -76.7
+   },
+   "ground": {
+    "y_centre": 3.74,
+    "y_min": 3.74,
+    "y_max": 3.74,
+    "flat_within_m": 0.0
+   },
+   "allowed_yaws_deg": [
+    180.0,
+    0.0
+   ],
+   "accepts_building_classes": [
+    "S"
+   ],
+   "marker_model": "Village_LotMarker_S",
+   "marker_origin": "lot centre at ground height, yaw = the lot yaw",
+   "notes": "West of the market stalls and stair A.",
+   "clearances": {
+    "ground_y_centre": 3.74,
+    "ground_y_min": 3.74,
+    "ground_y_max": 3.74,
+    "flat_within_m": 0.0,
+    "min_gap_to_solid_m": 0.78,
+    "nearest_solid": "Harbour_Core_Walls_Tri/Parapet1",
+    "overlapping_solids": [],
+    "clear_of_stand_circles_and_cast_lanes_1m": true,
+    "stand_radius_STAND_R_m": 3.0,
+    "min_dist_to_any_stand_point_m": 30.2,
+    "min_dist_to_path_edge_m": 10.74,
+    "min_dist_to_lane_edge_m": 0.34,
+    "stairs_clear_0.5m": true,
+    "code_trees_min_dist_m": 5.5,
+    "pier_hit": false,
+    "other_lots_min_gap_m": 15.81,
+    "harbour_items_to_remove": [
+     "Harbour_Core_Buildings_Upper/Cottage_2",
+     "Harbour_Core_VillageLane/GardenFenceSide_2E",
+     "Harbour_Core_VillageLane/GardenFenceSide_2W",
+     "Harbour_Core_VillageLane/GardenFence_2E",
+     "Harbour_Core_VillageLane/GardenFence_2W"
+    ]
+   },
+   "replaces_upper_house_index": 2,
+   "replaces_upper_house": [
+    -17.5,
+    -80.4,
+    5.0,
+    4.4,
+    183.0
+   ]
+  },
+  {
+   "id": "Lot3",
+   "name": "Upper lane east-centre",
+   "zone": "level 1, the upper lane, north row",
+   "lot_class": "S",
+   "centre": [
+    23.8,
+    3.74,
+    -79.5
+   ],
+   "yaw_deg": 180.0,
+   "size": {
+    "width_x": 9.0,
+    "depth_z": 6.0,
+    "note": "metres, in the lot frame: x across, z = front (the door side at yaw)"
+   },
+   "rect_world": {
+    "x0": 19.3,
+    "x1": 28.3,
+    "z0": -82.5,
+    "z1": -76.5
+   },
+   "ground": {
+    "y_centre": 3.74,
+    "y_min": 3.74,
+    "y_max": 3.74,
+    "flat_within_m": 0.0
+   },
+   "allowed_yaws_deg": [
+    180.0,
+    0.0
+   ],
+   "accepts_building_classes": [
+    "S"
+   ],
+   "marker_model": "Village_LotMarker_S",
+   "marker_origin": "lot centre at ground height, yaw = the lot yaw",
+   "notes": "Between the square-side lot and stair D.",
+   "clearances": {
+    "ground_y_centre": 3.74,
+    "ground_y_min": 3.74,
+    "ground_y_max": 3.74,
+    "flat_within_m": 0.0,
+    "min_gap_to_solid_m": 0.51,
+    "nearest_solid": "Harbour_Core_Story/Stall_nets",
+    "overlapping_solids": [],
+    "clear_of_stand_circles_and_cast_lanes_1m": true,
+    "stand_radius_STAND_R_m": 3.0,
+    "min_dist_to_any_stand_point_m": 29.3,
+    "min_dist_to_path_edge_m": 3.85,
+    "min_dist_to_lane_edge_m": 0.28,
+    "stairs_clear_0.5m": true,
+    "code_trees_min_dist_m": 12.7,
+    "pier_hit": false,
+    "other_lots_min_gap_m": 2.0,
+    "harbour_items_to_remove": [
+     "Harbour_Core_Buildings_UpperEast/Cottage_7"
+    ]
+   },
+   "replaces_upper_house_index": 7,
+   "replaces_upper_house": [
+    23.8,
+    -80.4,
+    5.0,
+    4.4,
+    178.0
+   ]
+  },
+  {
+   "id": "Lot4",
+   "name": "Upper lane east",
+   "zone": "level 1, the upper lane, north row",
+   "lot_class": "S",
+   "centre": [
+    47.4,
+    3.74,
+    -81.8
+   ],
+   "yaw_deg": 180.0,
+   "size": {
+    "width_x": 9.0,
+    "depth_z": 6.0,
+    "note": "metres, in the lot frame: x across, z = front (the door side at yaw)"
+   },
+   "rect_world": {
+    "x0": 42.9,
+    "x1": 51.9,
+    "z0": -84.8,
+    "z1": -78.8
+   },
+   "ground": {
+    "y_centre": 3.74,
+    "y_min": 3.74,
+    "y_max": 3.74,
+    "flat_within_m": 0.0
+   },
+   "allowed_yaws_deg": [
+    180.0,
+    0.0
+   ],
+   "accepts_building_classes": [
+    "S"
+   ],
+   "marker_model": "Village_LotMarker_S",
+   "marker_origin": "lot centre at ground height, yaw = the lot yaw",
+   "notes": "East end of the lane, past stair D (the cottage stood at x 46.6; the lot is 0.8 m east to clear cottage 8's garden fence).",
+   "clearances": {
+    "ground_y_centre": 3.74,
+    "ground_y_min": 3.74,
+    "ground_y_max": 3.74,
+    "flat_within_m": 0.0,
+    "min_gap_to_solid_m": 0.56,
+    "nearest_solid": "Harbour_Core_Buildings_UpperEast/Cottage_8",
+    "overlapping_solids": [],
+    "clear_of_stand_circles_and_cast_lanes_1m": true,
+    "stand_radius_STAND_R_m": 3.0,
+    "min_dist_to_any_stand_point_m": 31.2,
+    "min_dist_to_path_edge_m": 9.05,
+    "min_dist_to_lane_edge_m": 0.66,
+    "stairs_clear_0.5m": true,
+    "code_trees_min_dist_m": 6.2,
+    "pier_hit": false,
+    "other_lots_min_gap_m": 14.6,
+    "harbour_items_to_remove": [
+     "Harbour_Core_Buildings_UpperEast/Cottage_9",
+     "Harbour_Core_VillageLane/GardenFenceSide_9E",
+     "Harbour_Core_VillageLane/GardenFenceSide_9W",
+     "Harbour_Core_VillageLane/GardenFence_9E",
+     "Harbour_Core_VillageLane/GardenFence_9W"
+    ]
+   },
+   "replaces_upper_house_index": 9,
+   "replaces_upper_house": [
+    46.6,
+    -81.8,
+    5.2,
+    4.4,
+    176.0
+   ]
+  },
+  {
+   "id": "Lot5",
+   "name": "Overlook west",
+   "zone": "level 2, the overlook terrace, west of the chapel",
+   "lot_class": "M",
+   "centre": [
+    -4.2,
+    6.74,
+    -101.2
+   ],
+   "yaw_deg": 0.0,
+   "size": {
+    "width_x": 9.6,
+    "depth_z": 6.4,
+    "note": "metres, in the lot frame: x across, z = front (the door side at yaw)"
+   },
+   "rect_world": {
+    "x0": -9.0,
+    "x1": 0.6,
+    "z0": -104.4,
+    "z1": -98.0
+   },
+   "ground": {
+    "y_centre": 6.74,
+    "y_min": 6.74,
+    "y_max": 6.74,
+    "flat_within_m": 0.0
+   },
+   "allowed_yaws_deg": [
+    0.0,
+    180.0
+   ],
+   "accepts_building_classes": [
+    "S",
+    "M"
+   ],
+   "marker_model": "Village_LotMarker_M",
+   "marker_origin": "lot centre at ground height, yaw = the lot yaw",
+   "notes": "Faces the harbour over the terrace edge. Next to the chapel (its nave starts at x 1.15): the cafe's \"next to the chapel\" wish.",
+   "clearances": {
+    "ground_y_centre": 6.74,
+    "ground_y_min": 6.74,
+    "ground_y_max": 6.74,
+    "flat_within_m": 0.0,
+    "min_gap_to_solid_m": 0.27,
+    "nearest_solid": "Harbour_Core_Buildings_Upper/ChapelTower",
+    "overlapping_solids": [],
+    "clear_of_stand_circles_and_cast_lanes_1m": true,
+    "stand_radius_STAND_R_m": 3.0,
+    "min_dist_to_any_stand_point_m": 51.6,
+    "min_dist_to_path_edge_m": 0.19,
+    "min_dist_to_lane_edge_m": 6.85,
+    "stairs_clear_0.5m": true,
+    "code_trees_min_dist_m": 30.4,
+    "pier_hit": false,
+    "other_lots_min_gap_m": 10.1,
+    "harbour_items_to_remove": [
+     "Harbour_Core_TerraceTrees_Tri/Tree2_14"
+    ]
+   }
+  },
+  {
+   "id": "Lot6",
+   "name": "Overlook east",
+   "zone": "level 2, the overlook terrace, east of the chapel",
+   "lot_class": "M",
+   "centre": [
+    15.5,
+    6.74,
+    -101.2
+   ],
+   "yaw_deg": 0.0,
+   "size": {
+    "width_x": 9.6,
+    "depth_z": 6.4,
+    "note": "metres, in the lot frame: x across, z = front (the door side at yaw)"
+   },
+   "rect_world": {
+    "x0": 10.7,
+    "x1": 20.3,
+    "z0": -104.4,
+    "z1": -98.0
+   },
+   "ground": {
+    "y_centre": 6.74,
+    "y_min": 6.74,
+    "y_max": 6.74,
+    "flat_within_m": 0.0
+   },
+   "allowed_yaws_deg": [
+    0.0,
+    180.0
+   ],
+   "accepts_building_classes": [
+    "S",
+    "M"
+   ],
+   "marker_model": "Village_LotMarker_M",
+   "marker_origin": "lot centre at ground height, yaw = the lot yaw",
+   "notes": "Faces the harbour; 11 m east of the chapel; the telescope and the east bench are on the terrace edge in front of it.",
+   "clearances": {
+    "ground_y_centre": 6.74,
+    "ground_y_min": 6.74,
+    "ground_y_max": 6.74,
+    "flat_within_m": 0.0,
+    "min_gap_to_solid_m": 1.17,
+    "nearest_solid": "Harbour_Core_Buildings_Upper/OverlookBench_E",
+    "overlapping_solids": [],
+    "clear_of_stand_circles_and_cast_lanes_1m": true,
+    "stand_radius_STAND_R_m": 3.0,
+    "min_dist_to_any_stand_point_m": 51.5,
+    "min_dist_to_path_edge_m": 0.48,
+    "min_dist_to_lane_edge_m": 8.97,
+    "stairs_clear_0.5m": true,
+    "code_trees_min_dist_m": 32.3,
+    "pier_hit": false,
+    "other_lots_min_gap_m": 10.1,
+    "harbour_items_to_remove": [
+     "Harbour_Core_TerraceTrees_Tri/Tree2_15"
+    ]
+   }
+  },
+  {
+   "id": "Lot7",
+   "name": "Square lot",
+   "zone": "level 1, east of stair A, 11 m from the village square",
+   "lot_class": "S",
+   "centre": [
+    12.8,
+    3.74,
+    -79.3
+   ],
+   "yaw_deg": 180.0,
+   "size": {
+    "width_x": 9.0,
+    "depth_z": 6.0,
+    "note": "metres, in the lot frame: x across, z = front (the door side at yaw)"
+   },
+   "rect_world": {
+    "x0": 8.3,
+    "x1": 17.3,
+    "z0": -82.3,
+    "z1": -76.3
+   },
+   "ground": {
+    "y_centre": 3.74,
+    "y_min": 3.74,
+    "y_max": 3.74,
+    "flat_within_m": 0.0
+   },
+   "allowed_yaws_deg": [
+    180.0,
+    0.0
+   ],
+   "accepts_building_classes": [
+    "S"
+   ],
+   "marker_model": "Village_LotMarker_S",
+   "marker_origin": "lot centre at ground height, yaw = the lot yaw",
+   "notes": "The nearest free ground to the square (the square, its tree and the market fill the west side). Stair A lands beside it.",
+   "clearances": {
+    "ground_y_centre": 3.74,
+    "ground_y_min": 3.74,
+    "ground_y_max": 3.74,
+    "flat_within_m": 0.0,
+    "min_gap_to_solid_m": 0.38,
+    "nearest_solid": "Harbour_Core_Walls_Tri/Parapet1",
+    "overlapping_solids": [],
+    "clear_of_stand_circles_and_cast_lanes_1m": true,
+    "stand_radius_STAND_R_m": 3.0,
+    "min_dist_to_any_stand_point_m": 29.8,
+    "min_dist_to_path_edge_m": 3.05,
+    "min_dist_to_lane_edge_m": 0.3,
+    "stairs_clear_0.5m": true,
+    "code_trees_min_dist_m": 15.1,
+    "pier_hit": false,
+    "other_lots_min_gap_m": 2.0,
+    "harbour_items_to_remove": []
+   }
+  },
+  {
+   "id": "Lot8",
+   "name": "Beach lot",
+   "zone": "level 0, the plateau (y 1.2), behind the east beach",
+   "lot_class": "L",
+   "centre": [
+    47.0,
+    1.2,
+    -59.0
+   ],
+   "yaw_deg": 0.0,
+   "size": {
+    "width_x": 14.0,
+    "depth_z": 8.0,
+    "note": "metres, in the lot frame: x across, z = front (the door side at yaw)"
+   },
+   "rect_world": {
+    "x0": 40.0,
+    "x1": 54.0,
+    "z0": -63.0,
+    "z1": -55.0
+   },
+   "ground": {
+    "y_centre": 1.2,
+    "y_min": 1.2,
+    "y_max": 1.26,
+    "flat_within_m": 0.06
+   },
+   "allowed_yaws_deg": [
+    0.0,
+    180.0
+   ],
+   "accepts_building_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "marker_model": "Village_LotMarker_L",
+   "marker_origin": "lot centre at ground height, yaw = the lot yaw",
+   "notes": "The aquarium's lot (Dr. Hollis: \"somewhere children can't tap the glass\"): off every path and cast lane, behind the crew berth.",
+   "clearances": {
+    "ground_y_centre": 1.2,
+    "ground_y_min": 1.2,
+    "ground_y_max": 1.26,
+    "flat_within_m": 0.06,
+    "min_gap_to_solid_m": 0.5,
+    "nearest_solid": "Harbour_Core_Jetty/LookoutStep",
+    "overlapping_solids": [],
+    "clear_of_stand_circles_and_cast_lanes_1m": true,
+    "stand_radius_STAND_R_m": 3.0,
+    "min_dist_to_any_stand_point_m": 7.6,
+    "min_dist_to_path_edge_m": 9.05,
+    "min_dist_to_lane_edge_m": null,
+    "stairs_clear_0.5m": true,
+    "code_trees_min_dist_m": 3.7,
+    "pier_hit": false,
+    "other_lots_min_gap_m": 15.8,
+    "harbour_items_to_remove": []
+   }
+  }
+ ],
+ "fbx": [
+  {
+   "name": "Village_Cottage_A",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_A.fbx",
+   "triangles": 5254,
+   "vertices": 4598,
+   "bounds_min": [
+    -3.8915,
+    -0.45,
+    -2.9
+   ],
+   "bounds_max": [
+    3.8,
+    5.17,
+    2.9
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    14
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    4,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -2.536,
+      1.277,
+      2.494
+     ],
+     "footprint": [
+      1.387,
+      2.553,
+      0.544
+     ],
+     "bounds_min": [
+      -3.23,
+      0.0,
+      2.222
+     ],
+     "bounds_max": [
+      -1.843,
+      2.553,
+      2.766
+     ]
+    }
+   ],
+   "note": "Cottage A (sand plaster, red roof, green trim, woodshed lean-to).",
+   "pad": {
+    "width_x": 7.6,
+    "depth_z": 5.8,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_CottageA",
+     "position": [
+      1.25,
+      5.25,
+      -0.5
+     ]
+    }
+   ],
+   "role": "cottage",
+   "variant": "A",
+   "state": "built",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.8915,
+     3.8
+    ],
+    "extent_z": [
+     -2.9,
+     2.9
+    ],
+    "width_x": 7.69,
+    "depth_z": 5.8,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -2.15,
+    "pad": {
+     "width_x": 7.6,
+     "depth_z": 5.8,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_A_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_A_Rundown.fbx",
+   "triangles": 3240,
+   "vertices": 2454,
+   "bounds_min": [
+    -4.0605,
+    -0.45,
+    -2.9
+   ],
+   "bounds_max": [
+    3.8,
+    5.17,
+    2.9
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    1,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.311,
+      2.53,
+      0.14
+     ],
+     "footprint": [
+      7.499,
+      5.28,
+      5.239
+     ],
+     "bounds_min": [
+      -4.061,
+      -0.11,
+      -2.479
+     ],
+     "bounds_max": [
+      3.438,
+      5.17,
+      2.76
+     ]
+    }
+   ],
+   "note": "Cottage A (sand plaster, red roof, green trim, woodshed lean-to).",
+   "pad": {
+    "width_x": 7.6,
+    "depth_z": 5.8,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "cottage",
+   "variant": "A",
+   "state": "rundown",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -4.0605,
+     3.8
+    ],
+    "extent_z": [
+     -2.9,
+     2.9
+    ],
+    "width_x": 7.86,
+    "depth_z": 5.8,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -2.15,
+    "pad": {
+     "width_x": 7.6,
+     "depth_z": 5.8,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_B",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_B.fbx",
+   "triangles": 4080,
+   "vertices": 3859,
+   "bounds_min": [
+    -3.7425,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.4,
+    5.27,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    6,
+    7,
+    10,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.582,
+      2.58,
+      -0.079
+     ],
+     "footprint": [
+      6.321,
+      5.38,
+      5.542
+     ],
+     "bounds_min": [
+      -3.742,
+      -0.11,
+      -2.85
+     ],
+     "bounds_max": [
+      2.579,
+      5.27,
+      2.692
+     ]
+    }
+   ],
+   "note": "Cottage B (weatherboard, slate roof, front gable with loft hoist).",
+   "pad": {
+    "width_x": 6.8,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_CottageB",
+     "position": [
+      1.3,
+      5.35,
+      -1.85
+     ]
+    }
+   ],
+   "role": "cottage",
+   "variant": "B",
+   "state": "built",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.7425,
+     3.4
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 7.14,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 0.0,
+    "pad": {
+     "width_x": 6.8,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_B_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_B_Rundown.fbx",
+   "triangles": 2124,
+   "vertices": 1952,
+   "bounds_min": [
+    -3.4,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.4,
+    5.27,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    1,
+    3,
+    6,
+    7,
+    10,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.271,
+      2.58,
+      -0.072
+     ],
+     "footprint": [
+      5.904,
+      5.38,
+      5.556
+     ],
+     "bounds_min": [
+      -3.223,
+      -0.11,
+      -2.85
+     ],
+     "bounds_max": [
+      2.681,
+      5.27,
+      2.706
+     ]
+    }
+   ],
+   "note": "Cottage B (weatherboard, slate roof, front gable with loft hoist).",
+   "pad": {
+    "width_x": 6.8,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "cottage",
+   "variant": "B",
+   "state": "rundown",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.4,
+     3.4
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 6.8,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 0.0,
+    "pad": {
+     "width_x": 6.8,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_C",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_C.fbx",
+   "triangles": 2612,
+   "vertices": 3367,
+   "bounds_min": [
+    -3.7,
+    -0.45,
+    -2.8
+   ],
+   "bounds_max": [
+    3.7,
+    4.78,
+    2.8
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    6,
+    8,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    4,
+    10,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.35,
+      2.335,
+      0.14
+     ],
+     "footprint": [
+      6.7,
+      4.89,
+      5.039
+     ],
+     "bounds_min": [
+      -3.7,
+      -0.11,
+      -2.379
+     ],
+     "bounds_max": [
+      3.0,
+      4.78,
+      2.66
+     ]
+    }
+   ],
+   "note": "Cottage C (rubble stone, mossy roof, porthole).",
+   "pad": {
+    "width_x": 7.4,
+    "depth_z": 5.6,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_CottageC",
+     "position": [
+      -2.9,
+      4.9,
+      0.2
+     ]
+    }
+   ],
+   "role": "cottage",
+   "variant": "C",
+   "state": "built",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.7,
+     3.7
+    ],
+    "extent_z": [
+     -2.8,
+     2.8
+    ],
+    "width_x": 7.4,
+    "depth_z": 5.6,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 1.5,
+    "pad": {
+     "width_x": 7.4,
+     "depth_z": 5.6,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_C_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_C_Rundown.fbx",
+   "triangles": 1652,
+   "vertices": 1564,
+   "bounds_min": [
+    -3.7064,
+    -0.45,
+    -2.8
+   ],
+   "bounds_max": [
+    3.7,
+    4.78,
+    2.9445
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    1,
+    3,
+    4,
+    6,
+    7,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    1,
+    3,
+    7,
+    10,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.178,
+      2.335,
+      0.283
+     ],
+     "footprint": [
+      7.056,
+      4.89,
+      5.324
+     ],
+     "bounds_min": [
+      -3.706,
+      -0.11,
+      -2.379
+     ],
+     "bounds_max": [
+      3.35,
+      4.78,
+      2.944
+     ]
+    }
+   ],
+   "note": "Cottage C (rubble stone, mossy roof, porthole).",
+   "pad": {
+    "width_x": 7.4,
+    "depth_z": 5.6,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "cottage",
+   "variant": "C",
+   "state": "rundown",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.7064,
+     3.7
+    ],
+    "extent_z": [
+     -2.8,
+     2.9445
+    ],
+    "width_x": 7.41,
+    "depth_z": 5.74,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 1.5,
+    "pad": {
+     "width_x": 7.4,
+     "depth_z": 5.6,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_D",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_D.fbx",
+   "triangles": 3260,
+   "vertices": 3197,
+   "bounds_min": [
+    -3.2,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.2,
+    6.9,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    6,
+    7,
+    10,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      0.0,
+      3.395,
+      -0.082
+     ],
+     "footprint": [
+      4.6,
+      7.01,
+      5.694
+     ],
+     "bounds_min": [
+      -2.3,
+      -0.11,
+      -2.929
+     ],
+     "bounds_max": [
+      2.3,
+      6.9,
+      2.765
+     ]
+    }
+   ],
+   "note": "Cottage D (narrow two-storey, pistachio walls, balcony).",
+   "pad": {
+    "width_x": 6.4,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_CottageD",
+     "position": [
+      1.35,
+      6.8,
+      -0.75
+     ]
+    }
+   ],
+   "role": "cottage",
+   "variant": "D",
+   "state": "built",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.2,
+     3.2
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 6.4,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -0.75,
+    "pad": {
+     "width_x": 6.4,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cottage_D_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Cottage_D_Rundown.fbx",
+   "triangles": 2670,
+   "vertices": 2286,
+   "bounds_min": [
+    -3.2,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.2,
+    6.72,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    3,
+    4,
+    6,
+    7,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    1,
+    3,
+    6,
+    7,
+    10,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.151,
+      3.305,
+      -0.08
+     ],
+     "footprint": [
+      5.39,
+      6.83,
+      5.699
+     ],
+     "bounds_min": [
+      -2.847,
+      -0.11,
+      -2.929
+     ],
+     "bounds_max": [
+      2.544,
+      6.72,
+      2.77
+     ]
+    }
+   ],
+   "note": "Cottage D (narrow two-storey, pistachio walls, balcony).",
+   "pad": {
+    "width_x": 6.4,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "cottage",
+   "variant": "D",
+   "state": "rundown",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.2,
+     3.2
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 6.4,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -0.75,
+    "pad": {
+     "width_x": 6.4,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Gary_Tidy",
+   "file": "Art/Export/VillageBuildings/Village_Gary_Tidy.fbx",
+   "triangles": 4662,
+   "vertices": 4646,
+   "bounds_min": [
+    -3.8789,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.6,
+    5.22,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -1.664,
+      1.377,
+      2.283
+     ],
+     "footprint": [
+      4.429,
+      2.755,
+      1.335
+     ],
+     "bounds_min": [
+      -3.879,
+      0.0,
+      1.615
+     ],
+     "bounds_max": [
+      0.55,
+      2.755,
+      2.95
+     ]
+    }
+   ],
+   "note": "The Garys' cottage plan (tidy: orange trim, red door and shutters).",
+   "pad": {
+    "width_x": 7.2,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_GaryTidy",
+     "position": [
+      -2.1,
+      5.3,
+      -1.0
+     ]
+    }
+   ],
+   "role": "cottage",
+   "variant": "GaryTidy",
+   "state": "built",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.8789,
+     3.6
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 7.48,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -0.6,
+    "pad": {
+     "width_x": 7.2,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height",
+   "jumper_slots": {
+    "orange": 10,
+    "red": 9
+   },
+   "trim_slot": 10,
+   "door_slot": 9
+  },
+  {
+   "name": "Village_Gary_Chaos",
+   "file": "Art/Export/VillageBuildings/Village_Gary_Chaos.fbx",
+   "triangles": 5424,
+   "vertices": 5483,
+   "bounds_min": [
+    -3.8667,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.6,
+    5.22,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.288,
+      2.555,
+      0.001
+     ],
+     "footprint": [
+      7.157,
+      5.33,
+      5.96
+     ],
+     "bounds_min": [
+      -3.867,
+      -0.11,
+      -2.979
+     ],
+     "bounds_max": [
+      3.29,
+      5.22,
+      2.981
+     ]
+    }
+   ],
+   "note": "The Garys' cottage plan (chaos: red trim, orange door and shutters, a boat on the roof).",
+   "pad": {
+    "width_x": 7.2,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_GaryChaos",
+     "position": [
+      -2.1,
+      5.3,
+      -1.0
+     ]
+    }
+   ],
+   "role": "cottage",
+   "variant": "GaryChaos",
+   "state": "built",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.8667,
+     3.6
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 7.47,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -0.6,
+    "pad": {
+     "width_x": 7.2,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height",
+   "jumper_slots": {
+    "orange": 10,
+    "red": 9
+   },
+   "trim_slot": 9,
+   "door_slot": 10
+  },
+  {
+   "name": "Village_Gary_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Gary_Rundown.fbx",
+   "triangles": 2404,
+   "vertices": 3438,
+   "bounds_min": [
+    -3.8818,
+    -0.45,
+    -3.0
+   ],
+   "bounds_max": [
+    3.6,
+    5.22,
+    3.0
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    10
+   ],
+   "layers": [
+    0,
+    1,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.296,
+      2.555,
+      -0.308
+     ],
+     "footprint": [
+      7.172,
+      5.33,
+      5.342
+     ],
+     "bounds_min": [
+      -3.882,
+      -0.11,
+      -2.979
+     ],
+     "bounds_max": [
+      3.29,
+      5.22,
+      2.363
+     ]
+    }
+   ],
+   "note": "The Garys' cottage plan (run-down, shared by both).",
+   "pad": {
+    "width_x": 7.2,
+    "depth_z": 6.0,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "cottage",
+   "variant": "Gary",
+   "state": "rundown",
+   "lot_class_min": "S",
+   "footprint": {
+    "extent_x": [
+     -3.8818,
+     3.6
+    ],
+    "extent_z": [
+     -3.0,
+     3.0
+    ],
+    "width_x": 7.48,
+    "depth_z": 6.0,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": -0.6,
+    "pad": {
+     "width_x": 7.2,
+     "depth_z": 6.0,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "S",
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cafe",
+   "file": "Art/Export/VillageBuildings/Village_Cafe.fbx",
+   "triangles": 7744,
+   "vertices": 14676,
+   "bounds_min": [
+    -4.7,
+    -0.45,
+    -3.179
+   ],
+   "bounds_max": [
+    4.7,
+    6.37,
+    3.1
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    13
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.225,
+      3.13,
+      -0.403
+     ],
+     "footprint": [
+      7.45,
+      6.48,
+      5.552
+     ],
+     "bounds_min": [
+      -3.95,
+      -0.11,
+      -3.179
+     ],
+     "bounds_max": [
+      3.5,
+      6.37,
+      2.373
+     ]
+    },
+    {
+     "name": "Table_0",
+     "collider": "box",
+     "position": [
+      -2.6,
+      0.475,
+      1.55
+     ],
+     "footprint": [
+      1.752,
+      0.95,
+      0.939
+     ],
+     "bounds_min": [
+      -3.476,
+      0.0,
+      1.08
+     ],
+     "bounds_max": [
+      -1.724,
+      0.95,
+      2.02
+     ]
+    },
+    {
+     "name": "Table_1",
+     "collider": "box",
+     "position": [
+      -0.5,
+      0.475,
+      1.6
+     ],
+     "footprint": [
+      1.744,
+      0.95,
+      0.931
+     ],
+     "bounds_min": [
+      -1.372,
+      0.0,
+      1.134
+     ],
+     "bounds_max": [
+      0.372,
+      0.95,
+      2.066
+     ]
+    },
+    {
+     "name": "Table_2",
+     "collider": "box",
+     "position": [
+      3.5,
+      1.29,
+      1.9
+     ],
+     "footprint": [
+      2.067,
+      2.58,
+      2.067
+     ],
+     "bounds_min": [
+      2.466,
+      0.0,
+      0.866
+     ],
+     "bounds_max": [
+      4.534,
+      2.58,
+      2.934
+     ]
+    },
+    {
+     "name": "Chalkboard",
+     "collider": "box",
+     "position": [
+      -4.026,
+      0.52,
+      2.392
+     ],
+     "footprint": [
+      0.72,
+      1.088,
+      0.496
+     ],
+     "bounds_min": [
+      -4.385,
+      -0.024,
+      2.144
+     ],
+     "bounds_max": [
+      -3.666,
+      1.064,
+      2.64
+     ]
+    },
+    {
+     "name": "Planter_0",
+     "collider": "box",
+     "position": [
+      1.3,
+      0.419,
+      1.307
+     ],
+     "footprint": [
+      0.52,
+      0.839,
+      0.509
+     ],
+     "bounds_min": [
+      1.04,
+      0.0,
+      1.053
+     ],
+     "bounds_max": [
+      1.56,
+      0.839,
+      1.561
+     ]
+    },
+    {
+     "name": "Planter_1",
+     "collider": "box",
+     "position": [
+      3.2,
+      0.418,
+      1.294
+     ],
+     "footprint": [
+      0.52,
+      0.835,
+      0.506
+     ],
+     "bounds_min": [
+      2.94,
+      0.0,
+      1.041
+     ],
+     "bounds_max": [
+      3.46,
+      0.835,
+      1.547
+     ]
+    }
+   ],
+   "note": "Lorraine's cafe (pistachio walls, striped awning, three tables, a chalkboard).",
+   "pad": {
+    "width_x": 9.4,
+    "depth_z": 6.2,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [
+    {
+     "name": "Chimney_Cafe",
+     "position": [
+      -2.4,
+      6.45,
+      -1.4
+     ]
+    }
+   ],
+   "role": "cafe",
+   "variant": "Cafe",
+   "state": "built",
+   "lot_class_min": "M",
+   "footprint": {
+    "extent_x": [
+     -4.7,
+     4.7
+    ],
+    "extent_z": [
+     -3.179,
+     3.1
+    ],
+    "width_x": 9.4,
+    "depth_z": 6.28,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 2.2,
+    "pad": {
+     "width_x": 9.4,
+     "depth_z": 6.2,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Cafe_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Cafe_Rundown.fbx",
+   "triangles": 4242,
+   "vertices": 6181,
+   "bounds_min": [
+    -4.7,
+    -0.45,
+    -3.179
+   ],
+   "bounds_max": [
+    4.7,
+    6.37,
+    3.1087
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    13
+   ],
+   "layers": [
+    0,
+    1,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      -0.22,
+      3.13,
+      -0.19
+     ],
+     "footprint": [
+      7.461,
+      6.48,
+      5.978
+     ],
+     "bounds_min": [
+      -3.95,
+      -0.11,
+      -3.179
+     ],
+     "bounds_max": [
+      3.511,
+      6.37,
+      2.799
+     ]
+    },
+    {
+     "name": "Table_1",
+     "collider": "box",
+     "position": [
+      -0.5,
+      0.475,
+      1.6
+     ],
+     "footprint": [
+      1.744,
+      0.95,
+      0.931
+     ],
+     "bounds_min": [
+      -1.372,
+      0.0,
+      1.134
+     ],
+     "bounds_max": [
+      0.372,
+      0.95,
+      2.066
+     ]
+    },
+    {
+     "name": "Chalkboard",
+     "collider": "box",
+     "position": [
+      -4.026,
+      0.52,
+      2.392
+     ],
+     "footprint": [
+      0.72,
+      1.088,
+      0.496
+     ],
+     "bounds_min": [
+      -4.385,
+      -0.024,
+      2.144
+     ],
+     "bounds_max": [
+      -3.666,
+      1.064,
+      2.64
+     ]
+    }
+   ],
+   "note": "Lorraine's cafe (pistachio walls, striped awning, three tables, a chalkboard).",
+   "pad": {
+    "width_x": 9.4,
+    "depth_z": 6.2,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "cafe",
+   "variant": "Cafe",
+   "state": "rundown",
+   "lot_class_min": "M",
+   "footprint": {
+    "extent_x": [
+     -4.7,
+     4.7
+    ],
+    "extent_z": [
+     -3.179,
+     3.1087
+    ],
+    "width_x": 9.4,
+    "depth_z": 6.29,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 2.2,
+    "pad": {
+     "width_x": 9.4,
+     "depth_z": 6.2,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "M",
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_Aquarium",
+   "file": "Art/Export/VillageBuildings/Village_Aquarium.fbx",
+   "triangles": 7373,
+   "vertices": 12788,
+   "bounds_min": [
+    -5.4,
+    -0.45,
+    -3.9284
+   ],
+   "bounds_max": [
+    5.4,
+    6.2,
+    3.9
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Planter_0",
+     "collider": "box",
+     "position": [
+      -1.157,
+      0.418,
+      1.685
+     ],
+     "footprint": [
+      0.533,
+      0.836,
+      0.525
+     ],
+     "bounds_min": [
+      -1.423,
+      0.0,
+      1.422
+     ],
+     "bounds_max": [
+      -0.89,
+      0.836,
+      1.947
+     ]
+    },
+    {
+     "name": "Planter_1",
+     "collider": "box",
+     "position": [
+      1.15,
+      0.417,
+      1.7
+     ],
+     "footprint": [
+      0.52,
+      0.835,
+      0.495
+     ],
+     "bounds_min": [
+      0.89,
+      0.0,
+      1.453
+     ],
+     "bounds_max": [
+      1.41,
+      0.835,
+      1.947
+     ]
+    },
+    {
+     "name": "ABoard",
+     "collider": "box",
+     "position": [
+      -2.279,
+      0.52,
+      2.643
+     ],
+     "footprint": [
+      0.717,
+      1.088,
+      0.43
+     ],
+     "bounds_min": [
+      -2.638,
+      -0.024,
+      2.428
+     ],
+     "bounds_max": [
+      -1.921,
+      1.064,
+      2.859
+     ]
+    },
+    {
+     "name": "ForecourtBench",
+     "collider": "box",
+     "position": [
+      -4.2,
+      0.529,
+      3.085
+     ],
+     "footprint": [
+      1.8,
+      0.997,
+      0.58
+     ],
+     "bounds_min": [
+      -5.1,
+      0.03,
+      2.795
+     ],
+     "bounds_max": [
+      -3.3,
+      1.027,
+      3.375
+     ]
+    },
+    {
+     "name": "WallBack",
+     "collider": "box",
+     "position": [
+      0.0,
+      1.85,
+      -3.575
+     ],
+     "footprint": [
+      10.2,
+      3.1,
+      0.25
+     ],
+     "bounds_min": [
+      -5.1,
+      0.3,
+      -3.7
+     ],
+     "bounds_max": [
+      5.1,
+      3.4,
+      -3.45
+     ],
+     "role": "wall"
+    },
+    {
+     "name": "WallWest",
+     "collider": "box",
+     "position": [
+      -4.975,
+      1.85,
+      -1.2
+     ],
+     "footprint": [
+      0.25,
+      3.1,
+      5.0
+     ],
+     "bounds_min": [
+      -5.1,
+      0.3,
+      -3.7
+     ],
+     "bounds_max": [
+      -4.85,
+      3.4,
+      1.3
+     ],
+     "role": "wall"
+    },
+    {
+     "name": "WallEast",
+     "collider": "box",
+     "position": [
+      4.975,
+      1.85,
+      -1.2
+     ],
+     "footprint": [
+      0.25,
+      3.1,
+      5.0
+     ],
+     "bounds_min": [
+      4.85,
+      0.3,
+      -3.7
+     ],
+     "bounds_max": [
+      5.1,
+      3.4,
+      1.3
+     ],
+     "role": "wall"
+    },
+    {
+     "name": "FrontWest",
+     "collider": "box",
+     "position": [
+      -2.875,
+      1.85,
+      1.15
+     ],
+     "footprint": [
+      4.45,
+      3.1,
+      0.3
+     ],
+     "bounds_min": [
+      -5.1,
+      0.3,
+      1.0
+     ],
+     "bounds_max": [
+      -0.65,
+      3.4,
+      1.3
+     ],
+     "role": "wall"
+    },
+    {
+     "name": "FrontEast",
+     "collider": "box",
+     "position": [
+      2.875,
+      1.85,
+      1.15
+     ],
+     "footprint": [
+      4.45,
+      3.1,
+      0.3
+     ],
+     "bounds_min": [
+      0.65,
+      0.3,
+      1.0
+     ],
+     "bounds_max": [
+      5.1,
+      3.4,
+      1.3
+     ],
+     "role": "wall"
+    },
+    {
+     "name": "RoofAndFalseFront",
+     "collider": "box",
+     "position": [
+      0.0,
+      4.375,
+      -1.35
+     ],
+     "footprint": [
+      10.6,
+      1.95,
+      5.5
+     ],
+     "bounds_min": [
+      -5.3,
+      3.4,
+      -4.1
+     ],
+     "bounds_max": [
+      5.3,
+      5.35,
+      1.4
+     ],
+     "role": "roof (not walkable)"
+    }
+   ],
+   "note": "Dr. Hollis's aquarium (glass frontage, painted false front, interior with three tank platforms).",
+   "pad": {
+    "width_x": 10.8,
+    "depth_z": 7.8,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "smoke_points": [],
+   "tank_mounts": [
+    {
+     "name": "DisplayTank_0",
+     "prefab": "Village_DisplayTank (+_Glass, +_Water)",
+     "position": [
+      -3.6,
+      0.43,
+      -3.1
+     ],
+     "yaw_deg": 0.0
+    },
+    {
+     "name": "DisplayTank_1",
+     "prefab": "Village_DisplayTank (+_Glass, +_Water)",
+     "position": [
+      0.0,
+      0.43,
+      -3.1
+     ],
+     "yaw_deg": 0.0
+    },
+    {
+     "name": "DisplayTank_2",
+     "prefab": "Village_DisplayTank (+_Glass, +_Water)",
+     "position": [
+      3.6,
+      0.43,
+      -3.1
+     ],
+     "yaw_deg": 0.0
+    },
+    {
+     "name": "BreedingTank",
+     "prefab": "Village_BreedingTank (+_Glass, +_Water)",
+     "position": [
+      4.4,
+      0.43,
+      -1.0
+     ],
+     "yaw_deg": 270.0,
+     "note": "yaw 270: the tank front faces west into the hall; footprint 1.9 x 0.9 turned onto the 1.0 x 2.1 east platform"
+    },
+    {
+     "name": "TouchPool",
+     "prefab": "Village_TouchPool (+_Water)",
+     "position": [
+      3.2,
+      0.03,
+      2.55
+     ],
+     "yaw_deg": 0.0,
+     "note": "outdoors in the forecourt, east of the door; 3.0 x 1.8 m, the sign post stands 0.5 m east of it"
+    }
+   ],
+   "interior_floor_y": 0.31,
+   "doorway": {
+    "x0": -0.65,
+    "x1": 0.65,
+    "y1": 3.1,
+    "note": "open 1.3 m gap in the frontage; the door leaf stands open inside (mesh), glass in Village_Aquarium_Glass"
+   },
+   "role": "aquarium",
+   "variant": "Aquarium",
+   "state": "built",
+   "lot_class_min": "L",
+   "footprint": {
+    "extent_x": [
+     -5.4,
+     5.4
+    ],
+    "extent_z": [
+     -3.9284,
+     3.9
+    ],
+    "width_x": 10.8,
+    "depth_z": 7.83,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 0.0,
+    "pad": {
+     "width_x": 10.8,
+     "depth_z": 7.8,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height",
+   "companions": [
+    "Village_Aquarium_Glass"
+   ],
+   "companion_note": "same origin; place with the building. Glass: transparent glass material."
+  },
+  {
+   "name": "Village_Aquarium_Glass",
+   "file": "Art/Export/VillageBuildings/Village_Aquarium_Glass.fbx",
+   "triangles": 84,
+   "vertices": 168,
+   "bounds_min": [
+    -4.93,
+    0.65,
+    0.1427
+   ],
+   "bounds_max": [
+    4.93,
+    3.01,
+    1.215
+   ],
+   "material": "glass",
+   "slots": [
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "items": [],
+   "note": "Glass of the aquarium frontage (bay panes and the door pane): put the glass material on this object.",
+   "role": "glass companion of Village_Aquarium"
+  },
+  {
+   "name": "Village_Aquarium_Rundown",
+   "file": "Art/Export/VillageBuildings/Village_Aquarium_Rundown.fbx",
+   "triangles": 3786,
+   "vertices": 7678,
+   "bounds_min": [
+    -5.4,
+    -0.45,
+    -3.9284
+   ],
+   "bounds_max": [
+    5.4,
+    6.2,
+    3.9
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    0,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    7,
+    10,
+    11,
+    12,
+    14
+   ],
+   "items": [
+    {
+     "name": "Hall",
+     "collider": "box",
+     "position": [
+      0.0,
+      3.045,
+      -0.129
+     ],
+     "footprint": [
+      10.7,
+      6.31,
+      7.598
+     ],
+     "bounds_min": [
+      -5.35,
+      -0.11,
+      -3.928
+     ],
+     "bounds_max": [
+      5.35,
+      6.2,
+      3.67
+     ]
+    }
+   ],
+   "note": "Dr. Hollis's aquarium, run-down: frontage boarded, sign faded, the mascot fish on the ground.",
+   "pad": {
+    "width_x": 10.8,
+    "depth_z": 7.8,
+    "top_y": 0.03,
+    "bottom_y": -0.45,
+    "centre_xz": [
+     0.0,
+     0.0
+    ],
+    "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+   },
+   "role": "aquarium",
+   "variant": "Aquarium",
+   "state": "rundown",
+   "lot_class_min": "L",
+   "footprint": {
+    "extent_x": [
+     -5.4,
+     5.4
+    ],
+    "extent_z": [
+     -3.9284,
+     3.9
+    ],
+    "width_x": 10.8,
+    "depth_z": 7.83,
+    "origin": "centre of the pad at ground level (y 0); the extents are the whole mesh at yaw 0 (roof overhangs, awnings, props included)",
+    "door_side": "+z (front)",
+    "door_offset_x": 0.0,
+    "pad": {
+     "width_x": 10.8,
+     "depth_z": 7.8,
+     "top_y": 0.03,
+     "bottom_y": -0.45,
+     "centre_xz": [
+      0.0,
+      0.0
+     ],
+     "note": "worn-earth apron owned by the model; the Unity builder puts the building origin on the lot centre at ground height"
+    }
+   },
+   "fits_lot_classes": [
+    "L"
+   ],
+   "placement": "origin on the lot centre, yaw = lot yaw (or lot yaw + 180); y = the lot ground height"
+  },
+  {
+   "name": "Village_DisplayTank",
+   "file": "Art/Export/VillageBuildings/Village_DisplayTank.fbx",
+   "triangles": 1346,
+   "vertices": 2676,
+   "bounds_min": [
+    -1.35,
+    0.0,
+    -0.7057
+   ],
+   "bounds_max": [
+    1.4154,
+    2.08,
+    0.55
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    5,
+    6
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      0.033,
+      1.04,
+      -0.078
+     ],
+     "footprint": [
+      2.765,
+      2.08,
+      1.256
+     ],
+     "bounds_min": [
+      -1.35,
+      0.0,
+      -0.706
+     ],
+     "bounds_max": [
+      1.415,
+      2.08,
+      0.55
+     ]
+    }
+   ],
+   "note": "Aquarium display tank body (cabinet, frame, hood, gravel, rocks, kelp, a toy lighthouse). Glass and water are separate objects.",
+   "fish_mounts": [
+    {
+     "name": "FishMount_0",
+     "position": [
+      -0.95,
+      1.55,
+      -0.1
+     ],
+     "yaw_deg": 90.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_1",
+     "position": [
+      -0.5,
+      1.25,
+      0.15
+     ],
+     "yaw_deg": 270.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_2",
+     "position": [
+      0.0,
+      1.5,
+      -0.15
+     ],
+     "yaw_deg": 90.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_3",
+     "position": [
+      0.45,
+      1.2,
+      0.1
+     ],
+     "yaw_deg": 270.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_4",
+     "position": [
+      0.9,
+      1.45,
+      0.0
+     ],
+     "yaw_deg": 90.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_5",
+     "position": [
+      -0.7,
+      1.1,
+      0.2
+     ],
+     "yaw_deg": 270.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_6",
+     "position": [
+      0.2,
+      1.65,
+      0.05
+     ],
+     "yaw_deg": 90.0,
+     "max_fish_length_m": 0.45
+    },
+    {
+     "name": "FishMount_7",
+     "position": [
+      0.75,
+      1.7,
+      -0.2
+     ],
+     "yaw_deg": 270.0,
+     "max_fish_length_m": 0.45
+    }
+   ],
+   "swim_volume": {
+    "min": [
+     -1.18,
+     1.0,
+     -0.38
+    ],
+    "max": [
+     1.18,
+     1.76,
+     0.38
+    ],
+    "note": "inside the water volume; keep fish centres 0.05 m inside"
+   },
+   "companions": [
+    "Village_DisplayTank_Glass",
+    "Village_DisplayTank_Water"
+   ],
+   "placement_note": "origin = base centre on the floor, front +z; footprint 2.7 x 1.0 m, height 2.08 m",
+   "role": "aquarium prop"
+  },
+  {
+   "name": "Village_DisplayTank_Glass",
+   "file": "Art/Export/VillageBuildings/Village_DisplayTank_Glass.fbx",
+   "triangles": 48,
+   "vertices": 96,
+   "bounds_min": [
+    -1.2725,
+    0.88,
+    -0.4625
+   ],
+   "bounds_max": [
+    1.2725,
+    1.88,
+    0.4625
+   ],
+   "material": "glass",
+   "slots": [
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "items": [],
+   "note": "Glass panes of the display tank: put the glass material on this object.",
+   "role": "glass companion"
+  },
+  {
+   "name": "Village_DisplayTank_Water",
+   "file": "Art/Export/VillageBuildings/Village_DisplayTank_Water.fbx",
+   "triangles": 12,
+   "vertices": 24,
+   "bounds_min": [
+    -1.2,
+    0.95,
+    -0.41
+   ],
+   "bounds_max": [
+    1.2,
+    1.79,
+    0.41
+   ],
+   "material": "water",
+   "slots": [
+    1
+   ],
+   "layers": [
+    0
+   ],
+   "items": [],
+   "note": "Water volume of the display tank: put the water material on this object.",
+   "role": "water companion"
+  },
+  {
+   "name": "Village_BreedingTank",
+   "file": "Art/Export/VillageBuildings/Village_BreedingTank.fbx",
+   "triangles": 1958,
+   "vertices": 4679,
+   "bounds_min": [
+    -0.95,
+    0.0,
+    -0.45
+   ],
+   "bounds_max": [
+    1.3,
+    1.7546,
+    0.49
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    11
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    5,
+    7
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      0.175,
+      0.877,
+      0.02
+     ],
+     "footprint": [
+      2.25,
+      1.755,
+      0.94
+     ],
+     "bounds_min": [
+      -0.95,
+      0.0,
+      -0.45
+     ],
+     "bounds_max": [
+      1.3,
+      1.755,
+      0.49
+     ]
+    }
+   ],
+   "note": "Breeding tank body: two compartments, a pump, air lines, a heater, a breeding trap.",
+   "fish_mounts": [
+    {
+     "name": "FishMount_0",
+     "position": [
+      -0.55,
+      1.1,
+      0.0
+     ],
+     "yaw_deg": 90.0,
+     "max_fish_length_m": 0.35,
+     "compartment": "A"
+    },
+    {
+     "name": "FishMount_1",
+     "position": [
+      -0.3,
+      1.3,
+      0.1
+     ],
+     "yaw_deg": 270.0,
+     "max_fish_length_m": 0.35,
+     "compartment": "A"
+    },
+    {
+     "name": "FishMount_2",
+     "position": [
+      0.3,
+      1.2,
+      -0.1
+     ],
+     "yaw_deg": 90.0,
+     "max_fish_length_m": 0.35,
+     "compartment": "B"
+    },
+    {
+     "name": "FishMount_3",
+     "position": [
+      0.55,
+      1.35,
+      0.05
+     ],
+     "yaw_deg": 270.0,
+     "max_fish_length_m": 0.35,
+     "compartment": "B"
+    }
+   ],
+   "swim_volume": {
+    "min": [
+     -0.78,
+     0.92,
+     -0.32
+    ],
+    "max": [
+     0.78,
+     1.5,
+     0.32
+    ],
+    "note": "two compartments split at x = 0 (A west, B east): keep a pair per side"
+   },
+   "companions": [
+    "Village_BreedingTank_Glass",
+    "Village_BreedingTank_Water"
+   ],
+   "placement_note": "origin = base centre on the floor, front +z; footprint 1.9 x 0.9 m (+0.4 m pump on the east side), height 1.72 m",
+   "role": "aquarium prop"
+  },
+  {
+   "name": "Village_BreedingTank_Glass",
+   "file": "Art/Export/VillageBuildings/Village_BreedingTank_Glass.fbx",
+   "triangles": 60,
+   "vertices": 120,
+   "bounds_min": [
+    -0.871,
+    0.78,
+    -0.411
+   ],
+   "bounds_max": [
+    0.871,
+    1.58,
+    0.411
+   ],
+   "material": "glass",
+   "slots": [
+    11
+   ],
+   "layers": [
+    0
+   ],
+   "items": [],
+   "note": "Glass of the breeding tank (outer panes and the centre divider).",
+   "role": "glass companion"
+  },
+  {
+   "name": "Village_BreedingTank_Water",
+   "file": "Art/Export/VillageBuildings/Village_BreedingTank_Water.fbx",
+   "triangles": 24,
+   "vertices": 48,
+   "bounds_min": [
+    -0.81,
+    0.88,
+    -0.35
+   ],
+   "bounds_max": [
+    0.81,
+    1.52,
+    0.35
+   ],
+   "material": "water",
+   "slots": [
+    1
+   ],
+   "layers": [
+    0
+   ],
+   "items": [],
+   "note": "Water volumes of the breeding tank (one box per compartment).",
+   "role": "water companion"
+  },
+  {
+   "name": "Village_TouchPool",
+   "file": "Art/Export/VillageBuildings/Village_TouchPool.fbx",
+   "triangles": 1774,
+   "vertices": 3621,
+   "bounds_min": [
+    -1.5336,
+    0.0,
+    -0.9831
+   ],
+   "bounds_max": [
+    2.15,
+    1.21,
+    0.9978
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    1,
+    2,
+    4,
+    5,
+    6,
+    9,
+    10
+   ],
+   "layers": [
+    0,
+    2,
+    3,
+    5,
+    6,
+    10
+   ],
+   "items": [
+    {
+     "name": "Body",
+     "collider": "box",
+     "position": [
+      0.308,
+      0.605,
+      0.007
+     ],
+     "footprint": [
+      3.684,
+      1.21,
+      1.981
+     ],
+     "bounds_min": [
+      -1.534,
+      0.0,
+      -0.983
+     ],
+     "bounds_max": [
+      2.15,
+      1.21,
+      0.998
+     ]
+    }
+   ],
+   "note": "Touch pool: a low stone basin with a rock rim, seaweed, starfish and a sign. The water is a separate object.",
+   "fish_mounts": [
+    {
+     "name": "Starfish_0",
+     "position": [
+      0.1,
+      0.2,
+      -0.35
+     ],
+     "yaw_deg": 20.0,
+     "kind": "starfish",
+     "max_length_m": 0.35
+    },
+    {
+     "name": "Starfish_1",
+     "position": [
+      -0.3,
+      0.2,
+      0.4
+     ],
+     "yaw_deg": 60.0,
+     "kind": "starfish",
+     "max_length_m": 0.3
+    },
+    {
+     "name": "Crab_0",
+     "position": [
+      0.45,
+      0.4,
+      0.15
+     ],
+     "yaw_deg": 140.0,
+     "kind": "crab",
+     "max_length_m": 0.25
+    },
+    {
+     "name": "Crab_1",
+     "position": [
+      -0.55,
+      0.45,
+      -0.1
+     ],
+     "yaw_deg": 210.0,
+     "kind": "crab",
+     "max_length_m": 0.25
+    },
+    {
+     "name": "Fish_0",
+     "position": [
+      -0.8,
+      0.32,
+      0.1
+     ],
+     "yaw_deg": 90.0,
+     "kind": "fish",
+     "max_length_m": 0.3
+    },
+    {
+     "name": "Fish_1",
+     "position": [
+      0.85,
+      0.34,
+      -0.1
+     ],
+     "yaw_deg": 270.0,
+     "kind": "fish",
+     "max_length_m": 0.3
+    }
+   ],
+   "swim_volume": {
+    "min": [
+     -1.2,
+     0.2,
+     -0.65
+    ],
+    "max": [
+     1.2,
+     0.5,
+     0.65
+    ],
+    "note": "shallow: water surface y 0.5"
+   },
+   "companions": [
+    "Village_TouchPool_Water"
+   ],
+   "placement_note": "origin = base centre on the ground, front +z; basin 3.0 x 1.8 m, rim 0.62 m, water surface at y 0.5; the sign post stands 0.5 m east of the basin",
+   "role": "aquarium prop"
+  },
+  {
+   "name": "Village_TouchPool_Water",
+   "file": "Art/Export/VillageBuildings/Village_TouchPool_Water.fbx",
+   "triangles": 12,
+   "vertices": 24,
+   "bounds_min": [
+    -1.29,
+    0.16,
+    -0.69
+   ],
+   "bounds_max": [
+    1.29,
+    0.5,
+    0.69
+   ],
+   "material": "water",
+   "slots": [
+    1
+   ],
+   "layers": [
+    0
+   ],
+   "items": [],
+   "note": "Water surface of the touch pool: put the water material on this object.",
+   "role": "water companion"
+  },
+  {
+   "name": "Village_LotMarker_S",
+   "file": "Art/Export/VillageBuildings/Village_LotMarker_S.fbx",
+   "triangles": 2374,
+   "vertices": 4842,
+   "bounds_min": [
+    -4.6094,
+    -0.3,
+    -2.9558
+   ],
+   "bounds_max": [
+    4.4059,
+    1.6,
+    2.9639
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "items": [
+    {
+     "name": "Stake_0",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -4.442,
+      0.435,
+      -2.881
+     ],
+     "footprint": [
+      0.335,
+      1.469,
+      0.149
+     ],
+     "bounds_min": [
+      -4.609,
+      -0.3,
+      -2.956
+     ],
+     "bounds_max": [
+      -4.274,
+      1.169,
+      -2.807
+     ]
+    },
+    {
+     "name": "Stake_1",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      4.342,
+      0.435,
+      -2.721
+     ],
+     "footprint": [
+      0.127,
+      1.469,
+      0.345
+     ],
+     "bounds_min": [
+      4.278,
+      -0.3,
+      -2.893
+     ],
+     "bounds_max": [
+      4.406,
+      1.169,
+      -2.549
+     ]
+    },
+    {
+     "name": "Stake_2",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      4.34,
+      0.435,
+      2.725
+     ],
+     "footprint": [
+      0.12,
+      1.469,
+      0.337
+     ],
+     "bounds_min": [
+      4.28,
+      -0.3,
+      2.556
+     ],
+     "bounds_max": [
+      4.4,
+      1.169,
+      2.893
+     ]
+    },
+    {
+     "name": "Stake_3",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -4.217,
+      0.435,
+      2.885
+     ],
+     "footprint": [
+      0.366,
+      1.47,
+      0.157
+     ],
+     "bounds_min": [
+      -4.4,
+      -0.3,
+      2.807
+     ],
+     "bounds_max": [
+      -4.034,
+      1.17,
+      2.964
+     ]
+    },
+    {
+     "name": "Stake_4",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -0.002,
+      0.285,
+      -2.85
+     ],
+     "footprint": [
+      0.104,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -0.054,
+      -0.3,
+      -2.893
+     ],
+     "bounds_max": [
+      0.05,
+      0.87,
+      -2.807
+     ]
+    },
+    {
+     "name": "Stake_5",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      0.0,
+      0.285,
+      2.85
+     ],
+     "footprint": [
+      0.1,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -0.05,
+      -0.3,
+      2.807
+     ],
+     "bounds_max": [
+      0.05,
+      0.87,
+      2.893
+     ]
+    },
+    {
+     "name": "Sign",
+     "collider": "box",
+     "position": [
+      0.0,
+      0.725,
+      0.0
+     ],
+     "footprint": [
+      8.724,
+      1.75,
+      5.724
+     ],
+     "bounds_min": [
+      -4.362,
+      -0.15,
+      -2.862
+     ],
+     "bounds_max": [
+      4.362,
+      1.6,
+      2.862
+     ]
+    }
+   ],
+   "note": "Lot marker for a 9.0 x 6.0 m lot: stakes, rope, ribbons and the sign. Origin = lot centre at ground level.",
+   "placements": [
+    {
+     "lot": "Lot1",
+     "position": [
+      -54.0,
+      3.74,
+      -82.0
+     ],
+     "yaw_deg": 180.0
+    },
+    {
+     "lot": "Lot2",
+     "position": [
+      -17.5,
+      3.74,
+      -79.7
+     ],
+     "yaw_deg": 180.0
+    },
+    {
+     "lot": "Lot3",
+     "position": [
+      23.8,
+      3.74,
+      -79.5
+     ],
+     "yaw_deg": 180.0
+    },
+    {
+     "lot": "Lot4",
+     "position": [
+      47.4,
+      3.74,
+      -81.8
+     ],
+     "yaw_deg": 180.0
+    },
+    {
+     "lot": "Lot7",
+     "position": [
+      12.8,
+      3.74,
+      -79.3
+     ],
+     "yaw_deg": 180.0
+    }
+   ],
+   "role": "lot marker",
+   "lot_class": "S",
+   "lot_size": {
+    "width_x": 9.0,
+    "depth_z": 6.0
+   },
+   "placement": "origin on the lot centre at ground height, yaw = the lot yaw; stakes reach 0.3 m below ground, so the lot must be flat within ~0.1 m"
+  },
+  {
+   "name": "Village_LotMarker_M",
+   "file": "Art/Export/VillageBuildings/Village_LotMarker_M.fbx",
+   "triangles": 2374,
+   "vertices": 4842,
+   "bounds_min": [
+    -4.8865,
+    -0.3,
+    -3.2006
+   ],
+   "bounds_max": [
+    4.962,
+    1.6,
+    3.3473
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "items": [
+    {
+     "name": "Stake_0",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -4.743,
+      0.435,
+      -2.993
+     ],
+     "footprint": [
+      0.286,
+      1.47,
+      0.201
+     ],
+     "bounds_min": [
+      -4.886,
+      -0.3,
+      -3.093
+     ],
+     "bounds_max": [
+      -4.6,
+      1.17,
+      -2.892
+     ]
+    },
+    {
+     "name": "Stake_1",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      4.774,
+      0.435,
+      -3.104
+     ],
+     "footprint": [
+      0.349,
+      1.47,
+      0.194
+     ],
+     "bounds_min": [
+      4.6,
+      -0.3,
+      -3.201
+     ],
+     "bounds_max": [
+      4.949,
+      1.17,
+      -3.007
+     ]
+    },
+    {
+     "name": "Stake_2",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      4.78,
+      0.435,
+      3.009
+     ],
+     "footprint": [
+      0.363,
+      1.47,
+      0.168
+     ],
+     "bounds_min": [
+      4.599,
+      -0.3,
+      2.926
+     ],
+     "bounds_max": [
+      4.962,
+      1.17,
+      3.093
+     ]
+    },
+    {
+     "name": "Stake_3",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -4.65,
+      0.435,
+      3.177
+     ],
+     "footprint": [
+      0.1,
+      1.47,
+      0.341
+     ],
+     "bounds_min": [
+      -4.7,
+      -0.3,
+      3.007
+     ],
+     "bounds_max": [
+      -4.6,
+      1.17,
+      3.347
+     ]
+    },
+    {
+     "name": "Stake_4",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      0.0,
+      0.285,
+      -3.05
+     ],
+     "footprint": [
+      0.1,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -0.05,
+      -0.3,
+      -3.093
+     ],
+     "bounds_max": [
+      0.05,
+      0.87,
+      -3.007
+     ]
+    },
+    {
+     "name": "Stake_5",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      0.0,
+      0.285,
+      3.05
+     ],
+     "footprint": [
+      0.1,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -0.05,
+      -0.3,
+      3.007
+     ],
+     "bounds_max": [
+      0.05,
+      0.87,
+      3.093
+     ]
+    },
+    {
+     "name": "Sign",
+     "collider": "box",
+     "position": [
+      0.0,
+      0.725,
+      0.0
+     ],
+     "footprint": [
+      9.324,
+      1.75,
+      6.124
+     ],
+     "bounds_min": [
+      -4.662,
+      -0.15,
+      -3.062
+     ],
+     "bounds_max": [
+      4.662,
+      1.6,
+      3.062
+     ]
+    }
+   ],
+   "note": "Lot marker for a 9.6 x 6.4 m lot: stakes, rope, ribbons and the sign. Origin = lot centre at ground level.",
+   "placements": [
+    {
+     "lot": "Lot5",
+     "position": [
+      -4.2,
+      6.74,
+      -101.2
+     ],
+     "yaw_deg": 0.0
+    },
+    {
+     "lot": "Lot6",
+     "position": [
+      15.5,
+      6.74,
+      -101.2
+     ],
+     "yaw_deg": 0.0
+    }
+   ],
+   "role": "lot marker",
+   "lot_class": "M",
+   "lot_size": {
+    "width_x": 9.6,
+    "depth_z": 6.4
+   },
+   "placement": "origin on the lot centre at ground height, yaw = the lot yaw; stakes reach 0.3 m below ground, so the lot must be flat within ~0.1 m"
+  },
+  {
+   "name": "Village_LotMarker_L",
+   "file": "Art/Export/VillageBuildings/Village_LotMarker_L.fbx",
+   "triangles": 2646,
+   "vertices": 5056,
+   "bounds_min": [
+    -7.1207,
+    -0.3,
+    -3.8933
+   ],
+   "bounds_max": [
+    7.1144,
+    1.6,
+    3.8933
+   ],
+   "material": "M_Toon_Base",
+   "slots": [
+    3,
+    4,
+    5,
+    9,
+    10,
+    11
+   ],
+   "layers": [
+    0,
+    3,
+    7
+   ],
+   "items": [
+    {
+     "name": "Stake_0",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -6.96,
+      0.435,
+      -3.85
+     ],
+     "footprint": [
+      0.321,
+      1.47,
+      0.087
+     ],
+     "bounds_min": [
+      -7.121,
+      -0.3,
+      -3.893
+     ],
+     "bounds_max": [
+      -6.8,
+      1.17,
+      -3.807
+     ]
+    },
+    {
+     "name": "Stake_1",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      6.74,
+      0.435,
+      -3.838
+     ],
+     "footprint": [
+      0.32,
+      1.47,
+      0.11
+     ],
+     "bounds_min": [
+      6.58,
+      -0.3,
+      -3.893
+     ],
+     "bounds_max": [
+      6.9,
+      1.17,
+      -3.784
+     ]
+    },
+    {
+     "name": "Stake_2",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      6.957,
+      0.435,
+      3.769
+     ],
+     "footprint": [
+      0.314,
+      1.47,
+      0.249
+     ],
+     "bounds_min": [
+      6.8,
+      -0.3,
+      3.644
+     ],
+     "bounds_max": [
+      7.114,
+      1.17,
+      3.893
+     ]
+    },
+    {
+     "name": "Stake_3",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -6.786,
+      0.435,
+      3.736
+     ],
+     "footprint": [
+      0.229,
+      1.47,
+      0.315
+     ],
+     "bounds_min": [
+      -6.9,
+      -0.3,
+      3.578
+     ],
+     "bounds_max": [
+      -6.671,
+      1.17,
+      3.893
+     ]
+    },
+    {
+     "name": "Stake_4",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -0.001,
+      0.285,
+      -3.85
+     ],
+     "footprint": [
+      0.103,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -0.053,
+      -0.3,
+      -3.893
+     ],
+     "bounds_max": [
+      0.05,
+      0.87,
+      -3.807
+     ]
+    },
+    {
+     "name": "Stake_5",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      6.85,
+      0.285,
+      0.0
+     ],
+     "footprint": [
+      0.1,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      6.8,
+      -0.3,
+      -0.043
+     ],
+     "bounds_max": [
+      6.9,
+      0.87,
+      0.043
+     ]
+    },
+    {
+     "name": "Stake_6",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      0.0,
+      0.285,
+      3.85
+     ],
+     "footprint": [
+      0.1,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -0.05,
+      -0.3,
+      3.807
+     ],
+     "bounds_max": [
+      0.05,
+      0.87,
+      3.893
+     ]
+    },
+    {
+     "name": "Stake_7",
+     "collider": "none (a trigger-free visual; lots are not blocked)",
+     "position": [
+      -6.85,
+      0.285,
+      0.0
+     ],
+     "footprint": [
+      0.1,
+      1.17,
+      0.087
+     ],
+     "bounds_min": [
+      -6.9,
+      -0.3,
+      -0.043
+     ],
+     "bounds_max": [
+      -6.8,
+      0.87,
+      0.043
+     ]
+    },
+    {
+     "name": "Sign",
+     "collider": "box",
+     "position": [
+      0.0,
+      0.725,
+      0.0
+     ],
+     "footprint": [
+      13.724,
+      1.75,
+      7.724
+     ],
+     "bounds_min": [
+      -6.862,
+      -0.15,
+      -3.862
+     ],
+     "bounds_max": [
+      6.862,
+      1.6,
+      3.862
+     ]
+    }
+   ],
+   "note": "Lot marker for a 14.0 x 8.0 m lot: stakes, rope, ribbons and the sign. Origin = lot centre at ground level.",
+   "placements": [
+    {
+     "lot": "Lot8",
+     "position": [
+      47.0,
+      1.2,
+      -59.0
+     ],
+     "yaw_deg": 0.0
+    }
+   ],
+   "role": "lot marker",
+   "lot_class": "L",
+   "lot_size": {
+    "width_x": 14.0,
+    "depth_z": 8.0
+   },
+   "placement": "origin on the lot centre at ground height, yaw = the lot yaw; stakes reach 0.3 m below ground, so the lot must be flat within ~0.1 m"
+  }
+ ],
+ "report": [
+  "Village_Cottage_A tris=5254 verts=4598 kept",
+  "Village_Cottage_A_Rundown tris=3240 verts=2454 kept",
+  "Village_Cottage_B tris=4080 verts=3859 kept",
+  "Village_Cottage_B_Rundown tris=2124 verts=1952 kept",
+  "Village_Cottage_C tris=2612 verts=3367 kept",
+  "Village_Cottage_C_Rundown tris=1652 verts=1564 kept",
+  "Village_Cottage_D tris=3260 verts=3197 kept",
+  "Village_Cottage_D_Rundown tris=2670 verts=2286 kept",
+  "Village_Gary_Tidy tris=4662 verts=4646 kept",
+  "Village_Gary_Chaos tris=5424 verts=5483 written",
+  "Village_Gary_Rundown tris=2404 verts=3438 kept",
+  "Village_Cafe tris=7744 verts=14676 kept",
+  "Village_Cafe_Rundown tris=4242 verts=6181 kept",
+  "Village_Aquarium tris=7373 verts=12788 kept",
+  "Village_Aquarium_Glass tris=84 verts=168 kept",
+  "Village_Aquarium_Rundown tris=3786 verts=7678 kept",
+  "Village_DisplayTank tris=1346 verts=2676 kept",
+  "Village_DisplayTank_Glass tris=48 verts=96 kept",
+  "Village_DisplayTank_Water tris=12 verts=24 kept",
+  "Village_BreedingTank tris=1958 verts=4679 kept",
+  "Village_BreedingTank_Glass tris=60 verts=120 kept",
+  "Village_BreedingTank_Water tris=24 verts=48 kept",
+  "Village_TouchPool tris=1774 verts=3621 kept",
+  "Village_TouchPool_Water tris=12 verts=24 kept",
+  "Village_LotMarker_S tris=2374 verts=4842 kept",
+  "Village_LotMarker_M tris=2374 verts=4842 kept",
+  "Village_LotMarker_L tris=2646 verts=5056 kept"
+ ]
+}
