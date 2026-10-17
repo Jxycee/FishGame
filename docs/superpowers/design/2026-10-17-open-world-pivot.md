@@ -1,6 +1,6 @@
 # The Watershed: an open-world fishing game (design draft, revision 3, 2026-10-17)
 
-_Status: **draft for the user's review**; nothing here is in the spec until approved. Revision 3 adds the user's two ideas (2026-10-17): village restoration in the style of **Dark Cloud's Georama** ("a specific set of fish for specific people along with found items + other quests to restore the village"), and a **free-build deck plot** it unlocks "so you and friends can make a cool dock/deck for landing the tug there". It also sets the tone: "goofy, but not childish; Schedule 1 is a good example" (section 2.1). Revision 2 followed the user's corrections (2026-10-17): "We are basically scraping the entire story and classic friend slop genre. It should be more of a large mostly open world fishing game. Still in the friend slop category, but more along the lines of PEAK and RV There Yet rather than quick paced friend slop games." Then: "The game revolves around fishing rather than a tough journey. Be ambitious and think outside the box." Revision 1 (challenge board, starfish god, gentle mafia) is withdrawn._
+_Status: **direction agreed; open questions decided on the user's delegation (section 6)**; not yet folded into the spec. Revision 3 adds the user's two ideas (2026-10-17): village restoration in the style of **Dark Cloud's Georama** ("a specific set of fish for specific people along with found items + other quests to restore the village"), and a **free-build deck plot** it unlocks "so you and friends can make a cool dock/deck for landing the tug there". It also sets the tone: "goofy, but not childish; Schedule 1 is a good example" (section 2.1). Revision 2 followed the user's corrections (2026-10-17): "We are basically scraping the entire story and classic friend slop genre. It should be more of a large mostly open world fishing game. Still in the friend slop category, but more along the lines of PEAK and RV There Yet rather than quick paced friend slop games." Then: "The game revolves around fishing rather than a tough journey. Be ambitious and think outside the box." Revision 1 (challenge board, starfish god, gentle mafia) is withdrawn._
 
 _Sources: spec sections 2, 12, 14, 15, 16 and R57-R79; `2026-10-13-fun-formula.md`; `2026-10-15-map-identity-review.md`; `Art/Blender/fg_harbour.py` (main and `harbour-art3`)._
 
@@ -153,7 +153,7 @@ The world is one **watershed**: a river system that runs from mountain tarns, th
 | R88 | Building (host) | The village (directed, R82), the **crew berth** deck plot per region (free build; a fixed mooring line and approach lane; snaps to the tug's deck height), and camp plots (free, grid-snapped). Every placement is owner-requested, host-validated, spawned by the host and saved in the world. | New |
 | R89 | Persistent world | A host-owned world save (regions, stocks, builds, villagers and placements, the tug, the wallet, the clock, the world seed) and an owner-written personal profile (journal, records, cosmetics, own tackle). `schemaVersion` is read first; autosave every 5 min [tune] and on quit. | The R76/M4 run snapshot and resume; the run-related fields of meta save v2 |
 | R90 | Time without a deadline | The M3 clock keeps running (a day of about 24 real min [tune]; night ~30%; a season every 3 in-game days [tune]); sleep in a bunk or bed skips to dawn when everyone present is in one. | R76 day lengths per stage |
-| R91 | Co-op and jank | Section 3.9: keep physical fish, co-op monster fights, falling in and rescuing by rod; gulls and otters as ambient thieves. Drop daily escalation, the seagull carry and shove as counterplay. | Section 15's scheduled thieves (15.2 scaling), 15.6, R68 (to review) |
+| R91 | Co-op and jank | Section 3.9: keep physical fish, co-op monster fights, falling in and rescuing by rod; gulls and otters as ambient thieves. Drop daily escalation, the seagull carry and shove as counterplay. | Section 15's scheduled thieves (15.2 scaling), 15.6, R68 kept as a rare gag |
 | R92 | Milestones re-planned | **M4 "Harbour alive":** world save, ecosystem v1, genetics v1, village v1 (the first 4 villagers, the lots and the crew berth), tug driving inside the region, the market. **M5 "The crew":** physical fish, co-op big fights, the bait ladder, techniques batch 1 (bottom, jig, troll, pots, cast net), the aquarium and breeding, camp building. **M6 "Upstream":** the river lock passage, the Marsh and Creek region, fly fishing, ice fishing, voice. **Later:** more regions, legendaries in each, linked worlds. | Section 5 rows M4-M6 and section 17's M4 DoD |
 
 ---
@@ -232,28 +232,43 @@ The modelled town already has the buildings. There are 10 villagers, with 3 wish
 
 ---
 
-## 6. Open questions for the user
+## 6. Decisions (delegated by the user, 2026-10-17)
 
-1. **How "open" is the world?**
-   - **(a) Large regions as separate scenes, joined by a short tug passage you sail through (recommended):** it works with today's scenes and NGO, and each region can be big.
-   - (b) One seamless streamed world (no transitions; a large engine and networking cost, probably a year more).
-   - (c) Regions picked from a map screen (simplest, least open).
-2. **How free is village placement?**
-   - **(a) Landmarks fixed, villager houses placed on village lots (recommended):** keeps the modelled town, gives the Georama puzzle.
-   - (b) Full Georama: every building placed anywhere in the village area (needs the town rebuilt as separate pieces and more collider work).
-   - (c) Everything restores in place (no placement wishes).
-3. **How far should the living ecosystem go?**
-   - **(a) Stocks recover and thin, migrations, tides and events, with no permanent damage (recommended).**
-   - (b) Full consequences: overfished species can vanish from a region until the crew restocks it.
-   - (c) Only events and tides, with fixed stocks.
-4. **Breeding and releasing your own strains:**
-   - **(a) In, from M5 (recommended):** it is the strongest "near endless" system and builds on the aquarium.
-   - (b) Strains and morphs as catch-only (no breeding).
-   - (c) Later, after more regions exist.
-5. **Whose world is it?**
-   - **(a) A host-owned world plus a personal profile per player (recommended):** like Valheim or Stardew co-op.
-   - (b) One shared save only.
-   - (c) Each player keeps a full copy, synced when they play together.
-6. **The first playable goal:**
-   - **(a) "Harbour alive" (M4 in R92): the first four villagers home, the crew berth, the ecosystem, genetics and the tug driving in one region (recommended).**
-   - (b) Harbour plus the second region together before anything is playtested.
+The user: "Make your best recommendations." These are Claude's calls, made on the user's behalf; the user can overturn any of them.
+
+1. **World shape: large regions as separate scenes, joined by a tug passage you sail through.**
+   - It fits today's scenes, bake grids and NGO, and each region can still be big.
+   - The passage is a short scene on the water (a lock, a gorge, a fog bank), never a menu.
+   - A seamless streamed world is not planned. Revisit only if regions feel cut off in playtests.
+2. **Village placement: landmarks fixed, villager houses placed on lots.**
+   - This keeps the town that is already modelled and still gives the Georama puzzle, the placement wishes and the arguments.
+   - Lots are generous (6-10 per region) so there are real choices.
+3. **Ecosystem: stocks thin and recover, plus migrations, tides and events; no permanent damage.**
+   - Fishing a spot hard is felt for an in-game day or two, never punished for good.
+   - Restocking from the aquarium is a bonus, not a repair job. This keeps the game calm (pillar 5).
+4. **Breeding and release: in, from M5,** on the M4 genetics.
+   - Released strains join a zone's table at a low weight and grow with each release.
+   - A world caps custom strains per zone [tune ~6] so the native fish never vanish.
+5. **Saves: a host-owned world plus a personal profile per player.**
+   - The host's world holds the village, the berth, stocks and the tug.
+   - Each player's profile holds their journal, records, cosmetics and own tackle, and it travels with them into friends' worlds. One shared crew wallet per world.
+   - Save work gets an Opus review (CLAUDE.md).
+6. **First playable goal: "Harbour alive" (M4 in R92), in one region.**
+   - **In it:** the first four villagers home (Doug, Marge, Ines, Wendell), the crew berth, ecosystem v1, genetics v1, tug driving and the market.
+   - **Then:** playtest before building a second region.
+
+**Smaller calls made along the way:**
+- **Kept as a rare gag:** the self-hook (R68). It fits the grown-up goofy tone.
+- **Ambient only:** gulls and otters stay as ambient thieves, never on a timer.
+- **Later idea:** the voice-mimic seagulls fit the tone and stay on the list for after voice chat (M6).
+- **Two-player carries:** fish over ~25 kg [tune] need two players to carry; solo uses a hand cart from the boatyard.
+- **Order inside M4:**
+  1. world save and profile;
+  2. zone fish tables;
+  3. ecosystem and genetics in Core;
+  4. tug driving;
+  5. village v1;
+  6. the crew berth.
+  The first two unblock everything else.
+
+**Next step:** the controller reviews this draft with the user, then folds R80-R92 into the spec (with the superseded rows annotated) and writes the M4 plan from section 5.5.
