@@ -36,6 +36,10 @@ COL = {
     'strap':  (0.30, 0.22, 0.15),
 }
 
+# ---------------------------------------------------------------- face layout (default look)
+FACE = dict(nose=False)   # PEAK-style: no nose by default; noses are optional parts (fg_fisher_parts.py)
+EYE_X = 0.086             # eye centres from the middle: big REPO eyes nearly touching
+
 # ---------------------------------------------------------------- key heights (z, metres)
 H = dict(
     head=1.50,      # head centre
@@ -189,18 +193,18 @@ def lathe(name, profile, mat, segs=48):
 def build():
     reset()
     M = {k: material('M_' + k.capitalize(), v) for k, v in COL.items()}
-    M['eye'] = material('M_Eye', COL['eye'], rough=0.25)
+    M['eye'] = material('M_Eye', COL['eye'], rough=0.08)   # glossy, REPO-style
     M['pupil'] = material('M_Pupil', COL['pupil'], rough=0.2)
 
     hz, hr = H['head'], H['head_r']
 
     # Head: a big soft ball, slightly wider than deep, a fuller jaw/cheek mass, small ears, a button nose.
     blob('Head', mirror_x([
-        ball((0, 0, hz), hr, (1.0, 0.95, 1.0)),
+        ball((0, 0, hz), hr, (0.97, 0.93, 1.07)),                       # egg-ish, PEAK-style
         ball((0, -0.035, hz - 0.075), hr * 0.72, (1.08, 0.9, 0.75)),     # cheeks / jaw
         ball((0, 0.0, hz - 0.18), 0.075, (1.0, 1.0, 1.4)),               # neck
         ball((hr * 0.965, 0.01, hz - 0.03), 0.042, (0.55, 0.9, 1.1)),          # ear (mirrored)
-    ]) + [ball((0, -hr * 1.0, hz - 0.075), 0.034, (1.0, 0.85, 0.9))],  # nose
+    ]) + ([ball((0, -hr * 0.97, hz - 0.075), 0.034, (1.0, 0.85, 0.9))] if FACE['nose'] else []),
         M['skin'], voxel=0.008, faces=6000, smooth_iter=4)
 
     # Torso (shirt): a pillowy barrel, a touch of belly, shoulders rounded into the sleeves.
@@ -215,9 +219,9 @@ def build():
 
     # Arms: skin from just above the elbow down; mitten hands with a thumb.
     arm = mirror_x([
-        capsule((0.30, 0.0, sh - 0.21), (0.375, -0.01, sh - 0.44), 0.058),   # forearm
-        ball((0.395, -0.015, sh - 0.53), 0.065, (0.85, 0.65, 1.15)),        # mitten hand
-        ball((0.37, -0.06, sh - 0.49), 0.03, (0.9, 0.9, 1.3), (20, 0, 0)), # thumb
+        capsule((0.30, 0.0, sh - 0.21), (0.385, -0.01, sh - 0.47), 0.052),   # forearm (noodly, PEAK)
+        ball((0.405, -0.015, sh - 0.575), 0.076, (0.85, 0.62, 1.15)),       # big mitten hand
+        ball((0.375, -0.065, sh - 0.53), 0.034, (0.9, 0.9, 1.3), (20, 0, 0)), # thumb
     ])
     blob('Arms', arm, M['skin'], voxel=0.008, faces=3000, smooth_iter=3)
 
@@ -363,20 +367,20 @@ def build_eyes(M):
     """REPO-style eyes: two big white balls half sunk into the face, each with a black pupil cap.
     Pupils are separate objects so they can ride an eye bone; rotating the bone slides the pupil over
     the ball (side-eye). Eye shape variants come from scaling the ball and the lid (see EYE_SHAPES)."""
-    er = 0.076
+    er = 0.086
     head = bpy.data.objects['Head']
     for side, sx in (('L', 1), ('R', -1)):
         # Find the face surface in front of the eye and sink the ball 45% into it.
-        hit, loc, nrm, _ = head.ray_cast(Vector((sx * 0.078, -1.0, H['eye_z'])), Vector((0, 1, 0)))
-        c = Vector((sx * 0.078, loc.y + er * 0.45, H['eye_z']))
+        hit, loc, nrm, _ = head.ray_cast(Vector((sx * EYE_X, -1.0, H['eye_z'])), Vector((0, 1, 0)))
+        c = Vector((sx * EYE_X, loc.y + er * 0.30, H['eye_z']))   # bulging: only 30% sunk
         bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=16, radius=er, location=c)
         e = bpy.context.active_object
         e.name = 'Eye_' + side
         e.scale = (0.92, 0.85, 1.12)
         e.data.materials.append(M['eye'])
         # Pupil: a shallow cap on the front of the ball, slightly proud of its surface.
-        bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, radius=er * 0.42,
-                                             location=c + Vector((0, -er * 0.80, 0)))
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, radius=er * 0.36,
+                                             location=c + Vector((0, -er * 0.82, 0)))
         p = bpy.context.active_object
         p.name = 'Pupil_' + side
         p.scale = (0.9, 0.35, 1.1)
